@@ -7,8 +7,9 @@
 package io.spine.internal.dependency
 
 // TODO:2024-08-29:dmitry.pikhulya: this file is not a part of the original
-//    `config` module's content. Consider updating the `config`
-//    module accordingly.
+//   `config` module's content. Consider updating the `config`
+//   module accordingly.
+//   See https://github.com/SpineEventEngine/Chords/issues/3
 
 // https://github.com/JetBrains/compose-jb
 object Material3 {

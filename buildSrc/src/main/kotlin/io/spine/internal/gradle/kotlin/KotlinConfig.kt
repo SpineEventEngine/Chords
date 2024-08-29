@@ -64,7 +64,8 @@ fun KotlinCompile.setFreeCompilerArgs() {
             "-Xinline-classes",
 
             // TODO:2024-08-29:dmitry.pikhulya: the line below is modified relative to the `config`
-            //   module's content. Update the `config` module accordingly.
+            //   module's content. Consider update the `config` module accordingly (as an option?).
+            //   See https://github.com/SpineEventEngine/Chords/issues/3
             "-Xcontext-receivers",
             expectActualClasses,
             "-opt-in=" +
