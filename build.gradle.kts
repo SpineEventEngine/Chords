@@ -1,6 +1,4 @@
 import io.spine.internal.dependency.Dokka
-import io.spine.internal.gradle.report.license.LicenseReporter
-import io.spine.internal.gradle.report.pom.PomGenerator
 import io.spine.internal.gradle.standardToSpineSdk
 
 /*
@@ -54,6 +52,3 @@ subprojects {
         plugin("jvm-module")
     }
 }
-
-PomGenerator.applyTo(project)
-LicenseReporter.mergeAllReports(project)
