@@ -1,3 +1,5 @@
+import io.spine.internal.gradle.standardToSpineSdk
+
 /*
  * Copyright 2024, TeamDev. All rights reserved.
  *
@@ -26,6 +28,12 @@
 
 buildscript {
     standardSpineSdkRepositories()
+}
+
+allprojects {
+//    group = "io.spine.chords"
+//    version = extra["chordsVersion"]!!
+    repositories.standardToSpineSdk()
 }
 
 subprojects {
