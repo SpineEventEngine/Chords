@@ -62,6 +62,10 @@ fun KotlinCompile.setFreeCompilerArgs() {
             "-Xskip-prerelease-check",
             "-Xjvm-default=all",
             "-Xinline-classes",
+
+            // TODO:2024-08-29:dmitry.pikhulya: the line below is modified relative to the `config`
+            //   module's content. Update the `config` module accordingly.
+            "-Xcontext-receivers",
             expectActualClasses,
             "-opt-in=" +
                     "kotlin.contracts.ExperimentalContracts," +

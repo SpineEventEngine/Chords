@@ -69,7 +69,10 @@ plugins {
 
 detekt {
     buildUponDefaultConfig = true
-    config.from(files("${rootDir}/config/quality/detekt-config.yml"))
+    // TODO:2024-08-29:dmitry.pikhulya: the line below is modified relative to the `config`
+    //   module's content. The custom config adds Compose-specific declarations.
+    //   See whether/how `config` can be updated accordingly.
+    config.from(files("${rootDir}/quality/detekt-config.yml"))
 }
 
 tasks {
