@@ -1,8 +1,3 @@
-import io.spine.internal.dependency.Dokka
-import io.spine.internal.gradle.report.license.LicenseReporter
-import io.spine.internal.gradle.report.pom.PomGenerator
-import io.spine.internal.gradle.standardToSpineSdk
-
 /*
  * Copyright 2024, TeamDev. All rights reserved.
  *
@@ -29,31 +24,12 @@ import io.spine.internal.gradle.standardToSpineSdk
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-buildscript {
-    standardSpineSdkRepositories()
-}
-
-plugins {
-    idea
-    jacoco
-    `gradle-doctor`
-    `project-report`
-}
-
-allprojects {
-    apply(plugin = Dokka.GradlePlugin.id)
-    apply(from = "$rootDir/version.gradle.kts")
-    group = "io.spine.chords"
-    version = extra["chordsVersion"]!!
-
-    repositories.standardToSpineSdk()
-}
-
-subprojects {
-    apply {
-        plugin("jvm-module")
-    }
-}
-
-PomGenerator.applyTo(project)
-LicenseReporter.mergeAllReports(project)
+/**
+ * The version of the ProtoData to publish.
+ *
+ * This version also used by integration test projects.
+ * E.g. see `test/consumer/build.gradle.kts`.
+ *
+ * For dependencies on Spine SDK module please see [io.spine.internal.dependency.Spine].
+ */
+val chordsVersion: String by extra("2.0.0-SNAPSHOT.1")
