@@ -1,3 +1,7 @@
+import io.spine.internal.gradle.publish.PublishingRepos
+import io.spine.internal.gradle.publish.spinePublishing
+import io.spine.internal.gradle.report.license.LicenseReporter
+import io.spine.internal.gradle.report.pom.PomGenerator
 import io.spine.internal.gradle.standardToSpineSdk
 
 /*
@@ -29,6 +33,22 @@ import io.spine.internal.gradle.standardToSpineSdk
 buildscript {
     standardSpineSdkRepositories()
 }
+
+spinePublishing {
+    modules = productionModules
+        .map { project -> project.name }
+        .toSet()
+        .minus("gradle-plugin") // because of custom publishing.
+
+    destinations = setOf(
+        PublishingRepos.gitHub("ProtoData"),
+        PublishingRepos.cloudArtifactRegistry
+    )
+    artifactPrefix = "protodata-"
+}
+
+PomGenerator.applyTo(project)
+LicenseReporter.mergeAllReports(project)
 
 allprojects {
 //    group = "io.spine.chords"
