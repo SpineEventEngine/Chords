@@ -63,8 +63,9 @@ fun KotlinCompile.setFreeCompilerArgs() {
             "-Xjvm-default=all",
             "-Xinline-classes",
 
-            // TODO:2024-08-29:dmitry.pikhulya: the line below is modified relative to the `config`
-            //   module's content. Consider update the `config` module accordingly (as an option?).
+            // TODO:2024-08-29:dmitry.pikhulya: the line below is an addition relative to the
+            //   `config` module's content. Consider update the `config` module accordingly
+            //   (as an option?).
             //   See https://github.com/SpineEventEngine/Chords/issues/3
             "-Xcontext-receivers",
             expectActualClasses,
