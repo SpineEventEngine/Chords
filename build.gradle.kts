@@ -1,4 +1,6 @@
 import io.spine.internal.dependency.Dokka
+import io.spine.internal.gradle.publish.PublishingRepos
+import io.spine.internal.gradle.publish.spinePublishing
 import io.spine.internal.gradle.standardToSpineSdk
 
 /*
@@ -51,4 +53,16 @@ subprojects {
     apply {
         plugin("jvm-module")
     }
+}
+
+spinePublishing {
+    modules = productionModules
+        .map { project -> project.name }
+        .toSet()
+
+    destinations = setOf(
+        PublishingRepos.gitHub("Chords"),
+        PublishingRepos.cloudArtifactRegistry
+    )
+    artifactPrefix = "chords-"
 }
