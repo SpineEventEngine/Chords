@@ -525,7 +525,7 @@ public open class ComponentCompanion<C: Component>(
  * ```
  *
  * The bug has been reported here (for Compose Multiplatform):
- *   [https://github.com/JetBrains/compose-multiplatform/issues/4491](https://github.com/JetBrains/compose-multiplatform/issues/4491),
+ *   [https://youtrack.jetbrains.com/issue/CMP-4491](https://youtrack.jetbrains.com/issue/CMP-4491),
  * and also a duplicate was reported here (for Jetpack Compose):
  *   [https://issuetracker.google.com/issues/329477544](https://issuetracker.google.com/issues/329477544)
  *

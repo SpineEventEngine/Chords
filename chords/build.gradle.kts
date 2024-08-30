@@ -4,12 +4,10 @@
  * Use is subject to license terms.
  */
 
-import io.spine.chords.dependency.Kotest
-import io.spine.chords.dependency.Material3
+import io.spine.internal.dependency.Material3
+import io.spine.internal.dependency.Kotest
 
 plugins {
-    `java-library`
-    `kotlin-settings`
     id("org.jetbrains.compose") version "1.5.12"
 }
 
@@ -22,5 +20,5 @@ repositories {
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
-    testImplementation(Kotest.Runner.lib)
+    testImplementation(Kotest.runnerJUnit5)
 }
