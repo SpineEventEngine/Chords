@@ -36,7 +36,15 @@ protoData {
 //val sourceModuleDir = project.properties["sourceModuleDir"] as String
 val sourceModuleDir = if (project.hasProperty("sourceModuleDir"))
     project.properties["sourceModuleDir"] as String
-else ""
+else {
+    logger.warn(
+        """
+        WARNING! Property `sourceModuleDir` is not set. " +
+            "There are no sources to generate the code for.
+            """.trimIndent()
+    )
+    ""
+}
 
 // Add passed dependencies to the module classpath.
 if (project.hasProperty("dependencyItems")) {
