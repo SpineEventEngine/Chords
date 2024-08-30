@@ -32,8 +32,11 @@ protoData {
 }
 
 // Read `sourceModuleDir` from project properties.
-// This causes the build to fail if this property is not set.
-val sourceModuleDir = project.properties["sourceModuleDir"] as String
+// Disabled now: This causes the build to fail if this property is not set.
+//val sourceModuleDir = project.properties["sourceModuleDir"] as String
+val sourceModuleDir = if (project.hasProperty("sourceModuleDir"))
+    project.properties["sourceModuleDir"] as String
+else ""
 
 // Add passed dependencies to the module classpath.
 if (project.hasProperty("dependencyItems")) {
