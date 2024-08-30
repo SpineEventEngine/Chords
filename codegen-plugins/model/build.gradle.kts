@@ -39,9 +39,9 @@ val sourceModuleDir = if (project.hasProperty("sourceModuleDir"))
 else {
     logger.warn(
         """
-        WARNING! Property `sourceModuleDir` is not set. " +
-            "There are no sources to generate the code for.
-            """.trimIndent()
+        WARNING! Property `sourceModuleDir` is not set.
+        There are no sources to generate the code for.
+        """.trimIndent()
     )
     ""
 }
