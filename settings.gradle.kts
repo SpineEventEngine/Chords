@@ -5,4 +5,4 @@
  */
 
 rootProject.name = "Chords"
-include("chords")
+include("core")

@@ -37,5 +37,23 @@ object KotlinX {
         const val version = "1.7.3"
         const val core = "$group:kotlinx-coroutines-core:$version"
         const val jdk8 = "$group:kotlinx-coroutines-jdk8:$version"
+
+        // TODO:2024-08-30:dmitry.pikhulya: the following four libs were added
+        //    relative to the `config` module's content. Consider updating
+        //    the `config` module accordingly.
+        //   See https://github.com/SpineEventEngine/Chords/issues/3
+        const val bom = "$group:kotlinx-coroutines-bom:$version"
+        const val test = "$group:kotlinx-coroutines-test:$version"
+        const val testJvm = "$group:kotlinx-coroutines-test-jvm:$version"
+        const val debug = "$group:kotlinx-coroutines-debug:$version"
+    }
+
+    // TODO:2024-08-30:dmitry.pikhulya: This AtomicFu library was added relative
+    //   to the original `config` module's content. Consider updating `config`.
+    //   See https://github.com/SpineEventEngine/Chords/issues/3
+    // https://github.com/Kotlin/kotlinx-atomicfu
+    object AtomicFu {
+        const val version = "0.7.13"
+        const val lib = "$group:atomicfu:$version"
     }
 }
