@@ -1,6 +1,6 @@
 ## Chords Core
 Facilities and components for writing desktop applications with 
-[Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) framework
+the [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) framework
 
 Here is a high-level overview of what is included in the module for 
 a quick start:
