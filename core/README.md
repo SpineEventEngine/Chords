@@ -1,9 +1,6 @@
-## Chords
-UI components for Compose Multiplatform toolkit
-
-This module contains facilities and components that can be useful for writing
-[Compose](https://www.jetbrains.com/lp/compose-multiplatform/) based
-desktop applications.
+## Chords Core
+Facilities and components for writing desktop applications with 
+the [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) framework
 
 Here is a high-level overview of what is included in the module for 
 a quick start:
