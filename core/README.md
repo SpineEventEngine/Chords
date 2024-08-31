@@ -1,4 +1,4 @@
-## Core
+## Chords Core
 Facilities and components for writing desktop applications with 
 [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) framework
 
