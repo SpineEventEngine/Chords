@@ -82,7 +82,7 @@ spinePublishing {
         PublishingRepos.gitHub("Chords"),
         PublishingRepos.cloudArtifactRegistry
     )
-    artifactPrefix = "chords-"
+    artifactPrefix = "spine-chords-"
 }
 
 apply<IncrementGuard>()
