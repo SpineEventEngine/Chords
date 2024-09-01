@@ -64,9 +64,6 @@ public fun Modifier.moveFocusOnTab(): Modifier = composed {
  * [Modifier.width] function, responsible for defining
  * the preferred width of the field.
  *
- * Here's an example of the issue that is solved by adding this modifier:
- * https://github.com/Projects-tm/1DAM/issues/62
- *
  * @param width
  *         preferred width of composable.
  */
