@@ -27,13 +27,17 @@
 package io.spine.chords
 
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 /**
  * Common data that affects input components contained in context of an object
  * implemented by this interface (e.g. a form).
  */
+@Stable
 public interface InputContext {
     public val effectivelyLiveValidation: Boolean
 }
@@ -174,6 +178,7 @@ public interface InputContext {
  *         [invoke][ComponentCompanion.invoke] operators for instantiating
  *         and rendering any specific input component in any application code.
  */
+@Stable
 public abstract class InputComponent<V> : FocusableComponent() {
 
     /**
@@ -213,7 +218,7 @@ public abstract class InputComponent<V> : FocusableComponent() {
      * TODO:2024-03-17:dmitry.pikhulya: see how this property can be
      *     supported in all input components, not just in MessageForm
      */
-    public open var valueRequired: Boolean = false
+    public var valueRequired: Boolean by mutableStateOf(false)
 
     /**
      * An external validation error that should be displayed by the component,
