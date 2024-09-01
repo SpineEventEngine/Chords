@@ -28,6 +28,7 @@ package io.spine.chords
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 
@@ -247,12 +248,66 @@ import androidx.compose.runtime.remember
  *   into class methods would make respective class's properties to be available
  *   to such methods implicitly.
  *
+ * ### Optimizing performance
+ *
+ * These recommendations are optional, but can be considered in cases when UI's
+ * performance becomes an issue for some components or when you're creating
+ * components which are going to be widely reusable.
+ *
+ * Just like for any other composable function, Compose decides whether to
+ * invoke the [Component.content] function along with the parent's composition
+ * scope depending on the stability of the composable function's parameters (see
+ * [Compose's documentation](https://developer.android.com/develop/ui/compose/performance/stability)).
+ * In case of the [Component.content] function, it does not have any other
+ * parameters than the implicit `this` parameter, which refers to the actual
+ * [Component]'s implementation instance.
+ *
+ * The base [Component] class and other major base classes in the component's
+ * hierarchy, such as [InputComponent] are designed to satisfy the requirements
+ * to be considered [Stable] types, which minimizes the number of component's
+ * recompositions ([Component.content] invocations).
+ *
+ * It should be noted that depending on how the actual [Component]'s subclass
+ * is implemented may prevent the component type from being considered stable,
+ * and can cause excessive recompositions ([Component.content] invocations) to
+ * happen for the component, which can affect the UI's (responsiveness) in some
+ * cases. When performance degradation due to excessive recompositions needs
+ * to be optimized, ensure that the component's implementation forms a type,
+ * which is considered
+ * [stable](https://developer.android.com/develop/ui/compose/performance/stability#types)
+ * by the Compose's definition.
+ *
+ * Here are some considerations that might be helpful for adapting an unstable
+ * component's implementation to be a stable one:
+ * - Any component that has any `var` property or any `val` property whose type
+ *   is unstable and not immutable is considered as an unstable type by
+ *   Compose by default.
+ * - Since such properties are naturally required by many component's
+ *   implementations, making a component stable would require adding
+ *   a [Stable] annotation to the component's class.
+ * - If any component (as well as any other type) has a [Stable] annotation, its
+ *   implementation has to adhere to the contract of stable types (see the
+ *   [Stable] annotation's description). In practice this might require such
+ *   techniques as:
+ *   - Ensuring that a component doesn't have any public unstable properties.
+ *   - Making sure that public `var` properties are backed by `MutableState` to
+ *     ensure that changing the property triggers the component's recomposition,
+ *     e.g. like this:
+ *     ```
+ *        public var name: String by mutableStateOf("")
+ *     ```
+ * - Primitive types and lambdas are considered stable.
+ *
+ * See the [Stability in Compose](https://developer.android.com/develop/ui/compose/performance/stability#types)
+ * documentation for details.
+ *
  * @constructor a constructor, which is used internally by the component's
  *         implementation (its companion object). As an application developer,
  *         use [companion object's][ComponentCompanion]
  *         [invoke][ComponentCompanion.invoke] operator for instantiating
  *         and rendering any specific component's implementation.
  */
+@Stable
 public abstract class Component {
 
     /**
@@ -316,6 +371,7 @@ public abstract class Component {
             initialize()
             initialized.value = true
         }
+
         beforeComposeContent()
         content()
     }
@@ -335,7 +391,7 @@ public abstract class Component {
      */
     @Composable
     @ReadOnlyComposable
-    protected open fun beforeComposeContent() {
+    protected open fun beforeComposeContent(): Unit = recompositionWorkaroundReadonly {
     }
 
     /**
@@ -545,7 +601,7 @@ public open class ComponentCompanion<C: Component>(
  * ```
  *
  * The bug has been reported here (for Compose Multiplatform):
- *   [https://youtrack.jetbrains.com/issue/CMP-4491](https://youtrack.jetbrains.com/issue/CMP-4491),
+ *   [https://github.com/JetBrains/compose-multiplatform/issues/4491](https://github.com/JetBrains/compose-multiplatform/issues/4491),
  * and also a duplicate was reported here (for Jetpack Compose):
  *   [https://issuetracker.google.com/issues/329477544](https://issuetracker.google.com/issues/329477544)
  *
@@ -587,8 +643,9 @@ public open class ComponentCompanion<C: Component>(
  *   - It is expected that it should be an open composable method in some parent
  *     class, and this method is overridden in a class (component) that is being
  *     used when the exception appears.
- *   - It's likely NOT a method that is either private, or final, or not `open`
- *     or `override` one, or the one that's not overridden in any subclasses.
+ *   - It's likely NOT a method that is either private, or final, or not
+ *     `open`/`override` one, or the one that's not overridden in
+ *     any subclasses.
  *   - The [Component.content] method's implementation in some of the parent
  *     component classes might be the one of typical cases.
  *
@@ -613,4 +670,28 @@ public open class ComponentCompanion<C: Component>(
 @Composable
 public fun recompositionWorkaround(content: @Composable () -> Unit) {
     content()
+}
+
+/**
+ * A variant of [recompositionWorkaround], which can be usd on
+ * [ReadOnlyComposable] methods.
+ */
+@Composable
+@ReadOnlyComposable
+public fun recompositionWorkaroundReadonly(content: ReadOnlyComposableCallback) {
+    content.run()
+}
+
+/**
+ * A functional interface, which can be used for declaring parameters that
+ * accept the lambda, which is both [Composable] and [ReadOnlyComposable].
+ */
+public fun interface ReadOnlyComposableCallback {
+
+    /**
+     * Runs the callback.
+     */
+    @Composable
+    @ReadOnlyComposable
+    public fun run()
 }

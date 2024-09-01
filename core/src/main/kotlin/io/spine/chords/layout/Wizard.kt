@@ -45,6 +45,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -92,6 +93,7 @@ private object WizardContentSize {
  * the wizard is placed is responsible for hiding the wizard (excluding it from
  * the composition) upon this event.
  */
+@Stable
 public abstract class Wizard : Component() {
 
     /**

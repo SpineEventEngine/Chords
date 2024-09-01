@@ -26,6 +26,7 @@
 
 package io.spine.chords
 
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.focus.FocusRequester
 
 /**
@@ -44,6 +45,7 @@ import androidx.compose.ui.focus.FocusRequester
  * @see [focus]
  * @see [focusRequester]
  */
+@Stable
 public abstract class FocusableComponent : Component() {
     private val lazyFocusRequester = lazy { FocusRequester() }
 

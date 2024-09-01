@@ -35,6 +35,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -207,6 +208,7 @@ public typealias RawTextContent = TextFieldValue
  *         [invoke][ComponentCompanion.invoke] operators for instantiating
  *         and rendering any specific input component in any application code.
  */
+@Stable
 public open class InputField<V> : InputComponent<V>() {
 
     /**
@@ -242,25 +244,25 @@ public open class InputField<V> : InputComponent<V>() {
     /**
      * Indicates whether the field is enabled for receiving the user input.
      */
-    public open var enabled: Boolean = true
+    public var enabled: Boolean by mutableStateOf(true)
 
     /**
      * A callback, which is triggered after the value in the [MutableState] in
      * [value] has been updated with a newly edited value.
      */
-    public open var onValueChange: ((V?) -> Unit)? = null
+    public var onValueChange: ((V?) -> Unit)? = null
 
     /**
      * A label for the component.
      */
-    public open var label: String? = null
+    public var label: String? by mutableStateOf(null)
 
     /**
      * A Text displayed as an entry prompt when an empty field is focused.
      *
      * Mutually exclusive with [placeholder].
      */
-    public open var promptText: String? = null
+    public var promptText: String? by mutableStateOf(null)
 
     /**
      * A text field's placeholder that is displayed when an empty field
@@ -268,23 +270,23 @@ public open class InputField<V> : InputComponent<V>() {
      *
      * Mutually exclusive with [promptText].
      */
-    public open var placeholder: @Composable (() -> Unit)? = null
+    public var placeholder: @Composable (() -> Unit)? by mutableStateOf(null)
 
     /**
      * A [Modifier] to be applied to the component.
      */
-    public open var modifier: Modifier = Modifier
+    public var modifier: Modifier by mutableStateOf(Modifier)
 
     /**
      * A style for text field's text.
      */
-    public open var textStyle: TextStyle? = null
+    public var textStyle: TextStyle? by mutableStateOf(null)
 
     /**
      * An [InputReviser] that can be specified to modify the user's input before
      * it is applied to the input field.
      */
-    protected open var inputReviser: InputReviser? = null
+    protected var inputReviser: InputReviser? by mutableStateOf(null)
 
     /**
      * Transforms the raw text typed in by the user to form a text displayed in

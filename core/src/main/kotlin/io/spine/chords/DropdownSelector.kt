@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -86,6 +87,7 @@ import java.util.*
  * @param I
  *         a type of items from which the selection is made by this component.
  */
+@Stable
 public abstract class DropdownSelector<I> : InputComponent<I>() {
 
     /**
@@ -110,17 +112,17 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     /**
      * A label for the component.
      */
-    public open var label: String = ""
+    public var label: String by mutableStateOf("")
 
     /**
      * Indicates whether the field is enabled for receiving the user input.
      */
-    public open var enabled: Boolean = true
+    public var enabled: Boolean by mutableStateOf(true)
 
     /**
      * A [Modifier] to be applied to the component.
      */
-    public open var modifier: Modifier = Modifier
+    public var modifier: Modifier by mutableStateOf(Modifier)
 
     /**
      * Indicates whether the drop-down menu is expanded or not.
@@ -177,7 +179,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
      *         the [itemText] function.
      */
     @Composable
-    protected open fun itemContent(item: I, itemText: String) {
+    protected open fun itemContent(item: I, itemText: String): Unit = recompositionWorkaround {
         Text(
             modifier = Modifier.padding(horizontal = 12.dp),
             text = itemText.annotateSubstring(
