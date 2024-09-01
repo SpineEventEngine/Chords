@@ -27,4 +27,4 @@
 /**
   * The version of all Chords libraries.
   */
-Bval chordsVersion: String by extra("2.0.0-SNAPSHOT.5")
+val chordsVersion: String by extra("2.0.0-SNAPSHOT.5")
