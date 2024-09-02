@@ -26,9 +26,11 @@ val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
     // Path to the directory where the `codegen-plugins` project is located.
     // `chords-codegen` — the name of Git submodule. Set the proper value for your case.
     pluginsDir = "${rootDir}/chords-codegen/codegen-plugins"
+    
     // Path to the module which requires the code generation.
     // `model` — the name of the module. Put the proper valur for your case.
     sourceModuleDir = "${rootDir}/model"
+    
     // Dependencies that are required to load the Proto files from.
     dependencies(
         // These ones are just an example.
@@ -38,7 +40,6 @@ val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
         OneDam.DesktopAuth.lib,
         OneDam.ChordsProtoExt.lib
     )
-    task("build")
 
     // Publish to `mavenLocal` required dependencies.
     dependsOn(
@@ -60,13 +61,25 @@ tasks.named("compileKotlin") {
 ```
 
 > If the build of `codegen-plugins` project fails, this also
-causes the main build to fail.
+> causes the main build to fail.
 
 ### Modules
 
-* `message-fields` — contains implementation of the ProtoData plugin that 
-generates the code.
+* `message-fields` — the ProtoData plugin generating the code.
+* `model` — a working-directory module; it is used as a container for the Proto source code,
+  for which the codegen is to be performed.
 
-* `model` — the placeholder where the Proto sources of the module, which requires 
-code generation, will be copied during the build. The generated code 
-will be copied back to the `generatedSources` folder of the source module.
+### How it works
+
+Before executing the `generateProto` task, the Proto source code 
+of the specified module is copied to the `model/src/main/proto` folder.
+Once `launchProtoData` task is executed, the generated Kotlin sources
+are copied back to the `generatedSources` folder of the source module.
+
+The same logic applies to `test` sources.
+
+> Please note that the `compileKotlin` and `compileTestKotlin` tasks are disabled
+> in the `model` module due to dependency on `ValidatingBuilder` from Spine 1.9.x. 
+> And therefore there are no tests to check the correctness of the generated files.
+
+See the [model/build.gradle.kts](model/build.gradle.kts) for details.
