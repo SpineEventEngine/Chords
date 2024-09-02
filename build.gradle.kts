@@ -1,4 +1,10 @@
 import io.spine.internal.dependency.Dokka
+import io.spine.internal.dependency.KotlinX
+import io.spine.internal.gradle.publish.IncrementGuard
+import io.spine.internal.gradle.publish.PublishingRepos
+import io.spine.internal.gradle.publish.spinePublishing
+import io.spine.internal.gradle.report.license.LicenseReporter
+import io.spine.internal.gradle.report.pom.PomGenerator
 import io.spine.internal.gradle.standardToSpineSdk
 
 /*
@@ -45,6 +51,20 @@ allprojects {
     version = extra["chordsVersion"]!!
 
     repositories.standardToSpineSdk()
+
+    configurations.all {
+        resolutionStrategy {
+            force(
+                KotlinX.Coroutines.core,
+                KotlinX.Coroutines.bom,
+                KotlinX.Coroutines.jdk8,
+                KotlinX.Coroutines.test,
+                KotlinX.Coroutines.testJvm,
+                KotlinX.Coroutines.debug,
+                KotlinX.AtomicFu.lib
+            )
+        }
+    }
 }
 
 subprojects {
@@ -52,3 +72,19 @@ subprojects {
         plugin("jvm-module")
     }
 }
+
+spinePublishing {
+    modules = productionModules
+        .map { project -> project.name }
+        .toSet()
+
+    destinations = setOf(
+        PublishingRepos.gitHub("Chords"),
+        PublishingRepos.cloudArtifactRegistry
+    )
+    artifactPrefix = "spine-chords-"
+}
+
+apply<IncrementGuard>()
+PomGenerator.applyTo(project)
+LicenseReporter.mergeAllReports(project)

@@ -24,5 +24,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
+import io.spine.internal.dependency.Material3
+import io.spine.internal.dependency.Kotest
+
+plugins {
+    id("org.jetbrains.compose") version "1.5.12"
+}
+
+repositories {
+    mavenCentral()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    google()
+}
+
+dependencies {
+    implementation(compose.desktop.currentOs)
+    implementation(Material3.Desktop.lib)
+    testImplementation(Kotest.runnerJUnit5)
+}

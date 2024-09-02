@@ -24,5 +24,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
+package io.spine.chords
+
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+
+/**
+ * A validation error text.
+ *
+ * @param validationError
+ *         a [MutableState] that holds the validation error text. If either
+ *         the text or the [MutableState] reference itself is `null`, nothing
+ *         is added to the composition.
+ */
+@Composable
+public fun ValidationErrorText(validationError: State<String?>? = null) {
+    val validationErrorText = validationError?.value
+    if (validationErrorText != null) {
+        Text(
+            validationErrorText,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error
+        )
+    }
+}

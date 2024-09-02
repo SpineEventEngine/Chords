@@ -24,5 +24,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
+package io.spine.chords.time
+
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
+
+/**
+ * The client's local time characteristics.
+ */
+public object WallClock {
+
+    /**
+     * Local time zone offset.
+     */
+    public val zoneOffset: ZoneOffset
+        get() = OffsetDateTime.now().offset
+}
