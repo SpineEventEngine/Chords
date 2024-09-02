@@ -1,10 +1,12 @@
-## `codegen-plugins` — a separate Gradle project that generates `MessageField` and `MessageOneof` implementations for the fields of  Proto messages.
+# `codegen-plugins`
+
+A Gradle project that generates `MessageField` and `MessageOneof` implementations for the fields of  Proto messages.
 
 > The separate Gradle project is needed because the ProtoData plugin, 
 that generates the code, requires the newer version of Gradle 
 comparing to 1DAM and Chords projects.
 
-### Run code generation
+### How to use
 
 The following steps of configuration should be completed in order 
 to run the code generation:
@@ -22,11 +24,15 @@ before `compileKotlin` in the way like following:
 ```kotlin
 val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
     // Path to the directory where the `codegen-plugins` project is located.
+    // `chords-codegen` — the name of Git submodule. Set the proper value for your case.
     pluginsDir = "${rootDir}/chords-codegen/codegen-plugins"
     // Path to the module which requires the code generation.
+    // `model` — the name of the module. Put the proper valur for your case.
     sourceModuleDir = "${rootDir}/model"
     // Dependencies that are required to load the Proto files from.
     dependencies(
+        // These ones are just an example.
+        // Pass the libraries that provides Proto files your code depended on.
         Spine.Money.lib,
         Projects.Users.lib,
         OneDam.DesktopAuth.lib,
@@ -36,6 +42,8 @@ val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
 
     // Publish to `mavenLocal` required dependencies.
     dependsOn(
+        // These ones are just an example.
+        // Set the modules from your project that are specified as dependencies.
         project(":desktop-auth")
             .tasks.named("publishToMavenLocal"),
         project(":chords-proto-ext")
@@ -49,7 +57,6 @@ tasks.named("compileKotlin") {
         runCodegenPlugins
     )
 }
-
 ```
 
 > If the build of `codegen-plugins` project fails, this also
