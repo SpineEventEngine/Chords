@@ -57,8 +57,10 @@ open class RunCodegenPlugins : DefaultTask() {
 
     /**
      * The names of the tasks to be passed to the Gradle Wrapper script.
+     *
+     * The "build" task will be executed by default.
      */
-    private lateinit var taskNames: List<String>
+    private var taskNames: MutableList<String> = mutableListOf("build")
 
     /**
      * For how many minutes to wait for the Gradle build to complete.
@@ -81,7 +83,8 @@ open class RunCodegenPlugins : DefaultTask() {
      * Specifies task names to be passed to the Gradle Wrapper script.
      */
     fun task(vararg tasks: String) {
-        taskNames = tasks.asList()
+        taskNames.clear()
+        taskNames.addAll(tasks)
     }
 
     /**
@@ -96,7 +99,8 @@ open class RunCodegenPlugins : DefaultTask() {
      * and specifies task names to be passed to the Gradle Wrapper script.
      */
     fun task(maxDurationMins: Long, vararg tasks: String) {
-        taskNames = tasks.asList()
+        taskNames.clear()
+        taskNames.addAll(tasks)
         this.maxDurationMins = maxDurationMins
     }
 
