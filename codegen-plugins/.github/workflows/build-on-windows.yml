@@ -5,9 +5,6 @@ on:
     branches:
       - codegen_plugins
 
-permissions:
-  contents: read
-
 jobs:
   build:
 
