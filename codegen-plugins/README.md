@@ -1,6 +1,6 @@
 # `codegen-plugins`
 
-A Gradle project that generates `MessageField` and `MessageOneof` implementations for the fields of  Proto messages.
+A Gradle project that generates `MessageField` and `MessageOneof` implementations for the fields of Proto messages.
 
 > The separate Gradle project is needed because the ProtoData plugin, 
 that generates the code, requires the newer version of Gradle 
