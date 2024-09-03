@@ -21,4 +21,4 @@ jobs:
 
       - name: Build and run tests
         shell: cmd
-        run: gradlew.bat build --stacktrace
+        run: codegen-plugins/gradlew.bat build --stacktrace
