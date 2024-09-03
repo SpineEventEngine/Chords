@@ -110,10 +110,10 @@ private object CodegenRuntime {
  *     public val KClass<RegistrationInfo>.domainName:
  *         RegistrationInfo_DomainName
  *         get() {
- *             return RegistrationInfo_DomainName()
+ *             return RegistrationInfoDomainName()
  *         }
  *
- *     public class RegistrationInfo_DomainName:
+ *     public class RegistrationInfoDomainName:
  *         MessageField<
  *             RegistrationInfo,
  *             InternetDomain> {
@@ -181,29 +181,29 @@ private object CodegenRuntime {
  * @param fields a collection of [Field]s  to generate the code for.
  * @param typeSystem a [TypeSystem] to read external Proto messages.
  */
-public class FieldsFileGenerator(
-    private val messageTypeName: TypeName,
+public open class FieldsFileGenerator(
+    internal val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
 ) {
     /**
      * A Java package of the Proto message.
      */
-    private val javaPackage = messageTypeName.javaPackage
+    internal val javaPackage = messageTypeName.javaPackage
 
     /**
      * A [ClassName] of the Proto message.
      */
-    private val messageClass = messageTypeName.fullClassName
+    internal val messageClass = messageTypeName.fullClassName
 
     /**
      * Returns a [Path] to the generated file that is relative
      * to the source root.
      */
-    internal fun filePath(): Path {
+    public open fun filePath(): Path {
         return Path.of(
             javaPackage.replace('.', '/'),
-            fileName(messageTypeName)
+            fileName(messageTypeName, "Fields")
         )
     }
 
@@ -211,7 +211,7 @@ public class FieldsFileGenerator(
      * Builds content of the file with `MessageField`
      * and `MessageOneof` implementations.
      */
-    internal fun fileContent(): String {
+    public open fun fileContent(): String {
         FileSpec.builder(messageClass)
             .indent(Indent.defaultJavaIndent.toString())
             .let { fileBuilder ->
@@ -474,7 +474,7 @@ private fun Field.generateSetterCode(messageClass: TypeName): String {
     val builderCast = "(builder as $messageShortClassName.Builder)"
     val setterCall = "$setterInvocation(newValue)"
     return if (isRepeated) {
-        "$builderCast.${collectionJanitor}.$setterCall"
+        "$builderCast.clear${name.value.camelCase()}().$setterCall"
     } else {
         "$builderCast.$setterCall"
     }
@@ -526,21 +526,6 @@ private val Field.setterInvocation: String
         "addAll${name.value.camelCase()}"
     else "set${name.value.camelCase()}"
 
-
-/**
- * Returns invocation code of the method that clears the value
- * of the repeated [Field].
- */
-private val Field.collectionJanitor
-    get() = if (isRepeated)
-        "clear${name.value.camelCase()}()"
-    else error(
-        """
-            Method `collectionJanitor` may be invoked only
-            for the instances that refer to the `repeated` fields.
-        """
-    )
-
 /**
  * Returns a Java package declared in [ProtoFileHeader].
  */
@@ -568,9 +553,9 @@ private val TypeName.simpleClassName: String
 /**
  * Returns name of the generated file.
  */
-private fun fileName(messageTypeName: TypeName): String {
+public fun fileName(messageTypeName: TypeName, suffix: String): String {
     return messageTypeName.nestingTypeNameList.joinToString(
-        "", "", "${messageTypeName.simpleName}Fields.kt"
+        "", "", "${messageTypeName.simpleName}$suffix.kt"
     )
 }
 
