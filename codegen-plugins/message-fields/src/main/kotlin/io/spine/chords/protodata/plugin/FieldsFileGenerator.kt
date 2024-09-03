@@ -40,8 +40,6 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
-import io.spine.chords.runtime.MessageField
-import io.spine.chords.runtime.MessageOneof
 import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.Field
 import io.spine.protodata.PrimitiveType
@@ -80,10 +78,32 @@ import java.nio.file.Path
 import kotlin.reflect.KClass
 
 /**
- * Generates a separate Kotlin file that contains [MessageField]
- * and [MessageOneof] implementations for the fields of a Proto message.
+ * Package and class name of the `io.spine.protobuf.ValidatingBuilder`.
  *
- * Below is generated [MessageField] implementation for the field `domain_name`
+ * It is not in the classpath and cannot be used directly.
+ */
+private object ValidatingBuilder {
+    const val PACKAGE = "io.spine.protobuf"
+    const val CLASS = "ValidatingBuilder"
+}
+
+/**
+ * Package and class names of the `io.spine.chords.runtime.MessageField`
+ * and `io.spine.chords.runtime.MessageOneof`.
+ *
+ * It is not in the classpath and cannot be used directly.
+ */
+private object CodegenRuntime {
+    const val PACKAGE = "io.spine.chords.runtime"
+    const val MESSAGE_FIELD_CLASS = "MessageField"
+    const val MESSAGE_ONEOF_CLASS = "MessageOneof"
+}
+
+/**
+ * Generates a separate Kotlin file that contains `MessageField`
+ * and `MessageOneof` implementations for the fields of a Proto message.
+ *
+ * Below is generated `MessageField` implementation for the field `domain_name`
  * of the `RegistrationInfo` message:
  *
  * ```
@@ -121,7 +141,7 @@ import kotlin.reflect.KClass
  *     }
  * ```
  *
- * Generated implementation of [MessageOneof] for the `value` field
+ * Generated implementation of `MessageOneof` for the `value` field
  * of the `IpAddress` message:
  *
  * ```
@@ -167,16 +187,6 @@ public class FieldsFileGenerator(
     private val typeSystem: TypeSystem
 ) {
     /**
-     * Package and class name of the `io.spine.protobuf.ValidatingBuilder`.
-     *
-     * It is not in the classpath and cannot be used directly.
-     */
-    private companion object {
-        const val VALIDATING_BUILDER_PACKAGE = "io.spine.protobuf"
-        const val VALIDATING_BUILDER_CLASS = "ValidatingBuilder"
-    }
-
-    /**
      * A Java package of the Proto message.
      */
     private val javaPackage = messageTypeName.javaPackage
@@ -198,8 +208,8 @@ public class FieldsFileGenerator(
     }
 
     /**
-     * Builds content of the file with [MessageField]
-     * and [MessageOneof] implementations.
+     * Builds content of the file with `MessageField`
+     * and `MessageOneof` implementations.
      */
     internal fun fileContent(): String {
         FileSpec.builder(messageClass)
@@ -259,7 +269,7 @@ public class FieldsFileGenerator(
     }
 
     /**
-     * Generates implementation of [MessageOneof] for the given `oneof` field
+     * Generates implementation of `MessageOneof` for the given `oneof` field
      * that looks like the following:
      *
      * ```
@@ -288,7 +298,7 @@ public class FieldsFileGenerator(
         oneofName: String,
         oneofFields: List<Field>
     ): TypeSpec {
-        val messageFieldType = MessageField::class.asClassName()
+        val messageFieldType = messageFieldClassName
             .parameterizedBy(messageClass, STAR)
         val fieldMapType = Map::class.asClassName().parameterizedBy(
             Int::class.asClassName(),
@@ -297,7 +307,7 @@ public class FieldsFileGenerator(
         val stringType = String::class.asClassName()
         val fieldsType = Collection::class.asClassName()
             .parameterizedBy(messageFieldType)
-        val superType = MessageOneof::class.asClassName().parameterizedBy(messageClass)
+        val superType = messageOneofClassName.parameterizedBy(messageClass)
         val oneofPropName = oneofName.propertyName
 
         return TypeSpec.classBuilder(generatedClassName(messageTypeName, oneofName))
@@ -325,7 +335,7 @@ public class FieldsFileGenerator(
     }
 
     /**
-     * Generates implementation of [MessageField] for the given field.
+     * Generates implementation of `MessageField` for the given field.
      *
      * The generated code looks like the following:
      *
@@ -360,14 +370,11 @@ public class FieldsFileGenerator(
      */
     private fun buildMessageFieldClass(field: Field): TypeSpec {
         val className = generatedClassName(messageTypeName, field.name.value)
-        val superType = MessageField::class.asClassName()
+        val superType = messageFieldClassName
             .parameterizedBy(messageClass, field.valueClassName)
         val stringType = String::class.asClassName()
         val boolType = Boolean::class.asClassName()
-        val builderType = ClassName(
-            VALIDATING_BUILDER_PACKAGE,
-            VALIDATING_BUILDER_CLASS
-        ).parameterizedBy(messageClass)
+        val builderType = validatingBuilderClassName.parameterizedBy(messageClass)
 
         return TypeSpec.classBuilder(className)
             .addSuperinterface(superType)
@@ -568,8 +575,8 @@ private fun fileName(messageTypeName: TypeName): String {
 }
 
 /**
- * Generates a simple class name for the implementation of [MessageField]
- * or [MessageOneof].
+ * Generates a simple class name for the implementation of `MessageField`
+ * or `MessageOneof`.
  */
 private fun generatedClassName(typeName: TypeName, fieldName: String): String {
     return typeName.nestingTypeNameList.joinToString(
@@ -581,7 +588,7 @@ private fun generatedClassName(typeName: TypeName, fieldName: String): String {
 
 /**
  * Generates initialization code for the `fieldMap` property
- * of the [MessageOneof] implementation.
+ * of the `MessageOneof` implementation.
  */
 private fun fieldMapInitializer(
     typeName: TypeName,
@@ -595,6 +602,24 @@ private fun fieldMapInitializer(
         "${it.number} to ${typeName.simpleClassName}::class.${it.name.value.propertyName}"
     }
 }
+
+private val messageFieldClassName: ClassName
+    get() = ClassName(
+        CodegenRuntime.PACKAGE,
+        CodegenRuntime.MESSAGE_FIELD_CLASS
+    )
+
+private val messageOneofClassName: ClassName
+    get() = ClassName(
+        CodegenRuntime.PACKAGE,
+        CodegenRuntime.MESSAGE_ONEOF_CLASS
+    )
+
+private val validatingBuilderClassName: ClassName
+    get() = ClassName(
+        ValidatingBuilder.PACKAGE,
+        ValidatingBuilder.CLASS
+    )
 
 /**
  * Obtains a Kotlin class which corresponds to the [PrimitiveType].

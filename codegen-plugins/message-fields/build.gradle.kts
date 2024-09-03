@@ -24,7 +24,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Chords
 import io.spine.internal.dependency.KotlinPoet
 import io.spine.internal.dependency.ProtoData
 
@@ -42,9 +41,6 @@ dependencies {
 
     // To generate Kotlin sources.
     api(KotlinPoet.lib)
-
-    // To access `MessageField` and `MessageOneof` interfaces.
-    implementation(Chords.CodegenRuntime.lib)
 }
 
 modelCompiler {

@@ -26,14 +26,12 @@
 
 package io.spine.chords.protodata.plugin
 
-import io.spine.chords.runtime.MessageField
-import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.plugin.Plugin
 import io.spine.protodata.plugin.ViewRepository
 import io.spine.protodata.renderer.Renderer
 
 /**
- * The ProtoData [Plugin] that generates [MessageField] and [MessageOneof]
+ * The ProtoData [Plugin] that generates `MessageField` and `MessageOneof`
  * implementations for the fields of command Proto messages.
  *
  * The code is also generated for types of command message fields,

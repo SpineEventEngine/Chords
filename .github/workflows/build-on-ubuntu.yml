@@ -20,4 +20,5 @@ jobs:
         distribution: 'temurin'
 
     - name: Build and run tests
+      working-directory: ./codegen-plugins
       run: ./gradlew clean build --stacktrace
