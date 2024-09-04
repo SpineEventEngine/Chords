@@ -76,7 +76,7 @@ import kotlin.reflect.KClass
  *
  * It is not in the classpath and cannot be used directly.
  */
-internal object ValidatingBuilder {
+private object ValidatingBuilder {
     const val PACKAGE = "io.spine.protobuf"
     const val CLASS = "ValidatingBuilder"
 }
@@ -87,7 +87,7 @@ internal object ValidatingBuilder {
  *
  * It is not in the classpath and cannot be used directly.
  */
-internal object CodegenRuntime {
+private object CodegenRuntime {
     const val PACKAGE = "io.spine.chords.runtime"
     const val MESSAGE_FIELD_CLASS = "MessageField"
     const val MESSAGE_ONEOF_CLASS = "MessageOneof"
@@ -176,21 +176,16 @@ internal object CodegenRuntime {
  * @param typeSystem a [TypeSystem] to read external Proto messages.
  */
 internal abstract class FileGenerator(
-    internal val messageTypeName: TypeName,
-    internal val fields: Iterable<Field>,
+    private val messageTypeName: TypeName,
+    private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
 ) {
     /**
-     * A Java package of the Proto message.
-     */
-    private val javaPackage = messageTypeName.javaPackage
-
-    /**
      * A [ClassName] of the Proto message.
      */
-    internal val messageClass = messageTypeName.fullClassName
+    private val messageClass = messageTypeName.fullClassName
 
-    internal abstract val fileSuffix: String
+    internal abstract val fileNameSuffix: String
 
     internal abstract fun generateContent(fileBuilder: FileSpec.Builder)
 
@@ -199,49 +194,51 @@ internal abstract class FileGenerator(
      * to the source root.
      */
     internal fun filePath(): Path {
-        return Path.of(
-            javaPackage.replace('.', '/'),
-            messageTypeName.fileName(fileSuffix)
-        )
+        return messageTypeName.filePath
     }
 
     /**
-     * Generate content of the file.
+     * Generates a content of the file.
      */
     internal fun fileContent(): String {
-        FileSpec.builder(messageClass)
+        return FileSpec.builder(messageClass)
             .indent(Indent.defaultJavaIndent.toString())
-            .let { fileBuilder ->
-                generateContent(fileBuilder)
-                return fileBuilder.build().toString()
-            }
+            .also { generateContent(it) }
+            .build()
+            .toString()
     }
 
     /**
      * Generates a property declaration for the given field
      * that looks like the following:
-     *
      * ```
      *     public val KClass<RegistrationInfo>.domainName:
      *         RegistrationInfoDomainName get() = RegistrationInfoDomainName()
      * ```
      */
     internal fun buildPropertyDeclaration(fieldName: String): PropertySpec {
-        generatedClassName(messageTypeName, fieldName).let { shortClassName ->
-            val propertyName = fieldName.propertyName
-            val propertyType = ClassName(javaPackage, shortClassName)
-            val receiverType = KClass::class.asClassName()
-                .parameterizedBy(messageClass)
-            val getterCode = FunSpec.getterBuilder()
-                .addCode("return $shortClassName()")
-                .build()
+        val shortClassName = generatedClassName(messageTypeName, fieldName)
+        val propertyType = ClassName(messageTypeName.javaPackage, shortClassName)
+        val receiverType = KClass::class.asClassName()
+            .parameterizedBy(messageClass)
+        val getterCode = FunSpec.getterBuilder()
+            .addCode("return $shortClassName()")
+            .build()
 
-            return PropertySpec.builder(propertyName, propertyType)
-                .receiver(receiverType)
-                .getter(getterCode)
-                .build()
-        }
+        return PropertySpec.builder(fieldName.propertyName, propertyType)
+            .receiver(receiverType)
+            .getter(getterCode)
+            .build()
     }
+
+    /**
+     * Returns [Path] to the generated file.
+     */
+    private val TypeName.filePath: Path
+        get() = Path.of(
+            javaPackage.replace('.', '/'),
+            fileName(fileNameSuffix)
+        )
 
     /**
      * Returns [ClassName] for the [Type].
@@ -250,12 +247,12 @@ internal abstract class FileGenerator(
         get() = if (isPrimitive)
             primitiveClassName()
         else
-            nonPrimitiveClassName()
+            messageClassName()
 
     /**
-     * Returns [ClassName] for the [Type] that is not primitive.
+     * Returns [ClassName] for the [Type] that is a message.
      */
-    private fun Type.nonPrimitiveClassName(): ClassName {
+    private fun Type.messageClassName(): ClassName {
         check(!isPrimitive)
         val fileHeader = typeSystem.findHeader(this)
         checkNotNull(fileHeader) {
@@ -267,7 +264,7 @@ internal abstract class FileGenerator(
     /**
      * Returns a fully qualified [ClassName] for the [TypeName].
      */
-    private val TypeName.fullClassName
+    internal val TypeName.fullClassName
         get() = ClassName(javaPackage, simpleClassName)
 
     /**
@@ -322,7 +319,7 @@ private fun Type.primitiveClassName(): ClassName {
 }
 
 /**
- * Indicates if the `required` option is applied to the field.
+ * Indicates if the `required` option is applied to the [Field].
  */
 internal val Field.required: Boolean
     get() = optionList.any { option ->

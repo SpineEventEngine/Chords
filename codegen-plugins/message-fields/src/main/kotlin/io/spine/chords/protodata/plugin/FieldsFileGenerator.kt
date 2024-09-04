@@ -49,28 +49,21 @@ import io.spine.protodata.type.TypeSystem
  * of the `RegistrationInfo` message:
  *
  * ```
- *     public val KClass<RegistrationInfo>.domainName:
- *         RegistrationInfo_DomainName
- *         get() {
- *             return RegistrationInfoDomainName()
- *         }
+ *     public val KClass<RegistrationInfo>.domainName: RegistrationInfoDomainName
+ *         get() = RegistrationInfoDomainName()
  *
  *     public class RegistrationInfoDomainName:
- *         MessageField<
- *             RegistrationInfo,
- *             InternetDomain> {
+ *         MessageField<RegistrationInfo, InternetDomain> {
  *
  *         public override val name: String = "domain_name"
  *
  *         public override val required: Boolean = true
  *
- *         public override fun valueIn(message: RegistrationInfo)
- *             : InternetDomain {
+ *         public override fun valueIn(message: RegistrationInfo) : InternetDomain {
  *             return message.domainName
  *         }
  *
- *         public override fun hasValue(message: RegistrationInfo)
- *             : Boolean {
+ *         public override fun hasValue(message: RegistrationInfo) : Boolean {
  *             return message.hasDomainName()
  *         }
  *
@@ -110,7 +103,8 @@ import io.spine.protodata.type.TypeSystem
  *
  * ```
  *     // Read field value for the given instance of the message.
- *     val domain = RegistrationInfo::class.domainName.valueIn(registrationInfo)
+ *     val domain = RegistrationInfo::class.domainName
+ *         .valueIn(registrationInfo)
  *
  *     // Set field value for the message builder provided.
  *     RegistrationInfo::class.domainName.setValue(
@@ -124,13 +118,21 @@ import io.spine.protodata.type.TypeSystem
  * @param typeSystem a [TypeSystem] to read external Proto messages.
  */
 internal class FieldsFileGenerator(
-    messageTypeName: TypeName,
-    fields: Iterable<Field>,
-    typeSystem: TypeSystem
+    private val messageTypeName: TypeName,
+    private val fields: Iterable<Field>,
+    private val typeSystem: TypeSystem
 ) : FileGenerator(messageTypeName, fields, typeSystem) {
 
-    override val fileSuffix: String get() = "Fields"
+    /**
+     * Returns a suffix which is used to generate a file name.
+     *
+     * See [filePath] for detail.
+     */
+    override val fileNameSuffix: String get() = "Fields"
 
+    /**
+     * Generates content of the file with [FileSpec.Builder] provided.
+     */
     override fun generateContent(fileBuilder: FileSpec.Builder) {
         fields.onEach { field ->
             fileBuilder.addProperty(
@@ -188,7 +190,7 @@ internal class FieldsFileGenerator(
         oneofFields: List<Field>
     ): TypeSpec {
         val messageFieldType = messageFieldClassName
-            .parameterizedBy(messageClass, STAR)
+            .parameterizedBy(messageTypeName.fullClassName, STAR)
         val fieldMapType = Map::class.asClassName().parameterizedBy(
             Int::class.asClassName(),
             messageFieldType
@@ -196,7 +198,8 @@ internal class FieldsFileGenerator(
         val stringType = String::class.asClassName()
         val fieldsType = Collection::class.asClassName()
             .parameterizedBy(messageFieldType)
-        val superType = messageOneofClassName.parameterizedBy(messageClass)
+        val superType = messageOneofClassName
+            .parameterizedBy(messageTypeName.fullClassName)
         val oneofPropName = oneofName.propertyName
 
         return TypeSpec.classBuilder(generatedClassName(messageTypeName, oneofName))
@@ -217,7 +220,7 @@ internal class FieldsFileGenerator(
                 FunSpec.builder("selectedField")
                     .addModifiers(PUBLIC, OVERRIDE)
                     .returns(messageFieldType.copy(nullable = true))
-                    .addParameter("message", messageClass)
+                    .addParameter("message", messageTypeName.fullClassName)
                     .addCode("return fieldMap[message.${oneofPropName}Case.number]")
                     .build()
             ).build()
@@ -229,10 +232,8 @@ internal class FieldsFileGenerator(
      * The generated code looks like the following:
      *
      * ```
-     *     public class RegistrationInfo_DomainName:
-     *         MessageField<
-     *             RegistrationInfo,
-     *             InternetDomain> {
+     *     public class RegistrationInfoDomainName:
+     *         MessageField<RegistrationInfo, InternetDomain> {
      *
      *         public override val name: String = "domain_name"
      *
@@ -260,10 +261,11 @@ internal class FieldsFileGenerator(
     private fun buildMessageFieldClass(field: Field): TypeSpec {
         val className = generatedClassName(messageTypeName, field.name.value)
         val superType = messageFieldClassName
-            .parameterizedBy(messageClass, field.valueClassName)
+            .parameterizedBy(messageTypeName.fullClassName, field.valueClassName)
         val stringType = String::class.asClassName()
         val boolType = Boolean::class.asClassName()
-        val builderType = validatingBuilderClassName.parameterizedBy(messageClass)
+        val builderType = validatingBuilderClassName
+            .parameterizedBy(messageTypeName.fullClassName)
 
         return TypeSpec.classBuilder(className)
             .addSuperinterface(superType)
@@ -279,14 +281,14 @@ internal class FieldsFileGenerator(
                 FunSpec.builder("valueIn")
                     .addModifiers(PUBLIC, OVERRIDE)
                     .returns(field.valueClassName)
-                    .addParameter("message", messageClass)
+                    .addParameter("message", messageTypeName.fullClassName)
                     .addCode("return message.${field.getterInvocation}")
                     .build()
             ).addFunction(
                 FunSpec.builder("hasValue")
                     .addModifiers(PUBLIC, OVERRIDE)
                     .returns(boolType)
-                    .addParameter("message", messageClass)
+                    .addParameter("message", messageTypeName.fullClassName)
                     .addCode("return ${field.hasValueInvocation()}")
                     .build()
             ).addFunction(

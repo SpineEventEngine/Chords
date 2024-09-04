@@ -6,14 +6,13 @@ import io.spine.protodata.TypeName
 import io.spine.protodata.type.TypeSystem
 
 internal class MessageTypeGenerator(
-    messageTypeName: TypeName,
-    fields: Iterable<Field>,
-    typeSystem: TypeSystem
+    private val messageTypeName: TypeName,
+    private val fields: Iterable<Field>,
+    private val typeSystem: TypeSystem
 ) : FileGenerator(messageTypeName, fields, typeSystem) {
 
-    override val fileSuffix: String get() = "Type"
+    override val fileNameSuffix: String get() = "Type"
 
-    @Suppress("UNUSED_PARAMETER")
     override fun generateContent(fileBuilder: FileSpec.Builder) {
         // Todo: implement
     }

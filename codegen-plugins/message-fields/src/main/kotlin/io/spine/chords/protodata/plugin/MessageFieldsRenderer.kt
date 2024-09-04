@@ -33,13 +33,10 @@ import io.spine.tools.code.Kotlin
 
 /**
  * ProtoData [Renderer] that generates `MessageField` and `MessageOneof`
- * implementations for the fields of command Proto messages.
- *
- * The code is also generated for types of command message fields,
- * except for the types provided by Protobuf.
+ * implementations for the fields of Proto messages.
  *
  * The renderer prepares all the required data for code generation
- * and executes [FieldsFileGenerator] to generate Kotlin files.
+ * and runs specific [FileGenerator]s to generate Kotlin files.
  */
 public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
 
@@ -64,22 +61,24 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
         select(FieldMetadata::class.java).all()
             .filter {
                 // Select fields that are not rejections.
-                !it.id.file.path.contains(REJECTIONS_PROTO_FILE_NAME)
+                !it.id.file.path.endsWith(REJECTIONS_PROTO_FILE_NAME)
             }.map {
                 it.id.typeName
             }.forEach { typeName ->
                 val messageToHeader = typeSystem!!.findMessage(typeName)
                 checkNotNull(messageToHeader) {
-                    "Message not found for type: `${typeName.fullClassName}`."
+                    "Message not found for type `${typeName.fullClassName}`."
                 }
                 messageToHeader.first.fieldList.let { fields ->
-                    FieldsFileGenerator(typeName, fields, typeSystem!!)
-                        .let { fileGenerator ->
-                            sources.createFile(
-                                fileGenerator.filePath(),
-                                fileGenerator.fileContent()
-                            )
-                        }
+                    listOf(
+                        FieldsFileGenerator(typeName, fields, typeSystem!!),
+                        MessageTypeGenerator(typeName, fields, typeSystem!!)
+                    ).forEach { generator ->
+                        sources.createFile(
+                            generator.filePath(),
+                            generator.fileContent()
+                        )
+                    }
                 }
             }
     }
