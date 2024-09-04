@@ -125,18 +125,16 @@ internal class FieldsFileGenerator(
 
     /**
      * Returns a suffix which is used to generate a file name.
-     *
-     * See [filePath] for detail.
      */
     override val fileNameSuffix: String get() = "Fields"
 
     /**
-     * Generates content of the file with [FileSpec.Builder] provided.
+     * Builds content of the file with [FileSpec.Builder] provided.
      */
-    override fun generateContent(fileBuilder: FileSpec.Builder) {
+    override fun buildFileContent(fileBuilder: FileSpec.Builder) {
         fields.onEach { field ->
             fileBuilder.addProperty(
-                buildPropertyDeclaration(field.name.value)
+                buildFieldProperty(field.name.value)
             )
         }.onEach { field ->
             fileBuilder.addType(
@@ -148,7 +146,7 @@ internal class FieldsFileGenerator(
             oneofField.oneofName.value
         }.forEach { oneofNameToFields ->
             fileBuilder.addProperty(
-                buildPropertyDeclaration(oneofNameToFields.key)
+                buildOneofProperty(oneofNameToFields.key)
             )
             fileBuilder.addType(
                 buildMessageOneofClass(
@@ -196,24 +194,29 @@ internal class FieldsFileGenerator(
             messageFieldType
         )
         val stringType = String::class.asClassName()
-        val fieldsType = Collection::class.asClassName()
+        val fieldsReturnType = Collection::class.asClassName()
             .parameterizedBy(messageFieldType)
         val superType = messageOneofClassName
             .parameterizedBy(messageTypeName.fullClassName)
         val oneofPropName = oneofName.propertyName
+        val generatedClassName = messageTypeName
+            .generatedOneofClassName(oneofName)
 
-        return TypeSpec.classBuilder(generatedClassName(messageTypeName, oneofName))
+        return TypeSpec.classBuilder(generatedClassName)
             .addSuperinterface(superType)
             .addProperty(
-                PropertySpec.builder("fieldMap", fieldMapType, PRIVATE)
+                PropertySpec
+                    .builder("fieldMap", fieldMapType, PRIVATE)
                     .initializer(fieldMapInitializer(messageTypeName, oneofFields))
                     .build()
             ).addProperty(
-                PropertySpec.builder("name", stringType, PUBLIC, OVERRIDE)
+                PropertySpec
+                    .builder("name", stringType, PUBLIC, OVERRIDE)
                     .initializer("\"$oneofName\"")
                     .build()
             ).addProperty(
-                PropertySpec.builder("fields", fieldsType, PUBLIC, OVERRIDE)
+                PropertySpec
+                    .builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
                     .initializer("fieldMap.values")
                     .build()
             ).addFunction(
@@ -259,37 +262,41 @@ internal class FieldsFileGenerator(
      * ```
      */
     private fun buildMessageFieldClass(field: Field): TypeSpec {
-        val className = generatedClassName(messageTypeName, field.name.value)
+        val generatedClassName = messageTypeName
+            .generatedFieldClassName(field.name.value)
+        val messageFullClassName = messageTypeName.fullClassName
         val superType = messageFieldClassName
-            .parameterizedBy(messageTypeName.fullClassName, field.valueClassName)
+            .parameterizedBy(messageFullClassName, field.valueClassName)
         val stringType = String::class.asClassName()
         val boolType = Boolean::class.asClassName()
         val builderType = validatingBuilderClassName
-            .parameterizedBy(messageTypeName.fullClassName)
+            .parameterizedBy(messageFullClassName)
 
-        return TypeSpec.classBuilder(className)
+        return TypeSpec.classBuilder(generatedClassName)
             .addSuperinterface(superType)
             .addProperty(
-                PropertySpec.builder("name", stringType, PUBLIC, OVERRIDE)
+                PropertySpec
+                    .builder("name", stringType, PUBLIC, OVERRIDE)
                     .initializer("\"${field.name.value}\"")
                     .build()
             ).addProperty(
-                PropertySpec.builder("required", boolType, PUBLIC, OVERRIDE)
+                PropertySpec
+                    .builder("required", boolType, PUBLIC, OVERRIDE)
                     .initializer("${field.required}")
                     .build()
             ).addFunction(
                 FunSpec.builder("valueIn")
                     .addModifiers(PUBLIC, OVERRIDE)
                     .returns(field.valueClassName)
-                    .addParameter("message", messageTypeName.fullClassName)
+                    .addParameter("message", messageFullClassName)
                     .addCode("return message.${field.getterInvocation}")
                     .build()
             ).addFunction(
                 FunSpec.builder("hasValue")
                     .addModifiers(PUBLIC, OVERRIDE)
                     .returns(boolType)
-                    .addParameter("message", messageTypeName.fullClassName)
-                    .addCode("return ${field.hasValueInvocation()}")
+                    .addParameter("message", messageFullClassName)
+                    .addCode("return ${field.hasValueInvocation}")
                     .build()
             ).addFunction(
                 FunSpec.builder("setValue")

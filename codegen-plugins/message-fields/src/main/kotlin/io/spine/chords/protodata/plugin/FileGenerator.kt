@@ -94,82 +94,7 @@ private object CodegenRuntime {
 }
 
 /**
- * Generates a separate Kotlin file that contains `MessageField`
- * and `MessageOneof` implementations for the fields of a Proto message.
  *
- * Below is generated `MessageField` implementation for the field `domain_name`
- * of the `RegistrationInfo` message:
- *
- * ```
- *     public val KClass<RegistrationInfo>.domainName:
- *         RegistrationInfo_DomainName
- *         get() {
- *             return RegistrationInfoDomainName()
- *         }
- *
- *     public class RegistrationInfoDomainName:
- *         MessageField<
- *             RegistrationInfo,
- *             InternetDomain> {
- *
- *         public override val name: String = "domain_name"
- *
- *         public override val required: Boolean = true
- *
- *         public override fun valueIn(message: RegistrationInfo)
- *             : InternetDomain {
- *             return message.domainName
- *         }
- *
- *         public override fun hasValue(message: RegistrationInfo)
- *             : Boolean {
- *             return message.hasDomainName()
- *         }
- *
- *         override fun setValue(
- *             builder: ValidatingBuilder<RegistrationInfo>,
- *             value: InternetDomain
- *         ) {
- *             (builder as RegistrationInfo.Builder).setDomainName(value)
- *         }
- *     }
- * ```
- *
- * Generated implementation of `MessageOneof` for the `value` field
- * of the `IpAddress` message:
- *
- * ```
- *     public val KClass<IpAddress>.`value`: IpAddressValue
- *         get() = IpAddressValue()
- *
- *     public class IpAddressValue : MessageOneof<IpAddress> {
- *         private val fieldMap: Map<Int, MessageField<IpAddress, *>> = mapOf(
- *             1 to IpAddress::class.ipv4,
- *             2 to IpAddress::class.ipv6)
- *
- *         public override val name: String = "value"
- *
- *         public override val fields: Iterable<MessageField<IpAddress, *>>
- *             = fieldMap.values
- *
- *         public override fun selectedField(message: IpAddress):
- *             MessageField<IpAddress, *>? = fieldMap[message.valueCase.number]
- *     }
- *
- * ```
- *
- * Generated field usage example:
- *
- * ```
- *     // Read field value for the given instance of the message.
- *     val domain = RegistrationInfo::class.domainName.valueIn(registrationInfo)
- *
- *     // Set field value for the message builder provided.
- *     RegistrationInfo::class.domainName.setValue(
- *         registrationInfoBuilder,
- *         domain
- *     )
- * ```
  *
  * @param messageTypeName a [TypeName] of the message to generate the code for.
  * @param fields a collection of [Field]s  to generate the code for.
@@ -185,9 +110,17 @@ internal abstract class FileGenerator(
      */
     private val messageClass = messageTypeName.fullClassName
 
+    /**
+     * Returns a suffix which is used to generate a file name.
+     *
+     * See [filePath] for detail.
+     */
     internal abstract val fileNameSuffix: String
 
-    internal abstract fun generateContent(fileBuilder: FileSpec.Builder)
+    /**
+     * Builds content of the generated file.
+     */
+    internal abstract fun buildFileContent(fileBuilder: FileSpec.Builder)
 
     /**
      * Returns a [Path] to the generated file that is relative
@@ -203,26 +136,44 @@ internal abstract class FileGenerator(
     internal fun fileContent(): String {
         return FileSpec.builder(messageClass)
             .indent(Indent.defaultJavaIndent.toString())
-            .also { generateContent(it) }
+            .also { fileBuilder ->
+                buildFileContent(fileBuilder)
+            }
             .build()
             .toString()
     }
 
+    internal fun buildFieldProperty(fieldName: String): PropertySpec {
+        return buildPropertyDeclaration(fieldName, false)
+    }
+
+    internal fun buildOneofProperty(fieldName: String): PropertySpec {
+        return buildPropertyDeclaration(fieldName, true)
+    }
+
     /**
-     * Generates a property declaration for the given field
+     * Builds a property declaration for the given field
      * that looks like the following:
      * ```
      *     public val KClass<RegistrationInfo>.domainName:
      *         RegistrationInfoDomainName get() = RegistrationInfoDomainName()
      * ```
      */
-    internal fun buildPropertyDeclaration(fieldName: String): PropertySpec {
-        val shortClassName = generatedClassName(messageTypeName, fieldName)
-        val propertyType = ClassName(messageTypeName.javaPackage, shortClassName)
+    private fun buildPropertyDeclaration(
+        fieldName: String,
+        isOneof: Boolean
+    ): PropertySpec {
+        val generatedClassName = if (isOneof)
+            messageTypeName.generatedOneofClassName(fieldName)
+        else messageTypeName.generatedFieldClassName(fieldName)
+        val propertyType = ClassName(
+            messageTypeName.javaPackage,
+            generatedClassName
+        )
         val receiverType = KClass::class.asClassName()
             .parameterizedBy(messageClass)
         val getterCode = FunSpec.getterBuilder()
-            .addCode("return $shortClassName()")
+            .addCode("return $generatedClassName()")
             .build()
 
         return PropertySpec.builder(fieldName.propertyName, propertyType)
@@ -232,7 +183,22 @@ internal abstract class FileGenerator(
     }
 
     /**
-     * Returns [Path] to the generated file.
+     * Returns a fully qualified [ClassName] for a [TypeName].
+     */
+    internal val TypeName.fullClassName
+        get() = ClassName(javaPackage, simpleClassName)
+
+    /**
+     * Returns a [ClassName] of the value of a [Field].
+     */
+    internal val Field.valueClassName
+        get() = if (isRepeated)
+            Iterable::class.asClassName()
+                .parameterizedBy(type.className)
+        else type.className
+
+    /**
+     * Returns [Path] to the generated file for a [TypeName].
      */
     private val TypeName.filePath: Path
         get() = Path.of(
@@ -262,12 +228,6 @@ internal abstract class FileGenerator(
     }
 
     /**
-     * Returns a fully qualified [ClassName] for the [TypeName].
-     */
-    internal val TypeName.fullClassName
-        get() = ClassName(javaPackage, simpleClassName)
-
-    /**
      * Returns a Java package for the [TypeName].
      */
     private val TypeName.javaPackage: String
@@ -278,15 +238,6 @@ internal abstract class FileGenerator(
             }
             return messageToHeader.second.javaPackage
         }
-
-    /**
-     * Returns [ClassName] of the value of the [Field].
-     */
-    internal val Field.valueClassName
-        get() = if (isRepeated)
-            Iterable::class.asClassName()
-                .parameterizedBy(type.className)
-        else type.className
 }
 
 /**
@@ -308,14 +259,6 @@ internal fun Field.generateSetterCode(messageClass: TypeName): String {
     } else {
         "$builderCast.$setterCall"
     }
-}
-
-/**
- * Returns [ClassName] for the [Type] that is a primitive.
- */
-private fun Type.primitiveClassName(): ClassName {
-    check(isPrimitive)
-    return primitive.primitiveClass().asClassName()
 }
 
 /**
@@ -343,9 +286,85 @@ internal val Field.getterInvocation
  * of `protoc`-generated Java code. There, `hasValue` methods are not being
  * generated for the fields of such kinds.
  */
-internal fun Field.hasValueInvocation(): String {
-    return if (isRepeated || type.isEnum || type.isPrimitive) "true"
+internal val Field.hasValueInvocation: String
+    get() = if (isRepeated || type.isEnum || type.isPrimitive) "true"
     else "message.has${name.value.camelCase()}()"
+
+/**
+ * Generates a simple class name for the implementation of `MessageField`.
+ */
+internal fun TypeName.generatedFieldClassName(fieldName: String): String {
+    return generatedClassName(fieldName, "Field")
+}
+
+/**
+ * Generates a simple class name for the implementation of `MessageOneof`.
+ */
+internal fun TypeName.generatedOneofClassName(fieldName: String): String {
+    return generatedClassName(fieldName, "Oneof")
+}
+
+/**
+ * Generates a simple class name for the `fieldName` provided.
+ */
+private fun TypeName.generatedClassName(fieldName: String, suffix: String): String {
+    return nestingTypeNameList.joinToString(
+        "",
+        "",
+        "${simpleName}${fieldName.camelCase()}$suffix"
+    )
+}
+
+/**
+ * Generates initialization code for the `fieldMap` property
+ * of the `MessageOneof` implementation.
+ */
+internal fun fieldMapInitializer(
+    typeName: TypeName,
+    fields: List<Field>
+): String {
+    return fields.joinToString(
+        ",${lineSeparator()}",
+        "mapOf(${lineSeparator()}",
+        ")"
+    ) {
+        "${it.number} to ${typeName.simpleClassName}::class.${it.name.value.propertyName}"
+    }
+}
+
+/**
+ * Returns [ClassName] of `MessageField`.
+ */
+internal val messageFieldClassName: ClassName
+    get() = ClassName(
+        CodegenRuntime.PACKAGE,
+        CodegenRuntime.MESSAGE_FIELD_CLASS
+    )
+
+/**
+ * Returns [ClassName] of `MessageOneof`.
+ */
+internal val messageOneofClassName: ClassName
+    get() = ClassName(
+        CodegenRuntime.PACKAGE,
+        CodegenRuntime.MESSAGE_ONEOF_CLASS
+    )
+
+/**
+ * Returns [ClassName] of `ValidatingBuilder`.
+ */
+internal val validatingBuilderClassName: ClassName
+    get() = ClassName(
+        ValidatingBuilder.PACKAGE,
+        ValidatingBuilder.CLASS
+    )
+
+/**
+ * Returns [ClassName] for the [Type] that is a primitive.
+ */
+private fun Type.primitiveClassName(): ClassName {
+    check(isPrimitive)
+    return primitive.primitiveClass().asClassName()
 }
 
 /**
@@ -390,56 +409,9 @@ private fun TypeName.fileName(suffix: String): String {
 }
 
 /**
- * Generates a simple class name for the implementation of `MessageField`
- * or `MessageOneof`.
- */
-internal fun generatedClassName(typeName: TypeName, fieldName: String): String {
-    return typeName.nestingTypeNameList.joinToString(
-        "",
-        "",
-        "${typeName.simpleName}${fieldName.camelCase()}Field"
-    )
-}
-
-/**
- * Generates initialization code for the `fieldMap` property
- * of the `MessageOneof` implementation.
- */
-internal fun fieldMapInitializer(
-    typeName: TypeName,
-    fields: List<Field>
-): String {
-    return fields.joinToString(
-        ",${lineSeparator()}",
-        "mapOf(${lineSeparator()}",
-        ")"
-    ) {
-        "${it.number} to ${typeName.simpleClassName}::class.${it.name.value.propertyName}"
-    }
-}
-
-internal val messageFieldClassName: ClassName
-    get() = ClassName(
-        CodegenRuntime.PACKAGE,
-        CodegenRuntime.MESSAGE_FIELD_CLASS
-    )
-
-internal val messageOneofClassName: ClassName
-    get() = ClassName(
-        CodegenRuntime.PACKAGE,
-        CodegenRuntime.MESSAGE_ONEOF_CLASS
-    )
-
-internal val validatingBuilderClassName: ClassName
-    get() = ClassName(
-        ValidatingBuilder.PACKAGE,
-        ValidatingBuilder.CLASS
-    )
-
-/**
  * Obtains a Kotlin class which corresponds to the [PrimitiveType].
  */
-public fun PrimitiveType.primitiveClass(): KClass<*> =
+private fun PrimitiveType.primitiveClass(): KClass<*> =
     when (this) {
         TYPE_DOUBLE -> Double::class
         TYPE_FLOAT -> Float::class

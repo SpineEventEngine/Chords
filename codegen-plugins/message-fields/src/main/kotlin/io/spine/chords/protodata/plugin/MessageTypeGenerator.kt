@@ -13,7 +13,7 @@ internal class MessageTypeGenerator(
 
     override val fileNameSuffix: String get() = "Type"
 
-    override fun generateContent(fileBuilder: FileSpec.Builder) {
+    override fun buildFileContent(fileBuilder: FileSpec.Builder) {
         // Todo: implement
     }
 }
