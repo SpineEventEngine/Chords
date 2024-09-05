@@ -3,8 +3,11 @@ package io.spine.chords.protodata.plugin
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asClassName
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
 import io.spine.protodata.isPartOfOneof
@@ -23,7 +26,7 @@ internal class MessageTypeGenerator(
         val classBuilder = TypeSpec.classBuilder(messageTypeClassName)
         val objectBuilder = TypeSpec.objectBuilder("Fields")
 
-        fields.onEach { field ->
+        val oneofFieldMap = fields.onEach { field ->
             val fullClassName = ClassName(
                 messageTypeName.javaPackage,
                 messageTypeName.messageFieldClassName(field.name.value)
@@ -38,7 +41,8 @@ internal class MessageTypeGenerator(
             field.isPartOfOneof
         }.groupBy { oneofField ->
             oneofField.oneofName.value
-        }.forEach { oneofNameToFields ->
+        }
+        oneofFieldMap.forEach { oneofNameToFields ->
             val fullClassName = ClassName(
                 messageTypeName.javaPackage,
                 messageTypeName.messageOneofClassName(oneofNameToFields.key)
@@ -51,9 +55,31 @@ internal class MessageTypeGenerator(
             )
         }
 
+        val messageFieldType = messageFieldClassName
+            .parameterizedBy(messageTypeName.fullClassName, STAR)
+        val fieldsReturnType = Collection::class.asClassName()
+            .parameterizedBy(messageFieldType)
+
+        val messageOneofType = messageOneofClassName
+            .parameterizedBy(messageTypeName.fullClassName)
+        val oneofsReturnType = Collection::class.asClassName()
+            .parameterizedBy(messageOneofType)
+
         fileBuilder.addType(
             classBuilder
                 .addType(objectBuilder.build())
+                .addProperty(
+                    PropertySpec
+                        .builder("fields", fieldsReturnType, PUBLIC)
+                        .initializer(fieldListInitializer(fields.map { it.name.value }))
+                        .build()
+                )
+                .addProperty(
+                    PropertySpec
+                        .builder("oneofs", oneofsReturnType, PUBLIC)
+                        .initializer(fieldListInitializer(oneofFieldMap.keys))
+                        .build()
+                )
                 .build()
         )
     }

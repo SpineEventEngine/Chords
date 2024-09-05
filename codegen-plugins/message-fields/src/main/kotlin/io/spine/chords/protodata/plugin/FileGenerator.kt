@@ -277,7 +277,7 @@ internal val String.propertyName
  */
 internal fun fieldMapInitializer(
     typeName: TypeName,
-    fields: List<Field>
+    fields: Iterable<Field>
 ): String {
     return fields.joinToString(
         ",${lineSeparator()}",
@@ -285,6 +285,22 @@ internal fun fieldMapInitializer(
         ")"
     ) {
         "${it.number} to ${typeName.simpleClassName}::class.${it.name.value.propertyName}"
+    }
+}
+
+/**
+ * Generates initialization code for the `fields` property
+ * of the `MessageType` implementation.
+ */
+internal fun fieldListInitializer(
+    fieldNames: Iterable<String>
+): String {
+    return fieldNames.joinToString(
+        ",${lineSeparator()}",
+        "listOf(${lineSeparator()}",
+        ")"
+    ) {
+        it.propertyName
     }
 }
 
