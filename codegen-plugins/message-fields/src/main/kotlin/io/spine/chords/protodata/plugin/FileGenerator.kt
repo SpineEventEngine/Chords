@@ -26,7 +26,6 @@
 
 package io.spine.chords.protodata.plugin
 
-import com.google.protobuf.BoolValue
 import com.google.protobuf.ByteString
 import com.google.protobuf.StringValue
 import com.squareup.kotlinpoet.ClassName
@@ -35,7 +34,6 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
-import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.Field
 import io.spine.protodata.PrimitiveType
 import io.spine.protodata.PrimitiveType.PT_UNKNOWN
@@ -59,7 +57,6 @@ import io.spine.protodata.ProtoFileHeader
 import io.spine.protodata.Type
 import io.spine.protodata.TypeName
 import io.spine.protodata.find
-import io.spine.protodata.isEnum
 import io.spine.protodata.isPrimitive
 import io.spine.protodata.isRepeated
 import io.spine.protodata.type.TypeSystem
@@ -164,8 +161,8 @@ internal abstract class FileGenerator(
         isOneof: Boolean
     ): PropertySpec {
         val generatedClassName = if (isOneof)
-            messageTypeName.generatedOneofClassName(fieldName)
-        else messageTypeName.generatedFieldClassName(fieldName)
+            messageTypeName.messageOneofClassName(fieldName)
+        else messageTypeName.messageFieldClassName(fieldName)
         val propertyType = ClassName(
             messageTypeName.javaPackage,
             generatedClassName
@@ -230,7 +227,7 @@ internal abstract class FileGenerator(
     /**
      * Returns a Java package for the [TypeName].
      */
-    private val TypeName.javaPackage: String
+    internal val TypeName.javaPackage: String
         get() {
             val messageToHeader = typeSystem.findMessage(this)
             checkNotNull(messageToHeader) {
@@ -238,98 +235,6 @@ internal abstract class FileGenerator(
             }
             return messageToHeader.second.javaPackage
         }
-}
-
-/**
- * Converts a Proto field name to "property" name,
- * e.g. "domain_name" -> "domainName".
- */
-internal val String.propertyName
-    get() = camelCase().replaceFirstChar { it.lowercase() }
-
-/**
- * Returns a piece of code that sets a new value for the [Field].
- */
-internal fun Field.generateSetterCode(messageClass: TypeName): String {
-    val messageShortClassName = messageClass.simpleClassName
-    val builderCast = "(builder as $messageShortClassName.Builder)"
-    val setterCall = "$setterInvocation(newValue)"
-    return if (isRepeated) {
-        "$builderCast.clear${name.value.camelCase()}().$setterCall"
-    } else {
-        "$builderCast.$setterCall"
-    }
-}
-
-/**
- * Indicates if the `required` option is applied to the [Field].
- */
-internal val Field.required: Boolean
-    get() = optionList.any { option ->
-        option.name == "required" &&
-                unpack(option.value, BoolValue::class.java).value
-    }
-
-/**
- * Returns a "getter" invocation code for the [Field].
- */
-internal val Field.getterInvocation
-    get() = if (isRepeated)
-        name.value.propertyName + "List"
-    else name.value.propertyName
-
-/**
- * Returns a "hasValue" invocation code for the [Field].
- *
- * The generated code returns `true` if a field is repeated, is an enum,
- * or a primitive. This is required to be compatible with the design approach
- * of `protoc`-generated Java code. There, `hasValue` methods are not being
- * generated for the fields of such kinds.
- */
-internal val Field.hasValueInvocation: String
-    get() = if (isRepeated || type.isEnum || type.isPrimitive) "true"
-    else "message.has${name.value.camelCase()}()"
-
-/**
- * Generates a simple class name for the implementation of `MessageField`.
- */
-internal fun TypeName.generatedFieldClassName(fieldName: String): String {
-    return generatedClassName(fieldName, "Field")
-}
-
-/**
- * Generates a simple class name for the implementation of `MessageOneof`.
- */
-internal fun TypeName.generatedOneofClassName(fieldName: String): String {
-    return generatedClassName(fieldName, "Oneof")
-}
-
-/**
- * Generates a simple class name for the `fieldName` provided.
- */
-private fun TypeName.generatedClassName(fieldName: String, suffix: String): String {
-    return nestingTypeNameList.joinToString(
-        "",
-        "",
-        "${simpleName}${fieldName.camelCase()}$suffix"
-    )
-}
-
-/**
- * Generates initialization code for the `fieldMap` property
- * of the `MessageOneof` implementation.
- */
-internal fun fieldMapInitializer(
-    typeName: TypeName,
-    fields: List<Field>
-): String {
-    return fields.joinToString(
-        ",${lineSeparator()}",
-        "mapOf(${lineSeparator()}",
-        ")"
-    ) {
-        "${it.number} to ${typeName.simpleClassName}::class.${it.name.value.propertyName}"
-    }
 }
 
 /**
@@ -360,20 +265,36 @@ internal val validatingBuilderClassName: ClassName
     )
 
 /**
+ * Converts a Proto field name to "property" name,
+ * e.g. "domain_name" -> "domainName".
+ */
+internal val String.propertyName
+    get() = camelCase().replaceFirstChar { it.lowercase() }
+
+/**
+ * Generates initialization code for the `fieldMap` property
+ * of the `MessageOneof` implementation.
+ */
+internal fun fieldMapInitializer(
+    typeName: TypeName,
+    fields: List<Field>
+): String {
+    return fields.joinToString(
+        ",${lineSeparator()}",
+        "mapOf(${lineSeparator()}",
+        ")"
+    ) {
+        "${it.number} to ${typeName.simpleClassName}::class.${it.name.value.propertyName}"
+    }
+}
+
+/**
  * Returns [ClassName] for the [Type] that is a primitive.
  */
 private fun Type.primitiveClassName(): ClassName {
     check(isPrimitive)
     return primitive.primitiveClass().asClassName()
 }
-
-/**
- * Returns a "setter" invocation code for the [Field].
- */
-private val Field.setterInvocation: String
-    get() = if (isRepeated)
-        "addAll${name.value.camelCase()}"
-    else "set${name.value.camelCase()}"
 
 /**
  * Returns a Java package declared in [ProtoFileHeader].
@@ -387,26 +308,6 @@ private val ProtoFileHeader.javaPackage: String
         }
         return option.value
     }
-
-/**
- * Returns simple class name for the [TypeName].
- */
-private val TypeName.simpleClassName: String
-    get() = if (nestingTypeNameList.isNotEmpty())
-        nestingTypeNameList.joinToString(
-            ".",
-            "",
-            ".$simpleName"
-        ) else simpleName
-
-/**
- * Returns name of the generated file.
- */
-private fun TypeName.fileName(suffix: String): String {
-    return nestingTypeNameList.joinToString(
-        "", "", "${simpleName}$suffix.kt"
-    )
-}
 
 /**
  * Obtains a Kotlin class which corresponds to the [PrimitiveType].

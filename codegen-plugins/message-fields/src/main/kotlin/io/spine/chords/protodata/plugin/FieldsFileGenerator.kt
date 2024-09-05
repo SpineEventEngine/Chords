@@ -200,7 +200,7 @@ internal class FieldsFileGenerator(
             .parameterizedBy(messageTypeName.fullClassName)
         val oneofPropName = oneofName.propertyName
         val generatedClassName = messageTypeName
-            .generatedOneofClassName(oneofName)
+            .messageOneofClassName(oneofName)
 
         return TypeSpec.classBuilder(generatedClassName)
             .addSuperinterface(superType)
@@ -263,7 +263,7 @@ internal class FieldsFileGenerator(
      */
     private fun buildMessageFieldClass(field: Field): TypeSpec {
         val generatedClassName = messageTypeName
-            .generatedFieldClassName(field.name.value)
+            .messageFieldClassName(field.name.value)
         val messageFullClassName = messageTypeName.fullClassName
         val superType = messageFieldClassName
             .parameterizedBy(messageFullClassName, field.valueClassName)
