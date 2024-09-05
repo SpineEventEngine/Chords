@@ -30,6 +30,7 @@ import com.google.protobuf.ByteString
 import com.google.protobuf.StringValue
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
@@ -168,10 +169,13 @@ internal abstract class FileGenerator(
         )
         val receiverType = KClass::class.asClassName()
             .parameterizedBy(messageClass)
+        val getterCode = FunSpec.getterBuilder()
+            .addCode("return $generatedClassName()")
+            .build()
 
         return PropertySpec.builder(fieldName.propertyName, propertyType)
             .receiver(receiverType)
-            .initializer("$generatedClassName()")
+            .getter(getterCode)
             .build()
     }
 
