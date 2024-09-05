@@ -16,7 +16,7 @@ import io.spine.protodata.type.TypeSystem
 internal class MessageTypeGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
-    private val typeSystem: TypeSystem
+    typeSystem: TypeSystem
 ) : FileGenerator(messageTypeName, fields, typeSystem) {
 
     override val fileNameSuffix: String get() = "Type"
@@ -24,7 +24,7 @@ internal class MessageTypeGenerator(
     override fun buildFileContent(fileBuilder: FileSpec.Builder) {
         val messageTypeClassName = messageTypeName.generatedClassName("Type")
         val classBuilder = TypeSpec.classBuilder(messageTypeClassName)
-        val objectBuilder = TypeSpec.objectBuilder("Fields")
+        val objectBuilder = TypeSpec.companionObjectBuilder("Fields")
 
         val oneofFieldMap = fields.onEach { field ->
             val fullClassName = ClassName(
@@ -41,8 +41,7 @@ internal class MessageTypeGenerator(
             field.isPartOfOneof
         }.groupBy { oneofField ->
             oneofField.oneofName.value
-        }
-        oneofFieldMap.forEach { oneofNameToFields ->
+        }.onEach { oneofNameToFields ->
             val fullClassName = ClassName(
                 messageTypeName.javaPackage,
                 messageTypeName.messageOneofClassName(oneofNameToFields.key)
@@ -55,15 +54,16 @@ internal class MessageTypeGenerator(
             )
         }
 
-        val messageFieldType = messageFieldClassName
-            .parameterizedBy(messageTypeName.fullClassName, STAR)
         val fieldsReturnType = Collection::class.asClassName()
-            .parameterizedBy(messageFieldType)
-
-        val messageOneofType = messageOneofClassName
-            .parameterizedBy(messageTypeName.fullClassName)
+            .parameterizedBy(
+                messageFieldClassName
+                    .parameterizedBy(messageTypeName.fullClassName, STAR)
+            )
         val oneofsReturnType = Collection::class.asClassName()
-            .parameterizedBy(messageOneofType)
+            .parameterizedBy(
+                messageOneofClassName
+                    .parameterizedBy(messageTypeName.fullClassName)
+            )
 
         fileBuilder.addType(
             classBuilder
