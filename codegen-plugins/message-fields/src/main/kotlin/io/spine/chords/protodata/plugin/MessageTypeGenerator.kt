@@ -27,14 +27,12 @@ internal class MessageTypeGenerator(
         val objectBuilder = TypeSpec.companionObjectBuilder("Fields")
 
         val oneofFieldMap = fields.onEach { field ->
-            val fullClassName = ClassName(
-                messageTypeName.javaPackage,
-                messageTypeName.messageFieldClassName(field.name.value)
-            )
+            val simpleClassName = messageTypeName.messageFieldClassName(field.name.value)
+            val fullClassName = ClassName(messageTypeName.javaPackage, simpleClassName)
             val propName = field.name.value.propertyName
             objectBuilder.addProperty(
                 PropertySpec.builder(propName, fullClassName, PUBLIC)
-                    .initializer("$fullClassName()")
+                    .initializer("$simpleClassName()")
                     .build()
             )
         }.filter { field ->
@@ -42,41 +40,35 @@ internal class MessageTypeGenerator(
         }.groupBy { oneofField ->
             oneofField.oneofName.value
         }.onEach { oneofNameToFields ->
-            val fullClassName = ClassName(
-                messageTypeName.javaPackage,
-                messageTypeName.messageOneofClassName(oneofNameToFields.key)
-            )
+            val simpleClassName = messageTypeName.messageOneofClassName(oneofNameToFields.key)
+            val fullClassName = ClassName(messageTypeName.javaPackage, simpleClassName)
             val propName = oneofNameToFields.key.propertyName
             objectBuilder.addProperty(
                 PropertySpec.builder(propName, fullClassName, PUBLIC)
-                    .initializer("$fullClassName()")
+                    .initializer("$simpleClassName()")
                     .build()
             )
         }
 
-        val fieldsReturnType = Collection::class.asClassName()
-            .parameterizedBy(
-                messageFieldClassName
-                    .parameterizedBy(messageTypeName.fullClassName, STAR)
-            )
-        val oneofsReturnType = Collection::class.asClassName()
-            .parameterizedBy(
-                messageOneofClassName
-                    .parameterizedBy(messageTypeName.fullClassName)
-            )
+        val fieldsReturnType = Collection::class.asClassName().parameterizedBy(
+            messageFieldClassName
+                .parameterizedBy(messageTypeName.fullClassName, STAR)
+        )
+        val oneofsReturnType = Collection::class.asClassName().parameterizedBy(
+            messageOneofClassName
+                .parameterizedBy(messageTypeName.fullClassName)
+        )
 
         fileBuilder.addType(
             classBuilder
                 .addType(objectBuilder.build())
                 .addProperty(
-                    PropertySpec
-                        .builder("fields", fieldsReturnType, PUBLIC)
+                    PropertySpec.builder("fields", fieldsReturnType, PUBLIC)
                         .initializer(fieldListInitializer(fields.map { it.name.value }))
                         .build()
                 )
                 .addProperty(
-                    PropertySpec
-                        .builder("oneofs", oneofsReturnType, PUBLIC)
+                    PropertySpec.builder("oneofs", oneofsReturnType, PUBLIC)
                         .initializer(fieldListInitializer(oneofFieldMap.keys))
                         .build()
                 )
