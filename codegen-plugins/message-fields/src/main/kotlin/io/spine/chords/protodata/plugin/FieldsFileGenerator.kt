@@ -377,7 +377,7 @@ public class FieldsFileGenerator(
         val builderType = validatingBuilderClassName.parameterizedBy(messageClass)
 
         return TypeSpec.classBuilder(className)
-            .addSuperinterface(superType)
+            .(superType)
             .addProperty(
                 PropertySpec.builder("name", stringType, PUBLIC, OVERRIDE)
                     .initializer("\"${field.name.value}\"")
