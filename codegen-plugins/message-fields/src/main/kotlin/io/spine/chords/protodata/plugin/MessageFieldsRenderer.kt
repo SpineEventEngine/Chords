@@ -72,7 +72,7 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
                 messageToHeader.first.fieldList.let { fields ->
                     listOf(
                         FieldsFileGenerator(typeName, fields, typeSystem!!),
-                        MessageTypeGenerator(typeName, fields, typeSystem!!)
+                        MessageDefGenerator(typeName, fields, typeSystem!!)
                     ).forEach { generator ->
                         sources.createFile(
                             generator.filePath(),

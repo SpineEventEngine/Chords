@@ -13,7 +13,7 @@ import io.spine.protodata.TypeName
 import io.spine.protodata.isPartOfOneof
 import io.spine.protodata.type.TypeSystem
 
-internal class MessageTypeGenerator(
+internal class MessageDefGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     typeSystem: TypeSystem
@@ -22,7 +22,7 @@ internal class MessageTypeGenerator(
     override val fileNameSuffix: String get() = "Type"
 
     override fun buildFileContent(fileBuilder: FileSpec.Builder) {
-        val messageTypeClassName = messageTypeName.generatedClassName("Type")
+        val messageTypeClassName = messageTypeName.generatedClassName("Def")
         val classBuilder = TypeSpec.classBuilder(messageTypeClassName)
         val objectBuilder = TypeSpec.companionObjectBuilder("Fields")
 
@@ -58,9 +58,12 @@ internal class MessageTypeGenerator(
             messageOneofClassName
                 .parameterizedBy(messageTypeName.fullClassName)
         )
+        val superInterface = messageDefClassName
+            .parameterizedBy(messageTypeName.fullClassName)
 
         fileBuilder.addType(
             classBuilder
+                .addSuperinterface(superInterface)
                 .addType(objectBuilder.build())
                 .addProperty(
                     PropertySpec.builder("fields", fieldsReturnType, PUBLIC)

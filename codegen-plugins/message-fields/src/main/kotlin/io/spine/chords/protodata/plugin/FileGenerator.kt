@@ -88,6 +88,7 @@ private object CodegenRuntime {
     const val PACKAGE = "io.spine.chords.runtime"
     const val MESSAGE_FIELD_CLASS = "MessageField"
     const val MESSAGE_ONEOF_CLASS = "MessageOneof"
+    const val MESSAGE_DEF_CLASS = "MessageDef"
 }
 
 /**
@@ -253,6 +254,15 @@ internal val messageOneofClassName: ClassName
     get() = ClassName(
         CodegenRuntime.PACKAGE,
         CodegenRuntime.MESSAGE_ONEOF_CLASS
+    )
+
+/**
+ * Returns [ClassName] of `MessageDef`.
+ */
+internal val messageDefClassName: ClassName
+    get() = ClassName(
+        CodegenRuntime.PACKAGE,
+        CodegenRuntime.MESSAGE_DEF_CLASS
     )
 
 /**
