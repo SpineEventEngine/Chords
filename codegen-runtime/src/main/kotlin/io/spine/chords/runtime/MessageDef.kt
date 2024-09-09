@@ -24,6 +24,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
+package io.spine.chords.runtime
+
+import com.google.protobuf.Message
+
+/**
+ * Allows to access the fields of a Proto message at runtime.
+ *
+ * The codegen plugin relies onto this interface as well.
+ *
+ * Implementations of this interface are generated automatically during the build.
+ * It is not expected that end-users manually create any descendants.
+ *
+ * @param T a type of the Proto message.
+ */
+public interface MessageDef<T : Message> {
+
+    /**
+     * Returns collection of [MessageField]s generated for the fields of [T] Proto message.
+     */
+    public val fields: Collection<MessageField<T, out MessageFieldValue>>
+
+    /**
+     * Returns collection of [MessageOneof]s generated for the oneofs of [T] Proto message.
+     */
+    public val oneofs: Collection<MessageOneof<T>>
+}

@@ -24,6 +24,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
+import io.spine.internal.dependency.Spine
+
+dependencies {
+    // This dependency is declared as transitive,
+    // since the generated code depends onto Spine Base in version 1.9.x.
+    api(Spine.base_1_9)
+}
