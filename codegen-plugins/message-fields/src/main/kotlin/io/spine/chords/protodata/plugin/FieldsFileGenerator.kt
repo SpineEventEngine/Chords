@@ -273,7 +273,7 @@ internal class FieldsFileGenerator(
             .parameterizedBy(messageFullClassName)
 
         return TypeSpec.classBuilder(generatedClassName)
-            .addSuperinterface(superType)
+            .superclass(superType)
             .addProperty(
                 PropertySpec
                     .builder("name", stringType, PUBLIC, OVERRIDE)
