@@ -272,7 +272,7 @@ internal class FieldsFileGenerator(
         val builderType = validatingBuilderClassName
             .parameterizedBy(messageFullClassName)
 
-        return TypeSpec.classBuilder(generatedClassName)
+        return TypeSpec.classBuilder(className)
             .superclass(superType)
             .addProperty(
                 PropertySpec
