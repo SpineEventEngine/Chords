@@ -2,11 +2,12 @@ package io.spine.chords.protodata.plugin
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
@@ -52,7 +53,10 @@ internal class MessageDefGenerator(
 
         val fieldsReturnType = Collection::class.asClassName().parameterizedBy(
             messageFieldClassName
-                .parameterizedBy(messageTypeName.fullClassName, STAR)
+                .parameterizedBy(
+                    messageTypeName.fullClassName,
+                    TypeVariableName("out $messageFieldValueType")
+                )
         )
         val oneofsReturnType = Collection::class.asClassName().parameterizedBy(
             messageOneofClassName
@@ -66,12 +70,12 @@ internal class MessageDefGenerator(
                 .addSuperinterface(superInterface)
                 .addType(objectBuilder.build())
                 .addProperty(
-                    PropertySpec.builder("fields", fieldsReturnType, PUBLIC)
+                    PropertySpec.builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
                         .initializer(fieldListInitializer(fields.map { it.name.value }))
                         .build()
                 )
                 .addProperty(
-                    PropertySpec.builder("oneofs", oneofsReturnType, PUBLIC)
+                    PropertySpec.builder("oneofs", oneofsReturnType, PUBLIC, OVERRIDE)
                         .initializer(fieldListInitializer(oneofFieldMap.keys))
                         .build()
                 )

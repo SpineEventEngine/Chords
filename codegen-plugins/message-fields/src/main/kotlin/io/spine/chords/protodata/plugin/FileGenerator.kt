@@ -34,6 +34,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
+import io.spine.chords.protodata.plugin.CodegenRuntime.MESSAGE_FIELD_VALUE
 import io.spine.protodata.Field
 import io.spine.protodata.PrimitiveType
 import io.spine.protodata.PrimitiveType.PT_UNKNOWN
@@ -89,6 +90,7 @@ private object CodegenRuntime {
     const val MESSAGE_FIELD_CLASS = "MessageField"
     const val MESSAGE_ONEOF_CLASS = "MessageOneof"
     const val MESSAGE_DEF_CLASS = "MessageDef"
+    const val MESSAGE_FIELD_VALUE = "MessageFieldValue"
 }
 
 /**
@@ -264,6 +266,11 @@ internal val messageDefClassName: ClassName
         CodegenRuntime.PACKAGE,
         CodegenRuntime.MESSAGE_DEF_CLASS
     )
+
+/**
+ * Returns `MessageFieldValue` type alias.
+ */
+internal val messageFieldValueType = MESSAGE_FIELD_VALUE
 
 /**
  * Returns [ClassName] of `ValidatingBuilder`.
