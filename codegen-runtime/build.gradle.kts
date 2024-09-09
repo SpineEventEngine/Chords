@@ -27,7 +27,7 @@
 import io.spine.internal.dependency.Spine
 
 dependencies {
-    // By declaring the `api` dependency, we ensure that Spine 1.9 is used in modules
-    // that require code generation.
+    // This dependency is declared as transitive,
+    // since the generated code depends onto Spine Base in version 1.9.x.
     api(Spine.base_1_9)
 }
