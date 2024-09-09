@@ -45,12 +45,11 @@ public typealias MessageFieldValue = Any
 /**
  * Allows to access the value of the field in a Proto message at runtime.
  *
- * The codegen plugin for 1DAM relies on this interface as well.
+ * The codegen plugin relies on this interface as well.
  *
  * Implementations of this interface for the fields of Proto messages
  * are generated automatically during the build. It is not expected
  * that end-users manually create any descendants.
- *
  *
  * @param T a type of the Proto message, containing the accessed field.
  * @param V a type of the field value.

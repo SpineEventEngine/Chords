@@ -29,30 +29,24 @@ package io.spine.chords.runtime
 import com.google.protobuf.Message
 
 /**
- * Allows to access the value of the oneof field in a Proto message at runtime.
+ * Allows to access the fields of a Proto message at runtime.
  *
  * The codegen plugin relies onto this interface as well.
  *
- * Implementations of this interface for the oneof fields of Proto messages
- * are generated automatically during the build. It is not expected
- * that end-users manually create any descendants.
+ * Implementations of this interface are generated automatically during the build.
+ * It is not expected that end-users manually create any descendants.
  *
- * @param T a type of the Proto message, containing the accessed oneof field.
+ * @param T a type of the Proto message.
  */
-public interface MessageOneof<T> where T : Message {
+public interface MessageType<T> where T : Message {
 
     /**
-     * The name of the oneof field in a message as it is defined in Proto file.
-     */
-    public val name: String
-
-    /**
-     * Returns collection of [MessageField]s declared as options of this oneof.
+     * Returns collection of [MessageField]s generated for the fields of [T] Proto message.
      */
     public val fields: Collection<MessageField<T, MessageFieldValue>>
 
     /**
-     * Returns [MessageField] that is currently set in this oneof.
+     * Returns collection of [MessageOneof]s generated for the oneof fields of [T] Proto message.
      */
-    public fun selectedField(message: T): MessageField<T, MessageFieldValue>?
+    public val oneofs: Collection<MessageOneof<T>>
 }
