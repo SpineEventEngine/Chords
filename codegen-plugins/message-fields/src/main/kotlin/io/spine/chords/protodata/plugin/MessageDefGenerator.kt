@@ -20,10 +20,10 @@ internal class MessageDefGenerator(
     typeSystem: TypeSystem
 ) : FileGenerator(messageTypeName, fields, typeSystem) {
 
-    override val fileNameSuffix: String get() = "Type"
+    override val fileNameSuffix: String get() = "Def"
 
     override fun buildFileContent(fileBuilder: FileSpec.Builder) {
-        val messageTypeClassName = messageTypeName.generatedClassName("Def")
+        val messageTypeClassName = messageTypeName.generatedClassName(fileNameSuffix)
         val classBuilder = TypeSpec.classBuilder(messageTypeClassName)
         val objectBuilder = TypeSpec.companionObjectBuilder("Fields")
 

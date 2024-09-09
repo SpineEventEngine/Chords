@@ -33,8 +33,8 @@ import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
@@ -188,7 +188,10 @@ internal class FieldsFileGenerator(
         oneofFields: List<Field>
     ): TypeSpec {
         val messageFieldType = messageFieldClassName
-            .parameterizedBy(messageTypeName.fullClassName, STAR)
+            .parameterizedBy(
+                messageTypeName.fullClassName,
+                WildcardTypeName.producerOf(messageFieldValueType)
+            )
         val fieldMapType = Map::class.asClassName().parameterizedBy(
             Int::class.asClassName(),
             messageFieldType
