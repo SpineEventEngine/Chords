@@ -24,10 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
 
 dependencies {
-    implementation(Protobuf.Kotlin.lib)
     implementation(Spine.base_1_9)
 }

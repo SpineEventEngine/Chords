@@ -38,7 +38,7 @@ import com.google.protobuf.Message
  *
  * @param T a type of the Proto message.
  */
-public interface MessageType<T> where T : Message {
+public interface MessageType<T : Message> {
 
     /**
      * Returns collection of [MessageField]s generated for the fields of [T] Proto message.
@@ -46,7 +46,7 @@ public interface MessageType<T> where T : Message {
     public val fields: Collection<MessageField<T, MessageFieldValue>>
 
     /**
-     * Returns collection of [MessageOneof]s generated for the oneof fields of [T] Proto message.
+     * Returns collection of [MessageOneof]s generated for the oneofs of [T] Proto message.
      */
     public val oneofs: Collection<MessageOneof<T>>
 }

@@ -39,7 +39,7 @@ import com.google.protobuf.Message
  *
  * @param T a type of the Proto message, containing the accessed oneof field.
  */
-public interface MessageOneof<T> where T : Message {
+public interface MessageOneof<T : Message> {
 
     /**
      * The name of the oneof field in a message as it is defined in Proto file.
@@ -47,7 +47,7 @@ public interface MessageOneof<T> where T : Message {
     public val name: String
 
     /**
-     * Returns collection of [MessageField]s declared as options of this oneof.
+     * Returns collection of [MessageField]s declared by this `oneof`.
      */
     public val fields: Collection<MessageField<T, MessageFieldValue>>
 

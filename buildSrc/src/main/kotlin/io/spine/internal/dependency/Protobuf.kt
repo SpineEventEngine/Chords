@@ -33,7 +33,7 @@ package io.spine.internal.dependency
 )
 object Protobuf {
     private const val group = "com.google.protobuf"
-    const val version       = "3.25.1"
+    const val version = "3.25.1"
 
     /**
      * The Java library with Protobuf data types.
@@ -67,9 +67,5 @@ object Protobuf {
         const val version = "0.9.4"
         const val id = "com.google.protobuf"
         const val lib = "${group}:protobuf-gradle-plugin:${version}"
-    }
-
-    object Kotlin {
-        const val lib = "$group:protobuf-kotlin:$version"
     }
 }

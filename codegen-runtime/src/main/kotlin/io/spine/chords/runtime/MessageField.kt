@@ -54,7 +54,7 @@ public typealias MessageFieldValue = Any
  * @param T a type of the Proto message, containing the accessed field.
  * @param V a type of the field value.
  */
-public abstract class MessageField<T, V> where T : Message, V: MessageFieldValue {
+public abstract class MessageField<T : Message, V : MessageFieldValue> {
 
     /**
      * The name of the field as it is defined in Proto file.
