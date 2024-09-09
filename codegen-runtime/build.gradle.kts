@@ -27,5 +27,5 @@
 import io.spine.internal.dependency.Spine
 
 dependencies {
-    implementation(Spine.base_1_9)
+    api(Spine.base_1_9)
 }
