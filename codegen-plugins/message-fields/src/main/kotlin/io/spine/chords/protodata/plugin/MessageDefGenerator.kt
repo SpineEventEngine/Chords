@@ -7,7 +7,7 @@ import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
@@ -55,7 +55,7 @@ internal class MessageDefGenerator(
             messageFieldClassName
                 .parameterizedBy(
                     messageTypeName.fullClassName,
-                    TypeVariableName("out $messageFieldValueType")
+                    WildcardTypeName.producerOf(messageFieldValueType)
                 )
         )
         val oneofsReturnType = Collection::class.asClassName().parameterizedBy(

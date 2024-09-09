@@ -34,7 +34,11 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
+import io.spine.chords.protodata.plugin.CodegenRuntime.MESSAGE_DEF_CLASS
+import io.spine.chords.protodata.plugin.CodegenRuntime.MESSAGE_FIELD_CLASS
 import io.spine.chords.protodata.plugin.CodegenRuntime.MESSAGE_FIELD_VALUE
+import io.spine.chords.protodata.plugin.CodegenRuntime.MESSAGE_ONEOF_CLASS
+import io.spine.chords.protodata.plugin.CodegenRuntime.PACKAGE
 import io.spine.protodata.Field
 import io.spine.protodata.PrimitiveType
 import io.spine.protodata.PrimitiveType.PT_UNKNOWN
@@ -244,33 +248,25 @@ internal abstract class FileGenerator(
  * Returns [ClassName] of `MessageField`.
  */
 internal val messageFieldClassName: ClassName
-    get() = ClassName(
-        CodegenRuntime.PACKAGE,
-        CodegenRuntime.MESSAGE_FIELD_CLASS
-    )
+    get() = ClassName(PACKAGE, MESSAGE_FIELD_CLASS)
 
 /**
  * Returns [ClassName] of `MessageOneof`.
  */
 internal val messageOneofClassName: ClassName
-    get() = ClassName(
-        CodegenRuntime.PACKAGE,
-        CodegenRuntime.MESSAGE_ONEOF_CLASS
-    )
+    get() = ClassName(PACKAGE, MESSAGE_ONEOF_CLASS)
 
 /**
  * Returns [ClassName] of `MessageDef`.
  */
 internal val messageDefClassName: ClassName
-    get() = ClassName(
-        CodegenRuntime.PACKAGE,
-        CodegenRuntime.MESSAGE_DEF_CLASS
-    )
+    get() = ClassName(PACKAGE, MESSAGE_DEF_CLASS)
 
 /**
- * Returns `MessageFieldValue` type alias.
+ * Returns [ClassName] of `MessageDef`.
  */
-internal val messageFieldValueType = MESSAGE_FIELD_VALUE
+internal val messageFieldValueType: com.squareup.kotlinpoet.TypeName
+    get() = ClassName(PACKAGE, MESSAGE_FIELD_VALUE)
 
 /**
  * Returns [ClassName] of `ValidatingBuilder`.
