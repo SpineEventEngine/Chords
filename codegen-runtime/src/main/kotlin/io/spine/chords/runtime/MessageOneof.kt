@@ -49,10 +49,10 @@ public interface MessageOneof<T : Message> {
     /**
      * Returns collection of [MessageField]s declared by this `oneof`.
      */
-    public val fields: Collection<MessageField<T, MessageFieldValue>>
+    public val fields: Collection<MessageField<T, out MessageFieldValue>>
 
     /**
      * Returns [MessageField] that is currently set in this oneof.
      */
-    public fun selectedField(message: T): MessageField<T, MessageFieldValue>?
+    public fun selectedField(message: T): MessageField<T, out MessageFieldValue>?
 }

@@ -43,7 +43,7 @@ public interface MessageDef<T : Message> {
     /**
      * Returns collection of [MessageField]s generated for the fields of [T] Proto message.
      */
-    public val fields: Collection<MessageField<T, MessageFieldValue>>
+    public val fields: Collection<MessageField<T, out MessageFieldValue>>
 
     /**
      * Returns collection of [MessageOneof]s generated for the oneofs of [T] Proto message.
