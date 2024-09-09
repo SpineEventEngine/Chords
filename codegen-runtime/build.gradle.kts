@@ -4,28 +4,10 @@
  * Use is subject to license terms.
  */
 
-import io.onedam.dependency.Chords
-import io.onedam.dependency.Protobuf
-import io.onedam.dependency.Spine
-
-plugins {
-    `kotlin-settings`
-    `maven-publish`
-}
+import io.spine.internal.dependency.Protobuf
+import io.spine.internal.dependency.Spine
 
 dependencies {
     implementation(Protobuf.Kotlin.lib)
-    implementation(Spine.Base.lib)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            artifactId = project.name
-            groupId = Chords.group
-            version = Chords.version
-
-            from(components["java"])
-        }
-    }
+    implementation(Spine.base_1_9)
 }

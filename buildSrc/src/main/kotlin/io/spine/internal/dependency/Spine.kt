@@ -48,6 +48,15 @@ object Spine {
         const val base = "2.0.0-SNAPSHOT.205"
 
         /**
+         * The version of [Spine.base] of Spine 1.9.x.
+         *
+         * It is needed to access `io.spine.protobuf.ValidatingBuilder` in `codegen-runtime`.
+         *
+         * @see <a href="https://github.com/SpineEventEngine/base">spine-base</a>
+         */
+        const val base_1_9 = "1.9.0"
+
+        /**
          * The version of [Spine.reflect].
          *
          * @see <a href="https://github.com/SpineEventEngine/reflect">spine-reflect</a>
@@ -135,6 +144,7 @@ object Spine {
     }
 
     const val base = "$group:spine-base:${ArtifactVersion.base}"
+    const val base_1_9 = "$group:spine-base:${ArtifactVersion.base_1_9}"
 
     const val reflect = "$group:spine-reflect:${ArtifactVersion.reflect}"
     const val baseTypes = "$group:spine-base-types:${ArtifactVersion.baseTypes}"

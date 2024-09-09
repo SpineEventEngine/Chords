@@ -68,4 +68,8 @@ object Protobuf {
         const val id = "com.google.protobuf"
         const val lib = "${group}:protobuf-gradle-plugin:${version}"
     }
+
+    object Kotlin {
+        const val lib = "$group:protobuf-kotlin:$version"
+    }
 }

@@ -36,6 +36,7 @@ import io.spine.internal.dependency.CommonsLogging
 import io.spine.internal.dependency.Dokka
 import io.spine.internal.dependency.ErrorProne
 import io.spine.internal.dependency.FindBugs
+import io.spine.internal.dependency.Flogger
 import io.spine.internal.dependency.Gson
 import io.spine.internal.dependency.Guava
 import io.spine.internal.dependency.Hamcrest
@@ -130,6 +131,8 @@ private fun ResolutionStrategy.forceTransitiveDependencies() {
         CommonsCli.lib,
         CommonsCodec.lib,
         CommonsLogging.lib,
+        Flogger.lib,
+        Flogger.Runtime.systemBackend,
         Gson.lib,
         Hamcrest.core,
         J2ObjC.annotations,
