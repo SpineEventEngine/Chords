@@ -38,7 +38,7 @@ import com.google.protobuf.Message
  *
  * @param T a type of the Proto message.
  */
-public interface MessageType<T : Message> {
+public interface MessageDef<T : Message> {
 
     /**
      * Returns collection of [MessageField]s generated for the fields of [T] Proto message.
