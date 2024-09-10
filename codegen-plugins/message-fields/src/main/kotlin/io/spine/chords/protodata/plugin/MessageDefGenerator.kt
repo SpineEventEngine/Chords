@@ -74,7 +74,27 @@ internal class MessageDefGenerator(
                     .initializer(fieldListInitializer(oneofFieldMap.keys))
                     .build()
             )
-
         fileBuilder.addType(classBuilder.build())
+
+        generateClasses(fileBuilder)
+    }
+
+    private fun generateClasses(fileBuilder: FileSpec.Builder) {
+        fields.onEach { field ->
+            fileBuilder.addType(
+                buildMessageFieldClass(field)
+            )
+        }.filter { field ->
+            field.isPartOfOneof
+        }.groupBy { oneofField ->
+            oneofField.oneofName.value
+        }.forEach { oneofNameToFields ->
+            fileBuilder.addType(
+                buildMessageOneofClass(
+                    oneofNameToFields.key,
+                    oneofNameToFields.value
+                )
+            )
+        }
     }
 }
