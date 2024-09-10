@@ -73,6 +73,17 @@ allprojects {
                 releasesOnly()
             }
         }
+        // To access Projects Users.
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/Projects-tm/Server")
+            credentials {
+                username = System.getenv("GITHUB_USERNAME")
+                    ?: System.getenv("PROJECTSTM_PACKAGES_USER")
+                password = System.getenv("GITHUB_TOKEN")
+                    ?: System.getenv("PROJECTSTM_PACKAGES_TOKEN")
+            }
+        }
     }
 }
 
