@@ -24,14 +24,16 @@ internal class MessageDefGenerator(
 
     override fun buildFileContent(fileBuilder: FileSpec.Builder) {
         val messageTypeClassName = messageTypeName.generatedClassName(fileNameSuffix)
+        val superInterface = messageDefClassName
+            .parameterizedBy(messageTypeName.fullClassName)
         val classBuilder = TypeSpec.classBuilder(messageTypeClassName)
-        val objectBuilder = TypeSpec.companionObjectBuilder("Fields")
+            .addSuperinterface(superInterface)
 
         val oneofFieldMap = fields.onEach { field ->
             val simpleClassName = messageTypeName.messageFieldClassName(field.name.value)
             val fullClassName = ClassName(messageTypeName.javaPackage, simpleClassName)
             val propName = field.name.value.propertyName
-            objectBuilder.addProperty(
+            classBuilder.addProperty(
                 PropertySpec.builder(propName, fullClassName, PUBLIC)
                     .initializer("$simpleClassName()")
                     .build()
@@ -44,13 +46,12 @@ internal class MessageDefGenerator(
             val simpleClassName = messageTypeName.messageOneofClassName(oneofNameToFields.key)
             val fullClassName = ClassName(messageTypeName.javaPackage, simpleClassName)
             val propName = oneofNameToFields.key.propertyName
-            objectBuilder.addProperty(
+            classBuilder.addProperty(
                 PropertySpec.builder(propName, fullClassName, PUBLIC)
                     .initializer("$simpleClassName()")
                     .build()
             )
         }
-
         val fieldsReturnType = Collection::class.asClassName().parameterizedBy(
             messageFieldClassName
                 .parameterizedBy(
@@ -62,24 +63,18 @@ internal class MessageDefGenerator(
             messageOneofClassName
                 .parameterizedBy(messageTypeName.fullClassName)
         )
-        val superInterface = messageDefClassName
-            .parameterizedBy(messageTypeName.fullClassName)
+        classBuilder
+            .addProperty(
+                PropertySpec.builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
+                    .initializer(fieldListInitializer(fields.map { it.name.value }))
+                    .build()
+            )
+            .addProperty(
+                PropertySpec.builder("oneofs", oneofsReturnType, PUBLIC, OVERRIDE)
+                    .initializer(fieldListInitializer(oneofFieldMap.keys))
+                    .build()
+            )
 
-        fileBuilder.addType(
-            classBuilder
-                .addSuperinterface(superInterface)
-                .addType(objectBuilder.build())
-                .addProperty(
-                    PropertySpec.builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
-                        .initializer(fieldListInitializer(fields.map { it.name.value }))
-                        .build()
-                )
-                .addProperty(
-                    PropertySpec.builder("oneofs", oneofsReturnType, PUBLIC, OVERRIDE)
-                        .initializer(fieldListInitializer(oneofFieldMap.keys))
-                        .build()
-                )
-                .build()
-        )
+        fileBuilder.addType(classBuilder.build())
     }
 }
