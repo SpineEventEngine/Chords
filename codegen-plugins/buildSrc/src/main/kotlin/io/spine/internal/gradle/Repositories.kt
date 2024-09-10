@@ -29,12 +29,14 @@ package io.spine.internal.gradle
 import java.net.URI
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.kotlin.dsl.maven
 
 /**
  * Applies repositories commonly used by Spine Event Engine projects.
  */
 fun RepositoryHandler.standardToSpineSdk() {
     spineArtifacts()
+    spineSnapshots()
 
     maven {
         url = URI(Repos.sonatypeSnapshots)
@@ -90,6 +92,13 @@ fun RepositoryHandler.spineArtifacts(): MavenArtifactRepository = maven {
         username = pat.username
         password = pat.password
     }
+}
+
+/**
+ * A Maven repo for where snapshot versions for Spine libraries are published.
+ */
+fun RepositoryHandler.spineSnapshots() {
+    maven("https://europe-maven.pkg.dev/spine-event-engine/snapshots")
 }
 
 /**

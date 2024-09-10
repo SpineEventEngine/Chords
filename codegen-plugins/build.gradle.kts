@@ -66,20 +66,11 @@ allprojects {
     repositories.standardToSpineSdk()
 
     repositories {
+        // To access Spine 1.9.x.
         maven {
             url = uri("https://spine.mycloudrepo.io/public/repositories/releases")
             mavenContent {
                 releasesOnly()
-            }
-        }
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/Projects-tm/Server")
-            credentials {
-                username = System.getenv("GITHUB_USERNAME")
-                    ?: System.getenv("PROJECTSTM_PACKAGES_USER")
-                password = System.getenv("GITHUB_TOKEN")
-                    ?: System.getenv("PROJECTSTM_PACKAGES_TOKEN")
             }
         }
     }
