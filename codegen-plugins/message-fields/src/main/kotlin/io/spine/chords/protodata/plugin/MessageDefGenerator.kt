@@ -26,7 +26,7 @@ internal class MessageDefGenerator(
         val messageTypeClassName = messageTypeName.generatedClassName(fileNameSuffix)
         val superInterface = messageDefClassName
             .parameterizedBy(messageTypeName.fullClassName)
-        val classBuilder = TypeSpec.classBuilder(messageTypeClassName)
+        val classBuilder = TypeSpec.objectBuilder(messageTypeClassName)
             .addSuperinterface(superInterface)
 
         val oneofFieldMap = fields.onEach { field ->
