@@ -2,6 +2,7 @@ package io.spine.chords.protodata.plugin
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -13,6 +14,7 @@ import io.spine.protodata.Field
 import io.spine.protodata.TypeName
 import io.spine.protodata.isPartOfOneof
 import io.spine.protodata.type.TypeSystem
+import kotlin.reflect.KClass
 
 /**
  * Generates a separate Kotlin file that contains `MessageField`
@@ -87,7 +89,7 @@ import io.spine.protodata.type.TypeSystem
  * ```
  *
  * @param messageTypeName a [TypeName] of the message to generate the code for.
- * @param fields a collection of [Field]s  to generate the code for.
+ * @param fields a collection of [Field]s to generate the code for.
  * @param typeSystem a [TypeSystem] to read external Proto messages.
  */
 internal class MessageDefGenerator(
@@ -96,50 +98,47 @@ internal class MessageDefGenerator(
     typeSystem: TypeSystem
 ) : FileGenerator(messageTypeName, fields, typeSystem) {
 
+    /**
+     * Contains the fields which are parts of some `oneof` grouped by its name.
+     */
+    private val oneofFieldMap = fields.filter { field ->
+        field.isPartOfOneof
+    }.groupBy { oneofField ->
+        oneofField.oneofName.value
+    }
+
     override val fileNameSuffix: String get() = "Def"
 
     override fun buildFileContent(fileBuilder: FileSpec.Builder) {
-        val messageTypeClassName = messageTypeName.generatedClassName(fileNameSuffix)
-        val superInterface = messageDefClassName
-            .parameterizedBy(messageTypeName.fullClassName)
-        val classBuilder = TypeSpec.objectBuilder(messageTypeClassName)
-            .addSuperinterface(superInterface)
+        val messageDefObjectBuilder = TypeSpec
+            .objectBuilder(messageTypeName.generatedClassName(fileNameSuffix))
+            .addSuperinterface(
+                messageDefClassName.parameterizedBy(messageTypeName.fullClassName)
+            )
 
-        val oneofFieldMap = fields.onEach { field ->
-            val simpleClassName = messageTypeName.messageFieldClassName(field.name.value)
-            val fullClassName = ClassName(messageTypeName.javaPackage, simpleClassName)
-            val propName = field.name.value.propertyName
-            classBuilder.addProperty(
-                PropertySpec.builder(propName, fullClassName, PUBLIC)
-                    .initializer("$simpleClassName()")
-                    .build()
-            )
-        }.filter { field ->
-            field.isPartOfOneof
-        }.groupBy { oneofField ->
-            oneofField.oneofName.value
-        }.onEach { oneofNameToFields ->
-            val simpleClassName = messageTypeName.messageOneofClassName(oneofNameToFields.key)
-            val fullClassName = ClassName(messageTypeName.javaPackage, simpleClassName)
-            val propName = oneofNameToFields.key.propertyName
-            classBuilder.addProperty(
-                PropertySpec.builder(propName, fullClassName, PUBLIC)
-                    .initializer("$simpleClassName()")
-                    .build()
-            )
-        }
+        generateFieldProperties(messageDefObjectBuilder)
+        generateCollectionProperties(messageDefObjectBuilder)
+
+        fileBuilder.addType(messageDefObjectBuilder.build())
+
+        generateObjectDeclarations(fileBuilder)
+        generateKClassProperties(fileBuilder)
+    }
+
+    private fun generateCollectionProperties(
+        messageDefObjectBuilder: TypeSpec.Builder
+    ) {
         val fieldsReturnType = Collection::class.asClassName().parameterizedBy(
-            messageFieldClassName
-                .parameterizedBy(
-                    messageTypeName.fullClassName,
-                    WildcardTypeName.producerOf(messageFieldValueType)
-                )
+            messageFieldClassName.parameterizedBy(
+                messageTypeName.fullClassName,
+                WildcardTypeName.producerOf(messageFieldValueTypeAlias)
+            )
         )
         val oneofsReturnType = Collection::class.asClassName().parameterizedBy(
-            messageOneofClassName
-                .parameterizedBy(messageTypeName.fullClassName)
+            messageOneofClassName.parameterizedBy(messageTypeName.fullClassName)
         )
-        classBuilder
+
+        messageDefObjectBuilder
             .addProperty(
                 PropertySpec.builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
                     .initializer(fieldListInitializer(fields.map { it.name.value }))
@@ -150,38 +149,63 @@ internal class MessageDefGenerator(
                     .initializer(fieldListInitializer(oneofFieldMap.keys))
                     .build()
             )
-        fileBuilder.addType(classBuilder.build())
-
-        generateClasses(fileBuilder)
-        generateKClassProperties(fileBuilder)
     }
 
-    private fun generateKClassProperties(fileBuilder: FileSpec.Builder) {
-        fields.onEach { field ->
-            fileBuilder.addProperty(
-                buildFieldProperty(field.name.value)
+    private fun generateFieldProperties(messageDefObjectBuilder: TypeSpec.Builder) {
+        fields.map { it.name.value }.forEach { fieldName ->
+            messageDefObjectBuilder.addProperty(
+                generateMessageDefFieldProperty(
+                    fieldName,
+                    messageTypeName.messageFieldClassName(fieldName)
+                )
             )
-        }.filter { field ->
-            field.isPartOfOneof
-        }.groupBy { oneofField ->
-            oneofField.oneofName.value
-        }.forEach { oneofNameToFields ->
-            fileBuilder.addProperty(
-                buildOneofProperty(oneofNameToFields.key)
+        }
+        oneofFieldMap.forEach { oneofNameToFields ->
+            messageDefObjectBuilder.addProperty(
+                generateMessageDefFieldProperty(
+                    oneofNameToFields.key,
+                    messageTypeName.messageOneofClassName(oneofNameToFields.key)
+                )
             )
         }
     }
 
-    private fun generateClasses(fileBuilder: FileSpec.Builder) {
-        fields.onEach { field ->
+    private fun generateMessageDefFieldProperty(
+        fieldName: String,
+        simpleClassName: String
+    ): PropertySpec {
+        val fullClassName = ClassName(messageTypeName.javaPackage, simpleClassName)
+        return PropertySpec.builder(fieldName.propertyName, fullClassName, PUBLIC)
+            .initializer("$simpleClassName()")
+            .build()
+    }
+
+    private fun generateKClassProperties(fileBuilder: FileSpec.Builder) {
+        fields.map { it.name.value }.forEach { fieldName ->
+            fileBuilder.addProperty(
+                buildKClassPropertyDeclaration(
+                    fieldName,
+                    messageTypeName.messageFieldClassName(fieldName)
+                )
+            )
+        }
+        oneofFieldMap.forEach { oneofNameToFields ->
+            fileBuilder.addProperty(
+                buildKClassPropertyDeclaration(
+                    oneofNameToFields.key,
+                    messageTypeName.messageOneofClassName(oneofNameToFields.key)
+                )
+            )
+        }
+    }
+
+    private fun generateObjectDeclarations(fileBuilder: FileSpec.Builder) {
+        fields.forEach { field ->
             fileBuilder.addType(
                 buildMessageFieldClass(field)
             )
-        }.filter { field ->
-            field.isPartOfOneof
-        }.groupBy { oneofField ->
-            oneofField.oneofName.value
-        }.forEach { oneofNameToFields ->
+        }
+        oneofFieldMap.forEach { oneofNameToFields ->
             fileBuilder.addType(
                 buildMessageOneofClass(
                     oneofNameToFields.key,
@@ -189,5 +213,33 @@ internal class MessageDefGenerator(
                 )
             )
         }
+    }
+
+    /**
+     * Builds a property declaration for the given field
+     * that looks like the following:
+     * ```
+     *     public val KClass<RegistrationInfo>.domainName:
+     *         RegistrationInfoDomainName get() = RegistrationInfoDomainName()
+     * ```
+     */
+    private fun buildKClassPropertyDeclaration(
+        fieldName: String,
+        simpleClassName: String
+    ): PropertySpec {
+        val propertyType = ClassName(
+            messageTypeName.javaPackage,
+            simpleClassName
+        )
+        val receiverType = KClass::class.asClassName()
+            .parameterizedBy(messageTypeName.fullClassName)
+        val getterCode = FunSpec.getterBuilder()
+            .addCode("return $simpleClassName()")
+            .build()
+
+        return PropertySpec.builder(fieldName.propertyName, propertyType)
+            .receiver(receiverType)
+            .getter(getterCode)
+            .build()
     }
 }

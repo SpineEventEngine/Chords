@@ -26,6 +26,7 @@
 
 package io.spine.chords.protodata.plugin
 
+import com.google.protobuf.BoolValue
 import com.google.protobuf.ByteString
 import com.google.protobuf.StringValue
 import com.squareup.kotlinpoet.ClassName
@@ -43,6 +44,7 @@ import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
+import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.Field
 import io.spine.protodata.PrimitiveType
 import io.spine.protodata.PrimitiveType.PT_UNKNOWN
@@ -66,6 +68,7 @@ import io.spine.protodata.ProtoFileHeader
 import io.spine.protodata.Type
 import io.spine.protodata.TypeName
 import io.spine.protodata.find
+import io.spine.protodata.isEnum
 import io.spine.protodata.isPrimitive
 import io.spine.protodata.isRepeated
 import io.spine.protodata.type.TypeSystem
@@ -99,10 +102,6 @@ internal abstract class FileGenerator(
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
 ) {
-    /**
-     * A [ClassName] of the Proto message.
-     */
-    private val messageClass = messageTypeName.fullClassName
 
     /**
      * Returns a suffix which is used to generate a file name.
@@ -128,52 +127,13 @@ internal abstract class FileGenerator(
      * Generates a content of the file.
      */
     internal fun fileContent(): String {
-        return FileSpec.builder(messageClass)
+        return FileSpec.builder(messageTypeName.fullClassName)
             .indent(Indent.defaultJavaIndent.toString())
             .also { fileBuilder ->
                 buildFileContent(fileBuilder)
             }
             .build()
             .toString()
-    }
-
-    internal fun buildFieldProperty(fieldName: String): PropertySpec {
-        return buildPropertyDeclaration(fieldName, false)
-    }
-
-    internal fun buildOneofProperty(fieldName: String): PropertySpec {
-        return buildPropertyDeclaration(fieldName, true)
-    }
-
-    /**
-     * Builds a property declaration for the given field
-     * that looks like the following:
-     * ```
-     *     public val KClass<RegistrationInfo>.domainName:
-     *         RegistrationInfoDomainName get() = RegistrationInfoDomainName()
-     * ```
-     */
-    private fun buildPropertyDeclaration(
-        fieldName: String,
-        isOneof: Boolean
-    ): PropertySpec {
-        val generatedClassName = if (isOneof)
-            messageTypeName.messageOneofClassName(fieldName)
-        else messageTypeName.messageFieldClassName(fieldName)
-        val propertyType = ClassName(
-            messageTypeName.javaPackage,
-            generatedClassName
-        )
-        val receiverType = KClass::class.asClassName()
-            .parameterizedBy(messageClass)
-        val getterCode = FunSpec.getterBuilder()
-            .addCode("return $generatedClassName()")
-            .build()
-
-        return PropertySpec.builder(fieldName.propertyName, propertyType)
-            .receiver(receiverType)
-            .getter(getterCode)
-            .build()
     }
 
     /**
@@ -288,7 +248,7 @@ internal abstract class FileGenerator(
         val messageFieldType = messageFieldClassName
             .parameterizedBy(
                 messageTypeName.fullClassName,
-                WildcardTypeName.producerOf(messageFieldValueType)
+                WildcardTypeName.producerOf(messageFieldValueTypeAlias)
             )
         val fieldMapType = Map::class.asClassName().parameterizedBy(
             Int::class.asClassName(),
@@ -389,6 +349,13 @@ internal abstract class FileGenerator(
 }
 
 /**
+ * Converts a Proto field name to "property" name,
+ * e.g. "domain_name" -> "domainName".
+ */
+internal val String.propertyName
+    get() = camelCase().replaceFirstChar { it.lowercase() }
+
+/**
  * Returns [ClassName] of [MessageField].
  */
 internal val messageFieldClassName: ClassName
@@ -409,7 +376,7 @@ internal val messageDefClassName: ClassName
 /**
  * Returns [ClassName] of [MessageFieldValue].
  */
-internal val messageFieldValueType: ClassName
+internal val messageFieldValueTypeAlias: ClassName
     get() = MessageFieldValue::class.asClassName()
 
 /**
@@ -420,13 +387,6 @@ internal val validatingBuilderClassName: ClassName
         ValidatingBuilder.PACKAGE,
         ValidatingBuilder.CLASS
     )
-
-/**
- * Converts a Proto field name to "property" name,
- * e.g. "domain_name" -> "domainName".
- */
-internal val String.propertyName
-    get() = camelCase().replaceFirstChar { it.lowercase() }
 
 /**
  * Generates initialization code for the `fieldMap` property
@@ -481,6 +441,109 @@ private val ProtoFileHeader.javaPackage: String
         }
         return option.value
     }
+
+/**
+ * Returns a piece of code that sets a new value for the [Field].
+ */
+internal fun Field.generateSetterCode(messageClass: TypeName): String {
+    val messageShortClassName = messageClass.simpleClassName
+    val builderCast = "(builder as $messageShortClassName.Builder)"
+    val setterCall = "$setterInvocation(newValue)"
+    return if (isRepeated) {
+        "$builderCast.clear${name.value.camelCase()}().$setterCall"
+    } else {
+        "$builderCast.$setterCall"
+    }
+}
+
+/**
+ * Indicates if the `required` option is applied to the [Field].
+ */
+internal val Field.required: Boolean
+    get() = optionList.any { option ->
+        option.name == "required" &&
+                unpack(option.value, BoolValue::class.java).value
+    }
+
+/**
+ * Returns a "getter" invocation code for the [Field].
+ */
+internal val Field.getterInvocation
+    get() = if (isRepeated)
+        name.value.propertyName + "List"
+    else name.value.propertyName
+
+/**
+ * Returns a "hasValue" invocation code for the [Field].
+ *
+ * The generated code returns `true` if a field is repeated, is an enum,
+ * or a primitive. This is required to be compatible with the design approach
+ * of `protoc`-generated Java code. There, `hasValue` methods are not being
+ * generated for the fields of such kinds.
+ */
+internal val Field.hasValueInvocation: String
+    get() = if (isRepeated || type.isEnum || type.isPrimitive) "true"
+    else "message.has${name.value.camelCase()}()"
+
+/**
+ * Returns a "setter" invocation code for the [Field].
+ */
+private val Field.setterInvocation: String
+    get() = if (isRepeated)
+        "addAll${name.value.camelCase()}"
+    else "set${name.value.camelCase()}"
+
+/**
+ * Generates a simple class name for the implementation of `MessageField`.
+ */
+internal fun TypeName.messageFieldClassName(fieldName: String): String {
+    return generatedClassName(fieldName, "Field")
+}
+
+/**
+ * Generates a simple class name for the implementation of `MessageOneof`.
+ */
+internal fun TypeName.messageOneofClassName(fieldName: String): String {
+    return generatedClassName(fieldName, "Oneof")
+}
+
+/**
+ * Generates a simple class name for the `fieldName` provided.
+ */
+internal fun TypeName.generatedClassName(suffix: String): String {
+    return generatedClassName("", suffix)
+}
+
+/**
+ * Generates a simple class name for the `fieldName` provided.
+ */
+internal fun TypeName.generatedClassName(fieldName: String, suffix: String): String {
+    return nestingTypeNameList.joinToString(
+        "",
+        "",
+        "${simpleName}${fieldName.camelCase()}$suffix"
+    )
+}
+
+/**
+ * Returns simple class name for the [TypeName].
+ */
+internal val TypeName.simpleClassName: String
+    get() = if (nestingTypeNameList.isNotEmpty())
+        nestingTypeNameList.joinToString(
+            ".",
+            "",
+            ".$simpleName"
+        ) else simpleName
+
+/**
+ * Returns name of the generated file.
+ */
+internal fun TypeName.fileName(suffix: String): String {
+    return nestingTypeNameList.joinToString(
+        "", "", "${simpleName}$suffix.kt"
+    )
+}
 
 /**
  * Obtains a Kotlin class which corresponds to the [PrimitiveType].
