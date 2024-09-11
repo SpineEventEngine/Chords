@@ -89,14 +89,18 @@ publishing {
  * See the [RunCodegenPlugins] for details.
  */
 val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
-    pluginsDir = "${rootDir}/chords-codegen/codegen-plugins"
-    sourceModuleDir = "${rootDir}/chords-proto-ext"
+    pluginsDir = "${rootDir}/codegen/codegen-plugins"
+    sourceModuleDir = "${rootDir}/proto-model"
+
+    // Dependencies that are required to load the Proto files from.
     dependencies(
+        // A list the external dependencies,
+        // onto which the processed Proto sources depend.
         Spine.Money.lib
     )
 }
 
-// Generate the code before the `compileKotlin` task.
+// Run the code generation before `compileKotlin` task.
 tasks.named("compileKotlin") {
     dependsOn(
         runCodegenPlugins
