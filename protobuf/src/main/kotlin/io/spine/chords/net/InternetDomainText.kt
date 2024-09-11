@@ -24,8 +24,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
-include("proto-model")
-include("protobuf")
+package io.spine.chords.net
+
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import io.spine.net.InternetDomain
+
+/**
+ * Displays an [InternetDomain] text.
+ *
+ * @param internetDomain
+ *         a domain that should be displayed. If `null`, displays an empty
+ *         (unspecified) value.
+ */
+@Composable
+public fun InternetDomainText(internetDomain: InternetDomain?) {
+    Text(internetDomain?.value ?: "")
+}

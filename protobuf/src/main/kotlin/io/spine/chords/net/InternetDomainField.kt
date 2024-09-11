@@ -24,8 +24,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
-include("proto-model")
-include("protobuf")
+package io.spine.chords.net
+
+import io.spine.chords.ComponentCompanion
+import io.spine.chords.InputField
+import io.spine.chords.exceptionBasedParser
+import io.spine.net.InternetDomain
+import io.spine.net.InternetDomains
+
+/**
+ * A field that allows entering an [InternetDomain] value.
+ */
+public class InternetDomainField : InputField<InternetDomain>() {
+
+    /**
+     * A component instance declaration API.
+     */
+    public companion object : ComponentCompanion<InternetDomainField>({ InternetDomainField() })
+
+    override fun parseValue(rawText: String): InternetDomain = exceptionBasedParser(
+        IllegalArgumentException::class,
+        "Invalid domain syntax"
+    ) {
+        InternetDomains.valueOf(rawText)
+    }
+
+    override fun formatValue(value: InternetDomain): String = value.value
+}

@@ -24,8 +24,36 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
-include("proto-model")
-include("protobuf")
+package io.spine.chords.people
+
+import io.spine.chords.ComponentCompanion
+import io.spine.chords.InputField
+import io.spine.chords.exceptionBasedParser
+import io.spine.people.PersonName
+import io.spine.person.format
+import io.spine.person.parse
+
+/**
+ * A field that allows editing a [PersonName] value.
+ */
+public class PersonNameField : InputField<PersonName>() {
+
+    /**
+     * A component instance declaration API.
+     */
+    public companion object : ComponentCompanion<PersonNameField>({ PersonNameField() })
+
+    init {
+        label = "Person name"
+        promptText = "Alex Petrenko"
+    }
+
+    override fun parseValue(rawText: String): PersonName = exceptionBasedParser(
+        IllegalArgumentException::class,
+        "Enter given and family name"
+    ) {
+        PersonName::class.parse(rawText)
+    }
+
+    override fun formatValue(value: PersonName): String = value.format()
+}

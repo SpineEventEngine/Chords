@@ -24,8 +24,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
-include("proto-model")
-include("protobuf")
+import io.onedam.dependency.Kotest
+import io.onedam.dependency.Material3
+import io.onedam.dependency.Spine
+import io.onedam.gradle.spineSnapshots
+
+plugins {
+    `kotlin-settings`
+    id("io.spine.tools.gradle.bootstrap")
+    id("org.jetbrains.compose") version "1.5.12"
+    id("com.google.protobuf")
+}
+
+repositories {
+    mavenCentral()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    google()
+    spineSnapshots()
+}
+
+dependencies {
+    implementation(Spine.Base.lib)
+    implementation(compose.desktop.currentOs)
+    implementation(Material3.Desktop.lib)
+    api(Spine.Money.lib)
+    implementation(Spine.Chords.core)
+    implementation(project(":chords-proto-ext"))
+    implementation(Spine.Chords.CodegenRuntime.lib)
+    testImplementation(Kotest.Runner.lib)
+}

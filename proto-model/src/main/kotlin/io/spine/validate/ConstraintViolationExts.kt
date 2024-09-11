@@ -24,8 +24,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
-include("proto-model")
-include("protobuf")
+package io.spine.validate
+
+/**
+ * A Message provided by this [ConstraintViolation], formatted using its
+ * [msgFormat][io.spine.validate.ConstraintViolation.getMsgFormat] and
+ * [paramList][io.spine.validate.ConstraintViolation.getParamList] properties.
+ */
+public val ConstraintViolation.formattedMessage: String
+    get() = String.format(
+        this.msgFormat,
+        listOf(this.paramList)
+    )

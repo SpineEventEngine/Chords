@@ -24,8 +24,37 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
-include("proto-model")
-include("protobuf")
+package io.spine.chords.net
+
+import io.spine.chords.ComponentCompanion
+import io.spine.chords.InputField
+import io.spine.chords.InputReviser.Companion.NonWhitespaces
+import io.spine.chords.exceptionBasedParser
+import io.spine.net.Url
+import io.spine.net.parse
+
+/**
+ * A field that allows entering a URL.
+ */
+public class UrlField : InputField<Url>() {
+
+    /**
+     * An instance declaration API.
+     */
+    public companion object : ComponentCompanion<UrlField>({ UrlField() })
+
+    init {
+        label = "URL"
+        promptText = "https://domain.com/path"
+        inputReviser = NonWhitespaces
+    }
+
+    override fun parseValue(rawText: String): Url = exceptionBasedParser(
+        IllegalArgumentException::class,
+        "Enter a valid URL value"
+    ) {
+        Url::class.parse(rawText)
+    }
+
+    override fun formatValue(value: Url): String = value.spec ?: ""
+}
