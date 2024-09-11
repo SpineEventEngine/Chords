@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
+import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -15,6 +16,7 @@ import io.spine.protodata.Field
 import io.spine.protodata.TypeName
 import io.spine.protodata.isPartOfOneof
 import io.spine.protodata.type.TypeSystem
+import java.nio.file.Path
 import kotlin.reflect.KClass
 
 /**
@@ -99,6 +101,8 @@ internal class MessageDefGenerator(
     typeSystem: TypeSystem
 ) : FileGenerator(messageTypeName, fields, typeSystem) {
 
+    private val fileNameSuffix = "Def"
+
     /**
      * Contains the fields which are parts of some `oneof` grouped by its name.
      */
@@ -108,7 +112,13 @@ internal class MessageDefGenerator(
         oneofField.oneofName.value
     }
 
-    override val fileNameSuffix: String get() = "Def"
+    /**
+     * Returns a [Path] to the generated file that is relative
+     * to the source root.
+     */
+    override fun filePath(): Path {
+        return messageTypeName.filePath(fileNameSuffix)
+    }
 
     override fun buildFileContent(fileBuilder: FileSpec.Builder) {
         val messageDefObjectBuilder = TypeSpec
@@ -144,20 +154,6 @@ internal class MessageDefGenerator(
             ),
             oneofFieldMap.keys
         )
-    }
-
-    private fun generateMessageDefCollectionProperty(
-        messageDefObjectBuilder: TypeSpec.Builder,
-        propertyName: String,
-        propertyType: ParameterizedTypeName,
-        fieldNames: Collection<String>
-    ) {
-        messageDefObjectBuilder
-            .addProperty(
-                PropertySpec.builder(propertyName, propertyType, PUBLIC, OVERRIDE)
-                    .initializer(fieldListInitializer(fieldNames))
-                    .build()
-            )
     }
 
     private fun generateMessageDefFieldProperties(messageDefObjectBuilder: TypeSpec.Builder) {
@@ -225,6 +221,160 @@ internal class MessageDefGenerator(
     }
 
     /**
+     * Generates implementation of `MessageField` for the given field.
+     *
+     * The generated code looks like the following:
+     *
+     * ```
+     *     public class RegistrationInfoDomainName:
+     *         MessageField<RegistrationInfo, InternetDomain> {
+     *
+     *         public override val name: String = "domain_name"
+     *
+     *         public override val required: Boolean = true
+     *
+     *         public override fun valueIn(message: RegistrationInfo)
+     *             : InternetDomain {
+     *             return message.domainName
+     *         }
+     *
+     *         public override fun hasValue(message: RegistrationInfo)
+     *             : Boolean {
+     *             return message.hasDomainName()
+     *         }
+     *
+     *         override fun setValue(
+     *             builder: ValidatingBuilder<RegistrationInfo>,
+     *             value: InternetDomain
+     *         ) {
+     *             (builder as RegistrationInfo.Builder).setDomainName(value)
+     *         }
+     *     }
+     * ```
+     */
+    private fun buildMessageFieldClass(field: Field): TypeSpec {
+        val generatedClassName = messageTypeName
+            .messageFieldClassName(field.name.value)
+        val messageFullClassName = messageTypeName.fullClassName
+        val superType = messageFieldClassName
+            .parameterizedBy(messageFullClassName, field.valueClassName)
+        val stringType = String::class.asClassName()
+        val boolType = Boolean::class.asClassName()
+        val builderType = validatingBuilderClassName
+            .parameterizedBy(messageFullClassName)
+
+        return TypeSpec.classBuilder(generatedClassName)
+            .superclass(superType)
+            .addProperty(
+                PropertySpec
+                    .builder("name", stringType, PUBLIC, OVERRIDE)
+                    .initializer("\"${field.name.value}\"")
+                    .build()
+            ).addProperty(
+                PropertySpec
+                    .builder("required", boolType, PUBLIC, OVERRIDE)
+                    .initializer("${field.required}")
+                    .build()
+            ).addFunction(
+                FunSpec.builder("valueIn")
+                    .addModifiers(PUBLIC, OVERRIDE)
+                    .returns(field.valueClassName)
+                    .addParameter("message", messageFullClassName)
+                    .addCode("return message.${field.getterInvocation}")
+                    .build()
+            ).addFunction(
+                FunSpec.builder("hasValue")
+                    .addModifiers(PUBLIC, OVERRIDE)
+                    .returns(boolType)
+                    .addParameter("message", messageFullClassName)
+                    .addCode("return ${field.hasValueInvocation}")
+                    .build()
+            ).addFunction(
+                FunSpec.builder("setValue")
+                    .addModifiers(PUBLIC, OVERRIDE)
+                    .addParameter("builder", builderType)
+                    .addParameter("newValue", field.valueClassName)
+                    .addCode(field.generateSetterCode(messageTypeName))
+                    .build()
+            ).build()
+    }
+
+    /**
+     * Generates implementation of `MessageOneof` for the given `oneof` field
+     * that looks like the following:
+     *
+     * ```
+     *     public val KClass<IpAddress>.`value`: IpAddressValue
+     *         get() = IpAddressValue()
+     *
+     *     public class IpAddressValue : MessageOneof<IpAddress> {
+     *         private val fieldMap: Map<Int, MessageField<IpAddress, *>> =
+     *             mapOf(
+     *                 1 to IpAddress::class.ipv4,
+     *                 2 to IpAddress::class.ipv6
+     *             )
+     *
+     *         public override val name: String = "value"
+     *
+     *         public override val fields: Iterable<MessageField<IpAddress, *>>
+     *             = fieldMap.values
+     *
+     *         public override fun selectedField(message: IpAddress):
+     *             MessageField<IpAddress, *>? =
+     *                 fieldMap[message.valueCase.number]
+     *     }
+     * ```
+     */
+    private fun buildMessageOneofClass(
+        oneofName: String,
+        oneofFields: List<Field>
+    ): TypeSpec {
+        val messageFieldType = messageFieldClassName
+            .parameterizedBy(
+                messageTypeName.fullClassName,
+                WildcardTypeName.producerOf(messageFieldValueTypeAlias)
+            )
+        val fieldMapType = Map::class.asClassName().parameterizedBy(
+            Int::class.asClassName(),
+            messageFieldType
+        )
+        val stringType = String::class.asClassName()
+        val fieldsReturnType = Collection::class.asClassName()
+            .parameterizedBy(messageFieldType)
+        val superType = messageOneofClassName
+            .parameterizedBy(messageTypeName.fullClassName)
+        val oneofPropName = oneofName.propertyName
+        val generatedClassName = messageTypeName
+            .messageOneofClassName(oneofName)
+
+        return TypeSpec.classBuilder(generatedClassName)
+            .addSuperinterface(superType)
+            .addProperty(
+                PropertySpec
+                    .builder("fieldMap", fieldMapType, PRIVATE)
+                    .initializer(fieldMapInitializer(messageTypeName, oneofFields))
+                    .build()
+            ).addProperty(
+                PropertySpec
+                    .builder("name", stringType, PUBLIC, OVERRIDE)
+                    .initializer("\"$oneofName\"")
+                    .build()
+            ).addProperty(
+                PropertySpec
+                    .builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
+                    .initializer("fieldMap.values")
+                    .build()
+            ).addFunction(
+                FunSpec.builder("selectedField")
+                    .addModifiers(PUBLIC, OVERRIDE)
+                    .returns(messageFieldType.copy(nullable = true))
+                    .addParameter("message", messageTypeName.fullClassName)
+                    .addCode("return fieldMap[message.${oneofPropName}Case.number]")
+                    .build()
+            ).build()
+    }
+
+    /**
      * Builds a property declaration for the given field
      * that looks like the following:
      * ```
@@ -251,4 +401,19 @@ internal class MessageDefGenerator(
             .getter(getterCode)
             .build()
     }
+}
+
+
+private fun generateMessageDefCollectionProperty(
+    messageDefObjectBuilder: TypeSpec.Builder,
+    propertyName: String,
+    propertyType: ParameterizedTypeName,
+    fieldNames: Collection<String>
+) {
+    messageDefObjectBuilder
+        .addProperty(
+            PropertySpec.builder(propertyName, propertyType, PUBLIC, OVERRIDE)
+                .initializer(fieldListInitializer(fieldNames))
+                .build()
+        )
 }

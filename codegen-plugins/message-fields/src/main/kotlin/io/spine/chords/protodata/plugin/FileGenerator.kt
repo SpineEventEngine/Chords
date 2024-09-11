@@ -31,14 +31,7 @@ import com.google.protobuf.ByteString
 import com.google.protobuf.StringValue
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier.OVERRIDE
-import com.squareup.kotlinpoet.KModifier.PRIVATE
-import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
@@ -102,26 +95,16 @@ internal abstract class FileGenerator(
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
 ) {
-
     /**
-     * Returns a suffix which is used to generate a file name.
-     *
-     * See [filePath] for detail.
+     * Returns a [Path] to the generated file that is relative
+     * to the source root.
      */
-    internal abstract val fileNameSuffix: String
+    internal abstract fun filePath(): Path
 
     /**
      * Builds content of the generated file.
      */
     internal abstract fun buildFileContent(fileBuilder: FileSpec.Builder)
-
-    /**
-     * Returns a [Path] to the generated file that is relative
-     * to the source root.
-     */
-    internal fun filePath(): Path {
-        return messageTypeName.filePath
-    }
 
     /**
      * Generates a content of the file.
@@ -137,160 +120,6 @@ internal abstract class FileGenerator(
     }
 
     /**
-     * Generates implementation of `MessageField` for the given field.
-     *
-     * The generated code looks like the following:
-     *
-     * ```
-     *     public class RegistrationInfoDomainName:
-     *         MessageField<RegistrationInfo, InternetDomain> {
-     *
-     *         public override val name: String = "domain_name"
-     *
-     *         public override val required: Boolean = true
-     *
-     *         public override fun valueIn(message: RegistrationInfo)
-     *             : InternetDomain {
-     *             return message.domainName
-     *         }
-     *
-     *         public override fun hasValue(message: RegistrationInfo)
-     *             : Boolean {
-     *             return message.hasDomainName()
-     *         }
-     *
-     *         override fun setValue(
-     *             builder: ValidatingBuilder<RegistrationInfo>,
-     *             value: InternetDomain
-     *         ) {
-     *             (builder as RegistrationInfo.Builder).setDomainName(value)
-     *         }
-     *     }
-     * ```
-     */
-    internal fun buildMessageFieldClass(field: Field): TypeSpec {
-        val generatedClassName = messageTypeName
-            .messageFieldClassName(field.name.value)
-        val messageFullClassName = messageTypeName.fullClassName
-        val superType = messageFieldClassName
-            .parameterizedBy(messageFullClassName, field.valueClassName)
-        val stringType = String::class.asClassName()
-        val boolType = Boolean::class.asClassName()
-        val builderType = validatingBuilderClassName
-            .parameterizedBy(messageFullClassName)
-
-        return TypeSpec.classBuilder(generatedClassName)
-            .superclass(superType)
-            .addProperty(
-                PropertySpec
-                    .builder("name", stringType, PUBLIC, OVERRIDE)
-                    .initializer("\"${field.name.value}\"")
-                    .build()
-            ).addProperty(
-                PropertySpec
-                    .builder("required", boolType, PUBLIC, OVERRIDE)
-                    .initializer("${field.required}")
-                    .build()
-            ).addFunction(
-                FunSpec.builder("valueIn")
-                    .addModifiers(PUBLIC, OVERRIDE)
-                    .returns(field.valueClassName)
-                    .addParameter("message", messageFullClassName)
-                    .addCode("return message.${field.getterInvocation}")
-                    .build()
-            ).addFunction(
-                FunSpec.builder("hasValue")
-                    .addModifiers(PUBLIC, OVERRIDE)
-                    .returns(boolType)
-                    .addParameter("message", messageFullClassName)
-                    .addCode("return ${field.hasValueInvocation}")
-                    .build()
-            ).addFunction(
-                FunSpec.builder("setValue")
-                    .addModifiers(PUBLIC, OVERRIDE)
-                    .addParameter("builder", builderType)
-                    .addParameter("newValue", field.valueClassName)
-                    .addCode(field.generateSetterCode(messageTypeName))
-                    .build()
-            ).build()
-    }
-
-    /**
-     * Generates implementation of `MessageOneof` for the given `oneof` field
-     * that looks like the following:
-     *
-     * ```
-     *     public val KClass<IpAddress>.`value`: IpAddressValue
-     *         get() = IpAddressValue()
-     *
-     *     public class IpAddressValue : MessageOneof<IpAddress> {
-     *         private val fieldMap: Map<Int, MessageField<IpAddress, *>> =
-     *             mapOf(
-     *                 1 to IpAddress::class.ipv4,
-     *                 2 to IpAddress::class.ipv6
-     *             )
-     *
-     *         public override val name: String = "value"
-     *
-     *         public override val fields: Iterable<MessageField<IpAddress, *>>
-     *             = fieldMap.values
-     *
-     *         public override fun selectedField(message: IpAddress):
-     *             MessageField<IpAddress, *>? =
-     *                 fieldMap[message.valueCase.number]
-     *     }
-     * ```
-     */
-    internal fun buildMessageOneofClass(
-        oneofName: String,
-        oneofFields: List<Field>
-    ): TypeSpec {
-        val messageFieldType = messageFieldClassName
-            .parameterizedBy(
-                messageTypeName.fullClassName,
-                WildcardTypeName.producerOf(messageFieldValueTypeAlias)
-            )
-        val fieldMapType = Map::class.asClassName().parameterizedBy(
-            Int::class.asClassName(),
-            messageFieldType
-        )
-        val stringType = String::class.asClassName()
-        val fieldsReturnType = Collection::class.asClassName()
-            .parameterizedBy(messageFieldType)
-        val superType = messageOneofClassName
-            .parameterizedBy(messageTypeName.fullClassName)
-        val oneofPropName = oneofName.propertyName
-        val generatedClassName = messageTypeName
-            .messageOneofClassName(oneofName)
-
-        return TypeSpec.classBuilder(generatedClassName)
-            .addSuperinterface(superType)
-            .addProperty(
-                PropertySpec
-                    .builder("fieldMap", fieldMapType, PRIVATE)
-                    .initializer(fieldMapInitializer(messageTypeName, oneofFields))
-                    .build()
-            ).addProperty(
-                PropertySpec
-                    .builder("name", stringType, PUBLIC, OVERRIDE)
-                    .initializer("\"$oneofName\"")
-                    .build()
-            ).addProperty(
-                PropertySpec
-                    .builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
-                    .initializer("fieldMap.values")
-                    .build()
-            ).addFunction(
-                FunSpec.builder("selectedField")
-                    .addModifiers(PUBLIC, OVERRIDE)
-                    .returns(messageFieldType.copy(nullable = true))
-                    .addParameter("message", messageTypeName.fullClassName)
-                    .addCode("return fieldMap[message.${oneofPropName}Case.number]")
-                    .build()
-            ).build()
-    }
-
-    /**
      * Returns a fully qualified [ClassName] for a [TypeName].
      */
     internal val TypeName.fullClassName
@@ -299,20 +128,22 @@ internal abstract class FileGenerator(
     /**
      * Returns a [ClassName] of the value of a [Field].
      */
-    private val Field.valueClassName
+    internal val Field.valueClassName
         get() = if (isRepeated)
             Iterable::class.asClassName()
                 .parameterizedBy(type.className)
         else type.className
 
     /**
-     * Returns [Path] to the generated file for a [TypeName].
+     * Returns a [Path] to the generated file for a [TypeName]
+     * with a [fileNameSuffix] provided.
      */
-    private val TypeName.filePath: Path
-        get() = Path.of(
+    internal fun TypeName.filePath(fileNameSuffix: String): Path {
+        return Path.of(
             javaPackage.replace('.', '/'),
             fileName(fileNameSuffix)
         )
+    }
 
     /**
      * Returns [ClassName] for the [Type].
@@ -537,7 +368,7 @@ internal val TypeName.simpleClassName: String
         ) else simpleName
 
 /**
- * Returns name of the generated file.
+ * Returns name of the generated file for this [TypeName].
  */
 internal fun TypeName.fileName(suffix: String): String {
     return nestingTypeNameList.joinToString(
