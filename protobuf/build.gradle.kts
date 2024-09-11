@@ -30,7 +30,6 @@ import io.onedam.dependency.Spine
 import io.onedam.gradle.spineSnapshots
 
 plugins {
-    `kotlin-settings`
     id("io.spine.tools.gradle.bootstrap")
     id("org.jetbrains.compose") version "1.5.12"
     id("com.google.protobuf")
@@ -45,11 +44,11 @@ repositories {
 
 dependencies {
     implementation(Spine.Base.lib)
+    implementation(Spine.Chords.CodegenRuntime.lib)
+    implementation(Spine.Chords.core)
+    api(Spine.Money.lib)
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
-    api(Spine.Money.lib)
-    implementation(Spine.Chords.core)
-    implementation(project(":chords-proto-ext"))
-    implementation(Spine.Chords.CodegenRuntime.lib)
+    implementation(project(":proto-model"))
     testImplementation(Kotest.Runner.lib)
 }

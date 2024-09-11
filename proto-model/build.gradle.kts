@@ -37,7 +37,6 @@ import io.onedam.gradle.RunCodegenPlugins
 plugins {
     id("io.spine.tools.gradle.bootstrap")
     id("java-library")
-    `kotlin-settings`
     id("com.google.protobuf")
     `maven-publish`
 }
@@ -52,9 +51,9 @@ spine {
 
 dependencies {
     implementation(Spine.Base.lib)
+    implementation(Spine.Chords.CodegenRuntime.lib)
     api(Spine.Money.lib)
     implementation(JavaX.annotations)
-    implementation(Spine.Chords.CodegenRuntime.lib)
     testImplementation(Kotest.Runner.lib)
 }
 
