@@ -28,16 +28,15 @@ import com.google.protobuf.gradle.generateProtoTasks
 import com.google.protobuf.gradle.id
 import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
-import io.onedam.dependency.JavaX
-import io.onedam.dependency.Kotest
-import io.onedam.dependency.Protobuf
-import io.onedam.dependency.Spine
-import io.onedam.gradle.RunCodegenPlugins
+import io.spine.internal.dependency.JavaX
+import io.spine.internal.dependency.Kotest
+import io.spine.internal.dependency.Protobuf
+import io.spine.internal.dependency.Spine
+import io.spine.internal.gradle.RunCodegenPlugins
 
 plugins {
     id("io.spine.tools.gradle.bootstrap").version("1.9.0")
     id("java-library")
-    id("com.google.protobuf")
     `maven-publish`
 }
 
@@ -56,11 +55,11 @@ spine {
 }
 
 dependencies {
-    implementation(Spine.Base.lib)
-    implementation(Spine.Chords.CodegenRuntime.lib)
-    api(Spine.Money.lib)
+    implementation(Spine.base)
+    implementation(":codegen-runtime")
+    api(Spine.money)
     implementation(JavaX.annotations)
-    testImplementation(Kotest.Runner.lib)
+    testImplementation(Kotest.runnerJUnit5)
 }
 
 protobuf {
@@ -102,7 +101,7 @@ val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
     dependencies(
         // A list the external dependencies,
         // onto which the processed Proto sources depend.
-        Spine.Money.lib
+        Spine.money
     )
 }
 

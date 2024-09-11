@@ -24,15 +24,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.onedam.dependency.Kotest
-import io.onedam.dependency.Material3
-import io.onedam.dependency.Spine
+import io.spine.internal.dependency.Kotest
+import io.spine.internal.dependency.Material3
+import io.spine.internal.dependency.Spine
 import io.onedam.gradle.spineSnapshots
 
 plugins {
     id("io.spine.tools.gradle.bootstrap")
     id("org.jetbrains.compose") version "1.5.12"
-    id("com.google.protobuf")
 }
 
 repositories {
@@ -44,11 +43,11 @@ repositories {
 
 dependencies {
     implementation(Spine.Base.lib)
-    implementation(Spine.Chords.CodegenRuntime.lib)
-    implementation(Spine.Chords.core)
-    api(Spine.Money.lib)
+    implementation(":codegen-runtime")
+    implementation(":core")
+    api(Spine.money)
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
     implementation(project(":proto-model"))
-    testImplementation(Kotest.Runner.lib)
+    testImplementation(Kotest.runnerJUnit5)
 }

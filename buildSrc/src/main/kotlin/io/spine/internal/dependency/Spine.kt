@@ -115,6 +115,13 @@ object Spine {
         const val time = "2.0.0-SNAPSHOT.135"
 
         /**
+         * The version of [Spine.money].
+         *
+         * @see <a href="https://github.com/SpineEventEngine/time">spine-money</a>
+         */
+        const val money = "1.5.0"
+
+        /**
          * The version of [Spine.change].
          *
          * @see <a href="https://github.com/SpineEventEngine/change">spine-change</a>
@@ -149,6 +156,11 @@ object Spine {
     const val reflect = "$group:spine-reflect:${ArtifactVersion.reflect}"
     const val baseTypes = "$group:spine-base-types:${ArtifactVersion.baseTypes}"
     const val time = "$group:spine-time:${ArtifactVersion.time}"
+
+    // TODO:2024-08-30:dmitry.pikhulya: The money library ref was added on top
+    //   of the original `config` module's content. Consider updating `config`.
+    //   See https://github.com/SpineEventEngine/Chords/issues/3
+    const val money = "$group:spine-money:${ArtifactVersion.time}"
     const val change = "$group:spine-change:${ArtifactVersion.change}"
     const val text = "$group:spine-text:${ArtifactVersion.text}"
 
