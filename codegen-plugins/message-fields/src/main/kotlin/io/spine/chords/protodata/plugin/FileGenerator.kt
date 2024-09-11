@@ -26,95 +26,12 @@
 
 package io.spine.chords.protodata.plugin
 
-import com.google.protobuf.BoolValue
-import com.google.protobuf.ByteString
 import com.google.protobuf.StringValue
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.asClassName
-import io.spine.chords.protodata.plugin.ValidatingBuilder.CLASS
-import io.spine.chords.protodata.plugin.ValidatingBuilder.PACKAGE
-import io.spine.protobuf.AnyPacker.unpack
-import io.spine.protodata.Field
-import io.spine.protodata.PrimitiveType
-import io.spine.protodata.PrimitiveType.PT_UNKNOWN
-import io.spine.protodata.PrimitiveType.TYPE_BOOL
-import io.spine.protodata.PrimitiveType.TYPE_BYTES
-import io.spine.protodata.PrimitiveType.TYPE_DOUBLE
-import io.spine.protodata.PrimitiveType.TYPE_FIXED32
-import io.spine.protodata.PrimitiveType.TYPE_FIXED64
-import io.spine.protodata.PrimitiveType.TYPE_FLOAT
-import io.spine.protodata.PrimitiveType.TYPE_INT32
-import io.spine.protodata.PrimitiveType.TYPE_INT64
-import io.spine.protodata.PrimitiveType.TYPE_SFIXED32
-import io.spine.protodata.PrimitiveType.TYPE_SFIXED64
-import io.spine.protodata.PrimitiveType.TYPE_SINT32
-import io.spine.protodata.PrimitiveType.TYPE_SINT64
-import io.spine.protodata.PrimitiveType.TYPE_STRING
-import io.spine.protodata.PrimitiveType.TYPE_UINT32
-import io.spine.protodata.PrimitiveType.TYPE_UINT64
-import io.spine.protodata.PrimitiveType.UNRECOGNIZED
 import io.spine.protodata.ProtoFileHeader
-import io.spine.protodata.Type
 import io.spine.protodata.TypeName
 import io.spine.protodata.find
-import io.spine.protodata.isEnum
-import io.spine.protodata.isPrimitive
-import io.spine.protodata.isRepeated
 import io.spine.protodata.type.TypeSystem
-import io.spine.protodata.type.findHeader
-import io.spine.protodata.typeName
 import io.spine.string.camelCase
-import kotlin.reflect.KClass
-
-/**
- * Package and class name of the `io.spine.protobuf.ValidatingBuilder`.
- *
- * It is not in the classpath and cannot be used directly.
- */
-private object ValidatingBuilder {
-    const val PACKAGE = "io.spine.protobuf"
-    const val CLASS = "ValidatingBuilder"
-}
-
-/**
- * Returns [ClassName] of `io.spine.protobuf.ValidatingBuilder`.
- */
-internal val validatingBuilderClassName = ClassName(PACKAGE, CLASS)
-
-/**
- * Returns a [ClassName] of the value of a [Field].
- */
-internal fun Field.valueClassName(typeSystem: TypeSystem)
-        : com.squareup.kotlinpoet.TypeName {
-    return if (isRepeated)
-        Iterable::class.asClassName()
-            .parameterizedBy(type.className(typeSystem))
-    else
-        type.className(typeSystem)
-}
-
-/**
- * Returns [ClassName] for the [Type].
- */
-private fun Type.className(typeSystem: TypeSystem): ClassName {
-    return if (isPrimitive)
-        primitiveClassName
-    else
-        messageClassName(typeSystem)
-}
-
-/**
- * Returns [ClassName] for the [Type] that is a message.
- */
-private fun Type.messageClassName(typeSystem: TypeSystem): ClassName {
-    check(!isPrimitive)
-    val fileHeader = typeSystem.findHeader(this)
-    checkNotNull(fileHeader) {
-        "Cannot determine file header for type `$this`"
-    }
-    return ClassName(fileHeader.javaPackage, typeName.simpleClassName)
-}
 
 /**
  * Returns a Java package for the [TypeName].
@@ -135,18 +52,9 @@ internal val String.propertyName
     get() = camelCase().replaceFirstChar { it.lowercase() }
 
 /**
- * Returns [ClassName] for the [Type] that is a primitive.
- */
-private val Type.primitiveClassName: ClassName
-    get() {
-        check(isPrimitive)
-        return primitive.primitiveClass.asClassName()
-    }
-
-/**
  * Returns a Java package declared in [ProtoFileHeader].
  */
-private val ProtoFileHeader.javaPackage: String
+internal val ProtoFileHeader.javaPackage: String
     get() {
         val optionName = "java_package"
         val option = optionList.find(optionName, StringValue::class.java)
@@ -155,57 +63,6 @@ private val ProtoFileHeader.javaPackage: String
         }
         return option.value
     }
-
-/**
- * Returns a piece of code that sets a new value for the [Field].
- */
-internal fun Field.generateSetterCode(messageClass: TypeName): String {
-    val messageShortClassName = messageClass.simpleClassName
-    val builderCast = "(builder as $messageShortClassName.Builder)"
-    val setterCall = "$setterInvocation(newValue)"
-    return if (isRepeated) {
-        "$builderCast.clear${name.value.camelCase()}().$setterCall"
-    } else {
-        "$builderCast.$setterCall"
-    }
-}
-
-/**
- * Indicates if the `required` option is applied to the [Field].
- */
-internal val Field.required: Boolean
-    get() = optionList.any { option ->
-        option.name == "required" &&
-                unpack(option.value, BoolValue::class.java).value
-    }
-
-/**
- * Returns a "getter" invocation code for the [Field].
- */
-internal val Field.getterInvocation
-    get() = if (isRepeated)
-        name.value.propertyName + "List"
-    else name.value.propertyName
-
-/**
- * Returns a "hasValue" invocation code for the [Field].
- *
- * The generated code returns `true` if a field is repeated, is an enum,
- * or a primitive. This is required to be compatible with the design approach
- * of `protoc`-generated Java code. There, `hasValue` methods are not being
- * generated for the fields of such kinds.
- */
-internal val Field.hasValueInvocation: String
-    get() = if (isRepeated || type.isEnum || type.isPrimitive) "true"
-    else "message.has${name.value.camelCase()}()"
-
-/**
- * Returns a "setter" invocation code for the [Field].
- */
-private val Field.setterInvocation: String
-    get() = if (isRepeated)
-        "addAll${name.value.camelCase()}"
-    else "set${name.value.camelCase()}"
 
 /**
  * Generates a simple class name for the implementation of `MessageField`.
@@ -249,20 +106,3 @@ internal val TypeName.simpleClassName: String
             "",
             ".$simpleName"
         ) else simpleName
-
-/**
- * Obtains a Kotlin class which corresponds to the [PrimitiveType].
- */
-private val PrimitiveType.primitiveClass: KClass<*>
-    get() {
-        return when (this) {
-            TYPE_DOUBLE -> Double::class
-            TYPE_FLOAT -> Float::class
-            TYPE_INT64, TYPE_UINT64, TYPE_SINT64, TYPE_FIXED64, TYPE_SFIXED64 -> Long::class
-            TYPE_INT32, TYPE_UINT32, TYPE_SINT32, TYPE_FIXED32, TYPE_SFIXED32 -> Int::class
-            TYPE_BOOL -> Boolean::class
-            TYPE_STRING -> String::class
-            TYPE_BYTES -> ByteString::class
-            UNRECOGNIZED, PT_UNKNOWN -> error("Unknown primitive type: `$this`.")
-        }
-    }
