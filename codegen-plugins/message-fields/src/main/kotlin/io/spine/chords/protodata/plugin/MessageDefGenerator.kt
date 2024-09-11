@@ -101,7 +101,15 @@ internal class MessageDefGenerator(
     typeSystem: TypeSystem
 ) : FileGenerator(messageTypeName, fields, typeSystem) {
 
+    /**
+     * Suffix of file name to be generated.
+     */
     private val fileNameSuffix = "Def"
+
+    /**
+     * Collection of names of [fields].
+     */
+    private val fieldNames get() = fields.map { it.name.value }
 
     /**
      * Contains the fields which are parts of some `oneof` grouped by its name.
@@ -144,7 +152,7 @@ internal class MessageDefGenerator(
                     WildcardTypeName.producerOf(messageFieldValueTypeAlias)
                 )
             ),
-            fields.map { it.name.value }
+            fieldNames
         )
         generateMessageDefCollectionProperty(
             messageDefObjectBuilder,
@@ -157,7 +165,7 @@ internal class MessageDefGenerator(
     }
 
     private fun generateMessageDefFieldProperties(messageDefObjectBuilder: TypeSpec.Builder) {
-        fields.map { it.name.value }.forEach { fieldName ->
+        fieldNames.forEach { fieldName ->
             messageDefObjectBuilder.addProperty(
                 generateMessageDefFieldProperty(
                     fieldName,
@@ -165,11 +173,11 @@ internal class MessageDefGenerator(
                 )
             )
         }
-        oneofFieldMap.forEach { oneofNameToFields ->
+        oneofFieldMap.map { it.key }.forEach { fieldName ->
             messageDefObjectBuilder.addProperty(
                 generateMessageDefFieldProperty(
-                    oneofNameToFields.key,
-                    messageTypeName.messageOneofClassName(oneofNameToFields.key)
+                    fieldName,
+                    messageTypeName.messageOneofClassName(fieldName)
                 )
             )
         }
@@ -186,7 +194,7 @@ internal class MessageDefGenerator(
     }
 
     private fun generateKClassProperties(fileBuilder: FileSpec.Builder) {
-        fields.map { it.name.value }.forEach { fieldName ->
+        fieldNames.forEach { fieldName ->
             fileBuilder.addProperty(
                 buildKClassPropertyDeclaration(
                     fieldName,
@@ -194,11 +202,11 @@ internal class MessageDefGenerator(
                 )
             )
         }
-        oneofFieldMap.forEach { oneofNameToFields ->
+        oneofFieldMap.map { it.key }.forEach { fieldName ->
             fileBuilder.addProperty(
                 buildKClassPropertyDeclaration(
-                    oneofNameToFields.key,
-                    messageTypeName.messageOneofClassName(oneofNameToFields.key)
+                    fieldName,
+                    messageTypeName.messageOneofClassName(fieldName)
                 )
             )
         }
@@ -207,12 +215,12 @@ internal class MessageDefGenerator(
     private fun generateFieldsObjectDeclarations(fileBuilder: FileSpec.Builder) {
         fields.forEach { field ->
             fileBuilder.addType(
-                buildMessageFieldClass(field)
+                buildMessageFieldObject(field)
             )
         }
         oneofFieldMap.forEach { oneofNameToFields ->
             fileBuilder.addType(
-                buildMessageOneofClass(
+                buildMessageOneofObject(
                     oneofNameToFields.key,
                     oneofNameToFields.value
                 )
@@ -252,7 +260,7 @@ internal class MessageDefGenerator(
      *     }
      * ```
      */
-    private fun buildMessageFieldClass(field: Field): TypeSpec {
+    private fun buildMessageFieldObject(field: Field): TypeSpec {
         val generatedClassName = messageTypeName
             .messageFieldClassName(field.name.value)
         val messageFullClassName = messageTypeName.fullClassName
@@ -263,7 +271,7 @@ internal class MessageDefGenerator(
         val builderType = validatingBuilderClassName
             .parameterizedBy(messageFullClassName)
 
-        return TypeSpec.classBuilder(generatedClassName)
+        return TypeSpec.objectBuilder(generatedClassName)
             .superclass(superType)
             .addProperty(
                 PropertySpec
@@ -325,7 +333,7 @@ internal class MessageDefGenerator(
      *     }
      * ```
      */
-    private fun buildMessageOneofClass(
+    private fun buildMessageOneofObject(
         oneofName: String,
         oneofFields: List<Field>
     ): TypeSpec {
@@ -347,7 +355,7 @@ internal class MessageDefGenerator(
         val generatedClassName = messageTypeName
             .messageOneofClassName(oneofName)
 
-        return TypeSpec.classBuilder(generatedClassName)
+        return TypeSpec.objectBuilder(generatedClassName)
             .addSuperinterface(superType)
             .addProperty(
                 PropertySpec
