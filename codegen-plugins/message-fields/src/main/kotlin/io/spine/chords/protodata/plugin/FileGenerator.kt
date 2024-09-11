@@ -32,6 +32,8 @@ import com.google.protobuf.StringValue
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.asClassName
+import io.spine.chords.protodata.plugin.ValidatingBuilder.CLASS
+import io.spine.chords.protodata.plugin.ValidatingBuilder.PACKAGE
 import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.Field
 import io.spine.protodata.PrimitiveType
@@ -63,7 +65,6 @@ import io.spine.protodata.type.TypeSystem
 import io.spine.protodata.type.findHeader
 import io.spine.protodata.typeName
 import io.spine.string.camelCase
-import java.nio.file.Path
 import kotlin.reflect.KClass
 
 /**
@@ -77,21 +78,9 @@ private object ValidatingBuilder {
 }
 
 /**
- *
- *
+ * Returns [ClassName] of `io.spine.protobuf.ValidatingBuilder`.
  */
-internal interface FileGenerator {
-    /**
-     * Returns a [Path] to the generated file that is relative
-     * to the source root.
-     */
-    fun filePath(): Path
-
-    /**
-     * Generates a content of the file.
-     */
-    fun fileContent(): String
-}
+internal val validatingBuilderClassName = ClassName(PACKAGE, CLASS)
 
 /**
  * Returns a [ClassName] of the value of a [Field].
@@ -113,13 +102,6 @@ private fun Type.className(typeSystem: TypeSystem): ClassName {
         primitiveClassName
     else
         messageClassName(typeSystem)
-}
-
-/**
- * Returns a fully qualified [ClassName] for a [TypeName].
- */
-internal fun TypeName.fullClassName(typeSystem: TypeSystem): ClassName {
-    return ClassName(javaPackage(typeSystem), simpleClassName)
 }
 
 /**
@@ -151,15 +133,6 @@ internal fun TypeName.javaPackage(typeSystem: TypeSystem): String {
  */
 internal val String.propertyName
     get() = camelCase().replaceFirstChar { it.lowercase() }
-
-/**
- * Returns [ClassName] of `ValidatingBuilder`.
- */
-internal val validatingBuilderClassName: ClassName
-    get() = ClassName(
-        ValidatingBuilder.PACKAGE,
-        ValidatingBuilder.CLASS
-    )
 
 /**
  * Returns [ClassName] for the [Type] that is a primitive.
