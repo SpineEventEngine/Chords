@@ -189,7 +189,7 @@ internal class MessageDefGenerator(
     ): PropertySpec {
         val fullClassName = ClassName(messageTypeName.javaPackage, simpleClassName)
         return PropertySpec.builder(fieldName.propertyName, fullClassName, PUBLIC)
-            .initializer("$simpleClassName()")
+            .initializer(simpleClassName)
             .build()
     }
 
@@ -401,7 +401,7 @@ internal class MessageDefGenerator(
         val receiverType = KClass::class.asClassName()
             .parameterizedBy(messageTypeName.fullClassName)
         val getterCode = FunSpec.getterBuilder()
-            .addCode("return $simpleClassName()")
+            .addCode("return $simpleClassName")
             .build()
 
         return PropertySpec.builder(fieldName.propertyName, propertyType)
