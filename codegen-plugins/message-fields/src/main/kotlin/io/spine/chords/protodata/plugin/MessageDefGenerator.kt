@@ -16,6 +16,8 @@ import io.spine.protodata.Field
 import io.spine.protodata.TypeName
 import io.spine.protodata.isPartOfOneof
 import io.spine.protodata.type.TypeSystem
+import io.spine.string.Indent
+import java.lang.System.lineSeparator
 import java.nio.file.Path
 import kotlin.reflect.KClass
 
@@ -99,7 +101,7 @@ internal class MessageDefGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     typeSystem: TypeSystem
-) : FileGenerator(messageTypeName, fields, typeSystem) {
+) : FileGenerator(typeSystem) {
 
     /**
      * Suffix of file name to be generated.
@@ -128,21 +130,33 @@ internal class MessageDefGenerator(
         return messageTypeName.filePath(fileNameSuffix)
     }
 
-    override fun buildFileContent(fileBuilder: FileSpec.Builder) {
-        val messageDefObjectBuilder = TypeSpec
-            .objectBuilder(messageTypeName.generatedClassName(fileNameSuffix))
-            .addSuperinterface(
-                messageDefClassName.parameterizedBy(messageTypeName.fullClassName)
-            )
-        generateMessageDefFieldProperties(messageDefObjectBuilder)
-        generateCollectionProperties(messageDefObjectBuilder)
-        fileBuilder.addType(messageDefObjectBuilder.build())
-
-        generateFieldsObjectDeclarations(fileBuilder)
-        generateKClassProperties(fileBuilder)
+    /**
+     * Generates a content of the file.
+     */
+    override fun fileContent(): String {
+        return FileSpec.builder(messageTypeName.fullClassName)
+            .indent(Indent.defaultJavaIndent.toString())
+            .also { fileBuilder ->
+                val messageDefObjectBuilder = TypeSpec.objectBuilder(
+                    messageTypeName.generatedClassName(fileNameSuffix)
+                ).addSuperinterface(
+                    messageDefClassName.parameterizedBy(
+                        messageTypeName.fullClassName
+                    )
+                )
+                generateMessageDefFieldProperties(messageDefObjectBuilder)
+                generateMessageDefCollectionProperties(messageDefObjectBuilder)
+                fileBuilder.addType(messageDefObjectBuilder.build())
+                generateFieldsObjectDeclarations(fileBuilder)
+                generateKClassProperties(fileBuilder)
+            }
+            .build()
+            .toString()
     }
 
-    private fun generateCollectionProperties(messageDefObjectBuilder: TypeSpec.Builder) {
+    private fun generateMessageDefCollectionProperties(
+        messageDefObjectBuilder: TypeSpec.Builder
+    ) {
         generateMessageDefCollectionProperty(
             messageDefObjectBuilder,
             "fields",
@@ -164,7 +178,9 @@ internal class MessageDefGenerator(
         )
     }
 
-    private fun generateMessageDefFieldProperties(messageDefObjectBuilder: TypeSpec.Builder) {
+    private fun generateMessageDefFieldProperties(
+        messageDefObjectBuilder: TypeSpec.Builder
+    ) {
         fieldNames.forEach { fieldName ->
             messageDefObjectBuilder.addProperty(
                 generateMessageDefFieldProperty(
@@ -424,4 +440,37 @@ private fun generateMessageDefCollectionProperty(
                 .initializer(fieldListInitializer(fieldNames))
                 .build()
         )
+}
+
+/**
+ * Generates initialization code for the `fieldMap` property
+ * of the `MessageOneof` implementation.
+ */
+private fun fieldMapInitializer(
+    typeName: TypeName,
+    fields: Iterable<Field>
+): String {
+    return fields.joinToString(
+        ",${lineSeparator()}",
+        "mapOf(${lineSeparator()}",
+        ")"
+    ) {
+        "${it.number} to ${typeName.simpleClassName}::class.${it.name.value.propertyName}"
+    }
+}
+
+/**
+ * Generates initialization code for the `fields` property
+ * of the `MessageDef` implementation.
+ */
+private fun fieldListInitializer(
+    fieldNames: Iterable<String>
+): String {
+    return fieldNames.joinToString(
+        ",${lineSeparator()}",
+        "listOf(${lineSeparator()}",
+        ")"
+    ) {
+        it.propertyName
+    }
 }

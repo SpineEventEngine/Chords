@@ -30,7 +30,6 @@ import com.google.protobuf.BoolValue
 import com.google.protobuf.ByteString
 import com.google.protobuf.StringValue
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageDef
@@ -67,9 +66,7 @@ import io.spine.protodata.isRepeated
 import io.spine.protodata.type.TypeSystem
 import io.spine.protodata.type.findHeader
 import io.spine.protodata.typeName
-import io.spine.string.Indent
 import io.spine.string.camelCase
-import java.lang.System.lineSeparator
 import java.nio.file.Path
 import kotlin.reflect.KClass
 
@@ -86,13 +83,9 @@ private object ValidatingBuilder {
 /**
  *
  *
- * @param messageTypeName a [TypeName] of the message to generate the code for.
- * @param fields a collection of [Field]s  to generate the code for.
  * @param typeSystem a [TypeSystem] to read external Proto messages.
  */
 internal abstract class FileGenerator(
-    private val messageTypeName: TypeName,
-    private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
 ) {
     /**
@@ -102,22 +95,9 @@ internal abstract class FileGenerator(
     internal abstract fun filePath(): Path
 
     /**
-     * Builds content of the generated file.
-     */
-    internal abstract fun buildFileContent(fileBuilder: FileSpec.Builder)
-
-    /**
      * Generates a content of the file.
      */
-    internal fun fileContent(): String {
-        return FileSpec.builder(messageTypeName.fullClassName)
-            .indent(Indent.defaultJavaIndent.toString())
-            .also { fileBuilder ->
-                buildFileContent(fileBuilder)
-            }
-            .build()
-            .toString()
-    }
+    internal abstract fun fileContent(): String
 
     /**
      * Returns a fully qualified [ClassName] for a [TypeName].
@@ -218,39 +198,6 @@ internal val validatingBuilderClassName: ClassName
         ValidatingBuilder.PACKAGE,
         ValidatingBuilder.CLASS
     )
-
-/**
- * Generates initialization code for the `fieldMap` property
- * of the `MessageOneof` implementation.
- */
-internal fun fieldMapInitializer(
-    typeName: TypeName,
-    fields: Iterable<Field>
-): String {
-    return fields.joinToString(
-        ",${lineSeparator()}",
-        "mapOf(${lineSeparator()}",
-        ")"
-    ) {
-        "${it.number} to ${typeName.simpleClassName}::class.${it.name.value.propertyName}"
-    }
-}
-
-/**
- * Generates initialization code for the `fields` property
- * of the `MessageType` implementation.
- */
-internal fun fieldListInitializer(
-    fieldNames: Iterable<String>
-): String {
-    return fieldNames.joinToString(
-        ",${lineSeparator()}",
-        "listOf(${lineSeparator()}",
-        ")"
-    ) {
-        it.propertyName
-    }
-}
 
 /**
  * Returns [ClassName] for the [Type] that is a primitive.
@@ -368,7 +315,7 @@ internal val TypeName.simpleClassName: String
         ) else simpleName
 
 /**
- * Returns name of the generated file for this [TypeName].
+ * Returns a name of the generated file for this [TypeName].
  */
 internal fun TypeName.fileName(suffix: String): String {
     return nestingTypeNameList.joinToString(
