@@ -103,7 +103,7 @@ internal abstract class FileGenerator(
      * Returns a fully qualified [ClassName] for a [TypeName].
      */
     internal val TypeName.fullClassName
-        get() = ClassName(javaPackage, simpleClassName)
+        get() = ClassName(javaPackage(typeSystem), simpleClassName)
 
     /**
      * Returns a [ClassName] of the value of a [Field].
@@ -120,7 +120,7 @@ internal abstract class FileGenerator(
      */
     internal fun TypeName.filePath(fileNameSuffix: String): Path {
         return Path.of(
-            javaPackage.replace('.', '/'),
+            javaPackage(typeSystem).replace('.', '/'),
             fileName(fileNameSuffix)
         )
     }
@@ -132,31 +132,30 @@ internal abstract class FileGenerator(
         get() = if (isPrimitive)
             primitiveClassName()
         else
-            messageClassName()
+            messageClassName(typeSystem)
+}
 
-    /**
-     * Returns [ClassName] for the [Type] that is a message.
-     */
-    private fun Type.messageClassName(): ClassName {
-        check(!isPrimitive)
-        val fileHeader = typeSystem.findHeader(this)
-        checkNotNull(fileHeader) {
-            "Cannot determine file header for type `$this`"
-        }
-        return ClassName(fileHeader.javaPackage, typeName.simpleClassName)
+/**
+ * Returns [ClassName] for the [Type] that is a message.
+ */
+private fun Type.messageClassName(typeSystem: TypeSystem): ClassName {
+    check(!isPrimitive)
+    val fileHeader = typeSystem.findHeader(this)
+    checkNotNull(fileHeader) {
+        "Cannot determine file header for type `$this`"
     }
+    return ClassName(fileHeader.javaPackage, typeName.simpleClassName)
+}
 
-    /**
-     * Returns a Java package for the [TypeName].
-     */
-    internal val TypeName.javaPackage: String
-        get() {
-            val messageToHeader = typeSystem.findMessage(this)
-            checkNotNull(messageToHeader) {
-                "Cannot determine file header for TypeName `$this`"
-            }
-            return messageToHeader.second.javaPackage
-        }
+/**
+ * Returns a Java package for the [TypeName].
+ */
+internal fun TypeName.javaPackage(typeSystem: TypeSystem): String {
+    val messageToHeader = typeSystem.findMessage(this)
+    checkNotNull(messageToHeader) {
+        "Cannot determine file header for TypeName `$this`"
+    }
+    return messageToHeader.second.javaPackage
 }
 
 /**

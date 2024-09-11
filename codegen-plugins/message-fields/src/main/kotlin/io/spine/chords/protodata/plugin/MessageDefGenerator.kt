@@ -1,3 +1,29 @@
+/*
+ * Copyright 2024, TeamDev. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Redistribution and use in source and/or binary forms, with or without
+ * modification, must retain the above copyright notice and the following
+ * disclaimer.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package io.spine.chords.protodata.plugin
 
 import com.squareup.kotlinpoet.ClassName
@@ -20,6 +46,11 @@ import io.spine.string.Indent
 import java.lang.System.lineSeparator
 import java.nio.file.Path
 import kotlin.reflect.KClass
+
+/**
+ * Suffix of the generated file name.
+ */
+private const val ClassNameSuffix = "Def"
 
 /**
  * Generates a separate Kotlin file that contains `MessageField`
@@ -100,13 +131,8 @@ import kotlin.reflect.KClass
 internal class MessageDefGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
-    typeSystem: TypeSystem
+    private val typeSystem: TypeSystem
 ) : FileGenerator(typeSystem) {
-
-    /**
-     * Suffix of file name to be generated.
-     */
-    private val fileNameSuffix = "Def"
 
     /**
      * Collection of names of [fields].
@@ -127,7 +153,7 @@ internal class MessageDefGenerator(
      * to the source root.
      */
     override fun filePath(): Path {
-        return messageTypeName.filePath(fileNameSuffix)
+        return messageTypeName.filePath(ClassNameSuffix)
     }
 
     /**
@@ -138,7 +164,7 @@ internal class MessageDefGenerator(
             .indent(Indent.defaultJavaIndent.toString())
             .also { fileBuilder ->
                 val messageDefObjectBuilder = TypeSpec.objectBuilder(
-                    messageTypeName.generatedClassName(fileNameSuffix)
+                    messageTypeName.generatedClassName(ClassNameSuffix)
                 ).addSuperinterface(
                     messageDefClassName.parameterizedBy(
                         messageTypeName.fullClassName
@@ -203,27 +229,16 @@ internal class MessageDefGenerator(
         fieldName: String,
         simpleClassName: String
     ): PropertySpec {
-        val fullClassName = ClassName(messageTypeName.javaPackage, simpleClassName)
-        return PropertySpec.builder(fieldName.propertyName, fullClassName, PUBLIC)
+        return PropertySpec
+            .builder(fieldName.propertyName, messageTypeName.fullClassName, PUBLIC)
             .initializer(simpleClassName)
             .build()
     }
 
     private fun generateKClassProperties(fileBuilder: FileSpec.Builder) {
-        fieldNames.forEach { fieldName ->
+        fieldNames.plus(oneofFieldMap.map { it.key }).forEach { fieldName ->
             fileBuilder.addProperty(
-                buildKClassPropertyDeclaration(
-                    fieldName,
-                    messageTypeName.messageFieldClassName(fieldName)
-                )
-            )
-        }
-        oneofFieldMap.map { it.key }.forEach { fieldName ->
-            fileBuilder.addProperty(
-                buildKClassPropertyDeclaration(
-                    fieldName,
-                    messageTypeName.messageOneofClassName(fieldName)
-                )
+                buildKClassPropertyDeclaration(fieldName, messageTypeName)
             )
         }
     }
@@ -376,7 +391,9 @@ internal class MessageDefGenerator(
             .addProperty(
                 PropertySpec
                     .builder("fieldMap", fieldMapType, PRIVATE)
-                    .initializer(fieldMapInitializer(messageTypeName, oneofFields))
+                    .initializer(
+                        fieldMapInitializer(messageTypeName, oneofFields)
+                    )
                     .build()
             ).addProperty(
                 PropertySpec
@@ -408,10 +425,11 @@ internal class MessageDefGenerator(
      */
     private fun buildKClassPropertyDeclaration(
         fieldName: String,
-        simpleClassName: String
+        messageTypeName: TypeName
     ): PropertySpec {
+        val simpleClassName = messageTypeName.messageFieldClassName(fieldName)
         val propertyType = ClassName(
-            messageTypeName.javaPackage,
+            messageTypeName.javaPackage(typeSystem),
             simpleClassName
         )
         val receiverType = KClass::class.asClassName()
@@ -426,7 +444,6 @@ internal class MessageDefGenerator(
             .build()
     }
 }
-
 
 private fun generateMessageDefCollectionProperty(
     messageDefObjectBuilder: TypeSpec.Builder,
@@ -443,23 +460,6 @@ private fun generateMessageDefCollectionProperty(
 }
 
 /**
- * Generates initialization code for the `fieldMap` property
- * of the `MessageOneof` implementation.
- */
-private fun fieldMapInitializer(
-    typeName: TypeName,
-    fields: Iterable<Field>
-): String {
-    return fields.joinToString(
-        ",${lineSeparator()}",
-        "mapOf(${lineSeparator()}",
-        ")"
-    ) {
-        "${it.number} to ${typeName.simpleClassName}::class.${it.name.value.propertyName}"
-    }
-}
-
-/**
  * Generates initialization code for the `fields` property
  * of the `MessageDef` implementation.
  */
@@ -472,5 +472,23 @@ private fun fieldListInitializer(
         ")"
     ) {
         it.propertyName
+    }
+}
+
+/**
+ * Generates initialization code for the `fieldMap` property
+ * of the `MessageOneof` implementation.
+ */
+private fun fieldMapInitializer(
+    typeName: TypeName,
+    fields: Iterable<Field>
+): String {
+    val generatedClassName = typeName.generatedClassName(ClassNameSuffix)
+    return fields.joinToString(
+        ",${lineSeparator()}",
+        "mapOf(${lineSeparator()}",
+        ")"
+    ) {
+        "${it.number} to $generatedClassName.${it.name.value.propertyName}"
     }
 }
