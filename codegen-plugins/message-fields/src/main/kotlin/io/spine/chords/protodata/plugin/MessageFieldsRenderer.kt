@@ -26,7 +26,6 @@
 
 package io.spine.chords.protodata.plugin
 
-import io.spine.protodata.TypeName
 import io.spine.protodata.renderer.Renderer
 import io.spine.protodata.renderer.SourceFileSet
 import io.spine.tools.code.Kotlin
@@ -60,32 +59,24 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
 
         select(FieldMetadata::class.java).all()
             .filter {
-                // Select fields that are not rejections.
+                // Exclude fields that are declared in rejections.
                 !it.id.file.path.endsWith(REJECTIONS_PROTO_FILE_NAME)
             }.map {
                 it.id.typeName
             }.forEach { typeName ->
                 val messageToHeader = typeSystem!!.findMessage(typeName)
                 checkNotNull(messageToHeader) {
-                    "Message not found for type `${typeName.fullClassName}`."
+                    "Message not found for type `$typeName`."
                 }
                 messageToHeader.first.fieldList.let { fields ->
-                    listOf(
-                        //FieldsFileGenerator(typeName, fields, typeSystem!!),
-                        MessageDefGenerator(typeName, fields, typeSystem!!)
-                    ).forEach { generator ->
-                        sources.createFile(
-                            generator.filePath(),
-                            generator.fileContent()
-                        )
-                    }
+                    MessageDefGenerator(typeName, fields, typeSystem!!)
+                        .let { generator ->
+                            sources.createFile(
+                                generator.filePath(),
+                                generator.fileContent()
+                            )
+                        }
                 }
             }
     }
 }
-
-/**
- * Returns a fully-qualified class name of the [TypeName].
- */
-private val TypeName.fullClassName: String
-    get() = "$packageName.$simpleName"

@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
@@ -115,43 +116,51 @@ internal class MessageDefGenerator(
             .addSuperinterface(
                 messageDefClassName.parameterizedBy(messageTypeName.fullClassName)
             )
-
-        generateFieldProperties(messageDefObjectBuilder)
+        generateMessageDefFieldProperties(messageDefObjectBuilder)
         generateCollectionProperties(messageDefObjectBuilder)
-
         fileBuilder.addType(messageDefObjectBuilder.build())
 
-        generateObjectDeclarations(fileBuilder)
+        generateFieldsObjectDeclarations(fileBuilder)
         generateKClassProperties(fileBuilder)
     }
 
-    private fun generateCollectionProperties(
-        messageDefObjectBuilder: TypeSpec.Builder
-    ) {
-        val fieldsReturnType = Collection::class.asClassName().parameterizedBy(
-            messageFieldClassName.parameterizedBy(
-                messageTypeName.fullClassName,
-                WildcardTypeName.producerOf(messageFieldValueTypeAlias)
-            )
+    private fun generateCollectionProperties(messageDefObjectBuilder: TypeSpec.Builder) {
+        generateMessageDefCollectionProperty(
+            messageDefObjectBuilder,
+            "fields",
+            Collection::class.asClassName().parameterizedBy(
+                messageFieldClassName.parameterizedBy(
+                    messageTypeName.fullClassName,
+                    WildcardTypeName.producerOf(messageFieldValueTypeAlias)
+                )
+            ),
+            fields.map { it.name.value }
         )
-        val oneofsReturnType = Collection::class.asClassName().parameterizedBy(
-            messageOneofClassName.parameterizedBy(messageTypeName.fullClassName)
+        generateMessageDefCollectionProperty(
+            messageDefObjectBuilder,
+            "oneofs",
+            Collection::class.asClassName().parameterizedBy(
+                messageOneofClassName.parameterizedBy(messageTypeName.fullClassName)
+            ),
+            oneofFieldMap.keys
         )
+    }
 
+    private fun generateMessageDefCollectionProperty(
+        messageDefObjectBuilder: TypeSpec.Builder,
+        propertyName: String,
+        propertyType: ParameterizedTypeName,
+        fieldNames: Collection<String>
+    ) {
         messageDefObjectBuilder
             .addProperty(
-                PropertySpec.builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
-                    .initializer(fieldListInitializer(fields.map { it.name.value }))
-                    .build()
-            )
-            .addProperty(
-                PropertySpec.builder("oneofs", oneofsReturnType, PUBLIC, OVERRIDE)
-                    .initializer(fieldListInitializer(oneofFieldMap.keys))
+                PropertySpec.builder(propertyName, propertyType, PUBLIC, OVERRIDE)
+                    .initializer(fieldListInitializer(fieldNames))
                     .build()
             )
     }
 
-    private fun generateFieldProperties(messageDefObjectBuilder: TypeSpec.Builder) {
+    private fun generateMessageDefFieldProperties(messageDefObjectBuilder: TypeSpec.Builder) {
         fields.map { it.name.value }.forEach { fieldName ->
             messageDefObjectBuilder.addProperty(
                 generateMessageDefFieldProperty(
@@ -199,7 +208,7 @@ internal class MessageDefGenerator(
         }
     }
 
-    private fun generateObjectDeclarations(fileBuilder: FileSpec.Builder) {
+    private fun generateFieldsObjectDeclarations(fileBuilder: FileSpec.Builder) {
         fields.forEach { field ->
             fileBuilder.addType(
                 buildMessageFieldClass(field)
