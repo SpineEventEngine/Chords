@@ -36,7 +36,7 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
-import io.spine.chords.protodata.plugin.MessageDefGenerator.Companion.CLASS_NAME_SUFFIX
+import io.spine.chords.protodata.plugin.MessageDefFileGenerator.Companion.CLASS_NAME_SUFFIX
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
