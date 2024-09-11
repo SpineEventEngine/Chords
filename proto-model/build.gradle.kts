@@ -35,10 +35,16 @@ import io.onedam.dependency.Spine
 import io.onedam.gradle.RunCodegenPlugins
 
 plugins {
-    id("io.spine.tools.gradle.bootstrap")
+    id("io.spine.tools.gradle.bootstrap").version("1.9.0")
     id("java-library")
     id("com.google.protobuf")
     `maven-publish`
+}
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+    google()
 }
 
 spine {
@@ -59,7 +65,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = Protobuf.Protoc.lib
+        artifact = Protobuf.compiler
     }
     generateProtoTasks {
         for (task in all()) {
