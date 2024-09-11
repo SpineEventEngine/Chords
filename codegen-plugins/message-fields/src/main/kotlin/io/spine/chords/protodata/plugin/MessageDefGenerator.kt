@@ -237,15 +237,33 @@ internal class MessageDefGenerator(
         simpleClassName: String
     ): PropertySpec {
         return PropertySpec
-            .builder(fieldName.propertyName, fullClassName, PUBLIC)
+            .builder(
+                fieldName.propertyName,
+                ClassName(
+                    messageTypeName.javaPackage(typeSystem),
+                    simpleClassName
+                ),
+                PUBLIC
+            )
             .initializer(simpleClassName)
             .build()
     }
 
     private fun generateKClassProperties(fileBuilder: FileSpec.Builder) {
-        fieldNames.plus(oneofFieldMap.map { it.key }).forEach { fieldName ->
+        fieldNames.forEach { fieldName ->
             fileBuilder.addProperty(
-                buildKClassPropertyDeclaration(fieldName, messageTypeName)
+                buildKClassPropertyDeclaration(
+                    fieldName,
+                    messageTypeName.messageFieldClassName(fieldName)
+                )
+            )
+        }
+        oneofFieldMap.map { it.key }.forEach { fieldName ->
+            fileBuilder.addProperty(
+                buildKClassPropertyDeclaration(
+                    fieldName,
+                    messageTypeName.messageOneofClassName(fieldName)
+                )
             )
         }
     }
@@ -432,9 +450,8 @@ internal class MessageDefGenerator(
      */
     private fun buildKClassPropertyDeclaration(
         fieldName: String,
-        messageTypeName: TypeName
+        simpleClassName: String
     ): PropertySpec {
-        val simpleClassName = messageTypeName.messageFieldClassName(fieldName)
         val propertyType = ClassName(
             messageTypeName.javaPackage(typeSystem),
             simpleClassName
