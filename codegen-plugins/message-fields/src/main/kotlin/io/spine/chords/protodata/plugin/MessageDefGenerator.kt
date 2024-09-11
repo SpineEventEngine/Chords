@@ -38,6 +38,10 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
+import io.spine.chords.runtime.MessageDef
+import io.spine.chords.runtime.MessageField
+import io.spine.chords.runtime.MessageFieldValue
+import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
 import io.spine.protodata.isPartOfOneof
@@ -132,7 +136,9 @@ internal class MessageDefGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) : FileGenerator(typeSystem) {
+) : FileGenerator {
+
+    private val fullClassName = messageTypeName.fullClassName(typeSystem)
 
     /**
      * Collection of names of [fields].
@@ -153,22 +159,23 @@ internal class MessageDefGenerator(
      * to the source root.
      */
     override fun filePath(): Path {
-        return messageTypeName.filePath(ClassNameSuffix)
+        return Path.of(
+            messageTypeName.javaPackage(typeSystem).replace('.', '/'),
+            messageTypeName.fileName(ClassNameSuffix)
+        )
     }
 
     /**
      * Generates a content of the file.
      */
     override fun fileContent(): String {
-        return FileSpec.builder(messageTypeName.fullClassName)
+        return FileSpec.builder(fullClassName)
             .indent(Indent.defaultJavaIndent.toString())
             .also { fileBuilder ->
                 val messageDefObjectBuilder = TypeSpec.objectBuilder(
-                    messageTypeName.generatedClassName(ClassNameSuffix)
+                    messageTypeName.generateClassName(ClassNameSuffix)
                 ).addSuperinterface(
-                    messageDefClassName.parameterizedBy(
-                        messageTypeName.fullClassName
-                    )
+                    messageDefClassName.parameterizedBy(fullClassName)
                 )
                 generateMessageDefFieldProperties(messageDefObjectBuilder)
                 generateMessageDefCollectionProperties(messageDefObjectBuilder)
@@ -188,7 +195,7 @@ internal class MessageDefGenerator(
             "fields",
             Collection::class.asClassName().parameterizedBy(
                 messageFieldClassName.parameterizedBy(
-                    messageTypeName.fullClassName,
+                    fullClassName,
                     WildcardTypeName.producerOf(messageFieldValueTypeAlias)
                 )
             ),
@@ -198,7 +205,7 @@ internal class MessageDefGenerator(
             messageDefObjectBuilder,
             "oneofs",
             Collection::class.asClassName().parameterizedBy(
-                messageOneofClassName.parameterizedBy(messageTypeName.fullClassName)
+                messageOneofClassName.parameterizedBy(fullClassName)
             ),
             oneofFieldMap.keys
         )
@@ -230,7 +237,7 @@ internal class MessageDefGenerator(
         simpleClassName: String
     ): PropertySpec {
         return PropertySpec
-            .builder(fieldName.propertyName, messageTypeName.fullClassName, PUBLIC)
+            .builder(fieldName.propertyName, fullClassName, PUBLIC)
             .initializer(simpleClassName)
             .build()
     }
@@ -294,13 +301,13 @@ internal class MessageDefGenerator(
     private fun buildMessageFieldObject(field: Field): TypeSpec {
         val generatedClassName = messageTypeName
             .messageFieldClassName(field.name.value)
-        val messageFullClassName = messageTypeName.fullClassName
+        val fieldValueClassName = field.valueClassName(typeSystem)
         val superType = messageFieldClassName
-            .parameterizedBy(messageFullClassName, field.valueClassName)
+            .parameterizedBy(fullClassName, fieldValueClassName)
         val stringType = String::class.asClassName()
         val boolType = Boolean::class.asClassName()
         val builderType = validatingBuilderClassName
-            .parameterizedBy(messageFullClassName)
+            .parameterizedBy(fullClassName)
 
         return TypeSpec.objectBuilder(generatedClassName)
             .superclass(superType)
@@ -317,22 +324,22 @@ internal class MessageDefGenerator(
             ).addFunction(
                 FunSpec.builder("valueIn")
                     .addModifiers(PUBLIC, OVERRIDE)
-                    .returns(field.valueClassName)
-                    .addParameter("message", messageFullClassName)
+                    .returns(fieldValueClassName)
+                    .addParameter("message", fullClassName)
                     .addCode("return message.${field.getterInvocation}")
                     .build()
             ).addFunction(
                 FunSpec.builder("hasValue")
                     .addModifiers(PUBLIC, OVERRIDE)
                     .returns(boolType)
-                    .addParameter("message", messageFullClassName)
+                    .addParameter("message", fullClassName)
                     .addCode("return ${field.hasValueInvocation}")
                     .build()
             ).addFunction(
                 FunSpec.builder("setValue")
                     .addModifiers(PUBLIC, OVERRIDE)
                     .addParameter("builder", builderType)
-                    .addParameter("newValue", field.valueClassName)
+                    .addParameter("newValue", fieldValueClassName)
                     .addCode(field.generateSetterCode(messageTypeName))
                     .build()
             ).build()
@@ -370,7 +377,7 @@ internal class MessageDefGenerator(
     ): TypeSpec {
         val messageFieldType = messageFieldClassName
             .parameterizedBy(
-                messageTypeName.fullClassName,
+                fullClassName,
                 WildcardTypeName.producerOf(messageFieldValueTypeAlias)
             )
         val fieldMapType = Map::class.asClassName().parameterizedBy(
@@ -381,7 +388,7 @@ internal class MessageDefGenerator(
         val fieldsReturnType = Collection::class.asClassName()
             .parameterizedBy(messageFieldType)
         val superType = messageOneofClassName
-            .parameterizedBy(messageTypeName.fullClassName)
+            .parameterizedBy(fullClassName)
         val oneofPropName = oneofName.propertyName
         val generatedClassName = messageTypeName
             .messageOneofClassName(oneofName)
@@ -409,7 +416,7 @@ internal class MessageDefGenerator(
                 FunSpec.builder("selectedField")
                     .addModifiers(PUBLIC, OVERRIDE)
                     .returns(messageFieldType.copy(nullable = true))
-                    .addParameter("message", messageTypeName.fullClassName)
+                    .addParameter("message", fullClassName)
                     .addCode("return fieldMap[message.${oneofPropName}Case.number]")
                     .build()
             ).build()
@@ -433,7 +440,7 @@ internal class MessageDefGenerator(
             simpleClassName
         )
         val receiverType = KClass::class.asClassName()
-            .parameterizedBy(messageTypeName.fullClassName)
+            .parameterizedBy(fullClassName)
         val getterCode = FunSpec.getterBuilder()
             .addCode("return $simpleClassName")
             .build()
@@ -483,7 +490,7 @@ private fun fieldMapInitializer(
     typeName: TypeName,
     fields: Iterable<Field>
 ): String {
-    val generatedClassName = typeName.generatedClassName(ClassNameSuffix)
+    val generatedClassName = typeName.generateClassName(ClassNameSuffix)
     return fields.joinToString(
         ",${lineSeparator()}",
         "mapOf(${lineSeparator()}",
@@ -492,3 +499,36 @@ private fun fieldMapInitializer(
         "${it.number} to $generatedClassName.${it.name.value.propertyName}"
     }
 }
+
+/**
+ * Returns a name of the generated file for this [TypeName].
+ */
+internal fun TypeName.fileName(suffix: String): String {
+    return nestingTypeNameList.joinToString(
+        "", "", "${simpleName}$suffix.kt"
+    )
+}
+
+/**
+ * Returns [ClassName] of [MessageField].
+ */
+internal val messageFieldClassName: ClassName
+    get() = MessageField::class.asClassName()
+
+/**
+ * Returns [ClassName] of [MessageOneof].
+ */
+internal val messageOneofClassName: ClassName
+    get() = MessageOneof::class.asClassName()
+
+/**
+ * Returns [ClassName] of [MessageDef].
+ */
+internal val messageDefClassName: ClassName
+    get() = MessageDef::class.asClassName()
+
+/**
+ * Returns [ClassName] of [MessageFieldValue].
+ */
+internal val messageFieldValueTypeAlias: ClassName
+    get() = MessageFieldValue::class.asClassName()

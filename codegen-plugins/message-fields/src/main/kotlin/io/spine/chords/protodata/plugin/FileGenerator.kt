@@ -32,10 +32,6 @@ import com.google.protobuf.StringValue
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.asClassName
-import io.spine.chords.runtime.MessageDef
-import io.spine.chords.runtime.MessageField
-import io.spine.chords.runtime.MessageFieldValue
-import io.spine.chords.runtime.MessageOneof
 import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.Field
 import io.spine.protodata.PrimitiveType
@@ -83,56 +79,47 @@ private object ValidatingBuilder {
 /**
  *
  *
- * @param typeSystem a [TypeSystem] to read external Proto messages.
  */
-internal abstract class FileGenerator(
-    private val typeSystem: TypeSystem
-) {
+internal interface FileGenerator {
     /**
      * Returns a [Path] to the generated file that is relative
      * to the source root.
      */
-    internal abstract fun filePath(): Path
+    fun filePath(): Path
 
     /**
      * Generates a content of the file.
      */
-    internal abstract fun fileContent(): String
+    fun fileContent(): String
+}
 
-    /**
-     * Returns a fully qualified [ClassName] for a [TypeName].
-     */
-    internal val TypeName.fullClassName
-        get() = ClassName(javaPackage(typeSystem), simpleClassName)
+/**
+ * Returns a [ClassName] of the value of a [Field].
+ */
+internal fun Field.valueClassName(typeSystem: TypeSystem)
+        : com.squareup.kotlinpoet.TypeName {
+    return if (isRepeated)
+        Iterable::class.asClassName()
+            .parameterizedBy(type.className(typeSystem))
+    else
+        type.className(typeSystem)
+}
 
-    /**
-     * Returns a [ClassName] of the value of a [Field].
-     */
-    internal val Field.valueClassName
-        get() = if (isRepeated)
-            Iterable::class.asClassName()
-                .parameterizedBy(type.className)
-        else type.className
+/**
+ * Returns [ClassName] for the [Type].
+ */
+private fun Type.className(typeSystem: TypeSystem): ClassName {
+    return if (isPrimitive)
+        primitiveClassName
+    else
+        messageClassName(typeSystem)
+}
 
-    /**
-     * Returns a [Path] to the generated file for a [TypeName]
-     * with a [fileNameSuffix] provided.
-     */
-    internal fun TypeName.filePath(fileNameSuffix: String): Path {
-        return Path.of(
-            javaPackage(typeSystem).replace('.', '/'),
-            fileName(fileNameSuffix)
-        )
-    }
-
-    /**
-     * Returns [ClassName] for the [Type].
-     */
-    private val Type.className
-        get() = if (isPrimitive)
-            primitiveClassName()
-        else
-            messageClassName(typeSystem)
+/**
+ * Returns a fully qualified [ClassName] for a [TypeName].
+ */
+internal fun TypeName.fullClassName(typeSystem: TypeSystem): ClassName {
+    return ClassName(javaPackage(typeSystem), simpleClassName)
 }
 
 /**
@@ -166,30 +153,6 @@ internal val String.propertyName
     get() = camelCase().replaceFirstChar { it.lowercase() }
 
 /**
- * Returns [ClassName] of [MessageField].
- */
-internal val messageFieldClassName: ClassName
-    get() = MessageField::class.asClassName()
-
-/**
- * Returns [ClassName] of [MessageOneof].
- */
-internal val messageOneofClassName: ClassName
-    get() = MessageOneof::class.asClassName()
-
-/**
- * Returns [ClassName] of [MessageDef].
- */
-internal val messageDefClassName: ClassName
-    get() = MessageDef::class.asClassName()
-
-/**
- * Returns [ClassName] of [MessageFieldValue].
- */
-internal val messageFieldValueTypeAlias: ClassName
-    get() = MessageFieldValue::class.asClassName()
-
-/**
  * Returns [ClassName] of `ValidatingBuilder`.
  */
 internal val validatingBuilderClassName: ClassName
@@ -201,10 +164,11 @@ internal val validatingBuilderClassName: ClassName
 /**
  * Returns [ClassName] for the [Type] that is a primitive.
  */
-private fun Type.primitiveClassName(): ClassName {
-    check(isPrimitive)
-    return primitive.primitiveClass().asClassName()
-}
+private val Type.primitiveClassName: ClassName
+    get() {
+        check(isPrimitive)
+        return primitive.primitiveClass.asClassName()
+    }
 
 /**
  * Returns a Java package declared in [ProtoFileHeader].
@@ -274,27 +238,27 @@ private val Field.setterInvocation: String
  * Generates a simple class name for the implementation of `MessageField`.
  */
 internal fun TypeName.messageFieldClassName(fieldName: String): String {
-    return generatedClassName(fieldName, "Field")
+    return generateClassName(fieldName, "Field")
 }
 
 /**
  * Generates a simple class name for the implementation of `MessageOneof`.
  */
 internal fun TypeName.messageOneofClassName(fieldName: String): String {
-    return generatedClassName(fieldName, "Oneof")
+    return generateClassName(fieldName, "Oneof")
 }
 
 /**
  * Generates a simple class name for the `fieldName` provided.
  */
-internal fun TypeName.generatedClassName(suffix: String): String {
-    return generatedClassName("", suffix)
+internal fun TypeName.generateClassName(suffix: String): String {
+    return generateClassName("", suffix)
 }
 
 /**
- * Generates a simple class name for the `fieldName` provided.
+ * Generates a simple class name for the [fieldName] provided.
  */
-internal fun TypeName.generatedClassName(fieldName: String, suffix: String): String {
+internal fun TypeName.generateClassName(fieldName: String, suffix: String): String {
     return nestingTypeNameList.joinToString(
         "",
         "",
@@ -314,25 +278,18 @@ internal val TypeName.simpleClassName: String
         ) else simpleName
 
 /**
- * Returns a name of the generated file for this [TypeName].
- */
-internal fun TypeName.fileName(suffix: String): String {
-    return nestingTypeNameList.joinToString(
-        "", "", "${simpleName}$suffix.kt"
-    )
-}
-
-/**
  * Obtains a Kotlin class which corresponds to the [PrimitiveType].
  */
-private fun PrimitiveType.primitiveClass(): KClass<*> =
-    when (this) {
-        TYPE_DOUBLE -> Double::class
-        TYPE_FLOAT -> Float::class
-        TYPE_INT64, TYPE_UINT64, TYPE_SINT64, TYPE_FIXED64, TYPE_SFIXED64 -> Long::class
-        TYPE_INT32, TYPE_UINT32, TYPE_SINT32, TYPE_FIXED32, TYPE_SFIXED32 -> Int::class
-        TYPE_BOOL -> Boolean::class
-        TYPE_STRING -> String::class
-        TYPE_BYTES -> ByteString::class
-        UNRECOGNIZED, PT_UNKNOWN -> error("Unknown primitive type: `$this`.")
+private val PrimitiveType.primitiveClass: KClass<*>
+    get() {
+        return when (this) {
+            TYPE_DOUBLE -> Double::class
+            TYPE_FLOAT -> Float::class
+            TYPE_INT64, TYPE_UINT64, TYPE_SINT64, TYPE_FIXED64, TYPE_SFIXED64 -> Long::class
+            TYPE_INT32, TYPE_UINT32, TYPE_SINT32, TYPE_FIXED32, TYPE_SFIXED32 -> Int::class
+            TYPE_BOOL -> Boolean::class
+            TYPE_STRING -> String::class
+            TYPE_BYTES -> ByteString::class
+            UNRECOGNIZED, PT_UNKNOWN -> error("Unknown primitive type: `$this`.")
+        }
     }
