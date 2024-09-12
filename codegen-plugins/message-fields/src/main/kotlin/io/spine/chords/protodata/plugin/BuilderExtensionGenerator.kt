@@ -43,7 +43,7 @@ internal class BuilderExtensionGenerator(
         val messageClass = messageTypeName.fullClassName(typeSystem)
         val messageDefSimpleName = messageTypeName.messageDefClassName()
         val messageDefClass = ClassName(
-            messageTypeName.packageName,
+            messageTypeName.javaPackage(typeSystem),
             messageDefSimpleName
         )
         fileBuilder.addProperty(
