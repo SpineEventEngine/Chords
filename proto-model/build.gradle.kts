@@ -40,6 +40,8 @@ plugins {
     `maven-publish`
 }
 
+apply<JavaPlugin>()
+
 repositories {
     mavenCentral()
     gradlePluginPortal()

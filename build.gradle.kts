@@ -71,6 +71,7 @@ subprojects {
     apply {
         plugin("jvm-module")
     }
+    apply<JavaPlugin>()
 }
 
 spinePublishing {

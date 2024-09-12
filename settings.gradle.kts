@@ -25,6 +25,14 @@
  */
 
 rootProject.name = "Chords"
+
+pluginManagement {
+    repositories {
+        gradlePluginPortal() // Default Gradle Plugin Portal
+        maven("https://repository.mulesoft.org/nexus/content/repositories/public/")
+    }
+}
+
 include("core")
 include("codegen-runtime")
 include("proto-model")
