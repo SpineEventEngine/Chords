@@ -37,7 +37,6 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
-import io.spine.chords.protodata.plugin.MessageDefFileGenerator.Companion.CLASS_NAME_SUFFIX
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
@@ -89,8 +88,8 @@ internal class MessageOneofObjectGenerator(
      *     public object IpAddressValueOneof : MessageOneof<IpAddress> {
      *         private val fieldMap: Map<Int, MessageField<IpAddress, *>> =
      *             mapOf(
-     *                 1 to IpAddress::class.ipv4,
-     *                 2 to IpAddress::class.ipv6
+     *                 1 to IpAddressDef.ipv4,
+     *                 2 to IpAddressDef.ipv6
      *             )
      *
      *         public override val name: String = "value"
@@ -132,7 +131,7 @@ internal class MessageOneofObjectGenerator(
                     .initializer(
                         fieldMapInitializer(
                             oneofFields,
-                            messageTypeName.generateClassName(CLASS_NAME_SUFFIX)
+                            messageTypeName.generateClassName()
                         )
                     )
                     .build()
@@ -164,6 +163,14 @@ internal class MessageOneofObjectGenerator(
 /**
  * Generates initialization code for the `fieldMap` property
  * of the [MessageOneof] implementation.
+ *
+ * The generated code looks like the following:
+ * ```
+ * mapOf(
+ *     1 to IpAddressDef.ipv4,
+ *     2 to IpAddressDef.ipv6
+ * )
+ * ```
  */
 private fun fieldMapInitializer(
     fields: Iterable<Field>,

@@ -26,7 +26,6 @@
 
 package io.spine.chords.protodata.plugin
 
-import com.google.protobuf.StringValue
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.asClassName
@@ -35,72 +34,19 @@ import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.Field
-import io.spine.protodata.ProtoFileHeader
 import io.spine.protodata.TypeName
-import io.spine.protodata.find
-import io.spine.protodata.renderer.SourceFileSet
 import io.spine.protodata.type.TypeSystem
-import io.spine.string.Indent
 import io.spine.string.camelCase
-import java.nio.file.Path
 
 /**
- * Generates a separate Kotlin file that contains `MessageField`
- * and `MessageOneof` implementations for the fields of a Proto message.
+ * Implementation of [FileFragmentGenerator] that combines several other
+ * generators to create a separate Kotlin file with implementations of
+ * [MessageDef], [MessageField], and [MessageOneof] for a Proto message.
  *
- * Below is generated `MessageField` implementation for the field `domain_name`
- * of the `RegistrationInfo` message:
+ * Also, the properties for the corresponding message class are
+ * generated to provide a static-like access to these implementations.
+ * See [KClassPropertiesGenerator] for detail.
  *
- * ```
- *     public val KClass<RegistrationInfo>.domainName: RegistrationInfoDomainName
- *         get() = RegistrationInfoDomainName()
- *
- *     public class RegistrationInfoDomainName:
- *         MessageField<RegistrationInfo, InternetDomain> {
- *
- *         public override val name: String = "domain_name"
- *
- *         public override val required: Boolean = true
- *
- *         public override fun valueIn(message: RegistrationInfo) : InternetDomain {
- *             return message.domainName
- *         }
- *
- *         public override fun hasValue(message: RegistrationInfo) : Boolean {
- *             return message.hasDomainName()
- *         }
- *
- *         override fun setValue(
- *             builder: ValidatingBuilder<RegistrationInfo>,
- *             value: InternetDomain
- *         ) {
- *             (builder as RegistrationInfo.Builder).setDomainName(value)
- *         }
- *     }
- * ```
- *
- * Generated implementation of `MessageOneof` for the `value` field
- * of the `IpAddress` message:
- *
- * ```
- *     public val KClass<IpAddress>.`value`: IpAddressValue
- *         get() = IpAddressValue()
- *
- *     public class IpAddressValue : MessageOneof<IpAddress> {
- *         private val fieldMap: Map<Int, MessageField<IpAddress, *>> = mapOf(
- *             1 to IpAddress::class.ipv4,
- *             2 to IpAddress::class.ipv6)
- *
- *         public override val name: String = "value"
- *
- *         public override val fields: Iterable<MessageField<IpAddress, *>>
- *             = fieldMap.values
- *
- *         public override fun selectedField(message: IpAddress):
- *             MessageField<IpAddress, *>? = fieldMap[message.valueCase.number]
- *     }
- *
- * ```
  *
  * @param messageTypeName a [TypeName] of the message to generate the code for.
  * @param fields a collection of [Field]s to generate the code for.
@@ -112,21 +58,8 @@ internal class MessageDefFileGenerator(
     private val typeSystem: TypeSystem
 ) : FileFragmentGenerator {
 
-    companion object {
-        /**
-         * Suffix of the generated [MessageDef] class name.
-         */
-        internal const val CLASS_NAME_SUFFIX = "Def"
-    }
-
     /**
-     * The list of [FileFragmentGenerator]s which are used to generate
-     * the implementations of [MessageDef], [MessageField],
-     * and [MessageOneof] interfaces.
-     *
-     * Also, the properties for the corresponding message classes are
-     * generated to provide a "static" access to these implementations.
-     * See [KClassPropertiesGenerator] for detail.
+     * The list of [FileFragmentGenerator]s which are used to generate the file.
      */
     private val codeGenerators = listOf(
         MessageDefObjectGenerator(messageTypeName, fields, typeSystem),
@@ -143,122 +76,57 @@ internal class MessageDefFileGenerator(
             generator.generateCode(fileBuilder)
         }
     }
-
-    /**
-     * Generates a file that with implementation of [MessageDef].
-     */
-    internal fun generateMessageDefImplementation(sources: SourceFileSet) {
-        sources.createFile(
-            messageTypeName.path(),
-            FileSpec.builder(messageTypeName.fullClassName(typeSystem))
-                .indent(Indent.defaultJavaIndent.toString())
-                .also { fileBuilder ->
-                    generateCode(fileBuilder)
-                }
-                .build()
-                .toString()
-        )
-    }
-
-    /**
-     * Returns a [Path] to the generated file for this [TypeName].
-     */
-    private fun TypeName.path(): Path {
-        return Path.of(
-            javaPackage(typeSystem).replace('.', '/'),
-            generatedFileName()
-        )
-    }
-
-    /**
-     * Returns a name of the generated file for this [TypeName].
-     */
-    private fun TypeName.generatedFileName(): String {
-        return nestingTypeNameList.joinToString(
-            "", "", "${simpleName}$CLASS_NAME_SUFFIX.kt"
-        )
-    }
 }
 
 /**
- * Converts a Proto field name to "property" name,
+ * Converts a Proto field name to a "property" name,
  * e.g. "domain_name" -> "domainName".
  */
 internal val String.propertyName
     get() = camelCase().replaceFirstChar { it.lowercase() }
 
 /**
- * Returns [ClassName] of [MessageField].
+ * Returns a [ClassName] of [MessageField].
  */
 internal val messageFieldClassName: ClassName
     get() = MessageField::class.asClassName()
 
 /**
- * Returns [ClassName] of [MessageOneof].
+ * Returns a [ClassName] of [MessageOneof].
  */
 internal val messageOneofClassName: ClassName
     get() = MessageOneof::class.asClassName()
 
 /**
- * Returns [ClassName] of [MessageFieldValue].
+ * Returns a [ClassName] of [MessageFieldValue].
  */
 internal val messageFieldValueTypeAlias: ClassName
     get() = MessageFieldValue::class.asClassName()
 
 /**
- * Returns a Java package for the [TypeName].
- */
-internal fun TypeName.javaPackage(typeSystem: TypeSystem): String {
-    val messageToHeader = typeSystem.findMessage(this)
-    checkNotNull(messageToHeader) {
-        "Cannot determine file header for TypeName `$this`"
-    }
-    return messageToHeader.second.javaPackage
-}
-
-/**
- * Returns a fully qualified [ClassName] for the [TypeName].
- */
-internal fun TypeName.fullClassName(typeSystem: TypeSystem): ClassName {
-    return ClassName(javaPackage(typeSystem), simpleClassName)
-}
-
-/**
- * Returns a Java package declared in [ProtoFileHeader].
- */
-internal val ProtoFileHeader.javaPackage: String
-    get() {
-        val optionName = "java_package"
-        val option = optionList.find(optionName, StringValue::class.java)
-        checkNotNull(option) {
-            "Cannot find option `$optionName` in file header `${this}`."
-        }
-        return option.value
-    }
-
-/**
- * Generates a simple class name for the implementation of `MessageField`.
+ * Generates a simple class name for the implementation of [MessageField].
  */
 internal fun TypeName.messageFieldClassName(fieldName: String): String {
     return generateClassName(fieldName, "Field")
 }
 
 /**
- * Generates a simple class name for the implementation of `MessageOneof`.
+ * Generates a simple class name for the implementation of [MessageOneof].
  */
 internal fun TypeName.messageOneofClassName(fieldName: String): String {
     return generateClassName(fieldName, "Oneof")
 }
 
 /**
- * Generates a simple class name for the `fieldName` provided.
+ * Generates a simple class name for the [TypeName].
  */
-internal fun TypeName.generateClassName(suffix: String): String {
-    return generateClassName("", suffix)
+internal fun TypeName.generateClassName(): String {
+    return generateClassName("", "Def")
 }
 
 /**
- * Generates a simple class name for the [fieldName] provided.
+ * Generates a simple class name for the [fieldName]
+ * and [classNameSuffix] provided taking into account nesting types.
  */
 internal fun TypeName.generateClassName(
     fieldName: String,
@@ -272,7 +140,8 @@ internal fun TypeName.generateClassName(
 }
 
 /**
- * Returns simple class name for the [TypeName].
+ * Returns simple class name for the [TypeName]
+ * taking into account nesting types.
  */
 internal val TypeName.simpleClassName: String
     get() = if (nestingTypeNameList.isNotEmpty())

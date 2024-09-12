@@ -266,7 +266,7 @@ private fun Type.messageClassName(typeSystem: TypeSystem): ClassName {
 /**
  * Indicates if the `required` option is applied to the [Field].
  */
-internal val Field.required: Boolean
+private val Field.required: Boolean
     get() = optionList.any { option ->
         option.name == "required" &&
                 unpack(option.value, BoolValue::class.java).value

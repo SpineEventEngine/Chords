@@ -26,9 +26,19 @@
 
 package io.spine.chords.protodata.plugin
 
+import com.google.protobuf.StringValue
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
+import io.spine.protodata.Field
+import io.spine.protodata.ProtoFileHeader
+import io.spine.protodata.TypeName
+import io.spine.protodata.find
 import io.spine.protodata.renderer.Renderer
 import io.spine.protodata.renderer.SourceFileSet
+import io.spine.protodata.type.TypeSystem
+import io.spine.string.Indent
 import io.spine.tools.code.Kotlin
+import java.nio.file.Path
 
 /**
  * ProtoData [Renderer] that generates `MessageField` and `MessageOneof`
@@ -42,11 +52,12 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
     private companion object {
         private const val KOTLIN_SOURCE_ROOT = "kotlin"
         private const val REJECTIONS_PROTO_FILE_NAME = "rejections.proto"
+        private const val FILE_NAME_SUFFIX = "Def"
     }
 
     /**
-     * Gathers available [FieldMetadata]s for command messages
-     * and performs code generation.
+     * Gathers available [FieldMetadata]s for Proto messages
+     * and performs the code generation.
      */
     override fun render(sources: SourceFileSet) {
         // Generate code for Kotlin output root only.
@@ -69,9 +80,76 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
                     "Message not found for type `$typeName`."
                 }
                 messageToHeader.first.fieldList.let { fields ->
-                    MessageDefFileGenerator(typeName, fields, typeSystem!!)
-                        .generateMessageDefImplementation(sources)
+                    sources.createFile(
+                        typeName.generateFilePath(),
+                        typeName.generateFileContent(fields)
+                    )
                 }
             }
     }
+
+    /**
+     * Runs [MessageDefFileGenerator] to generate a content of the file
+     * for the [fields] provided.
+     */
+    private fun TypeName.generateFileContent(
+        fields: Iterable<Field>
+    ) = FileSpec.builder(fullClassName(typeSystem!!))
+        .indent(Indent.defaultJavaIndent.toString())
+        .also { fileBuilder ->
+            MessageDefFileGenerator(this, fields, typeSystem!!)
+                .generateCode(fileBuilder)
+        }
+        .build()
+        .toString()
+
+    /**
+     * Returns a [Path] to the generated file for the given [TypeName].
+     */
+    private fun TypeName.generateFilePath(): Path {
+        return Path.of(
+            javaPackage(typeSystem!!).replace('.', '/'),
+            generateFileName()
+        )
+    }
+
+    /**
+     * Returns a name of the generated file for the [TypeName].
+     */
+    private fun TypeName.generateFileName(): String {
+        return nestingTypeNameList.joinToString(
+            "", "", "${simpleName}$FILE_NAME_SUFFIX.kt"
+        )
+    }
 }
+
+/**
+ * Returns a Java package for the [TypeName].
+ */
+internal fun TypeName.javaPackage(typeSystem: TypeSystem): String {
+    val messageToHeader = typeSystem.findMessage(this)
+    checkNotNull(messageToHeader) {
+        "Cannot determine file header for TypeName `$this`"
+    }
+    return messageToHeader.second.javaPackage
+}
+
+/**
+ * Returns a fully qualified [ClassName] for the [TypeName].
+ */
+internal fun TypeName.fullClassName(typeSystem: TypeSystem): ClassName {
+    return ClassName(javaPackage(typeSystem), simpleClassName)
+}
+
+/**
+ * Returns a Java package declared in [ProtoFileHeader].
+ */
+internal val ProtoFileHeader.javaPackage: String
+    get() {
+        val optionName = "java_package"
+        val option = optionList.find(optionName, StringValue::class.java)
+        checkNotNull(option) {
+            "Cannot find option `$optionName` in file header `${this}`."
+        }
+        return option.value
+    }

@@ -35,8 +35,9 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
-import io.spine.chords.protodata.plugin.MessageDefFileGenerator.Companion.CLASS_NAME_SUFFIX
 import io.spine.chords.runtime.MessageDef
+import io.spine.chords.runtime.MessageField
+import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
 import io.spine.protodata.isPartOfOneof
@@ -63,7 +64,7 @@ internal class MessageDefObjectGenerator(
     private val fieldNames = fields.map { it.name.value }
 
     /**
-     * Collection of names of the fields which are parts of some `oneof`.
+     * Collection of names of the `oneof` [fields].
      */
     private val oneofNames = fields.filter { field ->
         field.isPartOfOneof
@@ -95,90 +96,101 @@ internal class MessageDefObjectGenerator(
     override fun generateCode(fileBuilder: FileSpec.Builder) {
         fileBuilder.addType(
             TypeSpec.objectBuilder(
-                messageTypeName.generateClassName(CLASS_NAME_SUFFIX)
+                messageTypeName.generateClassName()
             ).addSuperinterface(
-                messageDefClassName.parameterizedBy(
+                MessageDef::class.asClassName().parameterizedBy(
                     messageTypeName.fullClassName(typeSystem)
                 )
-            ).also { builder ->
-                generateFieldProperties(builder)
-                generateOneofProperties(builder)
-                generateFieldsProperty(builder)
-                generateOneofsProperty(builder)
+            ).also { objectBuilder ->
+                fieldNames.forEach { fieldName ->
+                    objectBuilder.addProperty(
+                        buildFieldInstanceProperty(
+                            fieldName,
+                            messageTypeName.messageFieldClassName(fieldName)
+                        )
+                    )
+                }
+                oneofNames.forEach { fieldName ->
+                    objectBuilder.addProperty(
+                        buildFieldInstanceProperty(
+                            fieldName,
+                            messageTypeName.messageOneofClassName(fieldName)
+                        )
+                    )
+                }
+                objectBuilder.addProperty(
+                    buildFieldsProperty()
+                )
+                objectBuilder.addProperty(
+                    buildOneofsProperty()
+                )
             }.build()
         )
     }
 
-    private fun generateFieldsProperty(objectBuilder: TypeSpec.Builder) {
+    /**
+     * Builds the `fields` property of [MessageDef] implementation.
+     */
+    private fun buildFieldsProperty(): PropertySpec {
         val propType = Collection::class.asClassName().parameterizedBy(
             messageFieldClassName.parameterizedBy(
                 messageTypeName.fullClassName(typeSystem),
                 WildcardTypeName.producerOf(messageFieldValueTypeAlias)
             )
         )
-        objectBuilder.addProperty(
-            PropertySpec.builder("fields", propType, PUBLIC, OVERRIDE)
-                .initializer(fieldListInitializer(fieldNames))
-                .build()
-        )
+        return PropertySpec.builder("fields", propType, PUBLIC, OVERRIDE)
+            .initializer(fieldListInitializer(fieldNames))
+            .build()
     }
 
-    private fun generateOneofsProperty(objectBuilder: TypeSpec.Builder) {
+    /**
+     * Builds the `oneofs` property of [MessageDef] implementation.
+     */
+    private fun buildOneofsProperty(): PropertySpec {
         val propType = Collection::class.asClassName().parameterizedBy(
             messageOneofClassName.parameterizedBy(
                 messageTypeName.fullClassName(typeSystem)
             )
         )
-        objectBuilder.addProperty(
-            PropertySpec.builder("oneofs", propType, PUBLIC, OVERRIDE)
-                .initializer(fieldListInitializer(oneofNames))
-                .build()
-        )
+        return PropertySpec.builder("oneofs", propType, PUBLIC, OVERRIDE)
+            .initializer(fieldListInitializer(oneofNames))
+            .build()
     }
 
-    private fun generateFieldProperties(objectBuilder: TypeSpec.Builder) {
-        fieldNames.forEach { fieldName ->
-            objectBuilder.addProperty(
-                generateFieldProperty(
-                    fieldName,
-                    messageTypeName.messageFieldClassName(fieldName)
-                )
-            )
-        }
-    }
-
-    private fun generateOneofProperties(objectBuilder: TypeSpec.Builder) {
-        oneofNames.forEach { fieldName ->
-            objectBuilder.addProperty(
-                generateFieldProperty(
-                    fieldName,
-                    messageTypeName.messageOneofClassName(fieldName)
-                )
-            )
-        }
-    }
-
-    private fun generateFieldProperty(
+    /**
+     * Builds a property that references the instance of [MessageField]
+     * or [MessageOneof] implementation.
+     *
+     */
+    private fun buildFieldInstanceProperty(
         fieldName: String,
-        simpleClassName: String
+        implSimpleClassName: String
     ): PropertySpec {
         return PropertySpec
             .builder(
                 fieldName.propertyName,
                 ClassName(
                     messageTypeName.javaPackage(typeSystem),
-                    simpleClassName
+                    implSimpleClassName
                 ),
                 PUBLIC
             )
-            .initializer(simpleClassName)
+            .initializer(implSimpleClassName)
             .build()
     }
 }
 
 /**
  * Generates initialization code for the `fields` property
- * of the `MessageDef` implementation.
+ * of the [MessageDef] implementation.
+ *
+ * The generated code looks like the following:
+ * ```
+ * listOf(
+ *     ipv4,
+ *     ipv6
+ * )
+ * ```
  */
 private fun fieldListInitializer(
     fieldNames: Iterable<String>
@@ -191,9 +203,3 @@ private fun fieldListInitializer(
         it.propertyName
     }
 }
-
-/**
- * Returns [ClassName] of [MessageDef].
- */
-private val messageDefClassName: ClassName
-    get() = MessageDef::class.asClassName()
