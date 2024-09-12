@@ -153,7 +153,7 @@ internal class MessageFieldObjectGenerator(
                     .addModifiers(PUBLIC, OVERRIDE)
                     .returns(fieldValueClassName)
                     .addParameter("message", messageFullClassName)
-                    .addCode("return message.${field.getterName}")
+                    .addCode("return message.${field.getterName}()")
                     .build()
             ).addFunction(
                 FunSpec.builder("hasValue")
