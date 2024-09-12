@@ -35,7 +35,7 @@ import io.spine.tools.code.Kotlin
  * implementations for the fields of Proto messages.
  *
  * The renderer prepares all the required data for code generation
- * and runs specific [MessageDefFileGenerator]s to generate Kotlin files.
+ * and runs [MessageDefFileGenerator] to generate Kotlin files.
  */
 public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
 

@@ -27,6 +27,7 @@
 package io.spine.chords.protodata.plugin
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -64,6 +65,7 @@ import java.lang.System.lineSeparator
  * ```
  *
  * @param messageTypeName a [TypeName] of the message to generate the code for.
+ * @param fields a collection of [Field]s to generate the code for.
  * @param typeSystem a [TypeSystem] to read external Proto messages.
  */
 internal class MessageDefObjectGenerator(
@@ -114,17 +116,19 @@ internal class MessageDefObjectGenerator(
      * }
      * ```
      */
-    internal fun buildMessageDefObject(): TypeSpec {
-        return TypeSpec.objectBuilder(
-            messageTypeName.generateClassName(CLASS_NAME_SUFFIX)
-        ).addSuperinterface(
-            messageDefClassName.parameterizedBy(messageFullClassName)
-        ).also { builder ->
-            generateFieldProperties(builder)
-            generateOneofProperties(builder)
-            generateFieldsProperty(builder)
-            generateOneofsProperty(builder)
-        }.build()
+    internal fun generateCode(fileBuilder: FileSpec.Builder) {
+        fileBuilder.addType(
+            TypeSpec.objectBuilder(
+                messageTypeName.generateClassName(CLASS_NAME_SUFFIX)
+            ).addSuperinterface(
+                messageDefClassName.parameterizedBy(messageFullClassName)
+            ).also { builder ->
+                generateFieldProperties(builder)
+                generateOneofProperties(builder)
+                generateFieldsProperty(builder)
+                generateOneofsProperty(builder)
+            }.build()
+        )
     }
 
     private fun generateFieldsProperty(objectBuilder: TypeSpec.Builder) {

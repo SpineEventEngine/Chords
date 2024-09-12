@@ -27,6 +27,7 @@
 package io.spine.chords.protodata.plugin
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
@@ -40,6 +41,7 @@ import io.spine.chords.protodata.plugin.MessageDefFileGenerator.Companion.CLASS_
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
+import io.spine.protodata.isPartOfOneof
 import io.spine.protodata.type.TypeSystem
 import java.lang.System.lineSeparator
 
@@ -74,10 +76,12 @@ import java.lang.System.lineSeparator
  * ```
  *
  * @param messageTypeName a [TypeName] of the message to generate the code for.
+ * @param fields a collection of [Field]s to generate the code for.
  * @param typeSystem a [TypeSystem] to read external Proto messages.
  */
 internal class MessageOneofObjectGenerator(
     private val messageTypeName: TypeName,
+    private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
 ) {
 
@@ -87,6 +91,18 @@ internal class MessageOneofObjectGenerator(
         javaPackage,
         messageTypeName.simpleClassName
     )
+
+    internal fun generateCode(fileBuilder: FileSpec.Builder) {
+        fields.filter { field ->
+            field.isPartOfOneof
+        }.groupBy { oneofField ->
+            oneofField.oneofName.value
+        }.forEach { filedMap ->
+            fileBuilder.addType(
+                buildOneofObject(filedMap.key, filedMap.value)
+            )
+        }
+    }
 
     /**
      * Generates implementation of `MessageOneof` for the given `oneof` field
@@ -114,7 +130,7 @@ internal class MessageOneofObjectGenerator(
      *     }
      * ```
      */
-    internal fun buildMessageOneofObject(
+    private fun buildOneofObject(
         oneofName: String,
         oneofFields: List<Field>
     ): TypeSpec {

@@ -29,9 +29,6 @@ package io.spine.chords.protodata.plugin
 import com.google.protobuf.StringValue
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
@@ -41,12 +38,10 @@ import io.spine.protodata.Field
 import io.spine.protodata.ProtoFileHeader
 import io.spine.protodata.TypeName
 import io.spine.protodata.find
-import io.spine.protodata.isPartOfOneof
 import io.spine.protodata.type.TypeSystem
 import io.spine.string.Indent
 import io.spine.string.camelCase
 import java.nio.file.Path
-import kotlin.reflect.KClass
 
 /**
  * Generates a separate Kotlin file that contains `MessageField`
@@ -106,20 +101,6 @@ import kotlin.reflect.KClass
  *
  * ```
  *
- * Generated field usage example:
- *
- * ```
- *     // Read field value for the given instance of the message.
- *     val domain = RegistrationInfo::class.domainName
- *         .valueIn(registrationInfo)
- *
- *     // Set field value for the message builder provided.
- *     RegistrationInfo::class.domainName.setValue(
- *         registrationInfoBuilder,
- *         domain
- *     )
- * ```
- *
  * @param messageTypeName a [TypeName] of the message to generate the code for.
  * @param fields a collection of [Field]s to generate the code for.
  * @param typeSystem a [TypeSystem] to read external Proto messages.
@@ -135,20 +116,6 @@ internal class MessageDefFileGenerator(
         javaPackage,
         messageTypeName.simpleClassName
     )
-
-    /**
-     * Collection of names of [fields].
-     */
-    private val fieldNames = fields.map { it.name.value }
-
-    /**
-     * Contains the fields which are parts of some `oneof` grouped by its name.
-     */
-    private val oneofMap = fields.filter { field ->
-        field.isPartOfOneof
-    }.groupBy { oneofField ->
-        oneofField.oneofName.value
-    }
 
     companion object {
         /**
@@ -174,81 +141,23 @@ internal class MessageDefFileGenerator(
     fun fileContent(): String {
         return FileSpec.builder(messageFullClassName)
             .indent(Indent.defaultJavaIndent.toString())
-            .addType(
-                MessageDefObjectGenerator(messageTypeName, fields, typeSystem)
-                    .buildMessageDefObject()
-            )
             .also { fileBuilder ->
 
-                MessageFieldObjectGenerator(messageTypeName, typeSystem)
-                    .let { generator ->
-                        fields.forEach { field ->
-                            fileBuilder.addType(
-                                generator.buildMessageFieldObject(field)
-                            )
-                        }
-                    }
+                MessageDefObjectGenerator(messageTypeName, fields, typeSystem)
+                    .generateCode(fileBuilder)
 
-                MessageOneofObjectGenerator(messageTypeName, typeSystem)
-                    .let { generator ->
-                        oneofMap.forEach { oneofNameToFields ->
-                            fileBuilder.addType(
-                                generator.buildMessageOneofObject(
-                                    oneofNameToFields.key,
-                                    oneofNameToFields.value
-                                )
-                            )
-                        }
-                    }
+                MessageFieldObjectGenerator(messageTypeName, fields, typeSystem)
+                    .generateCode(fileBuilder)
 
-                fieldNames.forEach { fieldName ->
-                    fileBuilder.addProperty(
-                        buildKClassProperty(
-                            fieldName,
-                            messageTypeName.messageFieldClassName(fieldName)
-                        )
-                    )
-                }
+                MessageOneofObjectGenerator(messageTypeName, fields, typeSystem)
+                    .generateCode(fileBuilder)
 
-                oneofMap.keys.forEach { fieldName ->
-                    fileBuilder.addProperty(
-                        buildKClassProperty(
-                            fieldName,
-                            messageTypeName.messageOneofClassName(fieldName)
-                        )
-                    )
-                }
+                KClassPropertiesGenerator(messageTypeName, fields, typeSystem)
+                    .generateCode(fileBuilder)
+
             }
             .build()
             .toString()
-    }
-
-    /**
-     * Builds a property declaration for the given field
-     * that looks like the following:
-     * ```
-     *     public val KClass<RegistrationInfo>.domainName:
-     *         RegistrationInfoDomainName get() = RegistrationInfoDomainName
-     * ```
-     */
-    private fun buildKClassProperty(
-        fieldName: String,
-        simpleClassName: String
-    ): PropertySpec {
-        val propertyType = ClassName(
-            messageTypeName.javaPackage(typeSystem),
-            simpleClassName
-        )
-        val receiverType = KClass::class.asClassName()
-            .parameterizedBy(messageFullClassName)
-        val getterCode = FunSpec.getterBuilder()
-            .addCode("return $simpleClassName")
-            .build()
-
-        return PropertySpec.builder(fieldName.propertyName, propertyType)
-            .receiver(receiverType)
-            .getter(getterCode)
-            .build()
     }
 }
 
@@ -294,6 +203,13 @@ internal fun TypeName.javaPackage(typeSystem: TypeSystem): String {
         "Cannot determine file header for TypeName `$this`"
     }
     return messageToHeader.second.javaPackage
+}
+
+/**
+ * Returns a fully qualified [ClassName] for the [TypeName].
+ */
+internal fun TypeName.fullClassName(typeSystem: TypeSystem): ClassName {
+    return ClassName(javaPackage(typeSystem), simpleClassName)
 }
 
 /**

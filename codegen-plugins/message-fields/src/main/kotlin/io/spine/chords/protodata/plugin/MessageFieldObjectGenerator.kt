@@ -29,6 +29,7 @@ package io.spine.chords.protodata.plugin
 import com.google.protobuf.BoolValue
 import com.google.protobuf.ByteString
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
@@ -109,10 +110,12 @@ private object ValidatingBuilder {
  * ```
  *
  * @param messageTypeName a [TypeName] of the message to generate the code for.
+ * @param fields a collection of [Field]s to generate the code for.
  * @param typeSystem a [TypeSystem] to read external Proto messages.
  */
 internal class MessageFieldObjectGenerator(
     private val messageTypeName: TypeName,
+    private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
 ) {
 
@@ -124,9 +127,17 @@ internal class MessageFieldObjectGenerator(
     )
 
     /**
-     * Generates implementation of [MessageField] for the given [field].
+     * Generates implementation of [MessageField] for the given [Field]s.
      */
-    internal fun buildMessageFieldObject(field: Field): TypeSpec {
+    internal fun generateCode(fileBuilder: FileSpec.Builder) {
+        fields.forEach { field ->
+            fileBuilder.addType(
+                buildFieldObject(field)
+            )
+        }
+    }
+
+    private fun buildFieldObject(field: Field): TypeSpec {
         val fieldName = field.name.value
         val generatedClassName = messageTypeName.messageFieldClassName(fieldName)
         val fieldValueClassName = field.valueClassName(typeSystem)
