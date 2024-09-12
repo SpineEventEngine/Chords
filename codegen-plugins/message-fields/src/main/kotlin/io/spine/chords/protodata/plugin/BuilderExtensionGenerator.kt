@@ -31,14 +31,33 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.PropertySpec
+import io.spine.chords.runtime.MessageDef
 import io.spine.protodata.TypeName
 import io.spine.protodata.type.TypeSystem
 
+/**
+ * Implementation of [FileFragmentGenerator] that generates extension
+ * for a message builder class that returns the corresponding
+ * implementation of [MessageDef] interface.
+ *
+ * @param messageTypeName The [TypeName] of the message to generate the code for.
+ * @param typeSystem The [TypeSystem] to read external Proto messages.
+ */
 internal class BuilderExtensionGenerator(
     private val messageTypeName: TypeName,
     private val typeSystem: TypeSystem
 ) : FileFragmentGenerator {
 
+    /**
+     * Generates the property `messageDef` for a message builder class
+     * that returns the corresponding implementation of [MessageDef].
+     *
+     * The generated property looks like the following:
+     * ```
+     *     public val IpAddress.Builder.messageDef: IpAddressDef
+     *         get() = IpAddressDef
+     * ```
+     */
     override fun generateCode(fileBuilder: FileSpec.Builder) {
         val messageClass = messageTypeName.fullClassName(typeSystem)
         val messageDefSimpleName = messageTypeName.messageDefClassName()
