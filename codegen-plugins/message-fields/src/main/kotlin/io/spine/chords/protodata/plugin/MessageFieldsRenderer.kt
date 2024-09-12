@@ -70,12 +70,7 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
                 }
                 messageToHeader.first.fieldList.let { fields ->
                     MessageDefFileGenerator(typeName, fields, typeSystem!!)
-                        .let { generator ->
-                            sources.createFile(
-                                generator.filePath(),
-                                generator.fileContent()
-                            )
-                        }
+                        .generateMessageDefImplementation(sources)
                 }
             }
     }

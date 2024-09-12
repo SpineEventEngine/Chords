@@ -44,25 +44,8 @@ import io.spine.protodata.type.TypeSystem
 import java.lang.System.lineSeparator
 
 /**
- * Generates implementation of [MessageDef] for a Proto message.
- *
- * The generated code looks like the following:
- * ```
- * public object IpAddressDef : MessageDef<IpAddress> {
- *
- *     public val ipv4: IpAddressIpv4Field = IpAddressIpv4Field
- *
- *     public val ipv6: IpAddressIpv6Field = IpAddressIpv6Field
- *
- *     public val `value`: IpAddressValueOneof = IpAddressValueOneof
- *
- *     public override val fields: Collection<MessageField<IpAddress, out Any>>
- *         = listOf(ipv4, ipv6)
- *
- *     public override val oneofs: Collection<MessageOneof<IpAddress>>
- *         = listOf(value)
- * }
- * ```
+ * Implementation of [FileFragmentGenerator] that generates implementation
+ * of [MessageDef] for a Proto message.
  *
  * @param messageTypeName a [TypeName] of the message to generate the code for.
  * @param fields a collection of [Field]s to generate the code for.
@@ -72,7 +55,7 @@ internal class MessageDefObjectGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) : CodeGenerator {
+) : FileFragmentGenerator {
 
     /**
      * Collection of names of the given [fields].

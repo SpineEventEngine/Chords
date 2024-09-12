@@ -80,34 +80,8 @@ private object ValidatingBuilder {
 }
 
 /**
- * Generates implementation of [MessageField] for a field of a Proto message.
- *
- * The generated code looks like the following:
- *
- * ```
- *     public object RegistrationInfoDomainName:
- *         MessageField<RegistrationInfo, InternetDomain>() {
- *
- *         public override val name: String = "domain_name"
- *
- *         public override val required: Boolean = true
- *
- *         public override fun valueIn(message: RegistrationInfo) : InternetDomain {
- *             return message.domainName
- *         }
- *
- *         public override fun hasValue(message: RegistrationInfo) : Boolean {
- *             return message.hasDomainName()
- *         }
- *
- *         override fun setValue(
- *             builder: ValidatingBuilder<RegistrationInfo>,
- *             value: InternetDomain
- *         ) {
- *             (builder as RegistrationInfo.Builder).setDomainName(value)
- *         }
- *     }
- * ```
+ * Implementation of [FileFragmentGenerator] that generates implementations
+ * of [MessageField] for the fields of a Proto message.
  *
  * @param messageTypeName a [TypeName] of the message to generate the code for.
  * @param fields a collection of [Field]s to generate the code for.
@@ -117,7 +91,7 @@ internal class MessageFieldObjectGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) : CodeGenerator {
+) : FileFragmentGenerator {
 
     /**
      * Returns a fully qualified [ClassName] of the given [messageTypeName].
@@ -125,17 +99,46 @@ internal class MessageFieldObjectGenerator(
     private val messageFullClassName = messageTypeName.fullClassName(typeSystem)
 
     /**
-     * Generates implementation of [MessageField] for the given [Field]s.
+     * Generates implementations of [MessageField] for the given [fields].
      */
     override fun generateCode(fileBuilder: FileSpec.Builder) {
         fields.forEach { field ->
             fileBuilder.addType(
-                buildFieldObject(field)
+                buildMessageFieldObject(field)
             )
         }
     }
 
-    private fun buildFieldObject(field: Field): TypeSpec {
+    /**
+     * Builds implementation of [MessageField] for the given [field].
+     *
+     * The generated code for some field looks like the following:
+     * ```
+     *     public object RegistrationInfoDomainName:
+     *         MessageField<RegistrationInfo, InternetDomain>() {
+     *
+     *         public override val name: String = "domain_name"
+     *
+     *         public override val required: Boolean = true
+     *
+     *         public override fun valueIn(message: RegistrationInfo) : InternetDomain {
+     *             return message.domainName
+     *         }
+     *
+     *         public override fun hasValue(message: RegistrationInfo) : Boolean {
+     *             return message.hasDomainName()
+     *         }
+     *
+     *         override fun setValue(
+     *             builder: ValidatingBuilder<RegistrationInfo>,
+     *             value: InternetDomain
+     *         ) {
+     *             (builder as RegistrationInfo.Builder).setDomainName(value)
+     *         }
+     *     }
+     * ```
+     */
+    private fun buildMessageFieldObject(field: Field): TypeSpec {
         val fieldName = field.name.value
         val generatedClassName = messageTypeName.messageFieldClassName(fieldName)
         val fieldValueClassName = field.valueClassName(typeSystem)
@@ -187,7 +190,7 @@ internal class MessageFieldObjectGenerator(
 }
 
 /**
- * Returns [ClassName] of `io.spine.protobuf.ValidatingBuilder`.
+ * Returns a fully qualified [ClassName] of `io.spine.protobuf.ValidatingBuilder`.
  */
 private val validatingBuilderClassName = ClassName(
     ValidatingBuilder.PACKAGE,
@@ -230,7 +233,7 @@ private fun Field.valueClassName(typeSystem: TypeSystem)
 }
 
 /**
- * Returns [ClassName] for the [Type].
+ * Returns a [ClassName] for the [Type].
  */
 private fun Type.className(typeSystem: TypeSystem): ClassName {
     return if (isPrimitive)
@@ -240,7 +243,7 @@ private fun Type.className(typeSystem: TypeSystem): ClassName {
 }
 
 /**
- * Returns [ClassName] for the [Type] that is a primitive.
+ * Returns a [ClassName] for the [Type] that is a primitive.
  */
 private val Type.primitiveClassName: ClassName
     get() {
@@ -249,7 +252,7 @@ private val Type.primitiveClassName: ClassName
     }
 
 /**
- * Returns [ClassName] for the [Type] that is a message.
+ * Returns a [ClassName] for the [Type] that is a message.
  */
 private fun Type.messageClassName(typeSystem: TypeSystem): ClassName {
     check(!isPrimitive)

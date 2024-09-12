@@ -39,8 +39,10 @@ import io.spine.protodata.type.TypeSystem
 import kotlin.reflect.KClass
 
 /**
- * Generates property declarations for the given collection of `oneof` fields
- * which looks like the following:
+ * Implementation of [FileFragmentGenerator] that generates property declarations
+ * for the given collection of the Proto message fields.
+ *
+ * The generated code looks like the following:
  * ```
  *     public val KClass<RegistrationInfo>.domainName:
  *         RegistrationInfoDomainName get() = RegistrationInfoDomainName
@@ -60,7 +62,7 @@ internal class KClassPropertiesGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) : CodeGenerator {
+) : FileFragmentGenerator {
 
     override fun generateCode(fileBuilder: FileSpec.Builder) {
         fields.map {

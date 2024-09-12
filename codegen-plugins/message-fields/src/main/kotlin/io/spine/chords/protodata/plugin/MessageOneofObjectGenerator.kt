@@ -46,34 +46,9 @@ import io.spine.protodata.type.TypeSystem
 import java.lang.System.lineSeparator
 
 /**
- * Generates implementation of [MessageOneof] for an oneof of a Proto message.
+ * Implementation of [FileFragmentGenerator] that generates implementation
+ * of [MessageOneof] for the `oneof` fields of a Proto message.
  *
- * The generated code looks like the following:
- *
- * ```
- *     public object RegistrationInfoDomainName:
- *         MessageField<RegistrationInfo, InternetDomain>() {
- *
- *         public override val name: String = "domain_name"
- *
- *         public override val required: Boolean = true
- *
- *         public override fun valueIn(message: RegistrationInfo) : InternetDomain {
- *             return message.domainName
- *         }
- *
- *         public override fun hasValue(message: RegistrationInfo) : Boolean {
- *             return message.hasDomainName()
- *         }
- *
- *         override fun setValue(
- *             builder: ValidatingBuilder<RegistrationInfo>,
- *             value: InternetDomain
- *         ) {
- *             (builder as RegistrationInfo.Builder).setDomainName(value)
- *         }
- *     }
- * ```
  *
  * @param messageTypeName a [TypeName] of the message to generate the code for.
  * @param fields a collection of [Field]s to generate the code for.
@@ -83,13 +58,17 @@ internal class MessageOneofObjectGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) : CodeGenerator {
+) : FileFragmentGenerator {
 
     /**
      * Returns a fully qualified [ClassName] of the given [messageTypeName].
      */
     private val messageFullClassName = messageTypeName.fullClassName(typeSystem)
 
+    /**
+     * Generates implementations of [MessageOneof] for the `oneof` fields
+     * of a Proto message.
+     */
     override fun generateCode(fileBuilder: FileSpec.Builder) {
         fields.filter { field ->
             field.isPartOfOneof
@@ -103,14 +82,11 @@ internal class MessageOneofObjectGenerator(
     }
 
     /**
-     * Generates implementation of `MessageOneof` for the given `oneof` field
-     * that looks like the following:
+     * Generates implementation of [MessageOneof] for the given `oneof` field.
      *
+     * The generated code for some `oneof` filed looks like the following:
      * ```
-     *     public val KClass<IpAddress>.`value`: IpAddressValue
-     *         get() = IpAddressValue()
-     *
-     *     public class IpAddressValue : MessageOneof<IpAddress> {
+     *     public object IpAddressValueOneof : MessageOneof<IpAddress> {
      *         private val fieldMap: Map<Int, MessageField<IpAddress, *>> =
      *             mapOf(
      *                 1 to IpAddress::class.ipv4,
@@ -123,8 +99,7 @@ internal class MessageOneofObjectGenerator(
      *             = fieldMap.values
      *
      *         public override fun selectedField(message: IpAddress):
-     *             MessageField<IpAddress, *>? =
-     *                 fieldMap[message.valueCase.number]
+     *             MessageField<IpAddress, *>? = fieldMap[message.valueCase.number]
      *     }
      * ```
      */

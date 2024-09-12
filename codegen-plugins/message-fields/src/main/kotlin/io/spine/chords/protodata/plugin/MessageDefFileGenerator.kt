@@ -38,6 +38,7 @@ import io.spine.protodata.Field
 import io.spine.protodata.ProtoFileHeader
 import io.spine.protodata.TypeName
 import io.spine.protodata.find
+import io.spine.protodata.renderer.SourceFileSet
 import io.spine.protodata.type.TypeSystem
 import io.spine.string.Indent
 import io.spine.string.camelCase
@@ -109,7 +110,7 @@ internal class MessageDefFileGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) : CodeGenerator {
+) : FileFragmentGenerator {
 
     companion object {
         /**
@@ -119,46 +120,44 @@ internal class MessageDefFileGenerator(
     }
 
     /**
-     * The list of [CodeGenerator]s which are used to generate
+     * The list of [FileFragmentGenerator]s which are used to generate
      * the implementations of [MessageDef], [MessageField],
      * and [MessageOneof] interfaces.
      *
      * Also, the properties for the corresponding message classes are
-     * generated to have a "static" access to these implementations.
+     * generated to provide a "static" access to these implementations.
      * See [KClassPropertiesGenerator] for detail.
      */
-    private val generators = listOf(
+    private val codeGenerators = listOf(
         MessageDefObjectGenerator(messageTypeName, fields, typeSystem),
         MessageFieldObjectGenerator(messageTypeName, fields, typeSystem),
         MessageOneofObjectGenerator(messageTypeName, fields, typeSystem),
         KClassPropertiesGenerator(messageTypeName, fields, typeSystem)
     )
 
+    /**
+     * Uses [codeGenerators] to build the content of the generated file.
+     */
     override fun generateCode(fileBuilder: FileSpec.Builder) {
-        generators.forEach { generator ->
+        codeGenerators.forEach { generator ->
             generator.generateCode(fileBuilder)
         }
     }
 
     /**
-     * Returns a [Path] to the generated file that is relative
-     * to the source root.
+     * Generates a file that with implementation of [MessageDef].
      */
-    fun filePath(): Path {
-        return messageTypeName.path()
-    }
-
-    /**
-     * Generates a content of the file.
-     */
-    fun fileContent(): String {
-        return FileSpec.builder(messageTypeName.fullClassName(typeSystem))
-            .indent(Indent.defaultJavaIndent.toString())
-            .also { fileBuilder ->
-                generateCode(fileBuilder)
-            }
-            .build()
-            .toString()
+    internal fun generateMessageDefImplementation(sources: SourceFileSet) {
+        sources.createFile(
+            messageTypeName.path(),
+            FileSpec.builder(messageTypeName.fullClassName(typeSystem))
+                .indent(Indent.defaultJavaIndent.toString())
+                .also { fileBuilder ->
+                    generateCode(fileBuilder)
+                }
+                .build()
+                .toString()
+        )
     }
 
     /**
@@ -180,6 +179,13 @@ internal class MessageDefFileGenerator(
         )
     }
 }
+
+/**
+ * Converts a Proto field name to "property" name,
+ * e.g. "domain_name" -> "domainName".
+ */
+internal val String.propertyName
+    get() = camelCase().replaceFirstChar { it.lowercase() }
 
 /**
  * Returns [ClassName] of [MessageField].
@@ -216,13 +222,6 @@ internal fun TypeName.javaPackage(typeSystem: TypeSystem): String {
 internal fun TypeName.fullClassName(typeSystem: TypeSystem): ClassName {
     return ClassName(javaPackage(typeSystem), simpleClassName)
 }
-
-/**
- * Converts a Proto field name to "property" name,
- * e.g. "domain_name" -> "domainName".
- */
-internal val String.propertyName
-    get() = camelCase().replaceFirstChar { it.lowercase() }
 
 /**
  * Returns a Java package declared in [ProtoFileHeader].
