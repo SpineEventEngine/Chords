@@ -187,6 +187,14 @@ private fun Project.deduplicate(dependencies: Set<ModuleDependency>): List<Modul
     return filtered
 }
 
+private fun <T, R : Comparable<R>> Iterable<T>.maxByOrNull(selector: (T) -> R): T? {
+    return fold(null as T?) { max, item ->
+        max?.let {
+            if (selector(item) > selector(it)) item else max
+        } ?: item
+    }
+}
+
 private fun Project.logDuplicates(dependencies: Map<String, List<ModuleDependency>>) {
     dependencies.filter { it.value.size > 1 }
         .forEach { (dependency, versions) -> logDuplicate(dependency, versions) }

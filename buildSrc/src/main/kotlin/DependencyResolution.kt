@@ -113,7 +113,7 @@ private fun ResolutionStrategy.forceTestDependencies() {
         JUnit.Platform.launcher,
         JUnit.legacy,
         Truth.libs,
-        Kotest.assertions,
+        Kotest.assertions
     )
 }
 
@@ -151,7 +151,7 @@ private fun ResolutionStrategy.forceTransitiveDependencies() {
         Kotlin.jetbrainsAnnotations,
         Okio.lib,
         OpenTest4J.lib,
-        Plexus.utils,
+        Plexus.utils
     )
 }
 

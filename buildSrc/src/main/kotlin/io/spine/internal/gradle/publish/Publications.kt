@@ -154,7 +154,7 @@ private fun RepositoryHandler.register(project: Project, repository: Repository)
 internal class StandardJavaPublicationHandler(
     project: Project,
     private val jarFlags: JarFlags,
-    destinations: Set<Repository>,
+    destinations: Set<Repository>
 ) : PublicationHandler(project, destinations) {
 
     /**

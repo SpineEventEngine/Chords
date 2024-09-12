@@ -131,7 +131,7 @@ class ConfigTester(
 
     private fun doRegisterRunBuild(
         runGradleName: String,
-        gitRepo: GitRepository,
+        gitRepo: GitRepository
     ) {
         tasks.register(runGradleName, RunBuild::class.java) {
             doFirst {
@@ -169,7 +169,7 @@ class GitRepository(
      *
      * By default, points to `master`.
      */
-    private val branch: Branch = Branch("master"),
+    private val branch: Branch = Branch("master")
 ) {
     /**
      * The name of this repository.

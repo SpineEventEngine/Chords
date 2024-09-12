@@ -26,6 +26,7 @@
 
 package io.spine.internal.gradle.protobuf
 
+import capitalized
 import com.google.protobuf.gradle.GenerateProtoTask
 import io.spine.internal.gradle.sourceSets
 import java.io.File
@@ -34,7 +35,6 @@ import java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import org.gradle.api.Project
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.tasks.SourceSet
-import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.kotlin.dsl.get
 import org.gradle.plugins.ide.idea.GenerateIdeaModule
 import org.gradle.plugins.ide.idea.model.IdeaModel
@@ -109,7 +109,7 @@ fun GenerateProtoTask.setup() {
     excludeProtocOutput()
     setupKotlinCompile()
     dependOnProcessResourcesTask()
-    configureIdeaDirs()
+//    configureIdeaDirs()
 }
 
 /**
@@ -281,50 +281,50 @@ private fun Project.kotlinCompileFor(sourceSet: SourceSet): KotlinCompile<*>? {
 private fun File.residesIn(directory: File): Boolean =
     canonicalFile.startsWith(directory.absolutePath)
 
-private fun GenerateProtoTask.configureIdeaDirs() = project.plugins.withId("idea") {
-    val module = project.extensions.findByType(IdeaModel::class.java)!!.module
-
-    // Make IDEA forget about sources under `outputBaseDir`.
-    val protocOutputDir = File(outputBaseDir).parentFile
-    module.generatedSourceDirs.removeIf { dir ->
-        dir.residesIn(protocOutputDir)
-    }
-
-    module.sourceDirs.removeIf { dir ->
-        dir.residesIn(protocOutputDir)
-    }
-
-    val javaDir = generatedDir("java")
-    val kotlinDir = generatedDir("kotlin")
-
-    // As advised by `Utils.groovy` from Protobuf Gradle plugin:
-    // This is required because the IntelliJ IDEA plugin does not allow adding source directories
-    // that do not exist. The IntelliJ IDEA config files should be valid from the start even if
-    // a user runs './gradlew idea' before running './gradlew generateProto'.
-    project.tasks.withType(GenerateIdeaModule::class.java).forEach {
-        it.doFirst {
-            javaDir.mkdirs()
-            kotlinDir.mkdirs()
-        }
-    }
-
-    if (isTest) {
-        module.testSources.run {
-            from(javaDir)
-            from(kotlinDir)
-        }
-    } else {
-        module.sourceDirs.run {
-            add(javaDir)
-            add(kotlinDir)
-        }
-    }
-
-    module.generatedSourceDirs.run {
-        add(javaDir)
-        add(kotlinDir)
-    }
-}
+//private fun GenerateProtoTask.configureIdeaDirs() = project.plugins.withId("idea") {
+//    val module = project.extensions.findByType(IdeaModel::class.java)!!.module
+//
+//    // Make IDEA forget about sources under `outputBaseDir`.
+//    val protocOutputDir = File(outputBaseDir).parentFile
+//    module.generatedSourceDirs.removeIf { dir ->
+//        dir.residesIn(protocOutputDir)
+//    }
+//
+//    module.sourceDirs.removeIf { dir ->
+//        dir.residesIn(protocOutputDir)
+//    }
+//
+//    val javaDir = generatedDir("java")
+//    val kotlinDir = generatedDir("kotlin")
+//
+//    // As advised by `Utils.groovy` from Protobuf Gradle plugin:
+//    // This is required because the IntelliJ IDEA plugin does not allow adding source directories
+//    // that do not exist. The IntelliJ IDEA config files should be valid from the start even if
+//    // a user runs './gradlew idea' before running './gradlew generateProto'.
+//    project.tasks.withType(GenerateIdeaModule::class.java).forEach {
+//        it.doFirst {
+//            javaDir.mkdirs()
+//            kotlinDir.mkdirs()
+//        }
+//    }
+//
+//    if (isTest) {
+//        module.testSources.run {
+//            from(javaDir)
+//            from(kotlinDir)
+//        }
+//    } else {
+//        module.sourceDirs.run {
+//            add(javaDir)
+//            add(kotlinDir)
+//        }
+//    }
+//
+//    module.generatedSourceDirs.run {
+//        add(javaDir)
+//        add(kotlinDir)
+//    }
+//}
 
 /**
  * Prints diagnostic output of `sourceDirs` and `generatedSourceDirs` of an [IdeaModule].

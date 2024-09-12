@@ -35,7 +35,6 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.bundling.Jar
-import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.kotlin.dsl.DependencyHandlerScope
 import org.jetbrains.dokka.DokkaConfiguration
 import org.jetbrains.dokka.base.DokkaBase

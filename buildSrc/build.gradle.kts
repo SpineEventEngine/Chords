@@ -34,6 +34,7 @@ plugins {
     java
     groovy
     `kotlin-dsl`
+    kotlin("jvm") version "1.8.20" apply false
 
     // https://github.com/jk1/Gradle-License-Report/releases
     id("com.github.jk1.dependency-license-report").version("1.16")
@@ -51,7 +52,7 @@ repositories {
  * Please keep this value in sync with [io.spine.internal.dependency.Jackson.version].
  * It is not a requirement but would be good in terms of consistency.
  */
-val jacksonVersion = "2.15.3"
+val jacksonVersion = "2.14.3"
 
 /**
  * The version of Google Artifact Registry used by `buildSrc`.
@@ -63,7 +64,7 @@ val jacksonVersion = "2.15.3"
  */
 val googleAuthToolVersion = "2.1.5"
 
-val licenseReportVersion = "2.7"
+val licenseReportVersion = "1.16"
 
 val grGitVersion = "4.1.1"
 
@@ -153,12 +154,30 @@ java {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
         jvmTarget = jvmVersion.toString()
+        freeCompilerArgs += "-Xskip-metadata-version-check"
     }
 }
+
+//configurations.all {
+//    attributes {
+//        // Explicitly declare the JVM environment attribute to target 'standard-jvm'
+//        attribute(Attribute.of("org.gradle.jvm.environment", String::class.java), "standard-jvm")
+//    }
+//}
 
 dependencies {
     api("com.github.jk1:gradle-license-report:$licenseReportVersion")
     dependOnAuthCommon()
+
+    constraints {
+        implementation("com.google.guava:guava") {
+            attributes {
+                // Explicitly declare the JVM environment attribute to nudge Gradle to resolving
+                // the "jreApiElements" variant of the lib instead of  the "androidApiElements" one.
+                attribute(Attribute.of("org.gradle.jvm.environment", String::class.java), "standard-jvm")
+            }
+        }
+    }
 
     listOf(
         "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion",
@@ -176,7 +195,8 @@ dependencies {
         "org.jetbrains.dokka:dokka-gradle-plugin:${dokkaVersion}",
         "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
         "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion",
-        "org.jetbrains.kotlinx:kover-gradle-plugin:$koverVersion"
+        "org.jetbrains.kotlinx:kover-gradle-plugin:$koverVersion",
+        "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:$kotlinVersion"
     ).forEach {
         implementation(it)
     }

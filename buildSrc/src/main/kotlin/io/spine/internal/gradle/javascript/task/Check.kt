@@ -102,7 +102,7 @@ private fun JsTasks.checkJs() =
         dependsOn(
             auditNodePackages,
             coverageJs,
-            testJs,
+            testJs
         )
     }
 

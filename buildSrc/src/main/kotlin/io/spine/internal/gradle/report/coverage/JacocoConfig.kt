@@ -220,7 +220,7 @@ private class SourceSets(
     fun mainJavaSrcDirs(): Set<File> {
         return sourceSets
             .asSequence()
-            .flatMap { it["main"].allJava.srcDirs }
+            .flatMap { it["main"].allJava.srcDirs as Sequence<File> }
             .toSet()
     }
 

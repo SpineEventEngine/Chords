@@ -92,7 +92,7 @@ private fun JsTasks.cleanJs() =
         delete(
             assembleJs.map { it.outputs },
             compileProtoToJs.map { it.outputs },
-            installNodePackages.map { it.outputs },
+            installNodePackages.map { it.outputs }
         )
 
         dependsOn(
@@ -119,6 +119,6 @@ private fun JsTasks.cleanGenerated() =
         delete(
             genProtoMain,
             genProtoTest,
-            nycOutput,
+            nycOutput
         )
     }
