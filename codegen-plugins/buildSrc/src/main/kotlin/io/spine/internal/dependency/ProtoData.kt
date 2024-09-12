@@ -63,7 +63,7 @@ object ProtoData {
     /**
      * The version of ProtoData dependencies.
      */
-    const val version: String = "0.50.0"
+    const val version: String = "0.60.2"
 
     const val lib: String =
         "io.spine:protodata:$version"
