@@ -41,6 +41,7 @@ import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
 import io.spine.protodata.isPartOfOneof
+import io.spine.protodata.java.javaCase
 import io.spine.protodata.type.TypeSystem
 import java.lang.System.lineSeparator
 
@@ -181,6 +182,6 @@ private fun fieldMapInitializer(
         "mapOf(${lineSeparator()}",
         ")"
     ) {
-        "${it.number} to $generatedClassName.${it.name.value.propertyName}"
+        "${it.number} to $generatedClassName.${it.name.javaCase()}"
     }
 }

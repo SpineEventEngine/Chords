@@ -44,6 +44,7 @@ import io.spine.protodata.TypeName
 import io.spine.protodata.isEnum
 import io.spine.protodata.isPrimitive
 import io.spine.protodata.isRepeated
+import io.spine.protodata.java.getterName
 import io.spine.protodata.java.javaPackage
 import io.spine.protodata.java.primarySetterName
 import io.spine.protodata.java.primitiveClass
@@ -152,7 +153,7 @@ internal class MessageFieldObjectGenerator(
                     .addModifiers(PUBLIC, OVERRIDE)
                     .returns(fieldValueClassName)
                     .addParameter("message", messageFullClassName)
-                    .addCode("return message.${field.getterInvocation}")
+                    .addCode("return message.${field.getterName}")
                     .build()
             ).addFunction(
                 FunSpec.builder("hasValue")
@@ -245,15 +246,6 @@ private val Field.required: Boolean
         option.name == "required" &&
                 unpack(option.value, BoolValue::class.java).value
     }
-
-/**
- * Returns a "getter" invocation code for the [Field].
- */
-private val Field.getterInvocation
-    get() = if (isRepeated)
-        name.value.propertyName + "List"
-    else
-        name.value.propertyName
 
 /**
  * Returns a "hasValue" invocation code for the [Field].
