@@ -48,9 +48,9 @@ import java.lang.System.lineSeparator
  * Implementation of [FileFragmentGenerator] that generates implementation
  * of [MessageDef] for a Proto message.
  *
- * @param messageTypeName a [TypeName] of the message to generate the code for.
- * @param fields a collection of [Field]s to generate the code for.
- * @param typeSystem a [TypeSystem] to read external Proto messages.
+ * @param messageTypeName The [TypeName] of the message to generate the code for.
+ * @param fields The collection of [Field]s to generate the code for.
+ * @param typeSystem The [TypeSystem] to read external Proto messages.
  */
 internal class MessageDefObjectGenerator(
     private val messageTypeName: TypeName,
@@ -96,7 +96,7 @@ internal class MessageDefObjectGenerator(
     override fun generateCode(fileBuilder: FileSpec.Builder) {
         fileBuilder.addType(
             TypeSpec.objectBuilder(
-                messageTypeName.generateClassName()
+                messageTypeName.messageDefClassName()
             ).addSuperinterface(
                 MessageDef::class.asClassName().parameterizedBy(
                     messageTypeName.fullClassName(typeSystem)
@@ -160,7 +160,6 @@ internal class MessageDefObjectGenerator(
     /**
      * Builds a property that references the instance of [MessageField]
      * or [MessageOneof] implementation.
-     *
      */
     private fun buildFieldInstanceProperty(
         fieldName: String,

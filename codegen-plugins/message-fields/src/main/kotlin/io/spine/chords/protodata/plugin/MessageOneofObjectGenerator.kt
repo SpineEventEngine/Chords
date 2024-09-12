@@ -49,9 +49,9 @@ import java.lang.System.lineSeparator
  * of [MessageOneof] for the `oneof` fields of a Proto message.
  *
  *
- * @param messageTypeName a [TypeName] of the message to generate the code for.
- * @param fields a collection of [Field]s to generate the code for.
- * @param typeSystem a [TypeSystem] to read external Proto messages.
+ * @param messageTypeName The [TypeName] of the message to generate the code for.
+ * @param fields The collection of [Field]s to generate the code for.
+ * @param typeSystem The [TypeSystem] to read external Proto messages.
  */
 internal class MessageOneofObjectGenerator(
     private val messageTypeName: TypeName,
@@ -131,7 +131,7 @@ internal class MessageOneofObjectGenerator(
                     .initializer(
                         fieldMapInitializer(
                             oneofFields,
-                            messageTypeName.generateClassName()
+                            messageTypeName.messageDefClassName()
                         )
                     )
                     .build()

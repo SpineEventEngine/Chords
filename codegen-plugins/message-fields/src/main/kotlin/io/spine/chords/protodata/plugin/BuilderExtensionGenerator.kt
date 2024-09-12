@@ -24,27 +24,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Chords
-import io.spine.internal.dependency.KotlinPoet
-import io.spine.internal.dependency.ProtoData
+package io.spine.chords.protodata.plugin
 
-plugins {
-    `kotlin-dsl`
-}
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.KModifier.PUBLIC
+import com.squareup.kotlinpoet.PropertySpec
+import io.spine.protodata.TypeName
+import io.spine.protodata.type.TypeSystem
 
-dependencies {
-    // To use ProtoData API in code generation plugin.
-    implementation(ProtoData.backend)
-    protobuf(ProtoData.backend)
-    // To generate Kotlin sources.
-    implementation(KotlinPoet.lib)
-    implementation(Chords.CodegenRuntime.lib)
-}
+internal class BuilderExtensionGenerator(
+    private val messageTypeName: TypeName,
+    private val typeSystem: TypeSystem
+) : FileFragmentGenerator {
 
-modelCompiler {
-    java {
-        codegen {
-            validation().enabled.set(false)
-        }
+    override fun generateCode(fileBuilder: FileSpec.Builder) {
+        val messageClassName = messageTypeName.fullClassName(typeSystem)
+        fileBuilder.addProperty(
+            PropertySpec.builder("messageDef", messageClassName, PUBLIC)
+                .receiver(messageClassName.nestedClass("Builder"))
+                .initializer("return ${messageTypeName.messageDefClassName()}")
+                .build()
+        )
     }
 }

@@ -48,9 +48,9 @@ import io.spine.string.camelCase
  * See [KClassPropertiesGenerator] for detail.
  *
  *
- * @param messageTypeName a [TypeName] of the message to generate the code for.
- * @param fields a collection of [Field]s to generate the code for.
- * @param typeSystem a [TypeSystem] to read external Proto messages.
+ * @param messageTypeName The [TypeName] of the message to generate the code for.
+ * @param fields The collection of [Field]s to generate the code for.
+ * @param typeSystem The [TypeSystem] to read external Proto messages.
  */
 internal class MessageDefFileGenerator(
     private val messageTypeName: TypeName,
@@ -65,7 +65,8 @@ internal class MessageDefFileGenerator(
         MessageDefObjectGenerator(messageTypeName, fields, typeSystem),
         MessageFieldObjectGenerator(messageTypeName, fields, typeSystem),
         MessageOneofObjectGenerator(messageTypeName, fields, typeSystem),
-        KClassPropertiesGenerator(messageTypeName, fields, typeSystem)
+        KClassPropertiesGenerator(messageTypeName, fields, typeSystem),
+        BuilderExtensionGenerator(messageTypeName, typeSystem)
     )
 
     /**
@@ -120,7 +121,7 @@ internal fun TypeName.messageOneofClassName(fieldName: String): String {
 /**
  * Generates a simple class name for the [TypeName].
  */
-internal fun TypeName.generateClassName(): String {
+internal fun TypeName.messageDefClassName(): String {
     return generateClassName("", "Def")
 }
 

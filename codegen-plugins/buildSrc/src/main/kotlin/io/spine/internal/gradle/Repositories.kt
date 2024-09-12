@@ -95,7 +95,7 @@ fun RepositoryHandler.spineArtifacts(): MavenArtifactRepository = maven {
 }
 
 /**
- * A Maven repo for where snapshot versions for Spine libraries are published.
+ * The repository of Spine snapshot artifacts.
  */
 fun RepositoryHandler.spineSnapshots() {
     maven("https://europe-maven.pkg.dev/spine-event-engine/snapshots")

@@ -72,7 +72,7 @@ import kotlin.reflect.KClass
 /**
  * Package and class name of the `io.spine.protobuf.ValidatingBuilder`.
  *
- * It is not in the classpath and cannot be used directly.
+ * It is not in the classpath of this ProtoData plugin and cannot be used directly.
  */
 private object ValidatingBuilder {
     const val PACKAGE = "io.spine.protobuf"
@@ -83,9 +83,9 @@ private object ValidatingBuilder {
  * Implementation of [FileFragmentGenerator] that generates implementations
  * of [MessageField] for the fields of a Proto message.
  *
- * @param messageTypeName a [TypeName] of the message to generate the code for.
- * @param fields a collection of [Field]s to generate the code for.
- * @param typeSystem a [TypeSystem] to read external Proto messages.
+ * @param messageTypeName The [TypeName] of the message to generate the code for.
+ * @param fields The collection of [Field]s to generate the code for.
+ * @param typeSystem The [TypeSystem] to read external Proto messages.
  */
 internal class MessageFieldObjectGenerator(
     private val messageTypeName: TypeName,
