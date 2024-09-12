@@ -44,9 +44,8 @@ import io.spine.string.camelCase
  * [MessageDef], [MessageField], and [MessageOneof] for a Proto message.
  *
  * Also, the properties for the corresponding message class are
- * generated to provide a static-like access to these implementations.
+ * generated to provide static-like access to these implementations.
  * See [KClassPropertiesGenerator] for detail.
- *
  *
  * @param messageTypeName The [TypeName] of the message to generate the code for.
  * @param fields The collection of [Field]s to generate the code for.
