@@ -26,7 +26,9 @@
 
 package io.spine.chords.protodata.plugin
 
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.PropertySpec
 import io.spine.protodata.TypeName
@@ -38,11 +40,20 @@ internal class BuilderExtensionGenerator(
 ) : FileFragmentGenerator {
 
     override fun generateCode(fileBuilder: FileSpec.Builder) {
-        val messageClassName = messageTypeName.fullClassName(typeSystem)
+        val messageClass = messageTypeName.fullClassName(typeSystem)
+        val messageDefSimpleName = messageTypeName.messageDefClassName()
+        val messageDefClass = ClassName(
+            messageTypeName.packageName,
+            messageDefSimpleName
+        )
         fileBuilder.addProperty(
-            PropertySpec.builder("messageDef", messageClassName, PUBLIC)
-                .receiver(messageClassName.nestedClass("Builder"))
-                .initializer("return ${messageTypeName.messageDefClassName()}")
+            PropertySpec.builder("messageDef", messageDefClass, PUBLIC)
+                .receiver(messageClass.nestedClass("Builder"))
+                .getter(
+                    FunSpec.getterBuilder()
+                        .addCode("return $messageDefSimpleName")
+                        .build()
+                )
                 .build()
         )
     }
