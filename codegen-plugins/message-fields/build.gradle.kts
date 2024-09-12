@@ -35,6 +35,8 @@ plugins {
 dependencies {
     // To use ProtoData API in code generation plugin.
     implementation(ProtoData.backend)
+    // To use `PrimitiveType` extensions.
+    implementation(ProtoData.java)
     // To generate Kotlin sources.
     implementation(KotlinPoet.lib)
     implementation(Chords.CodegenRuntime.lib)

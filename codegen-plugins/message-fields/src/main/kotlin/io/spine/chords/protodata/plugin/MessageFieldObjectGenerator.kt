@@ -27,7 +27,6 @@
 package io.spine.chords.protodata.plugin
 
 import com.google.protobuf.BoolValue
-import com.google.protobuf.ByteString
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -40,34 +39,16 @@ import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.Field
-import io.spine.protodata.PrimitiveType
-import io.spine.protodata.PrimitiveType.PT_UNKNOWN
-import io.spine.protodata.PrimitiveType.TYPE_BOOL
-import io.spine.protodata.PrimitiveType.TYPE_BYTES
-import io.spine.protodata.PrimitiveType.TYPE_DOUBLE
-import io.spine.protodata.PrimitiveType.TYPE_FIXED32
-import io.spine.protodata.PrimitiveType.TYPE_FIXED64
-import io.spine.protodata.PrimitiveType.TYPE_FLOAT
-import io.spine.protodata.PrimitiveType.TYPE_INT32
-import io.spine.protodata.PrimitiveType.TYPE_INT64
-import io.spine.protodata.PrimitiveType.TYPE_SFIXED32
-import io.spine.protodata.PrimitiveType.TYPE_SFIXED64
-import io.spine.protodata.PrimitiveType.TYPE_SINT32
-import io.spine.protodata.PrimitiveType.TYPE_SINT64
-import io.spine.protodata.PrimitiveType.TYPE_STRING
-import io.spine.protodata.PrimitiveType.TYPE_UINT32
-import io.spine.protodata.PrimitiveType.TYPE_UINT64
-import io.spine.protodata.PrimitiveType.UNRECOGNIZED
 import io.spine.protodata.Type
 import io.spine.protodata.TypeName
 import io.spine.protodata.isEnum
 import io.spine.protodata.isPrimitive
 import io.spine.protodata.isRepeated
+import io.spine.protodata.java.primitiveClass
 import io.spine.protodata.type.TypeSystem
 import io.spine.protodata.type.findHeader
 import io.spine.protodata.typeName
 import io.spine.string.camelCase
-import kotlin.reflect.KClass
 
 /**
  * Package and class name of the `io.spine.protobuf.ValidatingBuilder`.
@@ -294,19 +275,3 @@ private val Field.hasValueInvocation: String
         "true"
     else
         "message.has${name.value.camelCase()}()"
-
-/**
- * Obtains a Kotlin class which corresponds to the [PrimitiveType].
- */
-private fun PrimitiveType.primitiveClass(): KClass<*> {
-    return when (this) {
-        TYPE_DOUBLE -> Double::class
-        TYPE_FLOAT -> Float::class
-        TYPE_INT64, TYPE_UINT64, TYPE_SINT64, TYPE_FIXED64, TYPE_SFIXED64 -> Long::class
-        TYPE_INT32, TYPE_UINT32, TYPE_SINT32, TYPE_FIXED32, TYPE_SFIXED32 -> Int::class
-        TYPE_BOOL -> Boolean::class
-        TYPE_STRING -> String::class
-        TYPE_BYTES -> ByteString::class
-        UNRECOGNIZED, PT_UNKNOWN -> error("Unknown primitive type: `$this`.")
-    }
-}
