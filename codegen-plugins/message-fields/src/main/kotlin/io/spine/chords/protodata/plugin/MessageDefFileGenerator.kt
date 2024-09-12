@@ -109,13 +109,7 @@ internal class MessageDefFileGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) {
-    private val javaPackage = messageTypeName.javaPackage(typeSystem)
-
-    private val messageFullClassName = ClassName(
-        javaPackage,
-        messageTypeName.simpleClassName
-    )
+) : CodeGenerator {
 
     companion object {
         /**
@@ -125,49 +119,66 @@ internal class MessageDefFileGenerator(
     }
 
     /**
+     * The list of [CodeGenerator]s which are used to generate
+     * the implementations of [MessageDef], [MessageField],
+     * and [MessageOneof] interfaces.
+     *
+     * Also, the properties for the corresponding message classes are
+     * generated to have a "static" access to these implementations.
+     * See [KClassPropertiesGenerator] for detail.
+     */
+    private val generators = listOf(
+        MessageDefObjectGenerator(messageTypeName, fields, typeSystem),
+        MessageFieldObjectGenerator(messageTypeName, fields, typeSystem),
+        MessageOneofObjectGenerator(messageTypeName, fields, typeSystem),
+        KClassPropertiesGenerator(messageTypeName, fields, typeSystem)
+    )
+
+    override fun generateCode(fileBuilder: FileSpec.Builder) {
+        generators.forEach { generator ->
+            generator.generateCode(fileBuilder)
+        }
+    }
+
+    /**
      * Returns a [Path] to the generated file that is relative
      * to the source root.
      */
     fun filePath(): Path {
-        return Path.of(
-            javaPackage.replace('.', '/'),
-            messageTypeName.fileName(CLASS_NAME_SUFFIX)
-        )
+        return messageTypeName.path()
     }
 
     /**
      * Generates a content of the file.
      */
     fun fileContent(): String {
-        return FileSpec.builder(messageFullClassName)
+        return FileSpec.builder(messageTypeName.fullClassName(typeSystem))
             .indent(Indent.defaultJavaIndent.toString())
             .also { fileBuilder ->
-
-                MessageDefObjectGenerator(messageTypeName, fields, typeSystem)
-                    .generateCode(fileBuilder)
-
-                MessageFieldObjectGenerator(messageTypeName, fields, typeSystem)
-                    .generateCode(fileBuilder)
-
-                MessageOneofObjectGenerator(messageTypeName, fields, typeSystem)
-                    .generateCode(fileBuilder)
-
-                KClassPropertiesGenerator(messageTypeName, fields, typeSystem)
-                    .generateCode(fileBuilder)
-
+                generateCode(fileBuilder)
             }
             .build()
             .toString()
     }
-}
 
-/**
- * Returns a name of the generated file for this [TypeName].
- */
-internal fun TypeName.fileName(suffix: String): String {
-    return nestingTypeNameList.joinToString(
-        "", "", "${simpleName}$suffix.kt"
-    )
+    /**
+     * Returns a [Path] to the generated file for this [TypeName].
+     */
+    private fun TypeName.path(): Path {
+        return Path.of(
+            javaPackage(typeSystem).replace('.', '/'),
+            generatedFileName()
+        )
+    }
+
+    /**
+     * Returns a name of the generated file for this [TypeName].
+     */
+    private fun TypeName.generatedFileName(): String {
+        return nestingTypeNameList.joinToString(
+            "", "", "${simpleName}$CLASS_NAME_SUFFIX.kt"
+        )
+    }
 }
 
 /**
@@ -181,12 +192,6 @@ internal val messageFieldClassName: ClassName
  */
 internal val messageOneofClassName: ClassName
     get() = MessageOneof::class.asClassName()
-
-/**
- * Returns [ClassName] of [MessageDef].
- */
-internal val messageDefClassName: ClassName
-    get() = MessageDef::class.asClassName()
 
 /**
  * Returns [ClassName] of [MessageFieldValue].

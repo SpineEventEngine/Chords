@@ -83,23 +83,21 @@ internal class MessageOneofObjectGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) {
+) : CodeGenerator {
 
-    private val javaPackage = messageTypeName.javaPackage(typeSystem)
+    /**
+     * Returns a fully qualified [ClassName] of the given [messageTypeName].
+     */
+    private val messageFullClassName = messageTypeName.fullClassName(typeSystem)
 
-    private val messageFullClassName = ClassName(
-        javaPackage,
-        messageTypeName.simpleClassName
-    )
-
-    internal fun generateCode(fileBuilder: FileSpec.Builder) {
+    override fun generateCode(fileBuilder: FileSpec.Builder) {
         fields.filter { field ->
             field.isPartOfOneof
         }.groupBy { oneofField ->
             oneofField.oneofName.value
         }.forEach { filedMap ->
             fileBuilder.addType(
-                buildOneofObject(filedMap.key, filedMap.value)
+                buildMessageOneofObject(filedMap.key, filedMap.value)
             )
         }
     }
@@ -130,7 +128,7 @@ internal class MessageOneofObjectGenerator(
      *     }
      * ```
      */
-    private fun buildOneofObject(
+    private fun buildMessageOneofObject(
         oneofName: String,
         oneofFields: List<Field>
     ): TypeSpec {

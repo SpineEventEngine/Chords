@@ -39,8 +39,8 @@ import io.spine.protodata.type.TypeSystem
 import kotlin.reflect.KClass
 
 /**
- * Builds a property declaration for the given collection of `oneof` fields
- * that looks like the following:
+ * Generates property declarations for the given collection of `oneof` fields
+ * which looks like the following:
  * ```
  *     public val KClass<RegistrationInfo>.domainName:
  *         RegistrationInfoDomainName get() = RegistrationInfoDomainName
@@ -60,9 +60,9 @@ internal class KClassPropertiesGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) {
+) : CodeGenerator {
 
-    internal fun generateCode(fileBuilder: FileSpec.Builder) {
+    override fun generateCode(fileBuilder: FileSpec.Builder) {
         fields.map {
             it.name.value
         }.forEach { fieldName ->
@@ -78,9 +78,7 @@ internal class KClassPropertiesGenerator(
             field.isPartOfOneof
         }.groupBy { oneofField ->
             oneofField.oneofName.value
-        }.map {
-            it.key
-        }.forEach { oneofFieldName ->
+        }.keys.forEach { oneofFieldName ->
             fileBuilder.addProperty(
                 buildKClassProperty(
                     oneofFieldName,
@@ -91,7 +89,7 @@ internal class KClassPropertiesGenerator(
     }
 
     /**
-     * Builds a property declaration for the given `oneof` field
+     * Builds a [PropertySpec] for the given `oneof` field
      * that looks like the following:
      * ```
      *     public val KClass<RegistrationInfo>.domainName:

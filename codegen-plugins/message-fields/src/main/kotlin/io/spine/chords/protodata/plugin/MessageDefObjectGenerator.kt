@@ -72,28 +72,21 @@ internal class MessageDefObjectGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) {
-
-    private val javaPackage = messageTypeName.javaPackage(typeSystem)
-
-    private val messageFullClassName = ClassName(
-        javaPackage,
-        messageTypeName.simpleClassName
-    )
+) : CodeGenerator {
 
     /**
-     * Collection of names of [fields].
+     * Collection of names of the given [fields].
      */
     private val fieldNames = fields.map { it.name.value }
 
     /**
-     * Contains the fields which are parts of some `oneof` grouped by its name.
+     * Collection of names of the fields which are parts of some `oneof`.
      */
-    private val oneofMap = fields.filter { field ->
+    private val oneofNames = fields.filter { field ->
         field.isPartOfOneof
     }.groupBy { oneofField ->
         oneofField.oneofName.value
-    }
+    }.map { it.key }
 
     /**
      * Generates implementation of [MessageDef] for a Proto message.
@@ -116,12 +109,14 @@ internal class MessageDefObjectGenerator(
      * }
      * ```
      */
-    internal fun generateCode(fileBuilder: FileSpec.Builder) {
+    override fun generateCode(fileBuilder: FileSpec.Builder) {
         fileBuilder.addType(
             TypeSpec.objectBuilder(
                 messageTypeName.generateClassName(CLASS_NAME_SUFFIX)
             ).addSuperinterface(
-                messageDefClassName.parameterizedBy(messageFullClassName)
+                messageDefClassName.parameterizedBy(
+                    messageTypeName.fullClassName(typeSystem)
+                )
             ).also { builder ->
                 generateFieldProperties(builder)
                 generateOneofProperties(builder)
@@ -134,7 +129,7 @@ internal class MessageDefObjectGenerator(
     private fun generateFieldsProperty(objectBuilder: TypeSpec.Builder) {
         val propType = Collection::class.asClassName().parameterizedBy(
             messageFieldClassName.parameterizedBy(
-                messageFullClassName,
+                messageTypeName.fullClassName(typeSystem),
                 WildcardTypeName.producerOf(messageFieldValueTypeAlias)
             )
         )
@@ -147,11 +142,13 @@ internal class MessageDefObjectGenerator(
 
     private fun generateOneofsProperty(objectBuilder: TypeSpec.Builder) {
         val propType = Collection::class.asClassName().parameterizedBy(
-            messageOneofClassName.parameterizedBy(messageFullClassName)
+            messageOneofClassName.parameterizedBy(
+                messageTypeName.fullClassName(typeSystem)
+            )
         )
         objectBuilder.addProperty(
             PropertySpec.builder("oneofs", propType, PUBLIC, OVERRIDE)
-                .initializer(fieldListInitializer(oneofMap.keys))
+                .initializer(fieldListInitializer(oneofNames))
                 .build()
         )
     }
@@ -168,7 +165,7 @@ internal class MessageDefObjectGenerator(
     }
 
     private fun generateOneofProperties(objectBuilder: TypeSpec.Builder) {
-        oneofMap.keys.forEach { fieldName ->
+        oneofNames.forEach { fieldName ->
             objectBuilder.addProperty(
                 generateFieldProperty(
                     fieldName,
@@ -185,7 +182,10 @@ internal class MessageDefObjectGenerator(
         return PropertySpec
             .builder(
                 fieldName.propertyName,
-                ClassName(javaPackage, simpleClassName),
+                ClassName(
+                    messageTypeName.javaPackage(typeSystem),
+                    simpleClassName
+                ),
                 PUBLIC
             )
             .initializer(simpleClassName)
@@ -208,3 +208,9 @@ private fun fieldListInitializer(
         it.propertyName
     }
 }
+
+/**
+ * Returns [ClassName] of [MessageDef].
+ */
+private val messageDefClassName: ClassName
+    get() = MessageDef::class.asClassName()

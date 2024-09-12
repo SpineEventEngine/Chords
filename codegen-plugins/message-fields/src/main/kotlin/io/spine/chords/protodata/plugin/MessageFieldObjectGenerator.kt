@@ -117,19 +117,17 @@ internal class MessageFieldObjectGenerator(
     private val messageTypeName: TypeName,
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
-) {
+) : CodeGenerator {
 
-    private val javaPackage = messageTypeName.javaPackage(typeSystem)
-
-    private val messageFullClassName = ClassName(
-        javaPackage,
-        messageTypeName.simpleClassName
-    )
+    /**
+     * Returns a fully qualified [ClassName] of the given [messageTypeName].
+     */
+    private val messageFullClassName = messageTypeName.fullClassName(typeSystem)
 
     /**
      * Generates implementation of [MessageField] for the given [Field]s.
      */
-    internal fun generateCode(fileBuilder: FileSpec.Builder) {
+    override fun generateCode(fileBuilder: FileSpec.Builder) {
         fields.forEach { field ->
             fileBuilder.addType(
                 buildFieldObject(field)
