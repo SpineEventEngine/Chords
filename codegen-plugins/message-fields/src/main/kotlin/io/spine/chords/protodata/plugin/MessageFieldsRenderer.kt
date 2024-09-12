@@ -26,13 +26,11 @@
 
 package io.spine.chords.protodata.plugin
 
-import com.google.protobuf.StringValue
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import io.spine.protodata.Field
-import io.spine.protodata.ProtoFileHeader
 import io.spine.protodata.TypeName
-import io.spine.protodata.find
+import io.spine.protodata.java.javaPackage
 import io.spine.protodata.renderer.Renderer
 import io.spine.protodata.renderer.SourceFileSet
 import io.spine.protodata.type.TypeSystem
@@ -131,7 +129,7 @@ internal fun TypeName.javaPackage(typeSystem: TypeSystem): String {
     checkNotNull(messageToHeader) {
         "Cannot determine file header for TypeName `$this`"
     }
-    return messageToHeader.second.javaPackage
+    return messageToHeader.second.javaPackage()
 }
 
 /**
@@ -140,16 +138,3 @@ internal fun TypeName.javaPackage(typeSystem: TypeSystem): String {
 internal fun TypeName.fullClassName(typeSystem: TypeSystem): ClassName {
     return ClassName(javaPackage(typeSystem), simpleClassName)
 }
-
-/**
- * Returns a Java package declared in [ProtoFileHeader].
- */
-internal val ProtoFileHeader.javaPackage: String
-    get() {
-        val optionName = "java_package"
-        val option = optionList.find(optionName, StringValue::class.java)
-        checkNotNull(option) {
-            "Cannot find option `$optionName` in file header `${this}`."
-        }
-        return option.value
-    }

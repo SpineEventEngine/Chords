@@ -44,6 +44,7 @@ import io.spine.protodata.TypeName
 import io.spine.protodata.isEnum
 import io.spine.protodata.isPrimitive
 import io.spine.protodata.isRepeated
+import io.spine.protodata.java.javaPackage
 import io.spine.protodata.java.primarySetterName
 import io.spine.protodata.java.primitiveClass
 import io.spine.protodata.type.TypeSystem
@@ -233,7 +234,7 @@ private fun Type.messageClassName(typeSystem: TypeSystem): ClassName {
     checkNotNull(fileHeader) {
         "Cannot determine file header for type `$this`"
     }
-    return ClassName(fileHeader.javaPackage, typeName.simpleClassName)
+    return ClassName(fileHeader.javaPackage(), typeName.simpleClassName)
 }
 
 /**
