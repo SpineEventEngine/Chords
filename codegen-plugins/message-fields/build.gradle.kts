@@ -35,7 +35,6 @@ plugins {
 dependencies {
     // To use ProtoData API in code generation plugin.
     implementation(ProtoData.backend)
-    protobuf(ProtoData.backend)
     // To generate Kotlin sources.
     implementation(KotlinPoet.lib)
     implementation(Chords.CodegenRuntime.lib)
