@@ -185,23 +185,13 @@ private val validatingBuilderClassName = ClassName(
 private fun Field.generateSetValueCode(messageTypeName: TypeName): String {
     val messageSimpleClassName = messageTypeName.simpleClassName
     val builderCast = "(builder as $messageSimpleClassName.Builder)"
-    val setterCall = "$setterInvocation(newValue)"
+    val setterCall = "$primarySetterName(newValue)"
     return if (isRepeated) {
         "$builderCast.clear${name.value.camelCase()}().$setterCall"
     } else {
         "$builderCast.$setterCall"
     }
 }
-
-/**
- * Returns a "setter" invocation code for the [Field].
- */
-private val Field.setterInvocation: String
-    get() = primarySetterName
-/*    get() = if (isRepeated)
-        "addAll${name.value.camelCase()}"
-    else
-        "set${name.value.camelCase()}"*/
 
 /**
  * Returns a [ClassName] of the value of a [Field].
