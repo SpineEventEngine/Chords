@@ -44,6 +44,7 @@ import io.spine.protodata.TypeName
 import io.spine.protodata.isEnum
 import io.spine.protodata.isPrimitive
 import io.spine.protodata.isRepeated
+import io.spine.protodata.java.primarySetterName
 import io.spine.protodata.java.primitiveClass
 import io.spine.protodata.type.TypeSystem
 import io.spine.protodata.type.findHeader
@@ -196,10 +197,11 @@ private fun Field.generateSetValueCode(messageTypeName: TypeName): String {
  * Returns a "setter" invocation code for the [Field].
  */
 private val Field.setterInvocation: String
-    get() = if (isRepeated)
+    get() = primarySetterName
+/*    get() = if (isRepeated)
         "addAll${name.value.camelCase()}"
     else
-        "set${name.value.camelCase()}"
+        "set${name.value.camelCase()}"*/
 
 /**
  * Returns a [ClassName] of the value of a [Field].
