@@ -52,8 +52,6 @@ spine {
     // Spine Model Compiler is enabled only for generating validation code for
     // error messages.
     assembleModel()
-
-    enableJava()
 }
 
 dependencies {
