@@ -169,6 +169,14 @@ fun RepositoryHandler.applyStandardWithGitHub(project: Project, vararg gitHubRep
 }
 
 /**
+ * A Maven repo for where snapshot versions for Spine libraries are published.
+ */
+fun RepositoryHandler.spineSnapshots() {
+    maven("https://europe-maven.pkg.dev/spine-event-engine/snapshots")
+}
+
+
+/**
  * A scrambled version of PAT generated with the only "read:packages" scope.
  *
  * The scrambling around PAT is necessary because GitHub analyzes commits for the presence

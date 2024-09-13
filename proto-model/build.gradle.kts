@@ -36,7 +36,6 @@ import io.spine.internal.gradle.RunCodegenPlugins
 
 plugins {
     id("io.spine.tools.gradle.bootstrap") version "1.9.0"
-    id("java-library")
     `maven-publish`
 }
 

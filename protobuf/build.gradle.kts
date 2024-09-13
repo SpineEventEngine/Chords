@@ -27,10 +27,10 @@
 import io.spine.internal.dependency.Kotest
 import io.spine.internal.dependency.Material3
 import io.spine.internal.dependency.Spine
-import io.onedam.gradle.spineSnapshots
+import io.spine.internal.gradle.spineSnapshots
 
 plugins {
-    id("io.spine.tools.gradle.bootstrap") version "1.9.0"
+//    id("io.spine.tools.gradle.bootstrap") version "1.9.0"
     id("org.jetbrains.compose") version "1.5.12"
 }
 
