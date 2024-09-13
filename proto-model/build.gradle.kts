@@ -35,7 +35,7 @@ import io.spine.internal.dependency.Spine
 import io.spine.internal.gradle.RunCodegenPlugins
 
 plugins {
-    id("io.spine.tools.gradle.bootstrap").version("1.9.0")
+    id("io.spine.tools.gradle.bootstrap") version "1.9.0"
     id("java-library")
     `maven-publish`
 }
@@ -60,16 +60,6 @@ dependencies {
     api(Spine.money)
     implementation(JavaX.annotations)
     testImplementation(Kotest.runnerJUnit5)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            artifactId = project.name
-
-            from(components["java"])
-        }
-    }
 }
 
 /**
