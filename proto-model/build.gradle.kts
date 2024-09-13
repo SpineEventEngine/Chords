@@ -64,19 +64,6 @@ dependencies {
     testImplementation(Kotest.runnerJUnit5)
 }
 
-protobuf {
-    protoc {
-        artifact = Protobuf.compiler
-    }
-    generateProtoTasks {
-        for (task in all()) {
-            task.builtins {
-                id("kotlin")
-            }
-        }
-    }
-}
-
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
