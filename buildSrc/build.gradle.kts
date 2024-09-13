@@ -129,7 +129,7 @@ val kotestJvmPluginVersion = "0.4.10"
 /**
  * @see [io.spine.internal.dependency.Kover]
  */
-val koverVersion = "0.7.2"
+val koverVersion = "0.6.1"
 
 configurations.all {
     resolutionStrategy {
@@ -195,7 +195,7 @@ dependencies {
         "org.jetbrains.dokka:dokka-gradle-plugin:${dokkaVersion}",
         "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
         "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion",
-        "org.jetbrains.kotlinx:kover-gradle-plugin:$koverVersion",
+        "org.jetbrains.kotlinx.kover:org.jetbrains.kotlinx.kover.gradle.plugin:$koverVersion",
         "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:$kotlinVersion"
     ).forEach {
         implementation(it)
@@ -203,6 +203,10 @@ dependencies {
 }
 
 buildscript {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
 
     /**
      * The version of the Shadow Plugin.
@@ -213,8 +217,14 @@ buildscript {
      */
     val shadowVersion = "6.1.0"
 
+    /**
+     * @see [io.spine.internal.dependency.Kover]
+     */
+    val koverVersion = "0.6.1"
+
     dependencies {
         classpath("com.github.jengelman.gradle.plugins:shadow:$shadowVersion")
+        classpath("org.jetbrains.kotlinx.kover:org.jetbrains.kotlinx.kover.gradle.plugin:$koverVersion")
     }
 }
 
