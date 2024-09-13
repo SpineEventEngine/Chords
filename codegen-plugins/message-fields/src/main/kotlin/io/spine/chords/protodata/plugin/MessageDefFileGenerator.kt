@@ -30,6 +30,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageDef
+import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
@@ -121,7 +122,7 @@ internal fun TypeName.messageOneofClassName(fieldName: String): String {
  * Generates a simple class name for the [TypeName].
  */
 internal fun TypeName.messageDefClassName(): String {
-    return generateClassName("", "Def")
+    return generateClassName("", MESSAGE_DEF_CLASS_SUFFIX)
 }
 
 /**

@@ -28,6 +28,7 @@ package io.spine.chords.protodata.plugin
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
 import io.spine.protodata.Field
 import io.spine.protodata.TypeName
 import io.spine.protodata.java.javaPackage
@@ -50,7 +51,6 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
     private companion object {
         private const val KOTLIN_SOURCE_ROOT = "kotlin"
         private const val REJECTIONS_PROTO_FILE_NAME = "rejections.proto"
-        private const val FILE_NAME_SUFFIX = "Def"
     }
 
     /**
@@ -116,7 +116,7 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
      */
     private fun TypeName.generateFileName(): String {
         return nestingTypeNameList.joinToString(
-            "", "", "${simpleName}$FILE_NAME_SUFFIX.kt"
+            "", "", "${simpleName}$MESSAGE_DEF_CLASS_SUFFIX.kt"
         )
     }
 }
