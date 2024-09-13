@@ -40,6 +40,14 @@ import com.google.protobuf.Message
  */
 public interface MessageDef<T : Message> {
 
+    public companion object {
+        /**
+         * Defines a suffix for the generated `MessageDef` implementations
+         * so that other parts of the system can rely on it.
+         */
+        public const val MESSAGE_DEF_CLASS_SUFFIX: String = "Def"
+    }
+
     /**
      * Returns collection of [MessageField]s generated for the fields of [T] Proto message.
      */

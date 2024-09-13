@@ -27,6 +27,7 @@
 package io.spine.chords.runtime
 
 import com.google.protobuf.Message
+import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
 import io.spine.protobuf.ValidatingBuilder
 
 /**
@@ -42,7 +43,8 @@ public fun <M : Message> ValidatingBuilder<M>.messageDef(): MessageDef<M> {
     val messageDefClassName = builderClass.name
         .substringBeforeLast("$")
         .replace("$", "")
-        .plus("DefKt")
+        .plus(MESSAGE_DEF_CLASS_SUFFIX)
+        .plus("Kt")
     val messageDefClass = Class.forName(messageDefClassName)
     val getMessageDefMethod = messageDefClass
         .getMethod("getMessageDef", builderClass)
