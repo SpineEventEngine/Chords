@@ -26,31 +26,36 @@
 
 package io.spine.chords.protodata.plugin
 
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
+import io.spine.protodata.Field
 import io.spine.protodata.TypeName
+import io.spine.protodata.java.javaPackage
 import io.spine.protodata.renderer.Renderer
 import io.spine.protodata.renderer.SourceFileSet
+import io.spine.protodata.type.TypeSystem
+import io.spine.string.Indent
 import io.spine.tools.code.Kotlin
+import java.nio.file.Path
 
 /**
  * ProtoData [Renderer] that generates `MessageField` and `MessageOneof`
- * implementations for the fields of command Proto messages.
- *
- * The code is also generated for types of command message fields,
- * except for the types provided by Protobuf.
+ * implementations for the fields of Proto messages.
  *
  * The renderer prepares all the required data for code generation
- * and executes [FieldsFileGenerator] to generate Kotlin files.
+ * and runs [MessageDefFileGenerator] to generate Kotlin files.
  */
 public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
 
     private companion object {
         private const val KOTLIN_SOURCE_ROOT = "kotlin"
         private const val REJECTIONS_PROTO_FILE_NAME = "rejections.proto"
+        private const val FILE_NAME_SUFFIX = "Def"
     }
 
     /**
-     * Gathers available [FieldMetadata]s for command messages
-     * and performs code generation.
+     * Gathers available [FieldMetadata]s for Proto messages
+     * and performs the code generation.
      */
     override fun render(sources: SourceFileSet) {
         // Generate code for Kotlin output root only.
@@ -63,30 +68,73 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
 
         select(FieldMetadata::class.java).all()
             .filter {
-                // Select fields that are not rejections.
-                !it.id.file.path.contains(REJECTIONS_PROTO_FILE_NAME)
+                // Exclude fields that are declared in rejections.
+                !it.id.file.path.endsWith(REJECTIONS_PROTO_FILE_NAME)
             }.map {
                 it.id.typeName
             }.forEach { typeName ->
                 val messageToHeader = typeSystem!!.findMessage(typeName)
                 checkNotNull(messageToHeader) {
-                    "Message not found for type: `${typeName.fullClassName}`."
+                    "Message not found for type `$typeName`."
                 }
                 messageToHeader.first.fieldList.let { fields ->
-                    FieldsFileGenerator(typeName, fields, typeSystem!!)
-                        .let { fileGenerator ->
-                            sources.createFile(
-                                fileGenerator.filePath(),
-                                fileGenerator.fileContent()
-                            )
-                        }
+                    sources.createFile(
+                        typeName.generateFilePath(),
+                        typeName.generateFileContent(fields)
+                    )
                 }
             }
+    }
+
+    /**
+     * Runs [MessageDefFileGenerator] to generate a content of the file
+     * for the [fields] provided.
+     */
+    private fun TypeName.generateFileContent(
+        fields: Iterable<Field>
+    ) = FileSpec.builder(fullClassName(typeSystem!!))
+        .indent(Indent.defaultJavaIndent.toString())
+        .also { fileBuilder ->
+            MessageDefFileGenerator(this, fields, typeSystem!!)
+                .generateCode(fileBuilder)
+        }
+        .build()
+        .toString()
+
+    /**
+     * Returns a [Path] to the generated file for the given [TypeName].
+     */
+    private fun TypeName.generateFilePath(): Path {
+        return Path.of(
+            javaPackage(typeSystem!!).replace('.', '/'),
+            generateFileName()
+        )
+    }
+
+    /**
+     * Returns a name of the generated file for the [TypeName].
+     */
+    private fun TypeName.generateFileName(): String {
+        return nestingTypeNameList.joinToString(
+            "", "", "${simpleName}$FILE_NAME_SUFFIX.kt"
+        )
     }
 }
 
 /**
- * Returns a fully-qualified class name of the [TypeName].
+ * Returns a Java package for the [TypeName].
  */
-private val TypeName.fullClassName: String
-    get() = "$packageName.$simpleName"
+internal fun TypeName.javaPackage(typeSystem: TypeSystem): String {
+    val messageToHeader = typeSystem.findMessage(this)
+    checkNotNull(messageToHeader) {
+        "Cannot determine file header for TypeName `$this`"
+    }
+    return messageToHeader.second.javaPackage()
+}
+
+/**
+ * Returns a fully qualified [ClassName] for the [TypeName].
+ */
+internal fun TypeName.fullClassName(typeSystem: TypeSystem): ClassName {
+    return ClassName(javaPackage(typeSystem), simpleClassName)
+}

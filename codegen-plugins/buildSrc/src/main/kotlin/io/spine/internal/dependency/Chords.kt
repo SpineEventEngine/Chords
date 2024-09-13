@@ -24,28 +24,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Chords
-import io.spine.internal.dependency.KotlinPoet
-import io.spine.internal.dependency.ProtoData
+package io.spine.internal.dependency
 
-plugins {
-    `kotlin-dsl`
-}
+@Suppress("unused", "ConstPropertyName")
+object Chords {
 
-dependencies {
-    // To use ProtoData API in code generation plugin.
-    implementation(ProtoData.backend)
-    // To use `PrimitiveType` extensions.
-    implementation(ProtoData.java)
-    // To generate Kotlin sources.
-    implementation(KotlinPoet.lib)
-    implementation(Chords.CodegenRuntime.lib)
-}
+    private const val group = "io.spine.chords"
+    private const val prefix = "spine-chords-"
+    private const val version = "2.0.0-SNAPSHOT.6"
 
-modelCompiler {
-    java {
-        codegen {
-            validation().enabled.set(false)
-        }
+    object CodegenRuntime {
+        const val lib = "$group:${prefix}codegen-runtime:$version"
     }
 }

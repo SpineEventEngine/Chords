@@ -52,7 +52,7 @@ plugins {
     id("net.ltgt.errorprone")
     id("detekt-code-analysis")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.50.0"
+    id("io.spine.protodata") version "0.60.2"
     idea
 }
 
@@ -66,12 +66,14 @@ allprojects {
     repositories.standardToSpineSdk()
 
     repositories {
+        // To access Spine 1.9.x.
         maven {
             url = uri("https://spine.mycloudrepo.io/public/repositories/releases")
             mavenContent {
                 releasesOnly()
             }
         }
+        // To access Projects Users.
         maven {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/Projects-tm/Server")
