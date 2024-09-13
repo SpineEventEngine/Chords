@@ -42,7 +42,7 @@ repositories {
 }
 
 dependencies {
-    implementation(Spine.Base.lib)
+    implementation(Spine.base_1_9)
     implementation(":codegen-runtime")
     implementation(":core")
     api(Spine.money)

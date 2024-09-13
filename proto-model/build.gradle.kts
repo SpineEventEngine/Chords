@@ -57,7 +57,7 @@ spine {
 }
 
 dependencies {
-    implementation(Spine.base)
+    implementation(Spine.base_1_9)
     implementation(":codegen-runtime")
     api(Spine.money)
     implementation(JavaX.annotations)
