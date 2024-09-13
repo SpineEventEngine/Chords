@@ -40,7 +40,6 @@ buildscript {
 plugins {
     idea
     jacoco
-    `gradle-doctor`
     `project-report`
 }
 
