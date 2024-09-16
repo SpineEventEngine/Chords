@@ -160,7 +160,7 @@ object Spine {
     // TODO:2024-08-30:dmitry.pikhulya: The money library ref was added on top
     //   of the original `config` module's content. Consider updating `config`.
     //   See https://github.com/SpineEventEngine/Chords/issues/3
-    const val money = "$group:spine-money:${ArtifactVersion.time}"
+    const val money = "$group:spine-money:${ArtifactVersion.money}"
     const val change = "$group:spine-change:${ArtifactVersion.change}"
     const val text = "$group:spine-text:${ArtifactVersion.text}"
 

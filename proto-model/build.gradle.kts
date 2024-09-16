@@ -70,7 +70,7 @@ dependencies {
  * See the [RunCodegenPlugins] for details.
  */
 val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
-    pluginsDir = "${rootDir}/codegen/codegen-plugins"
+    pluginsDir = "${rootDir}/codegen"
     sourceModuleDir = "${rootDir}/proto-model"
 
     // Dependencies that are required to load the Proto files from.
