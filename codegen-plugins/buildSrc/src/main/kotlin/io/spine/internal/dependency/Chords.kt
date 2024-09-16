@@ -31,7 +31,7 @@ object Chords {
 
     private const val group = "io.spine.chords"
     private const val prefix = "spine-chords-"
-    private const val version = "2.0.0-SNAPSHOT.6"
+    private const val version = "2.0.0-SNAPSHOT.8"
 
     object CodegenRuntime {
         const val lib = "$group:${prefix}codegen-runtime:$version"
