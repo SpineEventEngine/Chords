@@ -180,7 +180,8 @@ fun Module.forceConfigurations() {
                     JUnit.bom,
                     JUnit.runner,
                     Dokka.BasePlugin.lib,
-                    Spine.reflect
+                    Spine.reflect,
+                    Spine.base_1_9
                 )
             }
         }
