@@ -1,6 +1,5 @@
 import io.spine.internal.dependency.Dokka
 import io.spine.internal.dependency.KotlinX
-import io.spine.internal.gradle.publish.IncrementGuard
 import io.spine.internal.gradle.publish.PublishingRepos
 import io.spine.internal.gradle.publish.spinePublishing
 import io.spine.internal.gradle.report.license.LicenseReporter
@@ -85,6 +84,5 @@ spinePublishing {
     artifactPrefix = "spine-chords-"
 }
 
-apply<IncrementGuard>()
 PomGenerator.applyTo(project)
 LicenseReporter.mergeAllReports(project)
