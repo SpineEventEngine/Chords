@@ -24,10 +24,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import io.spine.internal.dependency.ProtoData
 import io.spine.internal.dependency.Spine
 
 dependencies {
     // This dependency is declared as transitive,
     // since the generated code depends onto Spine Base in version 1.9.x.
     api(Spine.base_1_9)
+
+    // To use `ClassName`.
+    implementation(ProtoData.java)
+}
+
+configurations {
+    all {
+        resolutionStrategy {
+            force(Spine.base_1_9)
+        }
+    }
 }

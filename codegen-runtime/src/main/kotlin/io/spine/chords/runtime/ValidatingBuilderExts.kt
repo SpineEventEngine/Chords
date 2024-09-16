@@ -29,6 +29,7 @@ package io.spine.chords.runtime
 import com.google.protobuf.Message
 import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
 import io.spine.protobuf.ValidatingBuilder
+import io.spine.protodata.java.ClassName
 
 /**
  * Returns the generated implementation of [MessageDef] for the [M] Proto message.
@@ -40,8 +41,8 @@ import io.spine.protobuf.ValidatingBuilder
 @Suppress("Unchecked_cast")
 public fun <M : Message> ValidatingBuilder<M>.messageDef(): MessageDef<M> {
     val builderClass = this::class.java
-    val messageDefClassName = builderClass.name
-        .substringBeforeLast("$")
+    val messageDefClassName = ClassName.guess(builderClass.name)
+        .outer()!!.binary
         .replace("$", "")
         .plus(MESSAGE_DEF_CLASS_SUFFIX)
         .plus("Kt")
