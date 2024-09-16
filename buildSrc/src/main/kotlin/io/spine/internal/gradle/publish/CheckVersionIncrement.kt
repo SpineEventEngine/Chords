@@ -66,6 +66,7 @@ open class CheckVersionIncrement : DefaultTask() {
     }
 
     private fun checkInRepo(repoUrl: String, artifact: String) {
+        logger.warn("--- Checking the version of `$artifact` published to the repo `$repoUrl`.")
         val metadata = fetch(repoUrl, artifact)
         val versions = metadata?.versioning?.versions
         val versionExists = versions?.contains(version) ?: false
