@@ -132,6 +132,10 @@ val kotestJvmPluginVersion = "0.4.10"
 val koverVersion = "0.6.1"
 
 configurations.all {
+    attributes {
+        attribute(Attribute.of("org.gradle.jvm.environment", "".javaClass), "standard-jvm")
+    }
+
     resolutionStrategy {
         force(
             "com.google.guava:guava:${guavaVersion}",
@@ -168,16 +172,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 dependencies {
     api("com.github.jk1:gradle-license-report:$licenseReportVersion")
     dependOnAuthCommon()
-
-    constraints {
-        implementation("com.google.guava:guava") {
-            attributes {
-                // Explicitly declare the JVM environment attribute to nudge Gradle to resolving
-                // the "jreApiElements" variant of the lib instead of  the "androidApiElements" one.
-                attribute(Attribute.of("org.gradle.jvm.environment", String::class.java), "standard-jvm")
-            }
-        }
-    }
 
     listOf(
         "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion",

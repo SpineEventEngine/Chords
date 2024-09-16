@@ -56,6 +56,7 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ResolutionStrategy
+import org.gradle.api.attributes.Attribute
 
 /**
  * The function to be used in `buildscript` when a fully qualified call must be made.
@@ -70,6 +71,12 @@ fun doForceVersions(configurations: ConfigurationContainer) {
  */
 fun NamedDomainObjectContainer<Configuration>.forceVersions() {
     all {
+//        // JVM environment attribute configuration is necessary because Guava version >= 32.1.0
+//        // without it doesn't work on Gradle version < 7.
+//        attributes {
+//            attribute(Attribute.of("org.gradle.jvm.environment", "".javaClass), "standard-jvm")
+//        }
+
         resolutionStrategy {
             failOnVersionConflict()
             cacheChangingModulesFor(0, "seconds")

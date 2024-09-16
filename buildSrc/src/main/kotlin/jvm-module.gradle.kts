@@ -72,13 +72,13 @@ plugins {
     id("dokka-for-java")
     kotlin("jvm")
     id("io.kotest")
-//    id("org.jetbrains.kotlinx.kover.gradle.plugin")
     id("detekt-code-analysis")
     id("dokka-for-kotlin")
 }
 
 apply<KoverPlugin>()
 apply<IncrementGuard>()
+
 LicenseReporter.generateReportIn(project)
 JavadocConfig.applyTo(project)
 CheckStyleConfig.applyTo(project)
