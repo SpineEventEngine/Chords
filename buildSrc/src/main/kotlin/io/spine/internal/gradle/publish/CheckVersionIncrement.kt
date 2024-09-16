@@ -29,6 +29,7 @@ package io.spine.internal.gradle.publish
 import com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import io.spine.internal.gradle.Repository
+import io.spine.internal.gradle.publish.ChordsPublishing.artifactPrefix
 import java.io.FileNotFoundException
 import java.net.URL
 import org.gradle.api.DefaultTask
@@ -89,8 +90,7 @@ open class CheckVersionIncrement : DefaultTask() {
 
     private fun Project.artifactPath(): String {
         val group = this.group as String
-        val name = "spine-chords-${this.name}"
-
+        val name = "$artifactPrefix${this.name}"
         val pathElements = ArrayList(group.split('.'))
         pathElements.add(name)
         val path = pathElements.joinToString(separator = "/")
