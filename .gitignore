@@ -34,6 +34,9 @@ codegen-plugins/.idea/**
 # Build files produced by the IDE
 **/out/**
 
+# Build files produced by the `RunGradle`.
+**/_out/**
+
 # Ignore Gradle GUI config
 gradle-app.setting
 
