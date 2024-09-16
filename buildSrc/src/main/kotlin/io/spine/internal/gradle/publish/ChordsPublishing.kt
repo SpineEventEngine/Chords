@@ -24,7 +24,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/**
-  * The version of all Chords libraries.
-  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.9")
+package io.spine.internal.gradle.publish
+
+@Suppress("unused", "ConstPropertyName")
+object ChordsPublishing {
+    /**
+     * The artifact prefix that should be used for all the Chords modules
+     * before the artifact name for publishing/reading artifacts to/from repositories.
+     */
+    const val artifactPrefix = "spine-chords-"
+}
