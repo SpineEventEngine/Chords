@@ -24,7 +24,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.runtime
+
+import com.google.protobuf.Message
+import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
+import io.spine.protobuf.ValidatingBuilder
+
 /**
-  * The version of all Chords libraries.
-  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.10")
+ * Returns the generated implementation of [MessageDef] for the [M] Proto message.
+ *
+ * Uses Reflection API to read the `messageDef` property on a message builder instance.
+ *
+ * @param M The type of Proto message.
+ */
+@Suppress("Unchecked_cast")
+public fun <M : Message> ValidatingBuilder<M>.messageDef(): MessageDef<M> {
+    val builderClass = this::class.java
+    val messageDefClassName = builderClass.name
+        .substringBeforeLast("$")
+        .replace("$", "")
+        .plus(MESSAGE_DEF_CLASS_SUFFIX)
+        .plus("Kt")
+    val messageDefClass = Class.forName(messageDefClassName)
+    val getMessageDefMethod = messageDefClass
+        .getMethod("getMessageDef", builderClass)
+    return getMessageDefMethod.invoke(builderClass, this) as MessageDef<M>
+}
