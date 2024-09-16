@@ -30,7 +30,7 @@ package io.spine.internal.gradle.publish
 object ChordsPublishing {
     /**
      * The artifact prefix that should be used for all the Chords modules
-     * before the artifact name to publish/read it to/from repositories.
+     * before the artifact name for publishing/reading artifacts to/from repositories.
      */
     const val artifactPrefix = "spine-chords-"
 }
