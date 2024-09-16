@@ -43,8 +43,8 @@ repositories {
 
 dependencies {
     implementation(Spine.base_1_9)
-    implementation(":codegen-runtime")
-    implementation(":core")
+    implementation(project(":codegen-runtime"))
+    implementation(project(":core"))
     api(Spine.money)
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)

@@ -24,13 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.google.protobuf.gradle.generateProtoTasks
-import com.google.protobuf.gradle.id
-import com.google.protobuf.gradle.protobuf
-import com.google.protobuf.gradle.protoc
 import io.spine.internal.dependency.JavaX
 import io.spine.internal.dependency.Kotest
-import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
 import io.spine.internal.gradle.RunCodegenPlugins
 
@@ -55,7 +50,7 @@ spine {
 
 dependencies {
     implementation(Spine.base_1_9)
-    implementation(":codegen-runtime")
+    implementation(project(":codegen-runtime"))
     api(Spine.money)
     implementation(JavaX.annotations)
     testImplementation(Kotest.runnerJUnit5)
