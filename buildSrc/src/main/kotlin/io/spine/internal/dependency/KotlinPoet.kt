@@ -24,5 +24,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("workspace")
+package io.spine.internal.dependency
+
+/**
+ * The dependency on the Kotlin sources generator.
+ *
+ * [KotlinPoet Releases]](https://github.com/square/kotlinpoet/releases)
+ */
+@Suppress("unused", "ConstPropertyName")
+object KotlinPoet {
+    private const val version = "1.15.2"
+
+    const val lib = "com.squareup:kotlinpoet:${io.spine.internal.dependency.KotlinPoet.version}"
+}

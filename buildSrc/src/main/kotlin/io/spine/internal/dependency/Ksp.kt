@@ -24,5 +24,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("workspace")
+package io.spine.internal.dependency
+
+/**
+ * Kotlin Symbol Processing API.
+ *
+ * @see <a href="https://github.com/google/ksp">KSP GitHub repository</a>
+ */
+object Ksp {
+    /**
+     * The latest version compatible with Kotlin v1.8.22, which is bundled with Gradle 7.6.4.
+     */
+    const val version = "1.8.22-1.0.11"
+    const val id = "com.google.devtools.ksp"
+}

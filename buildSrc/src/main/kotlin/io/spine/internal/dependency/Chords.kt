@@ -24,5 +24,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("workspace")
+package io.spine.internal.dependency
+
+@Suppress("unused", "ConstPropertyName")
+object Chords {
+
+    private const val group = "io.spine.chords"
+    private const val prefix = "spine-chords-"
+
+    object CodegenPlugins {
+        fun lib(version: String): String {
+            return "$group:${prefix}codegen-plugins:$version"
+        }
+    }
+}

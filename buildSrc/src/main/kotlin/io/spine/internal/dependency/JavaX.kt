@@ -24,5 +24,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("workspace")
+package io.spine.internal.dependency
+
+@Suppress("unused", "ConstPropertyName")
+object JavaX {
+    // This artifact which used to be a part of J2EE moved under Eclipse EE4J project.
+    // https://github.com/eclipse-ee4j/common-annotations-api
+    const val annotations = "javax.annotation:javax.annotation-api:1.3.2"
+
+    const val servletApi = "javax.servlet:javax.servlet-api:3.1.0"
+}

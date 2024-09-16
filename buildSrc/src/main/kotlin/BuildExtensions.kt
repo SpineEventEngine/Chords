@@ -24,5 +24,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("workspace")
+import io.spine.internal.gradle.standardToSpineSdk
+import org.gradle.kotlin.dsl.ScriptHandlerScope
+
+/**
+ * Applies [standard][standardToSpineSdk] repositories to this `buildscript`.
+ */
+fun ScriptHandlerScope.standardSpineSdkRepositories() {
+    repositories.standardToSpineSdk()
+}

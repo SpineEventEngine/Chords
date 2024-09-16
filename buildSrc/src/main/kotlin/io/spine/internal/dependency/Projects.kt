@@ -24,5 +24,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("workspace")
+package io.spine.internal.dependency
+
+/**
+ * Dependencies on [Projects](https://github.com/Projects-tm/Server) modules.
+ */
+@Suppress("unused", "ConstPropertyName")
+object Projects {
+
+    object Users {
+        private const val version = "0.8.16"
+        const val lib = "com.teamdev.projects.v2:users:${version}"
+    }
+}

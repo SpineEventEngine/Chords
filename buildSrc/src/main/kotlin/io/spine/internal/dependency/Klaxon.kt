@@ -24,5 +24,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("workspace")
+package io.spine.internal.dependency
+
+/**
+ * A JSON parser in Kotlin.
+ *
+ * [Klaxon](https://github.com/cbeust/klaxon)
+ */
+@Suppress("unused", "ConstPropertyName")
+object Klaxon {
+    private const val version = "5.6"
+    const val lib = "com.beust:klaxon:${io.spine.internal.dependency.Klaxon.version}"
+}

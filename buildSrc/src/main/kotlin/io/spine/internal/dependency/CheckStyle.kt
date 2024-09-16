@@ -24,5 +24,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("workspace")
+package io.spine.internal.dependency
+
+// https://checkstyle.sourceforge.io/
+// See `io.spine.internal.gradle.checkstyle.CheckStyleConfig`.
+@Suppress("unused", "ConstPropertyName")
+object CheckStyle {
+    const val version = "10.3.4"
+}

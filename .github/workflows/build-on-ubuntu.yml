@@ -20,4 +20,4 @@ jobs:
 
       - name: Build all libraries
         shell: bash
-        run: ./gradlew build --stacktrace
+        run: ./gradlew build --stacktrace -PcodegenPluginsVersion=2.0.0-SNAPSHOT.9

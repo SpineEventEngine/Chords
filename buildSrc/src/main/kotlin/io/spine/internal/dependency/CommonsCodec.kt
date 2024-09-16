@@ -24,5 +24,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("workspace")
+package io.spine.internal.dependency
+
+// https://commons.apache.org/proper/commons-codec/changes-report.html
+@Suppress("unused", "ConstPropertyName")
+object CommonsCodec {
+    private const val version = "1.16.0"
+    const val lib = "commons-codec:commons-codec:$version"
+}

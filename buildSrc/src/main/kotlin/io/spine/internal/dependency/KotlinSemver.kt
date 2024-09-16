@@ -24,5 +24,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("workspace")
+package io.spine.internal.dependency
+
+// https://github.com/z4kn4fein/kotlin-semver
+@Suppress("unused", "ConstPropertyName")
+object KotlinSemver {
+    private const val version = "1.4.2"
+    const val lib     = "io.github.z4kn4fein:semver:${io.spine.internal.dependency.KotlinSemver.version}"
+}
