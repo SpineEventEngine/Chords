@@ -46,7 +46,6 @@ plugins {
 }
 
 allprojects {
-//    apply<DependencyManagementPlugin>()
     apply(plugin = Dokka.GradlePlugin.id)
     apply(from = "$rootDir/version.gradle.kts")
     group = "io.spine.chords"
@@ -55,9 +54,9 @@ allprojects {
     repositories.standardToSpineSdk()
 
     configurations.all {
-//        attributes {
-//            attribute(Attribute.of("org.gradle.jvm.environment", "".javaClass), "standard-jvm")
-//        }
+        attributes {
+            attribute(Attribute.of("org.gradle.jvm.environment", "".javaClass), "standard-jvm")
+        }
 
         resolutionStrategy {
             force(
