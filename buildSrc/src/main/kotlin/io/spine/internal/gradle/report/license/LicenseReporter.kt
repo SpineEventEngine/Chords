@@ -89,7 +89,8 @@ object LicenseReporter {
                 "io.spine.gcloud",
                 "io.spine.protodata",
                 "io.spine.tools",
-                "io.spine.validation"
+                "io.spine.validation",
+                "io.spine.chords"
             )
             configurations = ALL
 
