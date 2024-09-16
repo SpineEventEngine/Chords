@@ -27,6 +27,7 @@
 import io.spine.internal.dependency.Chords
 import io.spine.internal.dependency.JUnit
 import io.spine.internal.dependency.Spine
+import io.spine.internal.gradle.standardToSpineSdk
 
 // Apply ProtoData directly, without Spine's Model Compiler.
 plugins {
@@ -34,6 +35,7 @@ plugins {
 }
 
 repositories {
+    standardToSpineSdk()
     mavenLocal()
 }
 
