@@ -1,4 +1,5 @@
 import io.spine.internal.dependency.Dokka
+import io.spine.internal.dependency.Guava
 import io.spine.internal.dependency.KotlinX
 import io.spine.internal.gradle.publish.IncrementGuard
 import io.spine.internal.gradle.publish.PublishingRepos
@@ -66,7 +67,8 @@ allprojects {
                 KotlinX.Coroutines.test,
                 KotlinX.Coroutines.testJvm,
                 KotlinX.Coroutines.debug,
-                KotlinX.AtomicFu.lib
+                KotlinX.AtomicFu.lib,
+                Guava.lib
             )
         }
     }

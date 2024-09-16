@@ -61,14 +61,14 @@ object Spine {
          *
          * @see <a href="https://github.com/SpineEventEngine/reflect">spine-reflect</a>
          */
-        const val reflect = "1.9.0"
+        const val reflect = "2.0.0-SNAPSHOT.188"
 
         /**
          * The version of [Spine.Logging].
          *
          * @see <a href="https://github.com/SpineEventEngine/logging">spine-logging</a>
          */
-        const val logging = "1.9.0"
+        const val logging = "2.0.0-SNAPSHOT.205"
 
         /**
          * The version of [Spine.testlib].
@@ -112,7 +112,7 @@ object Spine {
          *
          * @see <a href="https://github.com/SpineEventEngine/time">spine-time</a>
          */
-        const val time = "2.0.0-SNAPSHOT.135"
+        const val time = "1.9"
 
         /**
          * The version of [Spine.money].
