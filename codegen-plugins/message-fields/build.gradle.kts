@@ -30,6 +30,7 @@ import io.spine.internal.dependency.ProtoData
 
 plugins {
     `kotlin-dsl`
+    `maven-publish`
 }
 
 dependencies {
@@ -39,7 +40,8 @@ dependencies {
     implementation(ProtoData.java)
     // To generate Kotlin sources.
     implementation(KotlinPoet.lib)
-    implementation(Chords.CodegenRuntime.lib)
+    // To use `codegen-runtime` published to Maven local.
+    implementation(Chords.CodegenRuntime.lib(version as String))
 }
 
 modelCompiler {
@@ -48,4 +50,19 @@ modelCompiler {
             validation().enabled.set(false)
         }
     }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            artifactId = Chords.artefactPrefix + "codegen-plugins"
+            group = Chords.group
+
+            from(components["java"])
+        }
+    }
+}
+
+tasks.named("build") {
+    finalizedBy("publishToMavenLocal")
 }

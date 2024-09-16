@@ -29,11 +29,12 @@ package io.spine.internal.dependency
 @Suppress("unused", "ConstPropertyName")
 object Chords {
 
-    private const val group = "io.spine.chords"
-    private const val prefix = "spine-chords-"
-    private const val version = "2.0.0-SNAPSHOT.8"
+    const val group = "io.spine.chords"
+    const val artefactPrefix = "spine-chords-"
 
     object CodegenRuntime {
-        const val lib = "$group:${prefix}codegen-runtime:$version"
+        fun lib(version: String): String {
+            return "$group:${artefactPrefix}codegen-runtime:$version"
+        }
     }
 }

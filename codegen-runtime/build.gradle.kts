@@ -25,9 +25,43 @@
  */
 
 import io.spine.internal.dependency.Spine
+import io.spine.internal.gradle.RunBuild
+import io.spine.internal.gradle.RunGradle
+import io.spine.internal.gradle.publish.ChordsPublishing
+
+plugins {
+    `maven-publish`
+}
 
 dependencies {
     // This dependency is declared as transitive,
     // since the generated code depends onto Spine Base in version 1.9.x.
     api(Spine.base_1_9)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("codegenRuntime") {
+            artifactId = ChordsPublishing.artifactPrefix + project.name
+
+            from(components["java"])
+        }
+    }
+}
+
+/**
+ * The task below executes a separate Gradle build of the `codegen-plugins`
+ * project. It is needed because the ProtoData plugin, that helps to generate
+ * the Kotlin extensions for the Proto messages, requires the newer version
+ * of Gradle.
+ *
+ * See the [RunGradle] for detail.
+ */
+val buildCodegenPlugins = tasks.register<RunBuild>("buildCodegenPlugins") {
+    directory = "${rootDir}/codegen-plugins"
+}
+
+// Generate the code after the `publishToMavenLocal` task.
+tasks.named("publishToMavenLocal") {
+    finalizedBy(buildCodegenPlugins)
 }

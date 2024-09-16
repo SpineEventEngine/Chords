@@ -52,7 +52,7 @@ plugins {
     id("net.ltgt.errorprone")
     id("detekt-code-analysis")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.60.2"
+    id("io.spine.protodata") version "0.60.3"
     idea
 }
 
@@ -62,29 +62,11 @@ object BuildSettings {
 }
 
 allprojects {
+    apply(from = "$rootDir/../version.gradle.kts")
+    version = extra["chordsVersion"]!!
+
     // Define the repositories universally for all modules, including the root.
     repositories.standardToSpineSdk()
-
-    repositories {
-        // To access Spine 1.9.x.
-        maven {
-            url = uri("https://spine.mycloudrepo.io/public/repositories/releases")
-            mavenContent {
-                releasesOnly()
-            }
-        }
-        // To access Projects Users.
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/Projects-tm/Server")
-            credentials {
-                username = System.getenv("GITHUB_USERNAME")
-                    ?: System.getenv("PROJECTSTM_PACKAGES_USER")
-                password = System.getenv("GITHUB_TOKEN")
-                    ?: System.getenv("PROJECTSTM_PACKAGES_TOKEN")
-            }
-        }
-    }
 }
 
 // It is assumed that every module in the project requires
@@ -96,14 +78,7 @@ subprojects {
         plugin("detekt-code-analysis")
         plugin("com.google.protobuf")
         plugin("idea")
-    }
-
-    if (name.contains("message-fields")) {
-        // Only apply this plugin to the project, which code is Spine-based
-        // (otherwise, it wouldn't compile).
-        apply {
-            plugin("io.spine.mc-java")
-        }
+        plugin("io.spine.mc-java")
     }
 
     dependencies {

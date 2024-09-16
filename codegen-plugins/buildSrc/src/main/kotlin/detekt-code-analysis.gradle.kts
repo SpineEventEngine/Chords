@@ -69,7 +69,7 @@ plugins {
 
 detekt {
     buildUponDefaultConfig = true
-    config.from(files("${rootDir}/quality/detekt-config.yml"))
+    config.from(files("${rootDir}/../quality/detekt-config.yml"))
 }
 
 tasks {
