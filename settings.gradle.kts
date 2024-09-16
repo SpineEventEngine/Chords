@@ -25,5 +25,3 @@
  */
 
 rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
