@@ -39,6 +39,14 @@ dependencies {
     api(Spine.base_1_9)
 }
 
+configurations {
+    all {
+        resolutionStrategy {
+            force(Spine.base_1_9)
+        }
+    }
+}
+
 publishing {
     publications {
         create<MavenPublication>("codegenRuntime") {

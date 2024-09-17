@@ -24,7 +24,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
-include("codegen-tests")
+syntax = "proto3";
+
+package spine.chords.codegen;
+
+import "spine/options.proto";
+
+option (type_url_prefix) = "type.spine.chords";
+option java_package = "io.spine.chords.codegen";
+option java_outer_classname = "ExternalMessageProto";
+option java_multiple_files = true;
+
+// A message that is not defined in `commands.proto`, but is used in
+// `TestCommand` and therefore `MessageField` implementations should be
+// generated for the fields of this message.
+message ExternalType {
+    string id = 1 [(required) = true];
+}

@@ -24,7 +24,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
-include("core")
-include("codegen-runtime")
-include("codegen-tests")
+import io.spine.internal.dependency.Kotest
+import io.spine.internal.dependency.Spine
+import io.spine.internal.gradle.RunCodegenPlugins
+
+dependencies {
+    implementation(Spine.base_1_9)
+    implementation(project(":codegen-runtime"))
+    testImplementation(Kotest.runnerJUnit5)
+}
+
+configurations {
+    all {
+        resolutionStrategy {
+            force(Spine.base_1_9)
+        }
+    }
+}
+
+/**
+ * The task below executes a separate Gradle build of the `codegen-plugins`
+ * project. It is needed because the ProtoData plugin, that helps to generate
+ * the Kotlin extensions for the Proto messages, requires the newer version
+ * of Gradle.
+ *
+ * See the [RunCodegenPlugins] for details.
+ */
+val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
+    pluginsDir = "${rootDir}/codegen-workspace"
+    pluginsVersion = version as String
+    sourceModuleDir = "${rootDir}/codegen-tests"
+
+    dependsOn(
+        project(":codegen-runtime")
+            .tasks.named("publishToMavenLocal")
+    )
+}
+
+// Generate the code before the `compileKotlin` task.
+tasks.named("compileKotlin") {
+    dependsOn(
+        runCodegenPlugins
+    )
+}

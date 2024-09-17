@@ -64,6 +64,12 @@ open class RunCodegenPlugins : DefaultTask() {
     lateinit var pluginsDir: String
 
     /**
+     * The version of codegen plugins to generate code with.
+     */
+    @Internal
+    lateinit var pluginsVersion: String
+
+    /**
      * Path to the module to generate code for.
      */
     @Internal
@@ -77,8 +83,10 @@ open class RunCodegenPlugins : DefaultTask() {
 
     /**
      * The names of the tasks to be passed to the Gradle Wrapper script.
+     *
+     * The "build" task will be executed by default.
      */
-    private lateinit var taskNames: List<String>
+    private var taskNames: MutableList<String> = mutableListOf("build")
 
     /**
      * For how many minutes to wait for the Gradle build to complete.
@@ -101,7 +109,8 @@ open class RunCodegenPlugins : DefaultTask() {
      * Specifies task names to be passed to the Gradle Wrapper script.
      */
     fun task(vararg tasks: String) {
-        taskNames = tasks.asList()
+        taskNames.clear()
+        taskNames.addAll(tasks)
     }
 
     /**
@@ -116,7 +125,8 @@ open class RunCodegenPlugins : DefaultTask() {
      * and specifies task names to be passed to the Gradle Wrapper script.
      */
     fun task(maxDurationMins: Long, vararg tasks: String) {
-        taskNames = tasks.asList()
+        taskNames.clear()
+        taskNames.addAll(tasks)
         this.maxDurationMins = maxDurationMins
     }
 
@@ -164,7 +174,7 @@ open class RunCodegenPlugins : DefaultTask() {
     private fun buildCommand(): List<String> {
         val script = buildScript()
         val command = mutableListOf<String>()
-        command.add("./$script")
+        command.add(script)
         //command.add("${project.rootDir}/$script")
         val shouldClean = project.gradle
             .taskGraph
@@ -192,11 +202,12 @@ open class RunCodegenPlugins : DefaultTask() {
             val classPath = dependencies.joinToString(";")
             command.add("-PdependencyItems=$classPath")
         }
+        command.add("-PcodegenPluginsVersion=$pluginsVersion")
     }
 
     private fun buildScript(): String {
         val runsOnWindows = OperatingSystem.current().isWindows
-        return if (runsOnWindows) "gradlew.bat" else "gradlew"
+        return if (runsOnWindows) "$pluginsDir/gradlew.bat" else "./gradlew"
     }
 
     private fun startProcess(command: List<String>, errorOut: File, debugOut: File) =
