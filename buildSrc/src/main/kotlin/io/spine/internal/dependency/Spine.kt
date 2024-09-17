@@ -75,7 +75,7 @@ object Spine {
          *
          * @see <a href="https://github.com/SpineEventEngine/testlib">spine-testlib</a>
          */
-        const val testlib = "1.9.0"
+        const val testlib = "2.0.0-SNAPSHOT.184"
 
         /**
          * The version of `core-java`.
