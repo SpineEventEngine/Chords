@@ -9,12 +9,6 @@ plugins {
     id("org.jetbrains.compose") version "1.5.12"
 }
 
-repositories {
-    mavenCentral()
-    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-    spineSnapshots()
-}
-
 dependencies {
     implementation(Kotlin.Reflect.lib)
     implementation(compose.desktop.currentOs)
