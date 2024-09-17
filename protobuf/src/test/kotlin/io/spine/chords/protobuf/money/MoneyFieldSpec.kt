@@ -24,14 +24,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.money
+package io.spine.chords.protobuf.money
 
 import androidx.compose.ui.text.TextRange
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.DisplayName
 import io.kotest.matchers.shouldBe
 import io.spine.chords.RawTextContent
-import io.spine.chords.protobuf.money.MoneyFieldReviser
 import io.spine.money.Currency
 import io.spine.money.Currency.BIF
 import io.spine.money.Currency.IQD
