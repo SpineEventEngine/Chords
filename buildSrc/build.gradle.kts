@@ -82,7 +82,7 @@ val kotlinVersion = "1.8.22"
  * Always use the same version as the one specified in [io.spine.internal.dependency.Guava].
  * Otherwise, when testing Gradle plugins, clashes may occur.
  */
-val guavaVersion = "32.1.3-jre"
+val guavaVersion = "31.1-jre"
 
 /**
  * The version of ErrorProne Gradle plugin.
@@ -132,9 +132,6 @@ val kotestJvmPluginVersion = "0.4.10"
 val koverVersion = "0.6.1"
 
 configurations.all {
-    attributes {
-        attribute(Attribute.of("org.gradle.jvm.environment", "".javaClass), "standard-jvm")
-    }
 
     resolutionStrategy {
         force(
