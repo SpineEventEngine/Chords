@@ -144,7 +144,6 @@ val kotestJvmPluginVersion = "0.4.10"
 val koverVersion = "0.6.1"
 
 configurations.all {
-
     resolutionStrategy {
         force(
             "com.google.guava:guava:${guavaVersion}",

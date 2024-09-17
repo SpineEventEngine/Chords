@@ -31,7 +31,6 @@ import io.spine.internal.dependency.Dokka
 import io.spine.internal.dependency.ErrorProne
 import io.spine.internal.dependency.Guava
 import io.spine.internal.dependency.JUnit
-import io.spine.internal.dependency.Jacoco
 import io.spine.internal.dependency.JavaX
 import io.spine.internal.dependency.Kotest
 import io.spine.internal.dependency.Protobuf
@@ -47,7 +46,6 @@ import io.spine.internal.gradle.publish.IncrementGuard
 import io.spine.internal.gradle.report.license.LicenseReporter
 import io.spine.internal.gradle.testing.configureLogging
 import io.spine.internal.gradle.testing.registerTestTasks
-import kotlinx.kover.api.KoverProjectConfig
 import org.gradle.api.Project
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.compile.JavaCompile
@@ -126,6 +124,7 @@ fun Module.configureKotlin(javaVersion: JavaLanguageVersion) {
 
     // TODO:2024-09-13:dmitry.pikhulya: Update the Kover 7.x configuration commented below
     //                                  to Kover 6.1
+    //                                  See https://github.com/SpineEventEngine/Chords/issues/29
 //    kover {
 //        useJacoco(version = Jacoco.version)
 //    }
