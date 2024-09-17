@@ -34,7 +34,7 @@ package io.spine.internal.dependency
 @Suppress(
     "unused" /* Some subprojects do not use ProtoData directly. */,
     "ConstPropertyName" /* We use custom convention for artifact properties. */,
-    "MemberVisibilityCanBePrivate" /* The properties are used directly by other subprojects. */,
+    "MemberVisibilityCanBePrivate" /* The properties are used directly by other subprojects. */
 )
 object ProtoTap {
     const val group = "io.spine.tools"

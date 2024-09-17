@@ -37,7 +37,7 @@ import org.gradle.kotlin.dsl.register
  */
 internal class TaskName<T : Task>(
     val value: String,
-    val clazz: KClass<T>,
+    val clazz: KClass<T>
 ) {
     companion object {
 

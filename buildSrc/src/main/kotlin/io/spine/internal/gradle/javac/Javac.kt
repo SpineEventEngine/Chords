@@ -68,7 +68,7 @@ private object JavacConfig {
             // "-Werror",
 
             "-Xlint:unchecked",
-            "-Xlint:deprecation",
+            "-Xlint:deprecation"
         )
     }
 }

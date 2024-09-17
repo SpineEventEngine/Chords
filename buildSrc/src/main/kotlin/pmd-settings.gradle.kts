@@ -25,6 +25,7 @@
  */
 
 import io.spine.internal.dependency.Pmd
+import io.spine.internal.gradle.sourceSets
 
 plugins {
     pmd
@@ -49,8 +50,6 @@ pmd {
     reportsDir = file("build/reports/pmd")
 
     // Just analyze the main sources; do not analyze tests.
-    val javaExtension: JavaPluginExtension =
-        project.extensions.getByType(JavaPluginExtension::class.java)
-    val mainSourceSet = javaExtension.sourceSets.getByName("main")
+    val mainSourceSet = project.sourceSets.getByName("main")
     sourceSets = listOf(mainSourceSet)
 }

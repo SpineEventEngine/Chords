@@ -157,8 +157,8 @@ internal data class JarFlags(
             val addProtoJar = (protoJar.exclusions.contains(projectName) || protoJar.disabled).not()
             val addTestJar = testJar.inclusions.contains(projectName) || testJar.enabled
             return JarFlags(
-                sourcesJar = true,
-                javadocJar = true,
+                true,
+                true,
                 addProtoJar, addTestJar,
                 dokkaJar.kotlin, dokkaJar.java
             )

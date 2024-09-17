@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -26,14 +26,14 @@
 
 package io.spine.internal.gradle
 
-import java.io.File
-import java.io.FileOutputStream
-import java.util.concurrent.TimeUnit
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.os.OperatingSystem
+import java.io.File
+import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 
 /**
  * A Gradle task which runs codegen plugins in a separate Gradle process.
@@ -77,8 +77,10 @@ open class RunCodegenPlugins : DefaultTask() {
 
     /**
      * The names of the tasks to be passed to the Gradle Wrapper script.
+     *
+     * The "build" task will be executed by default.
      */
-    private lateinit var taskNames: List<String>
+    private var taskNames: MutableList<String> = mutableListOf("build")
 
     /**
      * For how many minutes to wait for the Gradle build to complete.
@@ -101,7 +103,8 @@ open class RunCodegenPlugins : DefaultTask() {
      * Specifies task names to be passed to the Gradle Wrapper script.
      */
     fun task(vararg tasks: String) {
-        taskNames = tasks.asList()
+        taskNames.clear()
+        taskNames.addAll(tasks)
     }
 
     /**
@@ -116,7 +119,8 @@ open class RunCodegenPlugins : DefaultTask() {
      * and specifies task names to be passed to the Gradle Wrapper script.
      */
     fun task(maxDurationMins: Long, vararg tasks: String) {
-        taskNames = tasks.asList()
+        taskNames.clear()
+        taskNames.addAll(tasks)
         this.maxDurationMins = maxDurationMins
     }
 

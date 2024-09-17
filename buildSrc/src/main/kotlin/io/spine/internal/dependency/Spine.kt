@@ -45,7 +45,7 @@ object Spine {
          *
          * @see <a href="https://github.com/SpineEventEngine/base">spine-base</a>
          */
-        const val base = "2.0.0-SNAPSHOT.205"
+        const val base = "1.9.0"
 
         /**
          * The version of [Spine.base] of Spine 1.9.x.
@@ -68,7 +68,7 @@ object Spine {
          *
          * @see <a href="https://github.com/SpineEventEngine/logging">spine-logging</a>
          */
-        const val logging = "2.0.0-SNAPSHOT.233"
+        const val logging = "2.0.0-SNAPSHOT.205"
 
         /**
          * The version of [Spine.testlib].
@@ -84,35 +84,42 @@ object Spine {
          * @see [Spine.CoreJava.server]
          * @see <a href="https://github.com/SpineEventEngine/core-java">core-java</a>
          */
-        const val core = "2.0.0-SNAPSHOT.176"
+        const val core = "1.9.1"
 
         /**
          * The version of [Spine.modelCompiler].
          *
          * @see <a href="https://github.com/SpineEventEngine/model-compiler">spine-model-compiler</a>
          */
-        const val mc = "2.0.0-SNAPSHOT.133"
+        const val mc = "1.9.0"
 
         /**
          * The version of [McJava].
          *
          * @see <a href="https://github.com/SpineEventEngine/mc-java">spine-mc-java</a>
          */
-        const val mcJava = "2.0.0-SNAPSHOT.217"
+        const val mcJava = "1.9.0"
 
         /**
          * The version of [Spine.baseTypes].
-         *
+         *`
          * @see <a href="https://github.com/SpineEventEngine/base-types">spine-base-types</a>
          */
-        const val baseTypes = "2.0.0-SNAPSHOT.126"
+        const val baseTypes = "1.9.0"
 
         /**
          * The version of [Spine.time].
          *
          * @see <a href="https://github.com/SpineEventEngine/time">spine-time</a>
          */
-        const val time = "2.0.0-SNAPSHOT.135"
+        const val time = "1.9"
+
+        /**
+         * The version of [Spine.money].
+         *
+         * @see <a href="https://github.com/SpineEventEngine/time">spine-money</a>
+         */
+        const val money = "1.5.0"
 
         /**
          * The version of [Spine.change].
@@ -149,6 +156,11 @@ object Spine {
     const val reflect = "$group:spine-reflect:${ArtifactVersion.reflect}"
     const val baseTypes = "$group:spine-base-types:${ArtifactVersion.baseTypes}"
     const val time = "$group:spine-time:${ArtifactVersion.time}"
+
+    // TODO:2024-08-30:dmitry.pikhulya: The money library ref was added on top
+    //   of the original `config` module's content. Consider updating `config`.
+    //   See https://github.com/SpineEventEngine/Chords/issues/3
+    const val money = "$group:spine-money:${ArtifactVersion.money}"
     const val change = "$group:spine-change:${ArtifactVersion.change}"
     const val text = "$group:spine-text:${ArtifactVersion.text}"
 

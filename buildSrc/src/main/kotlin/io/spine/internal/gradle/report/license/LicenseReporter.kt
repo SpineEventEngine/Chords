@@ -89,7 +89,8 @@ object LicenseReporter {
                 "io.spine.gcloud",
                 "io.spine.protodata",
                 "io.spine.tools",
-                "io.spine.validation"
+                "io.spine.validation",
+                "io.spine.chords"
             )
             configurations = ALL
 
@@ -138,7 +139,7 @@ object LicenseReporter {
             rootProject.logger.debug(
                 "The license report will be produced for all subprojects of a root project."
             )
-            rootProject.subprojects
+            rootProject.subprojects.filter { p -> p.tasks.findByName(projectTaskName) != null }
         }
         return targetProjects
     }

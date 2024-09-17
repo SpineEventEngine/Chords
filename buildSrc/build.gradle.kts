@@ -34,12 +34,10 @@ plugins {
     java
     groovy
     `kotlin-dsl`
+    kotlin("jvm") version "1.8.20" apply false
 
     // https://github.com/jk1/Gradle-License-Report/releases
-    id("com.github.jk1.dependency-license-report").version("2.7")
-
-    // https://github.com/johnrengelman/shadow/releases
-    id("com.github.johnrengelman.shadow").version("7.1.2")
+    id("com.github.jk1.dependency-license-report").version("1.16")
 }
 
 repositories {
@@ -49,12 +47,24 @@ repositories {
 }
 
 /**
+ * The version of Spine Bootstrap plugin,
+ * applied within this `buildSrc`.
+ *
+ * It is expected that this version is the same,
+ * as the versions of Spine server- and client-related libraries
+ * on top of which the Spine application is running.
+ *
+ * See `Spine` dependency object.
+ */
+val spineVersion = "1.9.0"
+
+/**
  * The version of Jackson used by `buildSrc`.
  *
  * Please keep this value in sync with [io.spine.internal.dependency.Jackson.version].
  * It is not a requirement but would be good in terms of consistency.
  */
-val jacksonVersion = "2.15.3"
+val jacksonVersion = "2.14.3"
 
 /**
  * The version of Google Artifact Registry used by `buildSrc`.
@@ -66,7 +76,7 @@ val jacksonVersion = "2.15.3"
  */
 val googleAuthToolVersion = "2.1.5"
 
-val licenseReportVersion = "2.7"
+val licenseReportVersion = "1.16"
 
 val grGitVersion = "4.1.1"
 
@@ -84,7 +94,7 @@ val kotlinVersion = "1.8.22"
  * Always use the same version as the one specified in [io.spine.internal.dependency.Guava].
  * Otherwise, when testing Gradle plugins, clashes may occur.
  */
-val guavaVersion = "32.1.3-jre"
+val guavaVersion = "31.1-jre"
 
 /**
  * The version of ErrorProne Gradle plugin.
@@ -104,7 +114,7 @@ val errorPronePluginVersion = "3.1.0"
  * @see <a href="https://github.com/google/protobuf-gradle-plugin/releases">
  *     Protobuf Gradle Plugins Releases</a>
  */
-val protobufPluginVersion = "0.9.4"
+//val protobufPluginVersion = "0.8.19"
 
 /**
  * The version of Dokka Gradle Plugins.
@@ -131,22 +141,12 @@ val kotestJvmPluginVersion = "0.4.10"
 /**
  * @see [io.spine.internal.dependency.Kover]
  */
-val koverVersion = "0.7.2"
-
-/**
- * The version of the Shadow Plugin.
- *
- * `7.1.2` is the last version compatible with Gradle 7.x. Newer versions require Gradle v8.x.
- *
- * @see <a href="https://github.com/johnrengelman/shadow/releases">Shadow Plugin releases</a>
- */
-val shadowVersion = "7.1.2"
+val koverVersion = "0.6.1"
 
 configurations.all {
     resolutionStrategy {
         force(
             "com.google.guava:guava:${guavaVersion}",
-            "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion",
 
             // Force Kotlin lib versions avoiding using those bundled with Gradle.
             "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion",
@@ -165,6 +165,7 @@ java {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
         jvmTarget = jvmVersion.toString()
+        freeCompilerArgs += "-Xskip-metadata-version-check"
     }
 }
 
@@ -173,12 +174,11 @@ dependencies {
     dependOnAuthCommon()
 
     listOf(
+        "io.spine.tools:spine-bootstrap:$spineVersion",
         "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion",
         "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion",
         "com.github.jk1:gradle-license-report:$licenseReportVersion",
         "com.google.guava:guava:$guavaVersion",
-        "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion",
-        "gradle.plugin.com.github.johnrengelman:shadow:${shadowVersion}",
         "io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detektVersion",
         "io.kotest:kotest-gradle-plugin:$kotestJvmPluginVersion",
         // https://github.com/srikanth-lingala/zip4j
@@ -189,11 +189,40 @@ dependencies {
         "org.jetbrains.dokka:dokka-gradle-plugin:${dokkaVersion}",
         "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
         "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion",
-        "org.jetbrains.kotlinx:kover-gradle-plugin:$koverVersion"
+        "org.jetbrains.kotlinx.kover:org.jetbrains.kotlinx.kover.gradle.plugin:$koverVersion",
+        "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:$kotlinVersion"
     ).forEach {
         implementation(it)
     }
 }
+
+buildscript {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+    /**
+     * The version of the Shadow Plugin.
+     *
+     * `6.1.0` is the last version compatible with Gradle 6.9. Newer versions require Gradle v7+.
+     *
+     * @see <a href="https://github.com/johnrengelman/shadow/releases">Shadow Plugin releases</a>
+     */
+    val shadowVersion = "6.1.0"
+
+    /**
+     * @see [io.spine.internal.dependency.Kover]
+     */
+    val koverVersion = "0.6.1"
+
+    dependencies {
+        classpath("com.github.jengelman.gradle.plugins:shadow:$shadowVersion")
+        classpath("org.jetbrains.kotlinx.kover:org.jetbrains.kotlinx.kover.gradle.plugin:$koverVersion")
+    }
+}
+
+apply(plugin = "com.github.johnrengelman.shadow")
 
 dependOnBuildSrcJar()
 
