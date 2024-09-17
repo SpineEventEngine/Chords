@@ -1,12 +1,3 @@
-import io.spine.internal.dependency.Dokka
-import io.spine.internal.dependency.KotlinX
-import io.spine.internal.gradle.publish.ChordsPublishing
-import io.spine.internal.gradle.publish.PublishingRepos
-import io.spine.internal.gradle.publish.spinePublishing
-import io.spine.internal.gradle.report.license.LicenseReporter
-import io.spine.internal.gradle.report.pom.PomGenerator
-import io.spine.internal.gradle.standardToSpineSdk
-
 /*
  * Copyright 2024, TeamDev. All rights reserved.
  *
@@ -32,6 +23,17 @@ import io.spine.internal.gradle.standardToSpineSdk
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+import io.spine.internal.dependency.Dokka
+import io.spine.internal.dependency.KotlinX
+import io.spine.internal.gradle.RunBuild
+import io.spine.internal.gradle.RunGradle
+import io.spine.internal.gradle.publish.ChordsPublishing
+import io.spine.internal.gradle.publish.PublishingRepos
+import io.spine.internal.gradle.publish.spinePublishing
+import io.spine.internal.gradle.report.license.LicenseReporter
+import io.spine.internal.gradle.report.pom.PomGenerator
+import io.spine.internal.gradle.standardToSpineSdk
 
 buildscript {
     standardSpineSdkRepositories()
@@ -87,3 +89,22 @@ spinePublishing {
 
 PomGenerator.applyTo(project)
 LicenseReporter.mergeAllReports(project)
+
+/**
+ * The task below executes a separate Gradle build of the `codegen-plugins`
+ * project. It is needed because the ProtoData plugin, that helps to generate
+ * the Kotlin extensions for the Proto messages, requires the newer version
+ * of Gradle.
+ *
+ * Avery module that requires the code generation should add dependency on this task.
+ *
+ * See the [RunGradle] for detail.
+ */
+val buildCodegenPlugins = tasks.register<RunBuild>("buildCodegenPlugins") {
+    directory = "${rootDir}/codegen-plugins"
+
+    dependsOn(
+        project(":codegen-runtime")
+            .tasks.named("publishToMavenLocal")
+    )
+}

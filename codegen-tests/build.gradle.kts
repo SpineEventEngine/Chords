@@ -56,8 +56,7 @@ val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
     sourceModuleDir = "${rootDir}/codegen-tests"
 
     dependsOn(
-        project(":codegen-runtime")
-            .tasks.named("publishToMavenLocal")
+        rootProject.tasks.named("buildCodegenPlugins")
     )
 }
 
