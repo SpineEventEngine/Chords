@@ -47,6 +47,18 @@ repositories {
 }
 
 /**
+ * The version of Spine Bootstrap plugin,
+ * applied within this `buildSrc`.
+ *
+ * It is expected that this version is the same,
+ * as the versions of Spine server- and client-related libraries
+ * on top of which the Spine application is running.
+ *
+ * See `Spine` dependency object.
+ */
+val spineVersion = "1.9.0"
+
+/**
  * The version of Jackson used by `buildSrc`.
  *
  * Please keep this value in sync with [io.spine.internal.dependency.Jackson.version].
@@ -102,7 +114,7 @@ val errorPronePluginVersion = "3.1.0"
  * @see <a href="https://github.com/google/protobuf-gradle-plugin/releases">
  *     Protobuf Gradle Plugins Releases</a>
  */
-val protobufPluginVersion = "0.9.4"
+//val protobufPluginVersion = "0.8.19"
 
 /**
  * The version of Dokka Gradle Plugins.
@@ -136,7 +148,6 @@ configurations.all {
     resolutionStrategy {
         force(
             "com.google.guava:guava:${guavaVersion}",
-            "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion",
 
             // Force Kotlin lib versions avoiding using those bundled with Gradle.
             "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion",
@@ -159,23 +170,16 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     }
 }
 
-//configurations.all {
-//    attributes {
-//        // Explicitly declare the JVM environment attribute to target 'standard-jvm'
-//        attribute(Attribute.of("org.gradle.jvm.environment", String::class.java), "standard-jvm")
-//    }
-//}
-
 dependencies {
     api("com.github.jk1:gradle-license-report:$licenseReportVersion")
     dependOnAuthCommon()
 
     listOf(
+        "io.spine.tools:spine-bootstrap:$spineVersion",
         "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion",
         "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion",
         "com.github.jk1:gradle-license-report:$licenseReportVersion",
         "com.google.guava:guava:$guavaVersion",
-        "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion",
         "io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detektVersion",
         "io.kotest:kotest-gradle-plugin:$kotestJvmPluginVersion",
         // https://github.com/srikanth-lingala/zip4j
