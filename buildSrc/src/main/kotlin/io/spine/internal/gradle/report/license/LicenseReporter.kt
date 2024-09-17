@@ -139,7 +139,7 @@ object LicenseReporter {
             rootProject.logger.debug(
                 "The license report will be produced for all subprojects of a root project."
             )
-            rootProject.subprojects
+            rootProject.subprojects.filter { p -> p.tasks.findByName(projectTaskName) != null }
         }
         return targetProjects
     }
