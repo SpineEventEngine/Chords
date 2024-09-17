@@ -24,36 +24,31 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.people
+package io.spine.chords.protobuf.money
 
+import io.spine.chords.protobuf.form.vBuildBasedParser
 import io.spine.chords.ComponentCompanion
 import io.spine.chords.InputField
-import io.spine.chords.exceptionBasedParser
-import io.spine.people.PersonName
-import io.spine.person.format
-import io.spine.person.parse
+import io.spine.money.BankAccount
 
 /**
- * A field that allows editing a [PersonName] value.
+ * A field that allows entering a bank account number.
  */
-public class PersonNameField : InputField<PersonName>() {
+public class BankAccountField : InputField<BankAccount>() {
 
     /**
-     * A component instance declaration API.
+     * An instance declaration API.
      */
-    public companion object : ComponentCompanion<PersonNameField>({ PersonNameField() })
+    public companion object : ComponentCompanion<BankAccountField>({ BankAccountField() })
 
     init {
-        label = "Person name"
-        promptText = "Alex Petrenko"
+        label = "Bank account"
     }
 
-    override fun parseValue(rawText: String): PersonName = exceptionBasedParser(
-        IllegalArgumentException::class,
-        "Enter given and family name"
-    ) {
-        PersonName::class.parse(rawText)
+    override fun parseValue(rawText: String): BankAccount = vBuildBasedParser {
+        BankAccount.newBuilder()
+            .setNumber(rawText)
     }
 
-    override fun formatValue(value: PersonName): String = value.format()
+    override fun formatValue(value: BankAccount): String = value.number
 }

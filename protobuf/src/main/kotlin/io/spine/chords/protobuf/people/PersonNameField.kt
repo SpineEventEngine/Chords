@@ -24,30 +24,36 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.net
+package io.spine.chords.protobuf.people
 
 import io.spine.chords.ComponentCompanion
 import io.spine.chords.InputField
 import io.spine.chords.exceptionBasedParser
-import io.spine.net.InternetDomain
-import io.spine.net.InternetDomains
+import io.spine.people.PersonName
+import io.spine.person.format
+import io.spine.person.parse
 
 /**
- * A field that allows entering an [InternetDomain] value.
+ * A field that allows editing a [PersonName] value.
  */
-public class InternetDomainField : InputField<InternetDomain>() {
+public class PersonNameField : InputField<PersonName>() {
 
     /**
      * A component instance declaration API.
      */
-    public companion object : ComponentCompanion<InternetDomainField>({ InternetDomainField() })
+    public companion object : ComponentCompanion<PersonNameField>({ PersonNameField() })
 
-    override fun parseValue(rawText: String): InternetDomain = exceptionBasedParser(
-        IllegalArgumentException::class,
-        "Invalid domain syntax"
-    ) {
-        InternetDomains.valueOf(rawText)
+    init {
+        label = "Person name"
+        promptText = "Alex Petrenko"
     }
 
-    override fun formatValue(value: InternetDomain): String = value.value
+    override fun parseValue(rawText: String): PersonName = exceptionBasedParser(
+        IllegalArgumentException::class,
+        "Enter given and family name"
+    ) {
+        PersonName::class.parse(rawText)
+    }
+
+    override fun formatValue(value: PersonName): String = value.format()
 }

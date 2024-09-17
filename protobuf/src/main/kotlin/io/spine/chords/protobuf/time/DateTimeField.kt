@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.time
+package io.spine.chords.protobuf.time
 
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +54,7 @@ import io.spine.chords.InputReviser.Companion.DigitsOnly
 import io.spine.chords.InputReviser.Companion.maxLength
 import io.spine.chords.RawTextContent
 import io.spine.chords.ValueParseException
+import io.spine.chords.time.WallClock
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -96,7 +97,10 @@ public class DateTimeField : InputField<Timestamp>() {
         get() {
             val maskTextColor: Color = MaterialTheme.colorScheme.secondary
             return VisualTransformation {
-                val transformedString = complementWithPattern(it.text, dateTimePattern)
+                val transformedString = complementWithPattern(
+                    it.text,
+                    dateTimePattern
+                )
                     .toTransformedString(maskTextColor)
                 transformedString
             }

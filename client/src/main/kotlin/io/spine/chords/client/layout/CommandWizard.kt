@@ -29,10 +29,10 @@ package io.spine.chords.client.layout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import com.google.protobuf.Message
-import io.spine.chords.form.FormFieldsScope
-import io.spine.chords.form.MessageForm
-import io.spine.chords.form.FormPartScope
-import io.spine.chords.form.ValidationDisplayMode.MANUAL
+import io.spine.chords.protobuf.form.FormFieldsScope
+import io.spine.chords.protobuf.form.MessageForm
+import io.spine.chords.protobuf.form.FormPartScope
+import io.spine.chords.protobuf.form.ValidationDisplayMode.MANUAL
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.chords.client.EventSubscription

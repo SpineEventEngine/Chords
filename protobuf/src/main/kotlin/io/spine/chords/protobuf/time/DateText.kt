@@ -24,37 +24,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.net
+package io.spine.chords.protobuf.time
 
-import io.spine.chords.ComponentCompanion
-import io.spine.chords.InputField
-import io.spine.chords.InputReviser.Companion.NonWhitespaces
-import io.spine.chords.exceptionBasedParser
-import io.spine.net.Url
-import io.spine.net.parse
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import com.google.protobuf.Timestamp
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /**
- * A field that allows entering a URL.
+ * A text that shows a given date being interpreted in the system time zone.
+ *
+ * @param date
+ *         a date that should be displayed as text.
+ * @param pattern
+ *         a pattern for formatting the date (see [DateTimeFormatter] for the
+ *         formatting syntax).
  */
-public class UrlField : InputField<Url>() {
+@Composable
+public fun DateText(date: Timestamp, pattern: String = "yyyy-MM-dd") {
+    val instant = date.toInstant()
+    val zoneId = ZoneId.systemDefault()
+    val dateTimeFormatter = DateTimeFormatter.ofPattern(pattern)
 
-    /**
-     * An instance declaration API.
-     */
-    public companion object : ComponentCompanion<UrlField>({ UrlField() })
-
-    init {
-        label = "URL"
-        promptText = "https://domain.com/path"
-        inputReviser = NonWhitespaces
-    }
-
-    override fun parseValue(rawText: String): Url = exceptionBasedParser(
-        IllegalArgumentException::class,
-        "Enter a valid URL value"
-    ) {
-        Url::class.parse(rawText)
-    }
-
-    override fun formatValue(value: Url): String = value.spec ?: ""
+    val zonedDateTime = instant.atZone(zoneId)
+    val dateText = dateTimeFormatter.format(zonedDateTime)
+    Text(dateText)
 }

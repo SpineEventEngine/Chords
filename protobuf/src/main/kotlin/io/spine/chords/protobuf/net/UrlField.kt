@@ -24,52 +24,37 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.net
+package io.spine.chords.protobuf.net
 
 import io.spine.chords.ComponentCompanion
 import io.spine.chords.InputField
-import io.spine.chords.ValueParseException
-import io.spine.net.EmailAddress
+import io.spine.chords.InputReviser.Companion.NonWhitespaces
+import io.spine.chords.exceptionBasedParser
+import io.spine.net.Url
+import io.spine.net.parse
 
 /**
- * Regex pattern for the email address.
+ * A field that allows entering a URL.
  */
-private const val EmailRegex = """^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}${'$'}"""
-
-/**
- * An input field that allows editing a [EmailAddress] field.
- */
-public class EmailField : InputField<EmailAddress>() {
-    public companion object : ComponentCompanion<EmailField>({ EmailField() })
-
-    init {
-        label = "Email"
-        promptText = "example@gmail.com"
-    }
-
-    override fun parseValue(rawText: String): EmailAddress {
-        validate(rawText)
-        return EmailAddress
-            .newBuilder()
-            .setValue(rawText)
-            .vBuild()
-    }
-
-    override fun formatValue(value: EmailAddress): String {
-        return value.value
-    }
+public class UrlField : InputField<Url>() {
 
     /**
-     * Validate the email address value.
-     *
-     * @throws ValueParseException
-     *         if the provided email value does not match the [EmailRegex] pattern.
+     * An instance declaration API.
      */
-    @Throws(ValueParseException::class)
-    private fun validate(email: String) {
-        val emailPattern = Regex(EmailRegex)
-        if (!emailPattern.matches(email)) {
-            throw ValueParseException("Enter a valid email address.")
-        }
+    public companion object : ComponentCompanion<UrlField>({ UrlField() })
+
+    init {
+        label = "URL"
+        promptText = "https://domain.com/path"
+        inputReviser = NonWhitespaces
     }
+
+    override fun parseValue(rawText: String): Url = exceptionBasedParser(
+        IllegalArgumentException::class,
+        "Enter a valid URL value"
+    ) {
+        Url::class.parse(rawText)
+    }
+
+    override fun formatValue(value: Url): String = value.spec ?: ""
 }

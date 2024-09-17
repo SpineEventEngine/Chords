@@ -24,31 +24,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.money
+package io.spine.chords.protobuf.net
 
-import io.spine.chords.form.vBuildBasedParser
-import io.spine.chords.ComponentCompanion
-import io.spine.chords.InputField
-import io.spine.money.BankAccount
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import io.spine.net.InternetDomain
 
 /**
- * A field that allows entering a bank account number.
+ * Displays an [InternetDomain] text.
+ *
+ * @param internetDomain
+ *         a domain that should be displayed. If `null`, displays an empty
+ *         (unspecified) value.
  */
-public class BankAccountField : InputField<BankAccount>() {
-
-    /**
-     * An instance declaration API.
-     */
-    public companion object : ComponentCompanion<BankAccountField>({ BankAccountField() })
-
-    init {
-        label = "Bank account"
-    }
-
-    override fun parseValue(rawText: String): BankAccount = vBuildBasedParser {
-        BankAccount.newBuilder()
-            .setNumber(rawText)
-    }
-
-    override fun formatValue(value: BankAccount): String = value.number
+@Composable
+public fun InternetDomainText(internetDomain: InternetDomain?) {
+    Text(internetDomain?.value ?: "")
 }

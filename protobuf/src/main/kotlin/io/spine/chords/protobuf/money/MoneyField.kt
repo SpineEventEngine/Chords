@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.money
+package io.spine.chords.protobuf.money
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row

@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.money
+package io.spine.chords.protobuf.money
 
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
@@ -33,11 +33,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.Top
 import androidx.compose.ui.unit.dp
 import com.google.protobuf.Message
-import io.spine.chords.form.FormFieldsScope
-import io.spine.chords.form.MessageForm
-import io.spine.chords.form.OneofRadioButton
-import io.spine.chords.form.OptionalMessageCheckbox
-import io.spine.chords.form.invoke
+import io.spine.chords.protobuf.form.FormFieldsScope
+import io.spine.chords.protobuf.form.MessageForm
+import io.spine.chords.protobuf.form.OneofRadioButton
+import io.spine.chords.protobuf.form.OptionalMessageCheckbox
+import io.spine.chords.protobuf.form.invoke
 import io.spine.chords.layout.InputRow
 import io.spine.chords.runtime.MessageField
 import io.spine.money.PaymentMethod
