@@ -1,5 +1,5 @@
 ## Chords Protobuf
-Domain-specific UI components that operate with a model defined 
+Domain-specific UI components that operate with models defined 
 as Protobuf messages. 
 
 This library uses message type declarations defined in the `spine-base` and
