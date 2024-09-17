@@ -74,7 +74,7 @@ fun KotlinCompile.setFreeCompilerArgs() {
                     "kotlin.io.path.ExperimentalPathApi," +
                     "kotlin.ExperimentalUnsignedTypes," +
                     "kotlin.ExperimentalStdlibApi," +
-                    "kotlin.experimental.ExperimentalTypeInference",
+                    "kotlin.experimental.ExperimentalTypeInference"
         ).filter { it.isNotBlank() }
     }
 }

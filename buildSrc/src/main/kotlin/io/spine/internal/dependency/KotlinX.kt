@@ -53,7 +53,7 @@ object KotlinX {
     //   See https://github.com/SpineEventEngine/Chords/issues/3
     // https://github.com/Kotlin/kotlinx-atomicfu
     object AtomicFu {
-        const val version = "0.7.13"
+        const val version = "0.7"
         const val lib = "$group:atomicfu:$version"
     }
 }

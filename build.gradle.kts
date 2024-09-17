@@ -1,3 +1,12 @@
+import io.spine.internal.dependency.Dokka
+import io.spine.internal.dependency.KotlinX
+import io.spine.internal.gradle.publish.ChordsPublishing
+import io.spine.internal.gradle.publish.PublishingRepos
+import io.spine.internal.gradle.publish.spinePublishing
+import io.spine.internal.gradle.report.license.LicenseReporter
+import io.spine.internal.gradle.report.pom.PomGenerator
+import io.spine.internal.gradle.standardToSpineSdk
+
 /*
  * Copyright 2024, TeamDev. All rights reserved.
  *
@@ -42,7 +51,6 @@ buildscript {
 plugins {
     idea
     jacoco
-    `gradle-doctor`
     `project-report`
 }
 
@@ -63,9 +71,18 @@ allprojects {
                 KotlinX.Coroutines.test,
                 KotlinX.Coroutines.testJvm,
                 KotlinX.Coroutines.debug,
-                KotlinX.AtomicFu.lib
+                KotlinX.AtomicFu.lib,
+                Guava.lib
             )
         }
+    }
+
+    // See https://youtrack.jetbrains.com/issue/CMP-6640.
+    configurations.configureEach {
+        attributes.attribute(
+            Attribute.of(KotlinPlatformType.attribute.name, KotlinPlatformType::class.java),
+            KotlinPlatformType.jvm
+        )
     }
 }
 
@@ -73,6 +90,7 @@ subprojects {
     apply {
         plugin("jvm-module")
     }
+    apply<JavaPlugin>()
 }
 
 spinePublishing {

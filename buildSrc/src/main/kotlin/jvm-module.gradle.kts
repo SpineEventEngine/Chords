@@ -25,6 +25,7 @@
  */
 
 import BuildSettings.javaVersion
+import kotlinx.kover.KoverPlugin
 import io.spine.internal.dependency.CheckerFramework
 import io.spine.internal.dependency.Dokka
 import io.spine.internal.dependency.ErrorProne
@@ -46,6 +47,7 @@ import io.spine.internal.gradle.publish.IncrementGuard
 import io.spine.internal.gradle.report.license.LicenseReporter
 import io.spine.internal.gradle.testing.configureLogging
 import io.spine.internal.gradle.testing.registerTestTasks
+import kotlinx.kover.api.KoverProjectConfig
 import org.gradle.api.Project
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.compile.JavaCompile
@@ -70,12 +72,13 @@ plugins {
     id("dokka-for-java")
     kotlin("jvm")
     id("io.kotest")
-    id("org.jetbrains.kotlinx.kover")
     id("detekt-code-analysis")
     id("dokka-for-kotlin")
 }
 
+apply<KoverPlugin>()
 apply<IncrementGuard>()
+
 LicenseReporter.generateReportIn(project)
 JavadocConfig.applyTo(project)
 CheckStyleConfig.applyTo(project)
@@ -121,17 +124,19 @@ fun Module.configureKotlin(javaVersion: JavaLanguageVersion) {
         }
     }
 
-    kover {
-        useJacoco(version = Jacoco.version)
-    }
-
-    koverReport {
-        defaults {
-            xml {
-                onCheck = true
-            }
-        }
-    }
+    // TODO:2024-09-13:dmitry.pikhulya: Update the Kover 7.x configuration commented below
+    //                                  to Kover 6.1
+//    kover {
+//        useJacoco(version = Jacoco.version)
+//    }
+//
+//    koverReport {
+//        defaults {
+//            xml {
+//                onCheck = true
+//            }
+//        }
+//    }
 }
 
 /**
@@ -175,7 +180,10 @@ fun Module.forceConfigurations() {
                     JUnit.bom,
                     JUnit.runner,
                     Dokka.BasePlugin.lib,
-                    Spine.reflect
+                    Spine.reflect,
+                    Spine.base_1_9,
+
+                    Spine.Logging.lib
                 )
             }
         }

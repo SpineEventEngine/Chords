@@ -50,7 +50,12 @@ val Project.javaPluginExtension: JavaPluginExtension
  * Obtains source set container of the Java project.
  */
 val Project.sourceSets: SourceSetContainer
-    get() = javaPluginExtension.sourceSets
+    get() {
+        val javaPluginConvention = convention.getPlugin(
+            org.gradle.api.plugins.JavaPluginConvention::class.java
+        )
+        return javaPluginConvention.sourceSets
+    }
 
 /**
  * Applies the specified Gradle plugin to this project by the plugin [class][cls].
