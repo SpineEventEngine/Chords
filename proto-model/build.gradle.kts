@@ -24,23 +24,42 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import com.google.protobuf.gradle.generateProtoTasks
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.protobuf
+import com.google.protobuf.gradle.protoc
 import io.spine.internal.dependency.JavaX
 import io.spine.internal.dependency.Kotest
+import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
 import io.spine.internal.gradle.RunCodegenPlugins
 
 plugins {
-    id("io.spine.tools.gradle.bootstrap") version "1.9.0"
+    id("io.spine.tools.gradle.bootstrap")
+    id("com.google.protobuf")
     `maven-publish`
 }
 
 apply<JavaPlugin>()
 
-
 spine {
     // Spine Model Compiler is enabled only for generating validation code for
     // error messages.
     assembleModel()
+    enableJava()
+}
+
+protobuf {
+    protoc {
+        artifact = Protobuf.compiler
+    }
+    generateProtoTasks {
+        for (task in all()) {
+            task.builtins {
+                id("kotlin")
+            }
+        }
+    }
 }
 
 dependencies {
