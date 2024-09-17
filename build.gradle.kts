@@ -39,8 +39,6 @@ buildscript {
     standardSpineSdkRepositories()
 }
 
-apply<DependencyManagementPlugin>()
-
 plugins {
     idea
     jacoco
