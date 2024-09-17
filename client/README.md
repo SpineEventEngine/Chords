@@ -1,7 +1,7 @@
 ## Chords Spine
 
-This module extends the set of components and facilities provided by the Chords
-and Chords Proto modules with components that support server connectivity using
+Extends the set of components and facilities provided by the Chords Core
+and Chords Protobuf libraries with components that support server connectivity using
 the [Spine Event Engine](https://spine.io/).
 
 This involves such facilities and components as:
