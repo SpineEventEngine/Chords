@@ -79,7 +79,17 @@ plugins {
 apply<KoverPlugin>()
 apply<IncrementGuard>()
 
-LicenseReporter.generateReportIn(project)
+// Both `:protobuf` and `:core` projects
+// have `org.jetbrains.skiko:skiko` as one of transitive dependencies.
+// Apparently, when dealing with licenses, its artifact files fail to resolve,
+// similar to Guava 32+.
+//
+// Therefore, these projects are temporarily excluded from the license reporting.
+if(!project.name.contains("protobuf") && !project.name.contains("core")) {
+    System.err.println("***** Enabling the report generation in the project ${project.name}.")
+    LicenseReporter.generateReportIn(project)
+}
+
 JavadocConfig.applyTo(project)
 CheckStyleConfig.applyTo(project)
 
@@ -181,7 +191,9 @@ fun Module.forceConfigurations() {
                     JUnit.runner,
                     Dokka.BasePlugin.lib,
                     Spine.reflect,
-                    Spine.base_1_9
+                    Spine.base_1_9,
+
+                    Spine.Logging.lib
                 )
             }
         }
