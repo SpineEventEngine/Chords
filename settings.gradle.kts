@@ -26,13 +26,6 @@
 
 rootProject.name = "Chords"
 
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-    }
-}
-
 include("core")
 include("codegen-runtime")
 include("proto-model")
