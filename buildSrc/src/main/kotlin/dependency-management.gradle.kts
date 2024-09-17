@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.repositories
+
 /*
  * Copyright (c) 2024 TeamDev. All rights reserved.
  * TeamDev PROPRIETARY and CONFIDENTIAL.
@@ -20,6 +22,8 @@ repositories {
     mavenLocal()
     gradlePluginPortal()
     mavenCentral()
+
+    // TODO:2024-09-17:alex.tymchenko: Dmitry, please have a look. Do we need any of it?
 //    maven {
 //        url = uri("https://spine.mycloudrepo.io/public/repositories/releases")
 //        mavenContent {
@@ -39,20 +43,12 @@ repositories {
 //    spineSnapshots()
 }
 
-configurations {
-    all {
-        // JVM environment attribute configuration is necessary because Guava version >= 32.1.0
-        // without it doesn't work on Gradle version < 7.
-        //
-        attributes {
-            attribute(Attribute.of("org.gradle.jvm.environment", "".javaClass), "standard-jvm")
-        }
-        resolutionStrategy {
-//        failOnVersionConflict()
-            force(
-                "com.google.guava:guava:32.1.3-jre"
-            )
-        }
-    }
+configurations.all {
 
+    resolutionStrategy {
+//        failOnVersionConflict()
+        force(
+            "com.google.guava:guava:32.1.3-jre"
+        )
+    }
 }
