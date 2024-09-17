@@ -67,6 +67,12 @@ all modules and does not describe the project structure per-subproject.
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
+    <artifactId>spine-server</artifactId>
+    <version>1.9.1</version>
+    <scope>compile</scope>
+  </dependency>
+  <dependency>
+    <groupId>io.spine</groupId>
     <artifactId>spine-time</artifactId>
     <version>1.9.0</version>
     <scope>compile</scope>
@@ -81,6 +87,12 @@ all modules and does not describe the project structure per-subproject.
     <groupId>org.jetbrains.compose.material3</groupId>
     <artifactId>material3-desktop</artifactId>
     <version>1.5.12</version>
+    <scope>compile</scope>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-reflect</artifactId>
+    <version>1.9.23</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
