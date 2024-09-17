@@ -10,7 +10,7 @@ all modules and does not describe the project structure per-subproject.
  -->
 <groupId>io.spine.chords</groupId>
 <artifactId>Chords</artifactId>
-<version>2.0.0-SNAPSHOT.11</version>
+<version>2.0.0-SNAPSHOT.12</version>
 
 <inceptionYear>2015</inceptionYear>
 
@@ -67,13 +67,19 @@ all modules and does not describe the project structure per-subproject.
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
+    <artifactId>spine-server</artifactId>
+    <version>1.9.1</version>
+    <scope>compile</scope>
+  </dependency>
+  <dependency>
+    <groupId>io.spine</groupId>
     <artifactId>spine-time</artifactId>
     <version>1.9.0</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.compose.desktop</groupId>
-    <artifactId>desktop-jvm-windows-x64</artifactId>
+    <artifactId>desktop-jvm-macos-x64</artifactId>
     <version>1.5.12</version>
     <scope>compile</scope>
   </dependency>
@@ -93,6 +99,12 @@ all modules and does not describe the project structure per-subproject.
     <groupId>com.google.guava</groupId>
     <artifactId>guava-testlib</artifactId>
     <version>31.1-jre</version>
+    <scope>test</scope>
+  </dependency>
+  <dependency>
+    <groupId>io.kotest</groupId>
+    <artifactId>kotest-assertions-core</artifactId>
+    <version>5.8.0</version>
     <scope>test</scope>
   </dependency>
   <dependency>

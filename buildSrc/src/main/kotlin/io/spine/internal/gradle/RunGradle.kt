@@ -131,10 +131,11 @@ open class RunGradle : DefaultTask() {
             if (errorOutExists) {
                 logger.error(errorOut.readText())
             }
-            throw GradleException("Child build process FAILED." +
-                    " Exit code: $exitCode." +
-                    if (errorOutExists) " See $errorOut for details."
-                    else " $errorOut file was not created."
+            throw GradleException(
+                "Child build process FAILED." +
+                        " Exit code: $exitCode." +
+                        if (errorOutExists) " See $errorOut for details."
+                        else " $errorOut file was not created."
             )
         }
     }
@@ -142,7 +143,7 @@ open class RunGradle : DefaultTask() {
     private fun buildCommand(): List<String> {
         val script = buildScript()
         val command = mutableListOf<String>()
-        command.add("${project.rootDir}/$script")
+        command.add(buildScriptFullPath(script))
         val shouldClean = project.gradle
             .taskGraph
             .hasTask(":clean")
@@ -156,6 +157,10 @@ open class RunGradle : DefaultTask() {
         command.add("--no-daemon")
         addProperties(command)
         return command
+    }
+
+    internal open fun buildScriptFullPath(buildScript: String): String {
+        return "${project.rootDir}/$buildScript"
     }
 
     private fun addProperties(command: MutableList<String>) {

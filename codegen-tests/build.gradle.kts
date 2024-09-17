@@ -24,22 +24,49 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import com.google.protobuf.gradle.generateProtoTasks
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.protobuf
+import com.google.protobuf.gradle.protoc
 import io.spine.internal.dependency.Kotest
+import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
 import io.spine.internal.gradle.RunCodegenPlugins
 
-dependencies {
-    implementation(Spine.base_1_9)
-    implementation(project(":codegen-runtime"))
-    testImplementation(Kotest.runnerJUnit5)
+plugins {
+    id("io.spine.tools.gradle.bootstrap")
+    id("com.google.protobuf")
+    `maven-publish`
 }
 
-configurations {
-    all {
-        resolutionStrategy {
-            force(Spine.base_1_9)
+apply<JavaPlugin>()
+
+spine {
+    // Spine Model Compiler is enabled only for generating validation code for
+    // error messages.
+    assembleModel()
+    enableJava()
+}
+
+protobuf {
+    protoc {
+        artifact = Protobuf.compiler
+    }
+    generateProtoTasks {
+        for (task in all()) {
+            task.builtins {
+                id("kotlin")
+            }
         }
     }
+}
+
+dependencies {
+    implementation(Spine.base_1_9)
+    implementation(Spine.server)
+    implementation(project(":codegen-runtime"))
+    testImplementation(Kotest.runnerJUnit5)
+    testImplementation(Kotest.assertions)
 }
 
 /**
@@ -53,7 +80,7 @@ configurations {
 val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
     pluginsDir = "${rootDir}/codegen-workspace"
     pluginsVersion = version as String
-    sourceModuleDir = "${rootDir}/codegen-tests"
+    sourceModuleDir = projectDir.path
 
     dependsOn(
         rootProject.tasks.named("buildCodegenPlugins")

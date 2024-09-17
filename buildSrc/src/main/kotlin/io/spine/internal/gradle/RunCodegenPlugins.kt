@@ -26,14 +26,14 @@
 
 package io.spine.internal.gradle
 
+import java.io.File
+import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.os.OperatingSystem
-import java.io.File
-import java.io.FileOutputStream
-import java.util.concurrent.TimeUnit
 
 /**
  * A Gradle task which runs codegen plugins in a separate Gradle process.
@@ -207,7 +207,7 @@ open class RunCodegenPlugins : DefaultTask() {
 
     private fun buildScript(): String {
         val runsOnWindows = OperatingSystem.current().isWindows
-        return if (runsOnWindows) "$pluginsDir/gradlew.bat" else "./gradlew"
+        return if (runsOnWindows) "$pluginsDir/gradlew.bat" else "$pluginsDir/gradlew"
     }
 
     private fun startProcess(command: List<String>, errorOut: File, debugOut: File) =

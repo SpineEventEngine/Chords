@@ -57,6 +57,7 @@ class `CodegenPlugin should` {
      */
     @ParameterizedTest
     @MethodSource("messageFieldTestData")
+    @Suppress("LongParameterList")
     fun <T : Message, V : MessageFieldValue>
             `generate 'MessageField' implementations`(
         field: MessageField<T, V>,
@@ -172,7 +173,7 @@ class `CodegenPlugin should` {
      * Provides test data on various use-cases supported
      * in code generation of [MessageField] implementations.
      */
-    @Suppress("unused")
+    @Suppress("unused", "LongMethod")
     private fun messageFieldTestData(): Stream<Arguments> {
         return Stream.of(
             Arguments.of(

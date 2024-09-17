@@ -24,25 +24,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Spine
-import io.spine.internal.gradle.publish.ChordsPublishing
+package io.spine.internal.gradle
 
-plugins {
-    `maven-publish`
-}
+/**
+ * Runs the `build` task with Gradle in the [directory].
+ */
+open class BuildCodegenPlugins : RunBuild() {
 
-dependencies {
-    // This dependency is declared as transitive,
-    // since the generated code depends on Spine Base in version 1.9.x.
-    api(Spine.base_1_9)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("codegenRuntime") {
-            artifactId = ChordsPublishing.artifactPrefix + project.name
-
-            from(components["java"])
-        }
+    override fun buildScriptFullPath(buildScript: String): String {
+        return "${directory}/$buildScript"
     }
 }

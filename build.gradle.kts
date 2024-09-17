@@ -1,12 +1,3 @@
-import io.spine.internal.dependency.Dokka
-import io.spine.internal.dependency.KotlinX
-import io.spine.internal.gradle.publish.ChordsPublishing
-import io.spine.internal.gradle.publish.PublishingRepos
-import io.spine.internal.gradle.publish.spinePublishing
-import io.spine.internal.gradle.report.license.LicenseReporter
-import io.spine.internal.gradle.report.pom.PomGenerator
-import io.spine.internal.gradle.standardToSpineSdk
-
 /*
  * Copyright 2024, TeamDev. All rights reserved.
  *
@@ -34,15 +25,16 @@ import io.spine.internal.gradle.standardToSpineSdk
  */
 
 import io.spine.internal.dependency.Dokka
+import io.spine.internal.dependency.Guava
 import io.spine.internal.dependency.KotlinX
-import io.spine.internal.gradle.RunBuild
-import io.spine.internal.gradle.RunGradle
+import io.spine.internal.gradle.BuildCodegenPlugins
 import io.spine.internal.gradle.publish.ChordsPublishing
 import io.spine.internal.gradle.publish.PublishingRepos
 import io.spine.internal.gradle.publish.spinePublishing
 import io.spine.internal.gradle.report.license.LicenseReporter
 import io.spine.internal.gradle.report.pom.PomGenerator
 import io.spine.internal.gradle.standardToSpineSdk
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 buildscript {
     standardSpineSdkRepositories()
@@ -114,11 +106,11 @@ LicenseReporter.mergeAllReports(project)
  * the Kotlin extensions for the Proto messages, requires the newer version
  * of Gradle.
  *
- * Avery module that requires the code generation should add dependency on this task.
+ * Add dependency on this tasks in every module that requires the code generation.
  *
- * See the [RunGradle] for detail.
+ * See the [BuildCodegenPlugins] for detail.
  */
-val buildCodegenPlugins = tasks.register<RunBuild>("buildCodegenPlugins") {
+val buildCodegenPlugins = tasks.register<BuildCodegenPlugins>("buildCodegenPlugins") {
     directory = "${rootDir}/codegen-plugins"
 
     dependsOn(

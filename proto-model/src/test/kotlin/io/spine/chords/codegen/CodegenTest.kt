@@ -27,27 +27,34 @@
 package io.spine.chords.codegen
 
 import io.kotest.matchers.shouldNotBe
+import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageOneof
 import io.spine.money.BankAccount
+import io.spine.money.BankAccountDef
 import io.spine.money.PaymentCardNumber
+import io.spine.money.PaymentCardNumberDef
 import io.spine.money.PaymentMethod
+import io.spine.money.PaymentMethodDef
 import io.spine.money.bankAccount
 import io.spine.money.method
 import io.spine.money.number
 import io.spine.money.paymentCard
 import io.spine.money.value
 import io.spine.net.IpAddress
+import io.spine.net.IpAddressDef
 import io.spine.net.Ipv4Address
+import io.spine.net.Ipv4AddressDef
 import io.spine.net.Ipv6Address
+import io.spine.net.Ipv6AddressDef
 import io.spine.net.ipv4
 import io.spine.net.ipv6
 import io.spine.net.value
 import org.junit.jupiter.api.Test
 
 /**
- * Checks various use-cases on code generation for [MessageField]
- * and [MessageOneof] implementations.
+ * Checks various use-cases on code generation for [MessageField], [MessageOneof],
+ * and [MessageDef]  implementations.
  */
 class `CodegenPlugin should` {
 
@@ -56,22 +63,36 @@ class `CodegenPlugin should` {
      * are exist and compilable.
      */
     @Test
-    fun `generate 'MessageField' and 'MessageOneof' implementations`() {
+    fun `generate 'MessageField', 'MessageOneof', and 'MessageDef' implementations`() {
 
         BankAccount::class.number shouldNotBe null
+        BankAccountDef.number shouldNotBe null
 
         PaymentCardNumber::class.value shouldNotBe null
+        PaymentCardNumberDef.value shouldNotBe null
 
         PaymentMethod::class.paymentCard shouldNotBe null
+        PaymentMethodDef.paymentCard shouldNotBe null
+
         PaymentMethod::class.bankAccount shouldNotBe null
+        PaymentMethodDef.bankAccount shouldNotBe null
+
         PaymentMethod::class.method shouldNotBe null
+        PaymentMethodDef.method shouldNotBe null
 
         IpAddress::class.ipv4 shouldNotBe null
+        IpAddressDef.ipv4 shouldNotBe null
+
         IpAddress::class.ipv6 shouldNotBe null
+        IpAddressDef.ipv6 shouldNotBe null
+
         IpAddress::class.value shouldNotBe null
+        IpAddressDef.value shouldNotBe null
 
         Ipv4Address::class.value shouldNotBe null
+        Ipv4AddressDef.value shouldNotBe null
 
         Ipv6Address::class.value shouldNotBe null
+        Ipv6AddressDef.value shouldNotBe null
     }
 }
