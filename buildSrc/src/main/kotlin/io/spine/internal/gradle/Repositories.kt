@@ -260,6 +260,7 @@ fun RepositoryHandler.standardToSpineSdk() {
 
     mavenCentral()
     gradlePluginPortal()
+    google()
     mavenLocal().includeSpineOnly()
 }
 
