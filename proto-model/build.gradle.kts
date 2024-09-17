@@ -36,11 +36,6 @@ plugins {
 
 apply<JavaPlugin>()
 
-repositories {
-    mavenCentral()
-    gradlePluginPortal()
-    google()
-}
 
 spine {
     // Spine Model Compiler is enabled only for generating validation code for
