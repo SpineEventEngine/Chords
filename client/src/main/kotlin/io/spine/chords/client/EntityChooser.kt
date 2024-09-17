@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords
+package io.spine.chords.client
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -33,7 +33,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import io.spine.chords.appshell.app
 import io.spine.base.EntityState
-import io.spine.chords.appshell.client
+import io.spine.chords.DropdownSelector
+import io.spine.chords.client.appshell.client
 import io.spine.chords.runtime.MessageFieldValue
 import kotlin.reflect.full.allSupertypes
 import kotlin.reflect.javaType

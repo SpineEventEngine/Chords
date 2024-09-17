@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.layout
+package io.spine.chords.client.layout
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -35,8 +35,10 @@ import io.spine.chords.form.FormPartScope
 import io.spine.chords.form.ValidationDisplayMode.MANUAL
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
-import io.spine.chords.EventSubscription
-import io.spine.chords.form.CommandMessageForm
+import io.spine.chords.client.EventSubscription
+import io.spine.chords.client.form.CommandMessageForm
+import io.spine.chords.layout.AbstractWizardPage
+import io.spine.chords.layout.Wizard
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.ValidatingBuilder
 
@@ -159,7 +161,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
  */
 public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M>>(
     protected override val wizard: CommandWizard<out CommandMessage,
-                                                 out ValidatingBuilder<out CommandMessage>>,
+            out ValidatingBuilder<out CommandMessage>>,
     private val commandField: MessageField<out CommandMessage, M>,
     private val builder: () -> B
 ): AbstractWizardPage(wizard) {

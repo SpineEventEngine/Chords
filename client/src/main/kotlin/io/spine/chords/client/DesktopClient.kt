@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords
+package io.spine.chords.client
 
 import androidx.compose.runtime.MutableState
 import com.google.protobuf.Message

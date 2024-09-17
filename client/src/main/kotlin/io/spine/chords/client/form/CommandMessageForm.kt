@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.form
+package io.spine.chords.client.form
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -34,8 +34,11 @@ import io.spine.chords.AbstractComponentCompanion
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.chords.ComponentProps
-import io.spine.chords.EventSubscription
-import io.spine.chords.appshell.client
+import io.spine.chords.client.EventSubscription
+import io.spine.chords.client.appshell.client
+import io.spine.chords.form.FormPartScope
+import io.spine.chords.form.MessageForm
+import io.spine.chords.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
 import kotlinx.coroutines.TimeoutCancellationException
 
