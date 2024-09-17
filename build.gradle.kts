@@ -55,10 +55,6 @@ allprojects {
     repositories.standardToSpineSdk()
 
     configurations.all {
-        attributes {
-            attribute(Attribute.of("org.gradle.jvm.environment", "".javaClass), "standard-jvm")
-        }
-
         resolutionStrategy {
             force(
                 KotlinX.Coroutines.core,
