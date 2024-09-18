@@ -1,4 +1,4 @@
-## Chords Protobuf
+## Chords Proto
 Domain-specific UI components that operate with models defined 
 as Protobuf messages. 
 

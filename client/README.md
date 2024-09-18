@@ -1,8 +1,8 @@
-## Chords Spine
+## Chords Client
 
 Extends the set of components and facilities provided by the Chords Core
-and Chords Protobuf libraries with components that support server connectivity using
-the [Spine Event Engine](https://spine.io/).
+and Chords Proto libraries with components that support server connectivity using
+the [Spine Event Engine](https://spine.io/) framework.
 
 This involves such facilities and components as:
 - [Client](src/main/kotlin/io/spine/chords/Client.kt) — an API for
