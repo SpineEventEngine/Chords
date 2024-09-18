@@ -28,12 +28,6 @@ import io.spine.internal.dependency.Kotlin
 import io.spine.internal.dependency.Material3
 import io.spine.internal.dependency.Spine
 
-/*
- * Copyright (c) 2024 TeamDev. All rights reserved.
- * TeamDev PROPRIETARY and CONFIDENTIAL.
- * Use is subject to license terms.
- */
-
 plugins {
     id("io.spine.tools.gradle.bootstrap")
     id("org.jetbrains.compose") version "1.5.12"

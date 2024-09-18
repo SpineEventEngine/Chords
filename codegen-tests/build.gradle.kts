@@ -77,7 +77,7 @@ dependencies {
  * See the [RunCodegenPlugins] for details.
  */
 val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
-    pluginsDir = "${rootDir}/codegen-workspace"
+    workspaceDir = "${rootDir}/codegen-workspace"
     pluginsVersion = version as String
     sourceModuleDir = projectDir.path
 

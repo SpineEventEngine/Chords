@@ -27,7 +27,7 @@
 package io.spine.internal.gradle
 
 /**
- * Runs the `build` task with Gradle in the [directory].
+ * Runs the build of `codegen-plugins` Gradle project.
  */
 open class BuildCodegenPlugins : RunBuild() {
 

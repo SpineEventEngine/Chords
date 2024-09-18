@@ -31,6 +31,7 @@ object Chords {
 
     const val group = "io.spine.chords"
     const val artefactPrefix = "spine-chords-"
+    const val codegenPluginsArtefact = "${artefactPrefix}codegen-plugins"
 
     object CodegenRuntime {
         fun lib(version: String): String {

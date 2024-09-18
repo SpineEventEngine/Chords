@@ -38,7 +38,7 @@ import org.gradle.internal.os.OperatingSystem
 /**
  * A Gradle task which runs codegen plugins in a separate Gradle process.
  *
- * Launches Gradle wrapper under a given [pluginsDir] with the specified
+ * Launches Gradle wrapper under a given [workspaceDir] with the specified
  * [taskNames] names, [sourceModuleDir] directory, and [dependencies].
  * The `clean` task is also run if current build includes a `clean` task.
  *
@@ -57,14 +57,15 @@ open class RunCodegenPlugins : DefaultTask() {
     }
 
     /**
-     * Path to the directory which contains a Gradle wrapper script
-     * that runs codegen plugins.
+     * Path to the `codegen-workspace` module where the code generation is actually performed.
      */
     @Internal
-    lateinit var pluginsDir: String
+    lateinit var workspaceDir: String
 
     /**
-     * The version of codegen plugins to generate code with.
+     * The version of `spine-chords-codegen-plugins` artifact to be used for code generation.
+     *
+     * The artifact with this version should be located in `mavenLocal` or `spineSnapshots` repo.
      */
     @Internal
     lateinit var pluginsVersion: String
@@ -137,7 +138,7 @@ open class RunCodegenPlugins : DefaultTask() {
         // the file under the `_out` directory. Using the `build` directory for this purpose
         // proved to cause problems under Windows when executing the `clean` command, which
         // fails because another process holds files.
-        val buildDir = File(pluginsDir, "_out")
+        val buildDir = File(workspaceDir, "_out")
         if (!buildDir.exists()) {
             buildDir.mkdir()
         }
@@ -207,13 +208,13 @@ open class RunCodegenPlugins : DefaultTask() {
 
     private fun buildScript(): String {
         val runsOnWindows = OperatingSystem.current().isWindows
-        return if (runsOnWindows) "$pluginsDir/gradlew.bat" else "$pluginsDir/gradlew"
+        return if (runsOnWindows) "$workspaceDir/gradlew.bat" else "$workspaceDir/gradlew"
     }
 
     private fun startProcess(command: List<String>, errorOut: File, debugOut: File) =
         ProcessBuilder()
             .command(command)
-            .directory(project.file(pluginsDir))
+            .directory(project.file(workspaceDir))
             .redirectError(errorOut)
             .redirectOutput(debugOut)
             .start()

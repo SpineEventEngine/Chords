@@ -55,7 +55,7 @@ modelCompiler {
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = Chords.artefactPrefix + "codegen-plugins"
+            artifactId = Chords.codegenPluginsArtefact
             group = Chords.group
 
             from(components["java"])
