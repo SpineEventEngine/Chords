@@ -125,7 +125,7 @@ public interface InputContext {
  * of validation is performed outside input components (e.g. in the form where
  * such fields are included).
  *
- * When such "external" validation procedure detects that the value entered in
+ * When such "external" validation procedure detects that the value entered into
  * a particular input component doesn't satisfy some additional requirements, it
  * can enforce this input component to be displayed as an invalid one to
  * the user despite the input component itself didn't detect any validation
