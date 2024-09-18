@@ -50,7 +50,7 @@ dependencies {
 
 protoData {
     plugins(
-        "io.spine.chords.protodata.plugin.MessageFieldsPlugin"
+        "io.spine.chords.codegen.plugins.MessageFieldsPlugin"
     )
 }
 
