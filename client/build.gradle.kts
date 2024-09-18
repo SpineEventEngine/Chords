@@ -46,6 +46,6 @@ dependencies {
     implementation(Spine.CoreJava.server)
     implementation(project(":core"))
     implementation(project(":proto-values"))
-    implementation(project(":protobuf"))
+    implementation(project(":proto"))
     implementation(project(":codegen-runtime"))
 }
