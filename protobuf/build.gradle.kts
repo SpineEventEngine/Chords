@@ -39,6 +39,6 @@ dependencies {
     api(Spine.money)
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
-    implementation(project(":proto-model"))
+    implementation(project(":proto-values"))
     testImplementation(Kotest.runnerJUnit5)
 }

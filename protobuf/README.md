@@ -3,7 +3,7 @@ Domain-specific UI components that operate with models defined
 as Protobuf messages. 
 
 This library uses message type declarations defined in the `spine-base` and
-the [proto-model](../proto-model) library. It includes such categories 
+the [proto-values](../proto-values) library. It includes such categories 
 of components:
 - A generic editor for multi-field Protobuf `Message` values, which basically 
   represents an input form. See the 
