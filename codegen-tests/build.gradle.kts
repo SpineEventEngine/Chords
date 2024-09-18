@@ -78,7 +78,7 @@ dependencies {
  */
 val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
     dependsOn(
-        rootProject.tasks.named("codegenPlugins-publishToMavenLocal")
+        rootProject.tasks.named("buildCodegenPlugins")
     )
 }
 

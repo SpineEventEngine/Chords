@@ -100,8 +100,8 @@ spinePublishing {
 PomGenerator.applyTo(project)
 LicenseReporter.mergeAllReports(project)
 
-val publishCodegenPluginsToMavenLocal = tasks
-    .register<BuildCodegenPlugins>("codegenPlugins-publishToMavenLocal") {
+val codegenPluginsPublishToMavenLocal = tasks
+    .register<BuildCodegenPlugins>("buildCodegenPlugins") {
         directory = "${rootDir}/codegen-plugins"
         task("publishToMavenLocal")
         dependsOn(
@@ -111,10 +111,10 @@ val publishCodegenPluginsToMavenLocal = tasks
     }
 
 tasks.named("publishToMavenLocal") {
-    dependsOn(publishCodegenPluginsToMavenLocal)
+    dependsOn(codegenPluginsPublishToMavenLocal)
 }
 
-val publishCodegenPlugins = tasks.register<BuildCodegenPlugins>("codegenPlugins-publish") {
+val codegenPluginsPublish = tasks.register<BuildCodegenPlugins>("publishCodegenPlugins") {
     directory = "${rootDir}/codegen-plugins"
     task("publish")
     dependsOn(
@@ -124,5 +124,5 @@ val publishCodegenPlugins = tasks.register<BuildCodegenPlugins>("codegenPlugins-
 }
 
 tasks.named("publish") {
-    dependsOn(publishCodegenPlugins)
+    dependsOn(codegenPluginsPublish)
 }

@@ -86,7 +86,7 @@ val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
         Spine.money
     )
     dependsOn(
-        rootProject.tasks.named("codegenPlugins-publishToMavenLocal")
+        rootProject.tasks.named("buildCodegenPlugins")
     )
 }
 
