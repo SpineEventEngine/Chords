@@ -52,7 +52,7 @@ import org.junit.jupiter.params.provider.MethodSource
  */
 @DisplayName("CodegenPlugins should")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CodegenPluginsSpec {
+internal class CodegenPluginsSpec {
 
     /**
      * Checks generated [MessageField] implementations.
