@@ -24,37 +24,31 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.net
+package io.spine.chords.proto.money
 
+import io.spine.chords.proto.form.vBuildBasedParser
 import io.spine.chords.ComponentCompanion
 import io.spine.chords.InputField
-import io.spine.chords.InputReviser.Companion.NonWhitespaces
-import io.spine.chords.exceptionBasedParser
-import io.spine.net.Url
-import io.spine.net.parse
+import io.spine.money.BankAccount
 
 /**
- * A field that allows entering a URL.
+ * A field that allows entering a bank account number.
  */
-public class UrlField : InputField<Url>() {
+public class BankAccountField : InputField<BankAccount>() {
 
     /**
      * An instance declaration API.
      */
-    public companion object : ComponentCompanion<UrlField>({ UrlField() })
+    public companion object : ComponentCompanion<BankAccountField>({ BankAccountField() })
 
     init {
-        label = "URL"
-        promptText = "https://domain.com/path"
-        inputReviser = NonWhitespaces
+        label = "Bank account"
     }
 
-    override fun parseValue(rawText: String): Url = exceptionBasedParser(
-        IllegalArgumentException::class,
-        "Enter a valid URL value"
-    ) {
-        Url::class.parse(rawText)
+    override fun parseValue(rawText: String): BankAccount = vBuildBasedParser {
+        BankAccount.newBuilder()
+            .setNumber(rawText)
     }
 
-    override fun formatValue(value: Url): String = value.spec ?: ""
+    override fun formatValue(value: BankAccount): String = value.number
 }

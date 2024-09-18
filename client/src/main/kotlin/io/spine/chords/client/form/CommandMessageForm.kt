@@ -36,9 +36,9 @@ import io.spine.base.EventMessage
 import io.spine.chords.ComponentProps
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.appshell.client
-import io.spine.chords.protobuf.form.FormPartScope
-import io.spine.chords.protobuf.form.MessageForm
-import io.spine.chords.protobuf.form.MultipartFormScope
+import io.spine.chords.proto.form.FormPartScope
+import io.spine.chords.proto.form.MessageForm
+import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
 import kotlinx.coroutines.TimeoutCancellationException
 

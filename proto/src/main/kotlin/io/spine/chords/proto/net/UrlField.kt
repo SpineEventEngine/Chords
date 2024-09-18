@@ -24,30 +24,37 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.net
+package io.spine.chords.proto.net
 
 import io.spine.chords.ComponentCompanion
 import io.spine.chords.InputField
+import io.spine.chords.InputReviser.Companion.NonWhitespaces
 import io.spine.chords.exceptionBasedParser
-import io.spine.net.InternetDomain
-import io.spine.net.InternetDomains
+import io.spine.net.Url
+import io.spine.net.parse
 
 /**
- * A field that allows entering an [InternetDomain] value.
+ * A field that allows entering a URL.
  */
-public class InternetDomainField : InputField<InternetDomain>() {
+public class UrlField : InputField<Url>() {
 
     /**
-     * A component instance declaration API.
+     * An instance declaration API.
      */
-    public companion object : ComponentCompanion<InternetDomainField>({ InternetDomainField() })
+    public companion object : ComponentCompanion<UrlField>({ UrlField() })
 
-    override fun parseValue(rawText: String): InternetDomain = exceptionBasedParser(
-        IllegalArgumentException::class,
-        "Invalid domain syntax"
-    ) {
-        InternetDomains.valueOf(rawText)
+    init {
+        label = "URL"
+        promptText = "https://domain.com/path"
+        inputReviser = NonWhitespaces
     }
 
-    override fun formatValue(value: InternetDomain): String = value.value
+    override fun parseValue(rawText: String): Url = exceptionBasedParser(
+        IllegalArgumentException::class,
+        "Enter a valid URL value"
+    ) {
+        Url::class.parse(rawText)
+    }
+
+    override fun formatValue(value: Url): String = value.spec ?: ""
 }

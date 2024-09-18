@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.form
+package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message

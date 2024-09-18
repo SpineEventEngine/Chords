@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.time
+package io.spine.chords.proto.time
 
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme

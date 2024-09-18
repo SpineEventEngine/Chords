@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.money
+package io.spine.chords.proto.money
 
 import io.spine.chords.ComponentCompanion
 import io.spine.chords.InputField
@@ -32,7 +32,7 @@ import io.spine.chords.InputReviser.Companion.DigitsOnly
 import io.spine.chords.InputReviser.Companion.maxLength
 import io.spine.chords.InputReviser.Companion.then
 import io.spine.chords.ValueParseException
-import io.spine.chords.protobuf.form.vBuildBasedParser
+import io.spine.chords.proto.form.vBuildBasedParser
 import io.spine.money.PaymentCardNumber
 import io.spine.money.PaymentCardNumberKt
 

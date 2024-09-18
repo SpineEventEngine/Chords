@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.form
+package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,13 +41,13 @@ import io.spine.chords.AbstractComponentCompanion
 import io.spine.chords.FocusableComponent
 import io.spine.chords.InputComponent
 import io.spine.chords.InputContext
-import io.spine.chords.protobuf.form.MessageForm.Companion.invoke
-import io.spine.chords.protobuf.form.ValidationDisplayMode.DEFAULT
-import io.spine.chords.protobuf.form.ValidationDisplayMode.LIVE
-import io.spine.chords.protobuf.form.ValidationDisplayMode.MANUAL
-import io.spine.chords.protobuf.net.UrlField
-import io.spine.chords.protobuf.money.MoneyField
-import io.spine.chords.protobuf.time.DateTimeField
+import io.spine.chords.proto.form.MessageForm.Companion.invoke
+import io.spine.chords.proto.form.ValidationDisplayMode.DEFAULT
+import io.spine.chords.proto.form.ValidationDisplayMode.LIVE
+import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
+import io.spine.chords.proto.net.UrlField
+import io.spine.chords.proto.money.MoneyField
+import io.spine.chords.proto.time.DateTimeField
 import io.spine.chords.FocusRequestDispatcher
 import io.spine.base.FieldPath
 import io.spine.chords.ComponentProps

@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.net
+package io.spine.chords.proto.net
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable

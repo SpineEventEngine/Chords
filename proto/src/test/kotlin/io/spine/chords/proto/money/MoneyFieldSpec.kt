@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.money
+package io.spine.chords.proto.money
 
 import androidx.compose.ui.text.TextRange
 import io.kotest.assertions.withClue

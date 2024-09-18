@@ -24,36 +24,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.people
+package io.spine.chords.proto.time
 
-import io.spine.chords.ComponentCompanion
-import io.spine.chords.InputField
-import io.spine.chords.exceptionBasedParser
-import io.spine.people.PersonName
-import io.spine.person.format
-import io.spine.person.parse
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import com.google.protobuf.Timestamp
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /**
- * A field that allows editing a [PersonName] value.
+ * A text that shows a given date being interpreted in the system time zone.
+ *
+ * @param date
+ *         a date that should be displayed as text.
+ * @param pattern
+ *         a pattern for formatting the date (see [DateTimeFormatter] for the
+ *         formatting syntax).
  */
-public class PersonNameField : InputField<PersonName>() {
+@Composable
+public fun DateText(date: Timestamp, pattern: String = "yyyy-MM-dd") {
+    val instant = date.toInstant()
+    val zoneId = ZoneId.systemDefault()
+    val dateTimeFormatter = DateTimeFormatter.ofPattern(pattern)
 
-    /**
-     * A component instance declaration API.
-     */
-    public companion object : ComponentCompanion<PersonNameField>({ PersonNameField() })
-
-    init {
-        label = "Person name"
-        promptText = "Alex Petrenko"
-    }
-
-    override fun parseValue(rawText: String): PersonName = exceptionBasedParser(
-        IllegalArgumentException::class,
-        "Enter given and family name"
-    ) {
-        PersonName::class.parse(rawText)
-    }
-
-    override fun formatValue(value: PersonName): String = value.format()
+    val zonedDateTime = instant.atZone(zoneId)
+    val dateText = dateTimeFormatter.format(zonedDateTime)
+    Text(dateText)
 }

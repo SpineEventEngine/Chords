@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.net
+package io.spine.chords.proto.net
 
 import androidx.compose.ui.input.key.KeyEvent
 import io.spine.chords.ComponentCompanion

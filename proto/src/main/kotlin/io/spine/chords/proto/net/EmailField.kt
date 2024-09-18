@@ -24,31 +24,52 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.money
+package io.spine.chords.proto.net
 
-import io.spine.chords.protobuf.form.vBuildBasedParser
 import io.spine.chords.ComponentCompanion
 import io.spine.chords.InputField
-import io.spine.money.BankAccount
+import io.spine.chords.ValueParseException
+import io.spine.net.EmailAddress
 
 /**
- * A field that allows entering a bank account number.
+ * Regex pattern for the email address.
  */
-public class BankAccountField : InputField<BankAccount>() {
+private const val EmailRegex = """^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}${'$'}"""
 
-    /**
-     * An instance declaration API.
-     */
-    public companion object : ComponentCompanion<BankAccountField>({ BankAccountField() })
+/**
+ * An input field that allows editing a [EmailAddress] field.
+ */
+public class EmailField : InputField<EmailAddress>() {
+    public companion object : ComponentCompanion<EmailField>({ EmailField() })
 
     init {
-        label = "Bank account"
+        label = "Email"
+        promptText = "example@gmail.com"
     }
 
-    override fun parseValue(rawText: String): BankAccount = vBuildBasedParser {
-        BankAccount.newBuilder()
-            .setNumber(rawText)
+    override fun parseValue(rawText: String): EmailAddress {
+        validate(rawText)
+        return EmailAddress
+            .newBuilder()
+            .setValue(rawText)
+            .vBuild()
     }
 
-    override fun formatValue(value: BankAccount): String = value.number
+    override fun formatValue(value: EmailAddress): String {
+        return value.value
+    }
+
+    /**
+     * Validate the email address value.
+     *
+     * @throws ValueParseException
+     *         if the provided email value does not match the [EmailRegex] pattern.
+     */
+    @Throws(ValueParseException::class)
+    private fun validate(email: String) {
+        val emailPattern = Regex(EmailRegex)
+        if (!emailPattern.matches(email)) {
+            throw ValueParseException("Enter a valid email address.")
+        }
+    }
 }

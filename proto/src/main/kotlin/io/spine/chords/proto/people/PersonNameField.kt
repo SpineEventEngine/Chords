@@ -24,52 +24,36 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.net
+package io.spine.chords.proto.people
 
 import io.spine.chords.ComponentCompanion
 import io.spine.chords.InputField
-import io.spine.chords.ValueParseException
-import io.spine.net.EmailAddress
+import io.spine.chords.exceptionBasedParser
+import io.spine.people.PersonName
+import io.spine.person.format
+import io.spine.person.parse
 
 /**
- * Regex pattern for the email address.
+ * A field that allows editing a [PersonName] value.
  */
-private const val EmailRegex = """^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}${'$'}"""
-
-/**
- * An input field that allows editing a [EmailAddress] field.
- */
-public class EmailField : InputField<EmailAddress>() {
-    public companion object : ComponentCompanion<EmailField>({ EmailField() })
-
-    init {
-        label = "Email"
-        promptText = "example@gmail.com"
-    }
-
-    override fun parseValue(rawText: String): EmailAddress {
-        validate(rawText)
-        return EmailAddress
-            .newBuilder()
-            .setValue(rawText)
-            .vBuild()
-    }
-
-    override fun formatValue(value: EmailAddress): String {
-        return value.value
-    }
+public class PersonNameField : InputField<PersonName>() {
 
     /**
-     * Validate the email address value.
-     *
-     * @throws ValueParseException
-     *         if the provided email value does not match the [EmailRegex] pattern.
+     * A component instance declaration API.
      */
-    @Throws(ValueParseException::class)
-    private fun validate(email: String) {
-        val emailPattern = Regex(EmailRegex)
-        if (!emailPattern.matches(email)) {
-            throw ValueParseException("Enter a valid email address.")
-        }
+    public companion object : ComponentCompanion<PersonNameField>({ PersonNameField() })
+
+    init {
+        label = "Person name"
+        promptText = "Alex Petrenko"
     }
+
+    override fun parseValue(rawText: String): PersonName = exceptionBasedParser(
+        IllegalArgumentException::class,
+        "Enter given and family name"
+    ) {
+        PersonName::class.parse(rawText)
+    }
+
+    override fun formatValue(value: PersonName): String = value.format()
 }

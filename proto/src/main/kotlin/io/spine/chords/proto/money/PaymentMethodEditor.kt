@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.protobuf.money
+package io.spine.chords.proto.money
 
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
@@ -33,17 +33,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.Top
 import androidx.compose.ui.unit.dp
 import com.google.protobuf.Message
-import io.spine.chords.protobuf.form.FormFieldsScope
-import io.spine.chords.protobuf.form.MessageForm
-import io.spine.chords.protobuf.form.OneofRadioButton
-import io.spine.chords.protobuf.form.OptionalMessageCheckbox
-import io.spine.chords.protobuf.form.invoke
+import io.spine.chords.proto.form.FormFieldsScope
+import io.spine.chords.proto.form.MessageForm
+import io.spine.chords.proto.form.OneofRadioButton
+import io.spine.chords.proto.form.OptionalMessageCheckbox
+import io.spine.chords.proto.form.invoke
 import io.spine.chords.layout.InputRow
 import io.spine.chords.runtime.MessageField
 import io.spine.money.PaymentMethod
-import io.spine.money.bankAccount
-import io.spine.money.method
-import io.spine.money.paymentCard
 
 /**
  * A component that edits a [PaymentMethod].
