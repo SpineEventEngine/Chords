@@ -25,24 +25,9 @@
  */
 
 import io.spine.internal.dependency.Spine
-import io.spine.internal.gradle.publish.ChordsPublishing
-
-plugins {
-    `maven-publish`
-}
 
 dependencies {
     // This dependency is declared as transitive,
     // since the generated code depends on Spine Base in version 1.9.x.
     api(Spine.base_1_9)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("codegenRuntime") {
-            artifactId = ChordsPublishing.artifactPrefix + project.name
-
-            from(components["java"])
-        }
-    }
 }

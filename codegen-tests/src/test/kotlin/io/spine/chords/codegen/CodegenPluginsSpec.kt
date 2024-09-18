@@ -40,6 +40,7 @@ import io.spine.chords.runtime.MessageOneof
 import io.spine.chords.runtime.messageDef
 import io.spine.protobuf.ValidatingBuilder
 import java.util.stream.Stream
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -49,8 +50,9 @@ import org.junit.jupiter.params.provider.MethodSource
  * Checks various use-cases on code generation for [MessageField]
  * and [MessageOneof] implementations.
  */
+@DisplayName("CodegenPlugins should")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class `CodegenPlugin should` {
+class CodegenPluginsSpec {
 
     /**
      * Checks generated [MessageField] implementations.
@@ -118,7 +120,7 @@ class `CodegenPlugin should` {
      */
     @ParameterizedTest
     @MethodSource("messageDefTestData")
-    fun <T : Message> `generate 'MessageDef' implementation`(
+    fun <T : Message> `generate 'MessageDef' implementations`(
         messageDef: MessageDef<T>,
         builder: ValidatingBuilder<T>,
         fieldCount: Int,

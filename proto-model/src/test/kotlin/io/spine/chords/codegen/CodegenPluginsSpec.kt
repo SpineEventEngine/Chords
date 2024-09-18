@@ -26,10 +26,12 @@
 
 package io.spine.chords.codegen
 
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageOneof
+import io.spine.chords.runtime.messageDef
 import io.spine.money.BankAccount
 import io.spine.money.BankAccountDef
 import io.spine.money.PaymentCardNumber
@@ -50,13 +52,15 @@ import io.spine.net.Ipv6AddressDef
 import io.spine.net.ipv4
 import io.spine.net.ipv6
 import io.spine.net.value
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 /**
  * Checks various use-cases on code generation for [MessageField], [MessageOneof],
  * and [MessageDef]  implementations.
  */
-class `CodegenPlugin should` {
+@DisplayName("CodegenPlugins should")
+internal class CodegenPluginsSpec {
 
     /**
      * The goal of this test is checking that the generated fields
@@ -67,32 +71,34 @@ class `CodegenPlugin should` {
 
         BankAccount::class.number shouldNotBe null
         BankAccountDef.number shouldNotBe null
+        BankAccount.newBuilder().messageDef() shouldBe BankAccountDef
 
         PaymentCardNumber::class.value shouldNotBe null
         PaymentCardNumberDef.value shouldNotBe null
+        PaymentCardNumber.newBuilder().messageDef() shouldBe PaymentCardNumberDef
 
         PaymentMethod::class.paymentCard shouldNotBe null
         PaymentMethodDef.paymentCard shouldNotBe null
-
         PaymentMethod::class.bankAccount shouldNotBe null
         PaymentMethodDef.bankAccount shouldNotBe null
-
         PaymentMethod::class.method shouldNotBe null
         PaymentMethodDef.method shouldNotBe null
+        PaymentMethod.newBuilder().messageDef() shouldBe PaymentMethodDef
 
         IpAddress::class.ipv4 shouldNotBe null
         IpAddressDef.ipv4 shouldNotBe null
-
         IpAddress::class.ipv6 shouldNotBe null
         IpAddressDef.ipv6 shouldNotBe null
-
         IpAddress::class.value shouldNotBe null
         IpAddressDef.value shouldNotBe null
+        IpAddress.newBuilder().messageDef() shouldBe IpAddressDef
 
         Ipv4Address::class.value shouldNotBe null
         Ipv4AddressDef.value shouldNotBe null
+        Ipv4Address.newBuilder().messageDef() shouldBe Ipv4AddressDef
 
         Ipv6Address::class.value shouldNotBe null
         Ipv6AddressDef.value shouldNotBe null
+        Ipv6Address.newBuilder().messageDef() shouldBe Ipv6AddressDef
     }
 }
