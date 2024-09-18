@@ -24,8 +24,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "codegen-plugins"
+package io.spine.internal.dependency
 
-include(
-    "codegen-plugins"
-)
+@Suppress("unused", "ConstPropertyName")
+object Chords {
+    const val group = "io.spine.chords"
+    const val artefactPrefix = "spine-chords-"
+
+    object Runtime {
+        fun lib(version: String): String {
+            return "$group:${artefactPrefix}runtime:$version"
+        }
+    }
+}

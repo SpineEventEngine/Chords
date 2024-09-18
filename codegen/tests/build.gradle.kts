@@ -64,7 +64,7 @@ protobuf {
 dependencies {
     implementation(Spine.base_1_9)
     implementation(Spine.server)
-    implementation(project(":codegen-runtime"))
+    implementation(project(":runtime"))
     testImplementation(Kotest.runnerJUnit5)
 }
 
@@ -76,7 +76,7 @@ dependencies {
  *
  * See the [RunCodegenPlugins] for details.
  */
-val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
+val runCodegenPlugins = tasks.register<RunCodegenPlugins>("applyCodegenPlugins") {
     dependsOn(
         rootProject.tasks.named("buildCodegenPlugins")
     )

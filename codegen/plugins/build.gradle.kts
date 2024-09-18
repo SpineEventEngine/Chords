@@ -65,7 +65,7 @@ object BuildSettings {
 }
 
 allprojects {
-    apply(from = "$rootDir/../version.gradle.kts")
+    apply(from = "$rootDir/../../version.gradle.kts")
     version = extra["chordsVersion"]!!
     group = Chords.group
 

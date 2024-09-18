@@ -41,5 +41,5 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":proto-model"))
     implementation(project(":protobuf"))
-    implementation(project(":codegen-runtime"))
+    implementation(project(":runtime"))
 }

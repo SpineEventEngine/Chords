@@ -64,7 +64,7 @@ protobuf {
 
 dependencies {
     implementation(Spine.base_1_9)
-    implementation(project(":codegen-runtime"))
+    implementation(project(":runtime"))
     api(Spine.money)
     implementation(JavaX.annotations)
     testImplementation(Kotest.runnerJUnit5)
@@ -78,7 +78,7 @@ dependencies {
  *
  * See the [RunCodegenPlugins] for details.
  */
-val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
+val applyCodegenPlugins = tasks.register<RunCodegenPlugins>("applyCodegenPlugins") {
     // Dependencies that are required to load the Proto files from.
     dependencies(
         // A list of the external dependencies,
@@ -93,6 +93,6 @@ val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
 // Run the code generation before `compileKotlin` task.
 tasks.named("compileKotlin") {
     dependsOn(
-        runCodegenPlugins
+        applyCodegenPlugins
     )
 }

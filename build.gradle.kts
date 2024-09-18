@@ -102,11 +102,10 @@ LicenseReporter.mergeAllReports(project)
 
 val codegenPluginsPublishToMavenLocal = tasks
     .register<BuildCodegenPlugins>("buildCodegenPlugins") {
-        directory = "${rootDir}/codegen-plugins"
+        directory = "${rootDir}/codegen/plugins"
         task("publishToMavenLocal")
         dependsOn(
-            project(":codegen-runtime")
-                .tasks.named("publishToMavenLocal")
+            project(":runtime").tasks.named("publishToMavenLocal")
         )
     }
 
@@ -115,11 +114,10 @@ tasks.named("publishToMavenLocal") {
 }
 
 val codegenPluginsPublish = tasks.register<BuildCodegenPlugins>("publishCodegenPlugins") {
-    directory = "${rootDir}/codegen-plugins"
+    directory = "${rootDir}/codegen/plugins"
     task("publish")
     dependsOn(
-        project(":codegen-runtime")
-            .tasks.named("publishToMavenLocal")
+        project(":runtime").tasks.named("publishToMavenLocal")
     )
 }
 
