@@ -25,4 +25,4 @@ jobs:
       - name: Build project and run tests
         shell: cmd
         # For the reason on `--no-daemon` see https://github.com/actions/cache/issues/454
-        run: gradlew.bat build --stacktrace --no-daemon -PcodegenPluginsVersion=2.0.0-SNAPSHOT.9
+        run: gradlew.bat build --stacktrace --no-daemon
