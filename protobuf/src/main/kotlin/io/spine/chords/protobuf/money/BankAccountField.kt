@@ -24,7 +24,31 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.protobuf.money
+
+import io.spine.chords.protobuf.form.vBuildBasedParser
+import io.spine.chords.ComponentCompanion
+import io.spine.chords.InputField
+import io.spine.money.BankAccount
+
 /**
-  * The version of all Chords libraries.
-  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.13")
+ * A field that allows entering a bank account number.
+ */
+public class BankAccountField : InputField<BankAccount>() {
+
+    /**
+     * An instance declaration API.
+     */
+    public companion object : ComponentCompanion<BankAccountField>({ BankAccountField() })
+
+    init {
+        label = "Bank account"
+    }
+
+    override fun parseValue(rawText: String): BankAccount = vBuildBasedParser {
+        BankAccount.newBuilder()
+            .setNumber(rawText)
+    }
+
+    override fun formatValue(value: BankAccount): String = value.number
+}

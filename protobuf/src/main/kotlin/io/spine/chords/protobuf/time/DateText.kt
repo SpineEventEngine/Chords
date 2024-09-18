@@ -24,7 +24,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.protobuf.time
+
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import com.google.protobuf.Timestamp
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
 /**
-  * The version of all Chords libraries.
-  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.13")
+ * A text that shows a given date being interpreted in the system time zone.
+ *
+ * @param date
+ *         a date that should be displayed as text.
+ * @param pattern
+ *         a pattern for formatting the date (see [DateTimeFormatter] for the
+ *         formatting syntax).
+ */
+@Composable
+public fun DateText(date: Timestamp, pattern: String = "yyyy-MM-dd") {
+    val instant = date.toInstant()
+    val zoneId = ZoneId.systemDefault()
+    val dateTimeFormatter = DateTimeFormatter.ofPattern(pattern)
+
+    val zonedDateTime = instant.atZone(zoneId)
+    val dateText = dateTimeFormatter.format(zonedDateTime)
+    Text(dateText)
+}

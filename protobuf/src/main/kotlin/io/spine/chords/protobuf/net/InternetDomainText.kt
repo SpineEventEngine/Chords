@@ -24,7 +24,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.protobuf.net
+
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import io.spine.net.InternetDomain
+
 /**
-  * The version of all Chords libraries.
-  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.13")
+ * Displays an [InternetDomain] text.
+ *
+ * @param internetDomain
+ *         a domain that should be displayed. If `null`, displays an empty
+ *         (unspecified) value.
+ */
+@Composable
+public fun InternetDomainText(internetDomain: InternetDomain?) {
+    Text(internetDomain?.value ?: "")
+}
