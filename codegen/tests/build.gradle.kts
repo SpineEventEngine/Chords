@@ -76,7 +76,7 @@ dependencies {
  *
  * See the [RunCodegenPlugins] for details.
  */
-val runCodegenPlugins = tasks.register<RunCodegenPlugins>("applyCodegenPlugins") {
+val applyCodegenPlugins = tasks.register<RunCodegenPlugins>("applyCodegenPlugins") {
     dependsOn(
         rootProject.tasks.named("buildCodegenPlugins")
     )
@@ -85,6 +85,6 @@ val runCodegenPlugins = tasks.register<RunCodegenPlugins>("applyCodegenPlugins")
 // Generate the code before the `compileKotlin` task.
 tasks.named("compileKotlin") {
     dependsOn(
-        runCodegenPlugins
+        applyCodegenPlugins
     )
 }
