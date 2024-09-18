@@ -79,7 +79,7 @@ dependencies {
  * See the [RunCodegenPlugins] for details.
  */
 val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
-    pluginsDir = "${rootDir}/codegen/codegen-plugins"
+    pluginsDir = "${rootDir}/codegen-workspace"
     pluginsVersion = version as String
     sourceModuleDir = projectDir.path
 
@@ -88,6 +88,10 @@ val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
         // A list the external dependencies,
         // onto which the processed Proto sources depend.
         Spine.money
+    )
+
+    dependsOn(
+        rootProject.tasks.named("buildCodegenPlugins")
     )
 }
 

@@ -66,7 +66,6 @@ dependencies {
     implementation(Spine.server)
     implementation(project(":codegen-runtime"))
     testImplementation(Kotest.runnerJUnit5)
-    testImplementation(Kotest.assertions)
 }
 
 /**

@@ -35,7 +35,7 @@ package io.spine.internal.dependency
  */
 @Suppress("unused", "ConstPropertyName")
 object Kotest {
-    const val version = "5.8.0"
+    const val version = "5.9.1"
     const val group = "io.kotest"
     const val assertions = "$group:kotest-assertions-core:$version"
     const val runnerJUnit5 = "$group:kotest-runner-junit5:$version"
@@ -53,7 +53,7 @@ object Kotest {
 
     // https://github.com/kotest/kotest-gradle-plugin
     object JvmGradlePlugin {
-        const val version = "0.4.10"
+        const val version = "0.3.8"
         const val id = "io.kotest"
         const val classpath = "$group:kotest-gradle-plugin:$version"
     }

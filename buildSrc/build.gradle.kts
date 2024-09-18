@@ -136,7 +136,7 @@ val detektVersion = "1.23.0"
 /**
  * @see [io.spine.internal.dependency.Kotest]
  */
-val kotestJvmPluginVersion = "0.4.10"
+val kotestJvmPluginVersion = "0.3.8"
 
 /**
  * @see [io.spine.internal.dependency.Kover]
