@@ -59,22 +59,19 @@ open class RunCodegenPlugins : DefaultTask() {
     /**
      * Path to the `codegen-workspace` module where the code generation is actually performed.
      */
-    @Internal
-    lateinit var workspaceDir: String
+    private val workspaceDir: String = "${project.rootDir}/codegen-workspace"
 
     /**
      * The version of `spine-chords-codegen-plugins` artifact to be used for code generation.
      *
      * The artifact with this version should be located in `mavenLocal` or `spineSnapshots` repo.
      */
-    @Internal
-    lateinit var pluginsVersion: String
+    private val pluginsVersion: String = project.version.toString()
 
     /**
      * Path to the module to generate code for.
      */
-    @Internal
-    lateinit var sourceModuleDir: String
+    private val sourceModuleDir: String = project.projectDir.path
 
     /**
      * Dependencies that should be added to classpath of codegen module

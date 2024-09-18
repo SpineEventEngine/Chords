@@ -23,9 +23,33 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package io.spine.chords.codegen.plugins
 
-rootProject.name = "codegen-plugins"
+import io.spine.core.EventContext
+import io.spine.protodata.event.FieldEntered
+import io.spine.protodata.plugin.ViewRepository
+import io.spine.protodata.typeName
+import io.spine.server.route.EventRoute
+import io.spine.server.route.EventRouting
 
-include(
-    "codegen-plugins"
-)
+/**
+ * The repository for [FieldView].
+ */
+internal class FieldViewRepository : ViewRepository<FieldMetadataId,
+        FieldView,
+        FieldMetadata>() {
+
+    override fun setupEventRouting(routing: EventRouting<FieldMetadataId>) {
+        super.setupEventRouting(routing)
+        routing.route(FieldEntered::class.java)
+        { message: FieldEntered, _: EventContext? ->
+            EventRoute.withId(
+                fieldMetadataId {
+                    file = message.file
+                    typeName = message.type
+                    field = message.field
+                }
+            )
+        }
+    }
+}

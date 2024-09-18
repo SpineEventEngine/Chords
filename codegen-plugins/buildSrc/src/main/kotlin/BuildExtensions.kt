@@ -24,8 +24,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+@file:Suppress("UnusedReceiverParameter", "unused", "TopLevelPropertyNaming", "ObjectPropertyName")
+
+import io.spine.internal.dependency.ErrorProne
+import io.spine.internal.dependency.GradleDoctor
+import io.spine.internal.dependency.Kotest
+import io.spine.internal.dependency.Kover
+import io.spine.internal.dependency.Ksp
+import io.spine.internal.dependency.ProtoData
+import io.spine.internal.dependency.ProtoTap
+import io.spine.internal.dependency.Protobuf
+import io.spine.internal.dependency.Spine
 import io.spine.internal.gradle.standardToSpineSdk
+import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.kotlin.dsl.ScriptHandlerScope
+import org.gradle.plugin.use.PluginDependenciesSpec
+import org.gradle.plugin.use.PluginDependencySpec
 
 /**
  * Applies [standard][standardToSpineSdk] repositories to this `buildscript`.
@@ -33,3 +48,149 @@ import org.gradle.kotlin.dsl.ScriptHandlerScope
 fun ScriptHandlerScope.standardSpineSdkRepositories() {
     repositories.standardToSpineSdk()
 }
+
+/**
+ * Provides shortcuts to reference our dependency objects.
+ *
+ * Dependency objects cannot be used under `plugins` section because `io` is a value
+ * declared in auto-generated `org.gradle.kotlin.dsl.PluginAccessors.kt` file.
+ * It conflicts with our own declarations.
+ *
+ * In such cases, a shortcut to apply a plugin can be created:
+ *
+ * ```
+ * val PluginDependenciesSpec.`gradle-doctor`: PluginDependencySpec
+ *     get() = id(GradleDoctor.pluginId).version(GradleDoctor.version)
+ * ```
+ *
+ * But for some plugins, it's impossible to apply them directly to a project.
+ * For example, when a plugin is not published to Gradle Portal, it can only be
+ * applied with the buildscript's classpath. Thus, it's needed to leave some freedom
+ * upon how to apply them. In such cases, just a shortcut to a dependency object
+ * can be declared without applying the plugin in-place.
+ */
+private const val ABOUT_DEPENDENCY_EXTENSIONS = ""
+
+/**
+ * Shortcut to [Spine.McJava] dependency object.
+ *
+ * This plugin is not published to Gradle Portal and cannot be applied directly to a project.
+ * Firstly, it should be put to buildscript's classpath and then applied by ID only.
+ */
+val PluginDependenciesSpec.mcJava: Spine.McJava
+    get() = Spine.McJava
+
+/**
+ * Shortcut to [ProtoData] dependency object.
+ *
+ * This plugin is published at Gradle Portal. But when used in a pair with [mcJava],
+ * it cannot be applied directly to a project.
+ * It is so, because [mcJava] uses [protoData] as its dependency.
+ * And buildscript's classpath ends up with both of them.
+ */
+val PluginDependenciesSpec.protoData: ProtoData
+    get() = ProtoData
+
+/**
+ * Provides shortcuts for applying plugins from our dependency objects.
+ *
+ * Dependency objects cannot be used under `plugins` section because `io` is a value
+ * declared in auto-generated `org.gradle.kotlin.dsl.PluginAccessors.kt` file.
+ * It conflicts with our own declarations.
+ *
+ * Declaring of top-level shortcuts eliminates the need in applying plugins
+ * using fully qualified name of dependency objects.
+ *
+ * It is still possible to apply a plugin with a custom version, if needed.
+ * Just declare a version again on the returned [PluginDependencySpec].
+ *
+ * For example:
+ *
+ * ```
+ * plugins {
+ *     protobuf version("0.8.19-custom")
+ * }
+ * ```
+ */
+private const val ABOUT_PLUGIN_ACCESSORS = ""
+
+val PluginDependenciesSpec.errorprone: PluginDependencySpec
+    get() = id(ErrorProne.GradlePlugin.id)
+
+val PluginDependenciesSpec.protobuf: PluginDependencySpec
+    get() = id(Protobuf.GradlePlugin.id)
+
+val PluginDependenciesSpec.prototap: PluginDependencySpec
+    get() = id(ProtoTap.gradlePluginId).version(ProtoTap.version)
+
+val PluginDependenciesSpec.`gradle-doctor`: PluginDependencySpec
+    get() = id(GradleDoctor.pluginId).version(GradleDoctor.version)
+
+val PluginDependenciesSpec.kotest: PluginDependencySpec
+    get() = Kotest.MultiplatformGradlePlugin.let {
+        return id(it.id).version(it.version)
+    }
+
+val PluginDependenciesSpec.kover: PluginDependencySpec
+    get() = id(Kover.id).version(Kover.version)
+
+val PluginDependenciesSpec.ksp: PluginDependencySpec
+    get() = id(Ksp.id).version(Ksp.version)
+
+/**
+ * Configures the dependencies between third-party Gradle tasks
+ * and those defined via ProtoData and Spine Model Compiler.
+ *
+ * It is required to avoid warnings in build logs, detecting the undeclared
+ * usage of Spine-specific task output by other tasks,
+ * e.g., the output of `launchProtoData` is used by `compileKotlin`.
+ */
+@Suppress("unused")
+fun Project.configureTaskDependencies() {
+
+    /**
+     * Creates a dependency between the Gradle task of *this* name
+     * onto the task with `taskName`.
+     *
+     * If either of tasks does not exist in the enclosing `Project`,
+     * this method does nothing.
+     *
+     * This extension is kept local to `configureTaskDependencies` extension
+     * to prevent its direct usage from outside.
+     */
+    fun String.dependOn(taskName: String) {
+        val whoDepends = this
+        val dependOntoTask: Task? = tasks.findByName(taskName)
+        dependOntoTask?.let {
+            tasks.findByName(whoDepends)?.dependsOn(it)
+        }
+    }
+
+    afterEvaluate {
+        val launchProtoData = "launchProtoData"
+        val launchTestProtoData = "launchTestProtoData"
+        val generateProto = "generateProto"
+        val createVersionFile = "createVersionFile"
+        "compileKotlin".dependOn(launchProtoData)
+        "compileTestKotlin".dependOn(launchTestProtoData)
+        val sourcesJar = "sourcesJar"
+        sourcesJar.dependOn(generateProto)
+        sourcesJar.dependOn(launchProtoData)
+        sourcesJar.dependOn(createVersionFile)
+        sourcesJar.dependOn("prepareProtocConfigVersions")
+        //val dokkaHtml = "dokkaHtml"
+        //dokkaHtml.dependOn(generateProto)
+        //dokkaHtml.dependOn(launchProtoData)
+        //"dokkaJavadoc".dependOn(launchProtoData)
+        //"publishPluginJar".dependOn(createVersionFile)
+    }
+}
+
+/**
+ * Obtains all modules of the root project to which this project belongs that
+ * do not have `"-tests"` in their names.
+ *
+ * By convention such modules are for integration tests and should be treated differently.
+ */
+val Project.productionModules: Iterable<Project>
+    get() = rootProject.subprojects.filter { !it.name.contains("-tests") }

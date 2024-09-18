@@ -1,11 +1,11 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2023, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -24,28 +24,157 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+@file:Suppress("TooManyFunctions") // Deprecated functions will be kept for a while.
+
 package io.spine.internal.gradle
 
+import io.spine.internal.gradle.publish.CloudRepo
+import io.spine.internal.gradle.publish.PublishingRepos
+import io.spine.internal.gradle.publish.PublishingRepos.gitHub
+import java.io.File
 import java.net.URI
+import java.util.*
+import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.kotlin.dsl.ScriptHandlerScope
 import org.gradle.kotlin.dsl.maven
 
 /**
- * Applies repositories commonly used by Spine Event Engine projects.
+ * Applies [standard][doApplyStandard] repositories to this [ScriptHandlerScope]
+ * optionally adding [gitHub] repositories for Spine-only components, if
+ * names of such repositories are given.
+ *
+ * @param buildscript
+ *         a [ScriptHandlerScope] to work with. Pass `this` under `buildscript { }`.
+ * @param rootProject
+ *         a root project where the `buildscript` is declared.
+ * @param gitHubRepo
+ *         a list of short repository names, or empty list if only
+ *         [standard repositories][doApplyStandard] are required.
  */
-fun RepositoryHandler.standardToSpineSdk() {
-    spineArtifacts()
-    spineSnapshots()
-
-    maven {
-        url = URI(Repos.sonatypeSnapshots)
+@Suppress("unused")
+@Deprecated(
+    message = "Please use `standardSpineSdkRepositories()`.",
+    replaceWith = ReplaceWith("standardSpineSdkRepositories()")
+)
+fun applyWithStandard(
+    buildscript: ScriptHandlerScope,
+    rootProject: Project,
+    vararg gitHubRepo: String
+) {
+    val repositories = buildscript.repositories
+    gitHubRepo.iterator().forEachRemaining { repo ->
+        repositories.applyGitHubPackages(repo, rootProject)
     }
-
-    mavenCentral()
-    gradlePluginPortal()
-    mavenLocal().includeSpineOnly()
+    repositories.standardToSpineSdk()
 }
+
+/**
+ * Registers the selected GitHub Packages repos as Maven repositories.
+ *
+ * To be used in `buildscript` clauses when a fully-qualified call must be made.
+ *
+ * @param repositories
+ *          the handler to accept registration of the GitHub Packages repository
+ * @param shortRepositoryName
+ *          the short name of the GitHub repository (e.g. "core-java")
+ * @param project
+ *          the project which is going to consume artifacts from the repository
+ * @see applyGitHubPackages
+ */
+@Suppress("unused")
+@Deprecated(
+    message = "Please use `standardSpineSdkRepositories()`.",
+    replaceWith = ReplaceWith("standardSpineSdkRepositories()")
+)
+fun doApplyGitHubPackages(
+    repositories: RepositoryHandler,
+    shortRepositoryName: String,
+    project: Project
+) = repositories.applyGitHubPackages(shortRepositoryName, project)
+
+/**
+ * Registers the standard set of Maven repositories.
+ *
+ * To be used in `buildscript` clauses when a fully-qualified call must be made.
+ */
+@Suppress("unused")
+@Deprecated(
+    message = "Please use `standardSpineSdkRepositories()`.",
+    replaceWith = ReplaceWith("standardSpineSdkRepositories()")
+)
+fun doApplyStandard(repositories: RepositoryHandler) = repositories.standardToSpineSdk()
+
+/**
+ * Applies the repository hosted at GitHub Packages, to which Spine artifacts were published.
+ *
+ * This method should be used by those wishing to have Spine artifacts published
+ * to GitHub Packages as dependencies.
+ *
+ * @param shortRepositoryName
+ *          short names of the GitHub repository (e.g. "base", "core-java", "model-tools")
+ * @param project
+ *          the project which is going to consume artifacts from repositories
+ */
+fun RepositoryHandler.applyGitHubPackages(shortRepositoryName: String, project: Project) {
+    val repository = gitHub(shortRepositoryName)
+    val credentials = repository.credentials(project)
+
+    credentials?.let {
+        spineMavenRepo(it, repository.releases)
+        spineMavenRepo(it, repository.snapshots)
+    }
+}
+
+/**
+ * Applies the repositories hosted at GitHub Packages, to which Spine artifacts were published.
+ *
+ * This method should be used by those wishing to have Spine artifacts published
+ * to GitHub Packages as dependencies.
+ *
+ * @param shortRepositoryName
+ *          the short name of the GitHub repository (e.g. "core-java")
+ * @param project
+ *          the project which is going to consume or publish artifacts from
+ *          the registered repository
+ */
+fun RepositoryHandler.applyGitHubPackages(project: Project, vararg shortRepositoryName: String) {
+    for (name in shortRepositoryName) {
+        applyGitHubPackages(name, project)
+    }
+}
+
+/**
+ * Applies [standard][applyStandard] repositories to this [RepositoryHandler]
+ * optionally adding [applyGitHubPackages] repositories for Spine-only components, if
+ * names of such repositories are given.
+ *
+ * @param project
+ *         a project to which we add dependencies
+ * @param gitHubRepo
+ *         a list of short repository names, or empty list if only
+ *         [standard repositories][applyStandard] are required.
+ */
+@Suppress("unused")
+@Deprecated(
+    message = "Please use `standardToSpineSdk()`.",
+    replaceWith = ReplaceWith("standardToSpineSdk()")
+)
+fun RepositoryHandler.applyStandardWithGitHub(project: Project, vararg gitHubRepo: String) {
+    gitHubRepo.iterator().forEachRemaining { repo ->
+        applyGitHubPackages(repo, project)
+    }
+    standardToSpineSdk()
+}
+
+/**
+ * A Maven repo for where snapshot versions for Spine libraries are published.
+ */
+fun RepositoryHandler.spineSnapshots() {
+    maven("https://europe-maven.pkg.dev/spine-event-engine/snapshots")
+}
+
 
 /**
  * A scrambled version of PAT generated with the only "read:packages" scope.
@@ -94,11 +223,102 @@ fun RepositoryHandler.spineArtifacts(): MavenArtifactRepository = maven {
     }
 }
 
+val RepositoryHandler.intellijReleases: MavenArtifactRepository
+    get() = maven("https://www.jetbrains.com/intellij-repository/releases")
+
+val RepositoryHandler.jetBrainsCacheRedirector: MavenArtifactRepository
+    get() = maven("https://cache-redirector.jetbrains.com/intellij-dependencies")
+
 /**
- * The repository of Spine snapshot artifacts.
+ * Applies repositories commonly used by Spine Event Engine projects.
  */
-fun RepositoryHandler.spineSnapshots() {
-    maven("https://europe-maven.pkg.dev/spine-event-engine/snapshots")
+fun RepositoryHandler.standardToSpineSdk() {
+    spineArtifacts()
+
+    val spineRepos = listOf(
+        Repos.spine,
+        Repos.spineSnapshots,
+        Repos.artifactRegistry,
+        Repos.artifactRegistrySnapshots
+    )
+
+    spineRepos
+        .map { URI(it) }
+        .forEach {
+            maven {
+                url = it
+                includeSpineOnly()
+            }
+        }
+
+    intellijReleases
+    jetBrainsCacheRedirector
+
+    maven {
+        url = URI(Repos.sonatypeSnapshots)
+    }
+
+    mavenCentral()
+    gradlePluginPortal()
+    google()
+    mavenLocal().includeSpineOnly()
+}
+
+@Deprecated(
+    message = "Please use `standardToSpineSdk() instead.",
+    replaceWith = ReplaceWith("standardToSpineSdk()")
+)
+fun RepositoryHandler.applyStandard() = this.standardToSpineSdk()
+
+/**
+ * A Maven repository.
+ */
+data class Repository(
+    val releases: String,
+    val snapshots: String,
+    private val credentialsFile: String? = null,
+    private val credentialValues: ((Project) -> Credentials?)? = null,
+    val name: String = "Maven repository `$releases`"
+) {
+
+    /**
+     * Obtains the publishing password credentials to this repository.
+     *
+     * If the credentials are represented by a `.properties` file, reads the file and parses
+     * the credentials. The file must have properties `user.name` and `user.password`, which store
+     * the username and the password for the Maven repository auth.
+     */
+    fun credentials(project: Project): Credentials? = when {
+        credentialValues != null -> credentialValues.invoke(project)
+        credentialsFile != null -> credsFromFile(credentialsFile, project)
+        else -> throw IllegalArgumentException(
+            "Credentials file or a supplier function should be passed."
+        )
+    }
+
+    private fun credsFromFile(fileName: String, project: Project): Credentials? {
+        val file = project.rootProject.file(fileName)
+        if (file.exists().not()) {
+            return null
+        }
+
+        val log = project.logger
+        log.info("Using credentials from `$fileName`.")
+        val creds = file.parseCredentials()
+        log.info("Publishing build as `${creds.username}`.")
+        return creds
+    }
+
+    private fun File.parseCredentials(): Credentials {
+        val properties = Properties().apply { load(inputStream()) }
+        val username = properties.getProperty("user.name")
+        val password = properties.getProperty("user.password")
+        return Credentials(username, password)
+    }
+
+    override fun toString(): String {
+        return name
+    }
 }
 
 /**
@@ -111,9 +331,42 @@ data class Credentials(
 
 /**
  * Defines names of additional repositories commonly used in the Spine SDK projects.
+ *
+ * @see [applyStandard]
  */
 private object Repos {
+    val spine = CloudRepo.published.releases
+    val spineSnapshots = CloudRepo.published.snapshots
+    val artifactRegistry = PublishingRepos.cloudArtifactRegistry.releases
+    val artifactRegistrySnapshots = PublishingRepos.cloudArtifactRegistry.snapshots
+
+    @Suppress("unused")
+    @Deprecated(
+        message = "Sonatype release repository redirects to the Maven Central",
+        replaceWith = ReplaceWith("sonatypeSnapshots"),
+        level = DeprecationLevel.ERROR
+    )
+    const val sonatypeReleases = "https://oss.sonatype.org/content/repositories/snapshots"
     const val sonatypeSnapshots = "https://oss.sonatype.org/content/repositories/snapshots"
+}
+
+/**
+ * Registers the Maven repository with the passed [repoCredentials] for authorization.
+ *
+ * Only includes the Spine-related artifact groups.
+ */
+private fun RepositoryHandler.spineMavenRepo(
+    repoCredentials: Credentials,
+    repoUrl: String
+) {
+    maven {
+        url = URI(repoUrl)
+        includeSpineOnly()
+        credentials {
+            username = repoCredentials.username
+            password = repoCredentials.password
+        }
+    }
 }
 
 /**

@@ -24,8 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "codegen-plugins"
-
-include(
-    "codegen-plugins"
-)
+public fun String.capitalized(): String = if (this.isNotEmpty()) {
+    this[0].toUpperCase() + this.substring(1)
+} else {
+    this
+}

@@ -79,19 +79,14 @@ dependencies {
  * See the [RunCodegenPlugins] for details.
  */
 val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
-    workspaceDir = "${rootDir}/codegen-workspace"
-    pluginsVersion = version as String
-    sourceModuleDir = projectDir.path
-
     // Dependencies that are required to load the Proto files from.
     dependencies(
-        // A list the external dependencies,
+        // A list of the external dependencies,
         // onto which the processed Proto sources depend.
         Spine.money
     )
-
     dependsOn(
-        rootProject.tasks.named("buildCodegenPlugins")
+        rootProject.tasks.named("codegenPlugins-publishToMavenLocal")
     )
 }
 

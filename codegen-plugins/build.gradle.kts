@@ -27,12 +27,15 @@
 @file:Suppress("RemoveRedundantQualifierName")
 
 import Build_gradle.Module
+import io.spine.internal.dependency.Chords
 import io.spine.internal.dependency.ErrorProne
 import io.spine.internal.dependency.Protobuf
 import io.spine.internal.gradle.javac.configureErrorProne
 import io.spine.internal.gradle.javac.configureJavac
 import io.spine.internal.gradle.kotlin.applyJvmToolchain
 import io.spine.internal.gradle.kotlin.setFreeCompilerArgs
+import io.spine.internal.gradle.publish.PublishingRepos
+import io.spine.internal.gradle.publish.spinePublishing
 import io.spine.internal.gradle.standardToSpineSdk
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -64,6 +67,7 @@ object BuildSettings {
 allprojects {
     apply(from = "$rootDir/../version.gradle.kts")
     version = extra["chordsVersion"]!!
+    group = Chords.group
 
     // Define the repositories universally for all modules, including the root.
     repositories.standardToSpineSdk()
@@ -97,6 +101,18 @@ subprojects {
 
     // Apply a typical configuration to every module.
     applyConfiguration()
+}
+
+spinePublishing {
+    modules = productionModules
+        .map { project -> project.name }
+        .toSet()
+
+    destinations = setOf(
+        PublishingRepos.gitHub("Chords"),
+        PublishingRepos.cloudArtifactRegistry
+    )
+    artifactPrefix = Chords.artefactPrefix
 }
 
 /**

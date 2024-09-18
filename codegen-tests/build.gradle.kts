@@ -77,12 +77,8 @@ dependencies {
  * See the [RunCodegenPlugins] for details.
  */
 val runCodegenPlugins = tasks.register<RunCodegenPlugins>("runCodegenPlugins") {
-    workspaceDir = "${rootDir}/codegen-workspace"
-    pluginsVersion = version as String
-    sourceModuleDir = projectDir.path
-
     dependsOn(
-        rootProject.tasks.named("buildCodegenPlugins")
+        rootProject.tasks.named("codegenPlugins-publishToMavenLocal")
     )
 }
 

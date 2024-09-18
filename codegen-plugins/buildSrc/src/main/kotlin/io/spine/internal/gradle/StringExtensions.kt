@@ -1,11 +1,11 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2023, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -24,8 +24,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "codegen-plugins"
+package io.spine.internal.gradle
 
-include(
-    "codegen-plugins"
-)
+/**
+ * Returns `true` if the version of a project contains `snapshot` (in any case),
+ * `false` otherwise.
+ */
+fun String.isSnapshot(): Boolean {
+    return contains("snapshot", ignoreCase = true)
+}

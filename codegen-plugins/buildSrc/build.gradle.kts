@@ -96,6 +96,16 @@ val kotestJvmPluginVersion = "0.4.10"
  */
 val koverVersion = "0.7.2"
 
+/**
+ * The version of Google Artifact Registry used by `buildSrc`.
+ *
+ * The version `2.1.5` is the latest before `2.2.0`, which introduces breaking changes.
+ *
+ * @see <a href="https://mvnrepository.com/artifact/com.google.cloud.artifactregistry/artifactregistry-auth-common">
+ *     Google Artifact Registry at Maven</a>
+ */
+val googleAuthToolVersion = "2.1.5"
+
 configurations.all {
     resolutionStrategy {
         force(
@@ -122,6 +132,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 dependencies {
+    dependOnAuthCommon()
+
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
 
@@ -140,6 +152,32 @@ dependencies {
 
     implementation("io.kotest:kotest-gradle-plugin:$kotestJvmPluginVersion")
     implementation("org.jetbrains.kotlinx:kover-gradle-plugin:$koverVersion")
+}
+
+/**
+ * Includes the `implementation` dependency on `artifactregistry-auth-common`,
+ * with the version defined in [googleAuthToolVersion].
+ *
+ * `artifactregistry-auth-common` has transitive dependency on Gson and Apache `commons-codec`.
+ * Gson from version `2.8.6` until `2.8.9` is vulnerable to Deserialization of Untrusted Data
+ * (https://devhub.checkmarx.com/cve-details/CVE-2022-25647/).
+ *
+ *  Apache `commons-codec` before 1.13 is vulnerable to information exposure
+ * (https://devhub.checkmarx.com/cve-details/Cxeb68d52e-5509/).
+ *
+ * We use Gson `2.10.1` and we force it in `forceProductionDependencies()`.
+ * We use `commons-code` with version `1.16.0`, forcing it in `forceProductionDependencies()`.
+ *
+ * So, we should be safe with the current version `artifactregistry-auth-common` until
+ * we migrate to a later version.
+ */
+fun DependencyHandlerScope.dependOnAuthCommon() {
+    @Suppress("VulnerableLibrariesLocal", "RedundantSuppression")
+    implementation(
+        "com.google.cloud.artifactregistry:artifactregistry-auth-common:$googleAuthToolVersion"
+    ) {
+        exclude(group = "com.google.guava")
+    }
 }
 
 dependOnBuildSrcJar()

@@ -24,8 +24,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "codegen-plugins"
+package io.spine.internal.gradle.publish
 
-include(
-    "codegen-plugins"
-)
+import io.spine.internal.gradle.Repository
+
+/**
+ * Repositories to which we may publish.
+ */
+object PublishingRepos {
+
+    val cloudArtifactRegistry = CloudArtifactRegistry.repository
+
+    /**
+     * Obtains a GitHub repository by the given name.
+     */
+    fun gitHub(repoName: String): Repository = GitHubPackages.repository(repoName)
+}

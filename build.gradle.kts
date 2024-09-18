@@ -100,21 +100,29 @@ spinePublishing {
 PomGenerator.applyTo(project)
 LicenseReporter.mergeAllReports(project)
 
-/**
- * The task below executes a separate Gradle build of the `codegen-plugins`
- * project. It is needed because the ProtoData plugin, that helps to generate
- * the Kotlin extensions for the Proto messages, requires the newer version
- * of Gradle.
- *
- * Add dependency on this tasks in every module that requires the code generation.
- *
- * See the [BuildCodegenPlugins] for detail.
- */
-val buildCodegenPlugins = tasks.register<BuildCodegenPlugins>("buildCodegenPlugins") {
-    directory = "${rootDir}/codegen-plugins"
+val publishCodegenPluginsToMavenLocal = tasks
+    .register<BuildCodegenPlugins>("codegenPlugins-publishToMavenLocal") {
+        directory = "${rootDir}/codegen-plugins"
+        task("publishToMavenLocal")
+        dependsOn(
+            project(":codegen-runtime")
+                .tasks.named("publishToMavenLocal")
+        )
+    }
 
+tasks.named("publishToMavenLocal") {
+    dependsOn(publishCodegenPluginsToMavenLocal)
+}
+
+val publishCodegenPlugins = tasks.register<BuildCodegenPlugins>("codegenPlugins-publish") {
+    directory = "${rootDir}/codegen-plugins"
+    task("publish")
     dependsOn(
         project(":codegen-runtime")
             .tasks.named("publishToMavenLocal")
     )
+}
+
+tasks.named("publish") {
+    dependsOn(publishCodegenPlugins)
 }

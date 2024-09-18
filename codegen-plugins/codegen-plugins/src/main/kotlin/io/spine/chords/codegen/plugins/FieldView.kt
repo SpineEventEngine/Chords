@@ -23,9 +23,23 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package io.spine.chords.codegen.plugins
 
-rootProject.name = "codegen-plugins"
+import io.spine.core.External
+import io.spine.core.Subscribe
+import io.spine.protodata.event.FieldEntered
+import io.spine.protodata.plugin.View
 
-include(
-    "codegen-plugins"
-)
+/**
+ * Records the [FieldMetadata].
+ */
+internal class FieldView : View<FieldMetadataId,
+        FieldMetadata,
+        FieldMetadata.Builder>() {
+
+    @Subscribe
+    @Suppress("EmptyFunctionBlock", "UNUSED_PARAMETER")
+    internal fun on(@External event: FieldEntered) {
+        // There is nothing to do here — ID holds all the required state.
+    }
+}
