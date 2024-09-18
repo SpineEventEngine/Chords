@@ -24,31 +24,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.proto.money
+package io.spine.chords.core
 
-import io.spine.chords.proto.form.vBuildBasedParser
-import io.spine.chords.core.ComponentCompanion
-import io.spine.chords.core.InputField
-import io.spine.chords.proto.value.money.BankAccount
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 
 /**
- * A field that allows entering a bank account number.
+ * A validation error text.
+ *
+ * @param validationError
+ *         a [MutableState] that holds the validation error text. If either
+ *         the text or the [MutableState] reference itself is `null`, nothing
+ *         is added to the composition.
  */
-public class BankAccountField : InputField<BankAccount>() {
-
-    /**
-     * An instance declaration API.
-     */
-    public companion object : ComponentCompanion<BankAccountField>({ BankAccountField() })
-
-    init {
-        label = "Bank account"
+@Composable
+public fun ValidationErrorText(validationError: State<String?>? = null) {
+    val validationErrorText = validationError?.value
+    if (validationErrorText != null) {
+        Text(
+            validationErrorText,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error
+        )
     }
-
-    override fun parseValue(rawText: String): BankAccount = vBuildBasedParser {
-        BankAccount.newBuilder()
-            .setNumber(rawText)
-    }
-
-    override fun formatValue(value: BankAccount): String = value.number
 }

@@ -28,10 +28,10 @@ package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
-import io.spine.chords.AbstractComponentCompanion
-import io.spine.chords.FocusRequestDispatcher
-import io.spine.chords.FocusableComponent
-import io.spine.chords.primitive.RadioButtonWithText
+import io.spine.chords.core.AbstractComponentCompanion
+import io.spine.chords.core.FocusRequestDispatcher
+import io.spine.chords.core.FocusableComponent
+import io.spine.chords.core.primitive.RadioButtonWithText
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.protobuf.ValidatingBuilder

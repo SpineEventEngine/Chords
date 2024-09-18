@@ -24,31 +24,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.proto.money
+package io.spine.chords.core.time
 
-import io.spine.chords.proto.form.vBuildBasedParser
-import io.spine.chords.core.ComponentCompanion
-import io.spine.chords.core.InputField
-import io.spine.chords.proto.value.money.BankAccount
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 /**
- * A field that allows entering a bank account number.
+ * The client's local time characteristics.
  */
-public class BankAccountField : InputField<BankAccount>() {
+public object WallClock {
 
     /**
-     * An instance declaration API.
+     * Local time zone offset.
      */
-    public companion object : ComponentCompanion<BankAccountField>({ BankAccountField() })
-
-    init {
-        label = "Bank account"
-    }
-
-    override fun parseValue(rawText: String): BankAccount = vBuildBasedParser {
-        BankAccount.newBuilder()
-            .setNumber(rawText)
-    }
-
-    override fun formatValue(value: BankAccount): String = value.number
+    public val zoneOffset: ZoneOffset
+        get() = OffsetDateTime.now().offset
 }

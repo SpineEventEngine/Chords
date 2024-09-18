@@ -28,7 +28,7 @@ package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
-import io.spine.chords.primitive.CheckboxWithText
+import io.spine.chords.core.primitive.CheckboxWithText
 
 /**
  * A component that can be placed inside any variant of the `MessageForm`

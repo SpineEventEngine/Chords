@@ -26,9 +26,9 @@
 
 package io.spine.chords.proto.net
 
-import io.spine.chords.ComponentCompanion
-import io.spine.chords.InputField
-import io.spine.chords.exceptionBasedParser
+import io.spine.chords.core.ComponentCompanion
+import io.spine.chords.core.InputField
+import io.spine.chords.core.exceptionBasedParser
 import io.spine.net.InternetDomain
 import io.spine.net.InternetDomains
 

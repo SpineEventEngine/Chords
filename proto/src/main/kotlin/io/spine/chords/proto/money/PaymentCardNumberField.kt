@@ -26,12 +26,12 @@
 
 package io.spine.chords.proto.money
 
-import io.spine.chords.ComponentCompanion
-import io.spine.chords.InputField
-import io.spine.chords.InputReviser.Companion.DigitsOnly
-import io.spine.chords.InputReviser.Companion.maxLength
-import io.spine.chords.InputReviser.Companion.then
-import io.spine.chords.ValueParseException
+import io.spine.chords.core.ComponentCompanion
+import io.spine.chords.core.InputField
+import io.spine.chords.core.InputReviser.Companion.DigitsOnly
+import io.spine.chords.core.InputReviser.Companion.maxLength
+import io.spine.chords.core.InputReviser.Companion.then
+import io.spine.chords.core.ValueParseException
 import io.spine.chords.proto.form.vBuildBasedParser
 import io.spine.chords.proto.value.money.PaymentCardNumber
 import io.spine.chords.proto.value.money.PaymentCardNumberKt

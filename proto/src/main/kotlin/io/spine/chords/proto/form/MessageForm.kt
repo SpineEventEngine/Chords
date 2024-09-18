@@ -37,10 +37,10 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.platform.LocalInputModeManager
 import com.google.protobuf.Message
-import io.spine.chords.AbstractComponentCompanion
-import io.spine.chords.FocusableComponent
-import io.spine.chords.InputComponent
-import io.spine.chords.InputContext
+import io.spine.chords.core.AbstractComponentCompanion
+import io.spine.chords.core.FocusableComponent
+import io.spine.chords.core.InputComponent
+import io.spine.chords.core.InputContext
 import io.spine.chords.proto.form.MessageForm.Companion.invoke
 import io.spine.chords.proto.form.ValidationDisplayMode.DEFAULT
 import io.spine.chords.proto.form.ValidationDisplayMode.LIVE
@@ -48,9 +48,9 @@ import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.chords.proto.net.UrlField
 import io.spine.chords.proto.money.MoneyField
 import io.spine.chords.proto.time.DateTimeField
-import io.spine.chords.FocusRequestDispatcher
+import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.base.FieldPath
-import io.spine.chords.ComponentProps
+import io.spine.chords.core.ComponentProps
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof

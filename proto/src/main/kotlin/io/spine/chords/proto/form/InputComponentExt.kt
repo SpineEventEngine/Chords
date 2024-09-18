@@ -29,16 +29,16 @@ package io.spine.chords.proto.form
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import com.google.protobuf.Message
-import io.spine.chords.ComponentCompanion
-import io.spine.chords.ComponentProps
-import io.spine.chords.InputComponent
+import io.spine.chords.core.ComponentCompanion
+import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.InputComponent
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 
 /**
  * Lazily creates an instance of an input component of type [C], and renders
  * this component as an editor of field [field] within the
- * parent [MessageForm][io.spine.chords.form.MessageForm].
+ * parent [MessageForm][io.spine.chords.proto.form.MessageForm].
  *
  * Once an instance is created, it is saved using [remember] and is reused
  * for subsequent recompositions.
@@ -105,7 +105,7 @@ public operator fun <
  * Renders a composable component's content, which is wrapped into
  * the [Field][FormFieldsScope.Field] declaration in order to seamlessly
  * embed this component into
- * [MessageForm][io.spine.chords.form.MessageForm].
+ * [MessageForm][io.spine.chords.proto.form.MessageForm].
  *
  * NOTE: this method is not expected to be invoked by application developers,
  * and it is used internally within the library.

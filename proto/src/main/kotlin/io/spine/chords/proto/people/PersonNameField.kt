@@ -26,9 +26,9 @@
 
 package io.spine.chords.proto.people
 
-import io.spine.chords.ComponentCompanion
-import io.spine.chords.InputField
-import io.spine.chords.exceptionBasedParser
+import io.spine.chords.core.ComponentCompanion
+import io.spine.chords.core.InputField
+import io.spine.chords.core.exceptionBasedParser
 import io.spine.people.PersonName
 import io.spine.chords.proto.value.person.format
 import io.spine.chords.proto.value.person.parse

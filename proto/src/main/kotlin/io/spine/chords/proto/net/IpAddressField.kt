@@ -27,14 +27,14 @@
 package io.spine.chords.proto.net
 
 import androidx.compose.ui.input.key.KeyEvent
-import io.spine.chords.ComponentCompanion
-import io.spine.chords.InputField
-import io.spine.chords.InputReviser
-import io.spine.chords.RawTextContent
-import io.spine.chords.exceptionBasedParser
-import io.spine.chords.keyboard.KeyRange.Companion.Digit
-import io.spine.chords.keyboard.key
-import io.spine.chords.keyboard.matches
+import io.spine.chords.core.ComponentCompanion
+import io.spine.chords.core.InputField
+import io.spine.chords.core.InputReviser
+import io.spine.chords.core.RawTextContent
+import io.spine.chords.core.exceptionBasedParser
+import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
+import io.spine.chords.core.keyboard.key
+import io.spine.chords.core.keyboard.matches
 import io.spine.chords.proto.value.net.IpAddress
 import io.spine.chords.proto.value.net.IpAddressKt
 import io.spine.chords.proto.value.net.format

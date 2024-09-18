@@ -30,7 +30,7 @@ import androidx.compose.ui.text.TextRange
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.DisplayName
 import io.kotest.matchers.shouldBe
-import io.spine.chords.RawTextContent
+import io.spine.chords.core.RawTextContent
 import io.spine.money.Currency
 import io.spine.money.Currency.BIF
 import io.spine.money.Currency.IQD

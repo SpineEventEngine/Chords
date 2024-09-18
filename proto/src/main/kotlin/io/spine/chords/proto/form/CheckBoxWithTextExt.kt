@@ -34,8 +34,8 @@ import io.spine.chords.runtime.MessageField
  * A checkbox that includes a given text on the right.
  *
  * This variant of the component is intended to be used with
- * [MessageForm][io.spine.chords.form.MessageForm] or
- * [CommandForm][io.spine.chords.form.CommandMessageForm] and is
+ * [MessageForm][io.spine.chords.proto.form.MessageForm] or
+ * [CommandForm][io.spine.chords.client.form.CommandMessageForm] and is
  * automatically bound to edit one of the respective fields of the message
  * that is edited in the containing form.
  *
@@ -60,7 +60,7 @@ public fun <M : Message>FormFieldsScope<M>.CheckboxWithText(
     enabled: Boolean = true
 ) {
     Field(field, defaultValue) {
-        io.spine.chords.primitive.CheckboxWithText(
+        io.spine.chords.core.primitive.CheckboxWithText(
             checked = fieldValue,
             onChange = onChange,
             text = text,

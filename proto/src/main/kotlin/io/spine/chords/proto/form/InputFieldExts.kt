@@ -27,9 +27,9 @@
 package io.spine.chords.proto.form
 
 import com.google.protobuf.Message
-import io.spine.chords.InputField
-import io.spine.chords.ValueParseException
-import io.spine.chords.exceptionBasedParser
+import io.spine.chords.core.InputField
+import io.spine.chords.core.ValueParseException
+import io.spine.chords.core.exceptionBasedParser
 import io.spine.protobuf.ValidatingBuilder
 import io.spine.validate.ValidationException
 

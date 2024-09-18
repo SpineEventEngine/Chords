@@ -24,31 +24,42 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.proto.money
+package io.spine.chords.core.appshell
 
-import io.spine.chords.proto.form.vBuildBasedParser
-import io.spine.chords.core.ComponentCompanion
-import io.spine.chords.core.InputField
-import io.spine.chords.proto.value.money.BankAccount
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import io.spine.chords.core.styling.borderBottom
+import io.spine.chords.core.styling.borderRight
 
 /**
- * A field that allows entering a bank account number.
+ * Represents the main screen in the application.
  */
-public class BankAccountField : InputField<BankAccount>() {
-
-    /**
-     * An instance declaration API.
-     */
-    public companion object : ComponentCompanion<BankAccountField>({ BankAccountField() })
-
-    init {
-        label = "Bank account"
+@Composable
+public fun MainScreen(appViews: List<AppView>, initialView: AppView?) {
+    val selectedItemHolder = remember {
+        mutableStateOf(
+            initialView ?: appViews[0]
+        )
     }
 
-    override fun parseValue(rawText: String): BankAccount = vBuildBasedParser {
-        BankAccount.newBuilder()
-            .setNumber(rawText)
+    Scaffold(
+        topBar = {
+            TopBar(
+                modifier = Modifier.borderBottom(1.dp, colorScheme.outlineVariant)
+            )
+        }
+    ) {
+        val topPadding = it.calculateTopPadding()
+        NavigationDrawer(
+            appViews, selectedItemHolder, topPadding,
+            modifier = Modifier.borderRight(1.dp, colorScheme.outlineVariant)
+        ) {
+            selectedItemHolder.value.Content()
+        }
     }
-
-    override fun formatValue(value: BankAccount): String = value.number
 }

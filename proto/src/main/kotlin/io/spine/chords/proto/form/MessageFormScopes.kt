@@ -31,9 +31,9 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import com.google.protobuf.Message
-import io.spine.chords.FocusRequestDispatcher
-import io.spine.chords.FocusableComponent
-import io.spine.chords.InputComponent
+import io.spine.chords.core.FocusRequestDispatcher
+import io.spine.chords.core.FocusableComponent
+import io.spine.chords.core.InputComponent
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof

@@ -26,10 +26,10 @@
 
 package io.spine.chords.proto.net
 
-import io.spine.chords.ComponentCompanion
-import io.spine.chords.InputField
-import io.spine.chords.InputReviser.Companion.NonWhitespaces
-import io.spine.chords.exceptionBasedParser
+import io.spine.chords.core.ComponentCompanion
+import io.spine.chords.core.InputField
+import io.spine.chords.core.InputReviser.Companion.NonWhitespaces
+import io.spine.chords.core.exceptionBasedParser
 import io.spine.net.Url
 import io.spine.chords.proto.value.net.parse
 

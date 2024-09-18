@@ -24,31 +24,39 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.proto.money
+package io.spine.chords.core.appshell
 
-import io.spine.chords.proto.form.vBuildBasedParser
-import io.spine.chords.core.ComponentCompanion
-import io.spine.chords.core.InputField
-import io.spine.chords.proto.value.money.BankAccount
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 /**
- * A field that allows entering a bank account number.
+ * Represents the TopBar, aka 'Header', of the main screen.
+ *
+ * @param modifier
+ *         a [Modifier] for this component.
  */
-public class BankAccountField : InputField<BankAccount>() {
-
-    /**
-     * An instance declaration API.
-     */
-    public companion object : ComponentCompanion<BankAccountField>({ BankAccountField() })
-
-    init {
-        label = "Bank account"
-    }
-
-    override fun parseValue(rawText: String): BankAccount = vBuildBasedParser {
-        BankAccount.newBuilder()
-            .setNumber(rawText)
-    }
-
-    override fun formatValue(value: BankAccount): String = value.number
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun TopBar(modifier: Modifier = Modifier) {
+    TopAppBar(
+        {
+            Text(
+                app.name,
+                style = MaterialTheme.typography.displayLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        modifier = modifier
+            .padding(0.dp)
+            .fillMaxWidth(),
+        windowInsets = WindowInsets(8.dp)
+    )
 }

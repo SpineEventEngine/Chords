@@ -37,8 +37,8 @@ import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.form.CommandMessageForm
-import io.spine.chords.layout.AbstractWizardPage
-import io.spine.chords.layout.Wizard
+import io.spine.chords.core.layout.AbstractWizardPage
+import io.spine.chords.core.layout.Wizard
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.ValidatingBuilder
 
@@ -54,7 +54,7 @@ import io.spine.protobuf.ValidatingBuilder
  *   wizard's page (one wizard's page per one command's sub-message).
  * - The [createPages] method of this class has to be implemented to return
  *   subclasses of [CommandWizardPage] instead of
- *   a generic [WizardPage][io.spine.chords.layout.WizardPage].
+ *   a generic [WizardPage][io.spine.chords.core.layout.WizardPage].
  * - The content of each page implemented in this way is automatically included
  *   into a form that composes the respective message's field. The context of
  *   that form is passed as the [FormPartScope] receiver of the
