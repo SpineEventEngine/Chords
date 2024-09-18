@@ -30,6 +30,10 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.DisplayName
 import io.kotest.matchers.shouldBe
+import io.spine.chords.proto.value.money.decimalSeparator
+import io.spine.chords.proto.value.money.formatAmount
+import io.spine.chords.proto.value.money.options
+import io.spine.chords.proto.value.money.parseAmount
 import io.spine.money.Currency.BIF
 import io.spine.money.Currency.IQD
 import io.spine.money.Currency.IRR

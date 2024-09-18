@@ -30,8 +30,8 @@ import io.spine.chords.ComponentCompanion
 import io.spine.chords.InputField
 import io.spine.chords.exceptionBasedParser
 import io.spine.people.PersonName
-import io.spine.person.format
-import io.spine.person.parse
+import io.spine.chords.proto.value.person.format
+import io.spine.chords.proto.value.person.parse
 
 /**
  * A field that allows editing a [PersonName] value.

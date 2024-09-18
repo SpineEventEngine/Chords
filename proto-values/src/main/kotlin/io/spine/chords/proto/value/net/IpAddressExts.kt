@@ -24,9 +24,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.net
+package io.spine.chords.proto.value.net
 
 import com.google.protobuf.ByteString
+import io.spine.chords.proto.value.net.IpAddress
+import io.spine.chords.proto.value.net.IpAddressKt
+import io.spine.chords.proto.value.net.Ipv4Address
+import io.spine.chords.proto.value.net.Ipv4AddressKt
+import io.spine.chords.proto.value.net.Ipv6Address
+import io.spine.chords.proto.value.net.Ipv6AddressKt
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util.regex.Pattern

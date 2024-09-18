@@ -55,11 +55,11 @@ import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protobuf.ValidatingBuilder
-import io.spine.protobuf.getOneofFieldNumber
-import io.spine.protobuf.isDefault
+import io.spine.chords.proto.value.protobuf.getOneofFieldNumber
+import io.spine.chords.proto.value.protobuf.isDefault
 import io.spine.validate.ConstraintViolation
 import io.spine.validate.ValidationException
-import io.spine.validate.formattedMessage
+import io.spine.chords.proto.value.validate.formattedMessage
 
 /**
  * Different modes of when form's validation errors should be displayed.

@@ -31,7 +31,7 @@ import io.spine.chords.InputField
 import io.spine.chords.InputReviser.Companion.NonWhitespaces
 import io.spine.chords.exceptionBasedParser
 import io.spine.net.Url
-import io.spine.net.parse
+import io.spine.chords.proto.value.net.parse
 
 /**
  * A field that allows entering a URL.

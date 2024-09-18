@@ -33,8 +33,8 @@ import io.spine.chords.InputReviser.Companion.maxLength
 import io.spine.chords.InputReviser.Companion.then
 import io.spine.chords.ValueParseException
 import io.spine.chords.proto.form.vBuildBasedParser
-import io.spine.money.PaymentCardNumber
-import io.spine.money.PaymentCardNumberKt
+import io.spine.chords.proto.value.money.PaymentCardNumber
+import io.spine.chords.proto.value.money.PaymentCardNumberKt
 
 /**
  * Minimum payment card number length (inclusive),

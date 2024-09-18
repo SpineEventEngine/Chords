@@ -40,10 +40,10 @@ import io.spine.chords.proto.form.OptionalMessageCheckbox
 import io.spine.chords.proto.form.invoke
 import io.spine.chords.layout.InputRow
 import io.spine.chords.runtime.MessageField
-import io.spine.money.PaymentMethod
-import io.spine.money.bankAccount
-import io.spine.money.method
-import io.spine.money.paymentCard
+import io.spine.chords.proto.value.money.PaymentMethod
+import io.spine.chords.proto.value.money.bankAccount
+import io.spine.chords.proto.value.money.method
+import io.spine.chords.proto.value.money.paymentCard
 
 /**
  * A component that edits a [PaymentMethod].

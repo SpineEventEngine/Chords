@@ -24,12 +24,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.money
+package io.spine.chords.proto.value.money
 
 import com.google.protobuf.Descriptors
 import com.google.protobuf.Descriptors.EnumValueDescriptor
+import io.spine.money.Currency
 import io.spine.money.Currency.CURRENCY_UNDEFINED
 import io.spine.money.Currency.UNRECOGNIZED
+import io.spine.money.CurrencyOptions
+import io.spine.money.Money
+import io.spine.money.MoneyProto
 import io.spine.util.Exceptions.newIllegalArgumentException
 import java.text.DecimalFormatSymbols
 import java.util.*
@@ -164,7 +168,8 @@ public fun Money.formatAmount(): String {
 //      fields for extension properties in Kotlin. Hence code generation could
 //      hopefully assist with that.
 //      See https://github.com/Projects-tm/1DAM/issues/41
-public val Currency.options: CurrencyOptions get() {
+public val Currency.options: CurrencyOptions
+    get() {
     val rawOptions = enumDescriptor().options
     val optionsValue = rawOptions.getExtension(MoneyProto.currency)
     checkNotNull(optionsValue) { "No CurrencyOptions found for this currency" }

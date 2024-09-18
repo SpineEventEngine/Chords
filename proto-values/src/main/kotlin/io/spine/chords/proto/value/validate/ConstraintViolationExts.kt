@@ -24,7 +24,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.validate
+package io.spine.chords.proto.value.validate
+
+import io.spine.validate.ConstraintViolation
 
 /**
  * A Message provided by this [ConstraintViolation], formatted using its

@@ -35,10 +35,10 @@ import io.spine.chords.exceptionBasedParser
 import io.spine.chords.keyboard.KeyRange.Companion.Digit
 import io.spine.chords.keyboard.key
 import io.spine.chords.keyboard.matches
-import io.spine.net.IpAddress
-import io.spine.net.IpAddressKt
-import io.spine.net.format
-import io.spine.net.parse
+import io.spine.chords.proto.value.net.IpAddress
+import io.spine.chords.proto.value.net.IpAddressKt
+import io.spine.chords.proto.value.net.format
+import io.spine.chords.proto.value.net.parse
 
 /**
  * A field for entering an IP address.

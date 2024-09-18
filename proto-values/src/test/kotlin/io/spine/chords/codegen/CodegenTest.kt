@@ -29,20 +29,20 @@ package io.spine.chords.codegen
 import io.kotest.matchers.shouldNotBe
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageOneof
-import io.spine.money.BankAccount
-import io.spine.money.PaymentCardNumber
-import io.spine.money.PaymentMethod
-import io.spine.money.bankAccount
-import io.spine.money.method
-import io.spine.money.number
-import io.spine.money.paymentCard
-import io.spine.money.value
-import io.spine.net.IpAddress
-import io.spine.net.Ipv4Address
-import io.spine.net.Ipv6Address
-import io.spine.net.ipv4
-import io.spine.net.ipv6
-import io.spine.net.value
+import io.spine.chords.proto.value.money.BankAccount
+import io.spine.chords.proto.value.money.PaymentCardNumber
+import io.spine.chords.proto.value.money.PaymentMethod
+import io.spine.chords.proto.value.money.bankAccount
+import io.spine.chords.proto.value.money.method
+import io.spine.chords.proto.value.money.number
+import io.spine.chords.proto.value.money.paymentCard
+import io.spine.chords.proto.value.money.value
+import io.spine.chords.proto.value.net.IpAddress
+import io.spine.chords.proto.value.net.Ipv4Address
+import io.spine.chords.proto.value.net.Ipv6Address
+import io.spine.chords.proto.value.net.ipv4
+import io.spine.chords.proto.value.net.ipv6
+import io.spine.chords.proto.value.net.value
 import org.junit.jupiter.api.Test
 
 /**

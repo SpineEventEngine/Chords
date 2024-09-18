@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.protobuf
+package io.spine.chords.proto.value.protobuf
 
 import com.google.protobuf.Message
 import java.beans.Introspector

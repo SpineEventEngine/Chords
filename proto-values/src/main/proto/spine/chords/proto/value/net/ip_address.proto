@@ -6,10 +6,10 @@
 
 syntax = "proto3";
 
-package spine.net;
+package spine.chords.proto.value.net;
 
 option (type_url_prefix) = "type.spine.io";
-option java_package = "io.spine.net";
+option java_package = "io.spine.chords.proto.value.net";
 option java_outer_classname = "NetProto";
 option java_multiple_files = true;
 

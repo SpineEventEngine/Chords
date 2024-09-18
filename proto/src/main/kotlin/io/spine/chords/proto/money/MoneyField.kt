@@ -70,10 +70,10 @@ import io.spine.money.Currency.CURRENCY_UNDEFINED
 import io.spine.money.Currency.UNRECOGNIZED
 import io.spine.money.Currency.USD
 import io.spine.money.Money
-import io.spine.money.decimalSeparator
-import io.spine.money.formatAmount
-import io.spine.money.options
-import io.spine.money.parseAmount
+import io.spine.chords.proto.value.money.decimalSeparator
+import io.spine.chords.proto.value.money.formatAmount
+import io.spine.chords.proto.value.money.options
+import io.spine.chords.proto.value.money.parseAmount
 import kotlin.math.abs
 
 /**
@@ -185,7 +185,7 @@ public class MoneyField : InputField<Money>() {
         val exponentDigits = selectedCurrency.options.exponentDigits
 
         promptText = if (exponentDigits > 0) {
-            "0${decimalSeparator}${"0".repeat(exponentDigits)}"
+            "0$decimalSeparator${"0".repeat(exponentDigits)}"
         } else {
             "0"
         }

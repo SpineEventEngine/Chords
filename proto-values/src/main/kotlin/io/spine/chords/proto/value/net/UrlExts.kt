@@ -24,8 +24,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.net
+package io.spine.chords.proto.value.net
 
+import io.spine.net.Url
 import java.net.MalformedURLException
 import java.net.URISyntaxException
 import java.net.URL

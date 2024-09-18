@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.person
+package io.spine.chords.proto.value.person
 
 import io.spine.people.PersonName
 import kotlin.reflect.KClass

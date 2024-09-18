@@ -6,10 +6,10 @@
 
 syntax = "proto3";
 
-package spine.money;
+package spine.chords.proto.value.money;
 
 option (type_url_prefix) = "type.spine.io";
-option java_package = "io.spine.money";
+option java_package = "io.spine.chords.proto.value.money";
 option java_outer_classname = "PaymentsProto";
 option java_multiple_files = true;
 

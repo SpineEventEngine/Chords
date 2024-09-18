@@ -29,7 +29,7 @@ package io.spine.chords.proto.money
 import io.spine.chords.proto.form.vBuildBasedParser
 import io.spine.chords.ComponentCompanion
 import io.spine.chords.InputField
-import io.spine.money.BankAccount
+import io.spine.chords.proto.value.money.BankAccount
 
 /**
  * A field that allows entering a bank account number.
