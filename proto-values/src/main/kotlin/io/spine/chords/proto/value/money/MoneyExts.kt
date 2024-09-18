@@ -168,8 +168,7 @@ public fun Money.formatAmount(): String {
 //      fields for extension properties in Kotlin. Hence code generation could
 //      hopefully assist with that.
 //      See https://github.com/Projects-tm/1DAM/issues/41
-public val Currency.options: CurrencyOptions
-    get() {
+public val Currency.options: CurrencyOptions get() {
     val rawOptions = enumDescriptor().options
     val optionsValue = rawOptions.getExtension(MoneyProto.currency)
     checkNotNull(optionsValue) { "No CurrencyOptions found for this currency" }
