@@ -155,8 +155,6 @@ fun Module.addDependencies() = dependencies {
     compileOnlyApi(JavaX.annotations)
     ErrorProne.annotations.forEach { compileOnlyApi(it) }
 
-    implementation(Spine.Logging.lib)
-
     testImplementation(Guava.testLib)
     testImplementation(JUnit.runner)
     testImplementation(JUnit.pioneer)
@@ -180,9 +178,7 @@ fun Module.forceConfigurations() {
                     JUnit.runner,
                     Dokka.BasePlugin.lib,
                     Spine.reflect,
-                    Spine.base_1_9,
-
-                    Spine.Logging.lib
+                    Spine.base_1_9
                 )
             }
         }
