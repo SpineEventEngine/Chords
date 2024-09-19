@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import com.google.protobuf.Timestamp
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import io.spine.chords.proto.value.time.toInstant
 
 /**
  * A text that shows a given date being interpreted in the system time zone.
