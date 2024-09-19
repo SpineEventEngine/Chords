@@ -10,7 +10,13 @@ The separate Gradle project is needed because the ProtoData plugins,
 that generate the code, require the newer version of Gradle 
 comparing to 1DAM and Chords projects.
 
-### How to use
+So the plugins require Spine version `2.0.x` with Gradle version `7.6.x` and 
+therefore cannot be applied to the projects on Spine `1.9.x` with Gradle `6.9.x` directly.
+
+### How to us
+
+The code generation is performed by running the `codegen/workspace` Gradle project. 
+See [codegen-workspace](./../workspace/README.md) for detail.
 
 The following steps of configuration should be completed in order 
 to run the code generation:
@@ -75,7 +81,7 @@ If the `RunCodegenPlugins` task fails, this also causes the main build to fail.
 ### How it works
 
 Before executing the `generateProto` task, the Proto source code 
-of the specified module is copied to the `$workspaceDir/src/main/proto` folder.
+of the specified module is copied to the `codegen/workspace/src/main/proto` folder.
 Once `launchProtoData` task is executed, the generated Kotlin sources
 are copied back to the `generatedSources` folder of the source module.
 
