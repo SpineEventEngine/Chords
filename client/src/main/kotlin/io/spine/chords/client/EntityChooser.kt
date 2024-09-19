@@ -31,9 +31,9 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
-import io.spine.chords.appshell.app
+import io.spine.chords.core.appshell.app
 import io.spine.base.EntityState
-import io.spine.chords.DropdownSelector
+import io.spine.chords.core.DropdownSelector
 import io.spine.chords.client.appshell.client
 import io.spine.chords.runtime.MessageFieldValue
 import kotlin.reflect.full.allSupertypes
@@ -49,7 +49,7 @@ import kotlin.reflect.javaType
  * the user to filter this list by entering a search substring within the
  * component's input field.
  *
- * Like any [InputComponent][io.spine.chords.InputComponent], this
+ * Like any [InputComponent][io.spine.chords.core.InputComponent], this
  * component identifies the currently selected item using its [value] property.
  * It should be noted that the [value] property contains the entity's ID (of
  * type [I]), and not the entity state of type [E] itself, which is just used

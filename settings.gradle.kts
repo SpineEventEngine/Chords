@@ -28,6 +28,6 @@ rootProject.name = "Chords"
 
 include("core")
 include("codegen-runtime")
-include("proto-model")
-include("protobuf")
+include("proto-values")
+include("proto")
 include("client")

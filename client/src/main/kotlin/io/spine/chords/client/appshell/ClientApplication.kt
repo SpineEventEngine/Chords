@@ -27,9 +27,9 @@
 package io.spine.chords.client.appshell
 
 import io.spine.chords.client.Client
-import io.spine.chords.appshell.AppView
-import io.spine.chords.appshell.Application
-import io.spine.chords.appshell.app
+import io.spine.chords.core.appshell.AppView
+import io.spine.chords.core.appshell.Application
+import io.spine.chords.core.appshell.app
 
 /**
  * Makes the [ClientApplication]'s [client][ClientApplication.client] property
