@@ -26,11 +26,14 @@
 
 rootProject.name = "Chords"
 
-include("core")
-include("runtime")
+include(
+    "core",
+    "runtime",
+    "proto-values",
+    "proto",
+    "client",
+    "codegen-tests"
+)
+
 project(":runtime").projectDir = file("codegen/runtime")
-include("proto-values")
-include("proto")
-include("client")
-include("codegen-tests")
 project(":codegen-tests").projectDir = file("codegen/tests")
