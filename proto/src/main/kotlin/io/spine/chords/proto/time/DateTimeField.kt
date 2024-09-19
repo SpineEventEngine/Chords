@@ -55,6 +55,7 @@ import io.spine.chords.core.InputReviser.Companion.maxLength
 import io.spine.chords.core.RawTextContent
 import io.spine.chords.core.ValueParseException
 import io.spine.chords.core.time.WallClock
+import io.spine.chords.proto.value.time.DefaultDatePattern
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
