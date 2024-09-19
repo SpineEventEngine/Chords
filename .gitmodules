@@ -1,6 +1,3 @@
 [submodule "config"]
 	path = config
 	url = https://github.com/SpineEventEngine/config
-[submodule "codegen-workspace"]
-	path = codegen-workspace
-	url = git@github.com:SpineEventEngine/Chords.git
