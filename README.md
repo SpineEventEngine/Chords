@@ -12,7 +12,7 @@ This suite contains the following libraries:
 - [client](client/README.md) — components that support server connectivity using
   the [Spine Event Engine](https://spine.io/) framework.
 - [codegen-runtime](codegen/runtime) — runtime API onto which the generated code relies.
-- [codegen-plugins](codegen/plugins) — a separate Gradle project that generates 
+- [codegen-plugins](codegen/plugins) — separate Gradle project that generates 
     [MessageField](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageField.kt),
     [MessageOneof](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageOneof.kt),
     and [MessageDef](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageDef.kt)
