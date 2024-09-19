@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.proto.time
+package io.spine.chords.proto.value.time
 
 import com.google.protobuf.Duration
 import com.google.protobuf.Timestamp

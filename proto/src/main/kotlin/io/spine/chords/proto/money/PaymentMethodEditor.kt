@@ -33,17 +33,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.Top
 import androidx.compose.ui.unit.dp
 import com.google.protobuf.Message
+import io.spine.chords.core.layout.InputRow
 import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.OneofRadioButton
 import io.spine.chords.proto.form.OptionalMessageCheckbox
 import io.spine.chords.proto.form.invoke
-import io.spine.chords.core.layout.InputRow
-import io.spine.chords.runtime.MessageField
 import io.spine.chords.proto.value.money.PaymentMethod
-import io.spine.chords.proto.value.money.bankAccount
-import io.spine.chords.proto.value.money.method
-import io.spine.chords.proto.value.money.paymentCard
+import io.spine.chords.proto.value.money.PaymentMethodDef.bankAccount
+import io.spine.chords.proto.value.money.PaymentMethodDef.method
+import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
+import io.spine.chords.runtime.MessageField
 
 /**
  * A component that edits a [PaymentMethod].
@@ -72,18 +72,18 @@ public fun <M : Message> FormFieldsScope<M>.PaymentMethodEditor(
         InputRow(
             padding = PaddingValues()
         ) {
-            OneOfFields(PaymentMethod::class.method) {
+            OneOfFields(method) {
                 Column(
                     verticalArrangement = spacedBy(4.dp, Top)
                 ) {
-                    OneofRadioButton(PaymentMethod::class.paymentCard, "Payment card")
-                    PaymentCardNumberField(PaymentMethod::class.paymentCard)
+                    OneofRadioButton(paymentCard, "Payment card")
+                    PaymentCardNumberField(paymentCard)
                 }
                 Column(
                     verticalArrangement = spacedBy(4.dp)
                 ) {
-                    OneofRadioButton(PaymentMethod::class.bankAccount, "Bank Account")
-                    BankAccountField(PaymentMethod::class.bankAccount)
+                    OneofRadioButton(bankAccount, "Bank Account")
+                    BankAccountField(bankAccount)
                 }
             }
         }
