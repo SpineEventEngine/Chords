@@ -1,6 +1,6 @@
 
 
-# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.13`
+# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.14`
 
 ## Runtime
 1.  **Group** : com.google.android. **Name** : annotations. **Version** : 4.1.1.4.
@@ -21,10 +21,6 @@
 
 1.  **Group** : com.google.errorprone. **Name** : error_prone_annotations. **Version** : 2.23.0.
      * **Project URL:** [https://errorprone.info/error_prone_annotations](https://errorprone.info/error_prone_annotations)
-     * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-1.  **Group** : com.google.errorprone. **Name** : error_prone_type_annotations. **Version** : 2.23.0.
-     * **Project URL:** [https://errorprone.info/error_prone_type_annotations](https://errorprone.info/error_prone_type_annotations)
      * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 1.  **Group** : com.google.flogger. **Name** : flogger. **Version** : 0.7.4.
@@ -245,11 +241,6 @@
 1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-1.  **Group** : org.ow2.asm. **Name** : asm. **Version** : 9.6.
-     * **Project URL:** [http://asm.ow2.io/](http://asm.ow2.io/)
-     * **License:** [BSD-3-Clause](https://asm.ow2.io/license.html)
-     * **License:** [The Apache Software License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 ## Compile, tests, and tooling
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
@@ -1091,12 +1082,12 @@
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Sep 17 21:22:57 EEST 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Sep 18 21:33:09 EEST 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-codegen-runtime:2.0.0-SNAPSHOT.13`
+# Dependencies of `io.spine.chords:spine-chords-codegen-runtime:2.0.0-SNAPSHOT.14`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -1109,10 +1100,6 @@ This report was generated on **Tue Sep 17 21:22:57 EEST 2024** using [Gradle-Lic
 
 1.  **Group** : com.google.errorprone. **Name** : error_prone_annotations. **Version** : 2.23.0.
      * **Project URL:** [https://errorprone.info/error_prone_annotations](https://errorprone.info/error_prone_annotations)
-     * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-1.  **Group** : com.google.errorprone. **Name** : error_prone_type_annotations. **Version** : 2.23.0.
-     * **Project URL:** [https://errorprone.info/error_prone_type_annotations](https://errorprone.info/error_prone_type_annotations)
      * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 1.  **Group** : com.google.flogger. **Name** : flogger. **Version** : 0.7.4.
@@ -1160,15 +1147,10 @@ This report was generated on **Tue Sep 17 21:22:57 EEST 2024** using [Gradle-Lic
      * **Project URL:** [https://github.com/JetBrains/java-annotations](https://github.com/JetBrains/java-annotations)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-reflect. **Version** : 1.9.23.
-     * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
-     * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
 1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-stdlib. **Version** : 1.9.23.
      * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-stdlib-common. **Version** : 1.9.23.**No license information found**
 1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-stdlib-jdk7. **Version** : 1.9.23.
      * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -1176,11 +1158,6 @@ This report was generated on **Tue Sep 17 21:22:57 EEST 2024** using [Gradle-Lic
 1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-stdlib-jdk8. **Version** : 1.9.23.
      * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-1.  **Group** : org.ow2.asm. **Name** : asm. **Version** : 9.6.
-     * **Project URL:** [http://asm.ow2.io/](http://asm.ow2.io/)
-     * **License:** [BSD-3-Clause](https://asm.ow2.io/license.html)
-     * **License:** [The Apache Software License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 ## Compile, tests, and tooling
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
@@ -1874,12 +1851,12 @@ This report was generated on **Tue Sep 17 21:22:57 EEST 2024** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Sep 17 21:22:58 EEST 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Sep 18 21:33:11 EEST 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.13`
+# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.14`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -1892,10 +1869,6 @@ This report was generated on **Tue Sep 17 21:22:58 EEST 2024** using [Gradle-Lic
 
 1.  **Group** : com.google.errorprone. **Name** : error_prone_annotations. **Version** : 2.23.0.
      * **Project URL:** [https://errorprone.info/error_prone_annotations](https://errorprone.info/error_prone_annotations)
-     * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-1.  **Group** : com.google.errorprone. **Name** : error_prone_type_annotations. **Version** : 2.23.0.
-     * **Project URL:** [https://errorprone.info/error_prone_type_annotations](https://errorprone.info/error_prone_type_annotations)
      * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 1.  **Group** : com.google.guava. **Name** : failureaccess. **Version** : 1.0.1.
@@ -2020,10 +1993,6 @@ This report was generated on **Tue Sep 17 21:22:58 EEST 2024** using [Gradle-Lic
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-reflect. **Version** : 1.9.23.
-     * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
-     * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
 1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-stdlib. **Version** : 1.9.23.
      * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -2067,11 +2036,6 @@ This report was generated on **Tue Sep 17 21:22:58 EEST 2024** using [Gradle-Lic
 1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-1.  **Group** : org.ow2.asm. **Name** : asm. **Version** : 9.6.
-     * **Project URL:** [http://asm.ow2.io/](http://asm.ow2.io/)
-     * **License:** [BSD-3-Clause](https://asm.ow2.io/license.html)
-     * **License:** [The Apache Software License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 ## Compile, tests, and tooling
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
@@ -2874,12 +2838,12 @@ This report was generated on **Tue Sep 17 21:22:58 EEST 2024** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Sep 17 21:23:00 EEST 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Sep 18 21:33:13 EEST 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto-model:2.0.0-SNAPSHOT.13`
+# Dependencies of `io.spine.chords:spine-chords-proto-model:2.0.0-SNAPSHOT.14`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -2892,10 +2856,6 @@ This report was generated on **Tue Sep 17 21:23:00 EEST 2024** using [Gradle-Lic
 
 1.  **Group** : com.google.errorprone. **Name** : error_prone_annotations. **Version** : 2.23.0.
      * **Project URL:** [https://errorprone.info/error_prone_annotations](https://errorprone.info/error_prone_annotations)
-     * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-1.  **Group** : com.google.errorprone. **Name** : error_prone_type_annotations. **Version** : 2.23.0.
-     * **Project URL:** [https://errorprone.info/error_prone_type_annotations](https://errorprone.info/error_prone_type_annotations)
      * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 1.  **Group** : com.google.flogger. **Name** : flogger. **Version** : 0.7.4.
@@ -2947,15 +2907,10 @@ This report was generated on **Tue Sep 17 21:23:00 EEST 2024** using [Gradle-Lic
      * **Project URL:** [https://github.com/JetBrains/java-annotations](https://github.com/JetBrains/java-annotations)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-reflect. **Version** : 1.9.23.
-     * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
-     * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
 1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-stdlib. **Version** : 1.9.23.
      * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-stdlib-common. **Version** : 1.9.23.**No license information found**
 1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-stdlib-jdk7. **Version** : 1.9.23.
      * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -2963,11 +2918,6 @@ This report was generated on **Tue Sep 17 21:23:00 EEST 2024** using [Gradle-Lic
 1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-stdlib-jdk8. **Version** : 1.9.23.
      * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-1.  **Group** : org.ow2.asm. **Name** : asm. **Version** : 9.6.
-     * **Project URL:** [http://asm.ow2.io/](http://asm.ow2.io/)
-     * **License:** [BSD-3-Clause](https://asm.ow2.io/license.html)
-     * **License:** [The Apache Software License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 ## Compile, tests, and tooling
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
@@ -3687,12 +3637,12 @@ This report was generated on **Tue Sep 17 21:23:00 EEST 2024** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Sep 17 21:23:01 EEST 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Sep 18 21:33:15 EEST 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-protobuf:2.0.0-SNAPSHOT.13`
+# Dependencies of `io.spine.chords:spine-chords-protobuf:2.0.0-SNAPSHOT.14`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -3705,10 +3655,6 @@ This report was generated on **Tue Sep 17 21:23:01 EEST 2024** using [Gradle-Lic
 
 1.  **Group** : com.google.errorprone. **Name** : error_prone_annotations. **Version** : 2.23.0.
      * **Project URL:** [https://errorprone.info/error_prone_annotations](https://errorprone.info/error_prone_annotations)
-     * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-1.  **Group** : com.google.errorprone. **Name** : error_prone_type_annotations. **Version** : 2.23.0.
-     * **Project URL:** [https://errorprone.info/error_prone_type_annotations](https://errorprone.info/error_prone_type_annotations)
      * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 1.  **Group** : com.google.flogger. **Name** : flogger. **Version** : 0.7.4.
@@ -3850,10 +3796,6 @@ This report was generated on **Tue Sep 17 21:23:01 EEST 2024** using [Gradle-Lic
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-reflect. **Version** : 1.9.23.
-     * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
-     * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
 1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-stdlib. **Version** : 1.9.23.
      * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -3897,11 +3839,6 @@ This report was generated on **Tue Sep 17 21:23:01 EEST 2024** using [Gradle-Lic
 1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-1.  **Group** : org.ow2.asm. **Name** : asm. **Version** : 9.6.
-     * **Project URL:** [http://asm.ow2.io/](http://asm.ow2.io/)
-     * **License:** [BSD-3-Clause](https://asm.ow2.io/license.html)
-     * **License:** [The Apache Software License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 ## Compile, tests, and tooling
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
@@ -4704,4 +4641,4 @@ This report was generated on **Tue Sep 17 21:23:01 EEST 2024** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Sep 17 21:23:03 EEST 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Sep 18 21:33:17 EEST 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
