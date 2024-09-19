@@ -80,8 +80,3 @@ Once `launchProtoData` task is executed, the generated Kotlin sources
 are copied back to the `generatedSources` folder of the source module.
 
 The same logic applies to `test` sources.
-
-:warning: Please note that the `compileKotlin` and `compileTestKotlin` tasks 
-are disabled in the `codegen-workspace` project due to dependency on 
-`ValidatingBuilder` from Spine 1.9.x. And therefore there are no tests 
-to check the correctness of the generated files.
