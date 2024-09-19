@@ -1,0 +1,45 @@
+/*
+ * Copyright (c) 2024 TeamDev. All rights reserved.
+ * TeamDev PROPRIETARY and CONFIDENTIAL.
+ * Use is subject to license terms.
+ */
+
+syntax = "proto3";
+
+package spine.chords.proto.value.money;
+
+option (type_url_prefix) = "type.spine.io";
+option java_package = "io.spine.chords.proto.value.money";
+option java_outer_classname = "PaymentsProto";
+option java_multiple_files = true;
+
+import "spine/options.proto";
+
+// A number of a payment card.
+message PaymentCardNumber {
+
+  // A card number string without dashes or spaces.
+  string value = 1 [(required) = true, (pattern) = {
+    regex: "[0-9]+"
+  }];
+}
+
+// A description of a bank account.
+message BankAccount {
+
+  // A bank account's number.
+  string number = 1 [(required) = true];
+}
+
+// The way how a purchaser provides money to a seller.
+message PaymentMethod {
+  oneof method {
+    option (is_required) = true;
+
+    // Money is provided from a payment card that has this number.
+    PaymentCardNumber payment_card = 1 [(validate) = true];
+
+    // Money is provided from this bank account.
+    BankAccount bank_account = 2;
+  }
+}
