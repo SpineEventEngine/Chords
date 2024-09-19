@@ -39,23 +39,9 @@ repositories {
     mavenLocal()
 }
 
-dependencies {
-    // All the following libraries are required,
-    // since they provide Proto files, which are used
-    // as dependencies in Proto sources we process.
-    implementation(Spine.CoreJava.server_1_9)
-    protoData(Chords.CodegenPlugins.lib(codegenPluginsVersion))
-    testImplementation(Kotest.runnerJUnit5)
-}
-
-protoData {
-    plugins(
-        "io.spine.chords.codegen.plugins.MessageFieldsPlugin"
-    )
-}
-
 /**
- * Read `codegenPluginsVersion` from project properties.
+ * Read `codegenPluginsVersion` value from project properties
+ * or use [Chords.CodegenPlugins.dogFoodVersion] if the property is not specified.
  */
 val codegenPluginsVersion = if (project.hasProperty("codegenPluginsVersion"))
     project.properties["codegenPluginsVersion"] as String
@@ -69,8 +55,35 @@ else {
     Chords.CodegenPlugins.dogFoodVersion
 }
 
+dependencies {
+    // All the following libraries are required,
+    // since they provide Proto files, which are used
+    // as dependencies in Proto sources we process.
+    implementation(Spine.CoreJava.server_1_9)
+    protoData(Chords.CodegenPlugins.lib(codegenPluginsVersion))
+    testImplementation(Kotest.runnerJUnit5)
+}
+
 /**
- * Read `sourceModuleDir` from project properties.
+ * Adds the passed dependencies to the module classpath.
+ */
+if (project.hasProperty("dependencyItems")) {
+    val dependencyItems = project.properties["dependencyItems"] as String
+    dependencyItems
+        .split(";")
+        .forEach {
+            project.dependencies.add("implementation", it)
+        }
+}
+
+protoData {
+    plugins(
+        "io.spine.chords.codegen.plugins.MessageFieldsPlugin"
+    )
+}
+
+/**
+ * Read `sourceModuleDir` value from project properties.
  */
 val sourceModuleDir = if (project.hasProperty("sourceModuleDir"))
     project.properties["sourceModuleDir"] as String
@@ -84,19 +97,10 @@ else {
     ""
 }
 
-// Add passed dependencies to the module classpath.
-if (project.hasProperty("dependencyItems")) {
-    val dependencyItems = project.properties["dependencyItems"] as String
-    dependencyItems
-        .split(";")
-        .forEach {
-            project.dependencies.add("implementation", it)
-        }
-}
-
-// Disable "compileKotlin" and "compileTestKotlin" tasks because Kotlin
-// sources are not compilable in this module due to dependency on
-// `ValidatingBuilder` from Spine 1.9.x.
+/**
+ * Disable `compileKotlin` and `compileTestKotlin` tasks because Kotlin sources
+ * are not compilable due to dependency on `ValidatingBuilder` from Spine 1.9.x.
+ */
 tasks.named("compileKotlin") {
     enabled = false
 }
@@ -105,7 +109,9 @@ tasks.named("compileTestKotlin") {
     enabled = false
 }
 
-// Copy Proto sources from the source module.
+/**
+ * Copy Proto sources from the source module.
+ */
 val copyProtoSourcesTask = tasks.register("copyProtoSources") {
     doLast {
         copy {
@@ -116,12 +122,16 @@ val copyProtoSourcesTask = tasks.register("copyProtoSources") {
     dependsOn(deleteCopiedSourcesTask)
 }
 
-// Copy Proto sources before the `generateProto` task.
+/**
+ * Copy Proto sources before the `generateProto` task.
+ */
 tasks.named("generateProto") {
     dependsOn(copyProtoSourcesTask)
 }
 
-// Copy test Proto sources from the source module.
+/**
+ * Copy test Proto sources from the source module.
+ */
 val copyTestProtoSourcesTask = tasks.register("copyTestProtoSources") {
     doLast {
         copy {
@@ -132,12 +142,16 @@ val copyTestProtoSourcesTask = tasks.register("copyTestProtoSources") {
     dependsOn(deleteCopiedTestSourcesTask)
 }
 
-// Copy test Proto sources before the `generateTestProto` task.
+/**
+ * Copy test Proto sources before the `generateTestProto` task.
+ */
 tasks.named("generateTestProto") {
     dependsOn(copyTestProtoSourcesTask)
 }
 
-// Copy generated sources back to the source module.
+/**
+ * Copy generated sources back to the source module.
+ */
 tasks.named("launchProtoData") {
     doLast {
         copy {
@@ -148,7 +162,9 @@ tasks.named("launchProtoData") {
     }
 }
 
-// Copy generated test sources back to the source module.
+/**
+ * Copy generated test sources back to the source module.
+ */
 tasks.named("launchTestProtoData") {
     doLast {
         copy {
@@ -159,21 +175,27 @@ tasks.named("launchTestProtoData") {
     }
 }
 
-// Delete copied Proto sources.
+/**
+ * Delete copied Proto sources.
+ */
 val deleteCopiedSourcesTask = tasks.register("deleteCopiedSources") {
     doLast {
         delete("src/main/proto")
     }
 }
 
-// Delete copied Proto sources.
+/**
+ * Delete copied Proto sources.
+ */
 val deleteCopiedTestSourcesTask = tasks.register("deleteCopiedTestSources") {
     doLast {
         delete("src/test/proto")
     }
 }
 
-// Delete copied Proto sources on `clean`.
+/**
+ * Delete copied Proto sources on `clean`.
+ */
 tasks.named("clean") {
     dependsOn(
         deleteCopiedSourcesTask,

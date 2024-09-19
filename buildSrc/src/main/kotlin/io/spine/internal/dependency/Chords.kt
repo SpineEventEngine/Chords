@@ -35,9 +35,8 @@ object Chords {
     object CodegenPlugins {
         const val dogFoodVersion = "2.0.0-SNAPSHOT.16"
 
-        fun lib(version: String?): String {
-            val versionToLoad = version ?: dogFoodVersion
-            return "$group:${prefix}codegen-plugins:$versionToLoad"
+        fun lib(version: String): String {
+            return "$group:${prefix}codegen-plugins:$version"
         }
     }
 }
