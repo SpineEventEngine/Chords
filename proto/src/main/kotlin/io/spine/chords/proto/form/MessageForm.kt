@@ -55,11 +55,11 @@ import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protobuf.ValidatingBuilder
-import io.spine.chords.proto.value.protobuf.getOneofFieldNumber
 import io.spine.chords.proto.value.protobuf.isDefault
 import io.spine.validate.ConstraintViolation
 import io.spine.validate.ValidationException
 import io.spine.chords.proto.value.validate.formattedMessage
+import io.spine.chords.runtime.messageDef
 
 /**
  * Different modes of when form's validation errors should be displayed.
@@ -988,12 +988,7 @@ public open class MessageForm<M : Message> :
         valueRequired = true
     }
 
-    // TODO:2023-11-03:dmitry.pikhulya:
-    //      Try replacing the reflection with some dedicated APIs:
-    //      for the `Builder.getDescriptorForType()` method.
-    //      See https://github.com/Projects-tm/1DAM/issues/201 [5]
-    private val messageDescriptor
-        get() = builder().descriptorForType
+    private val messageDef get() = builder().messageDef()
 
     /**
      * Message's fields that are a part of this form.
@@ -1208,19 +1203,15 @@ public open class MessageForm<M : Message> :
     }
 
     private fun identifyInitialDirtyState(initialMessageValue: M?): Boolean = when {
-        (initialMessageValue == null) ->
+        initialMessageValue == null ->
             false
 
-        (!initialMessageValue.isDefault()) ->
+        !initialMessageValue.isDefault() ->
             true
 
-        // TODO:2023-09-04:dmitry.pikhulya:
-        //      Try replacing the reflection with some dedicated APIs:
-        //      for obtaining a list of oneofs declared in a message.
-        //      See https://github.com/Projects-tm/1DAM/issues/201 [4]
-        (messageDescriptor.oneofs.any { oneof ->
-            initialMessageValue.getOneofFieldNumber(oneof.name) > 0
-        }) ->
+        messageDef.oneofs.any { oneof ->
+            oneof.selectedField(initialMessageValue) != null
+        } ->
             true
 
         else ->
@@ -1231,10 +1222,7 @@ public open class MessageForm<M : Message> :
         valueRequired || value.value != null ->
             true
 
-        // TODO:2023-08-14:dmitry.pikhulya:
-        //      Try replacing the reflection with some dedicated APIs.
-        //      See https://github.com/Projects-tm/1DAM/issues/201 [3]
-        (messageDescriptor.fields.size == 0) -> {
+        messageDef.fields.isEmpty() -> {
             // Zero-field messages will never receive "dirty" notifications from
             // its field editors (as there are no fields to edit), and so
             // `enteringNonNullValue` won't be set automatically for such
