@@ -59,7 +59,7 @@ open class RunCodegenPlugins : DefaultTask() {
     /**
      * Path to the `codegen-workspace` module where the code generation is actually performed.
      */
-    private val workspaceDir: String = "${project.rootDir}/codegen-workspace"
+    private val workspaceDir: String = "${project.rootDir}/codegen/workspace"
 
     /**
      * The version of `spine-chords-codegen-plugins` artifact to be used for code generation.
