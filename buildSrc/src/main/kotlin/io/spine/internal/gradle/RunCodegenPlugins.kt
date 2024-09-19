@@ -36,20 +36,23 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.os.OperatingSystem
 
 /**
- * A Gradle task which runs codegen plugins in a separate Gradle process.
+ * A Gradle task which runs `codegen-plugins` in a separate Gradle process.
  *
- * Launches Gradle wrapper under a given [workspaceDir] with the specified
- * [taskNames] names, [sourceModuleDir] directory, and [dependencies].
+ * Launches Gradle wrapper under a [workspaceDir] with the
+ * specified [taskNames] and [dependencies].
+ *
+ * The [sourceModuleDir] and [pluginsVersion] properties may be specified
+ * if the default values are unsuitable.
+ *
  * The `clean` task is also run if current build includes a `clean` task.
  *
- * The build writes verbose log into `$directory/build/debug-out.txt`.
- * The error output is written into `$directory/build/error-out.txt`.
+ * The build writes verbose log into `$workspaceDir/_out/debug-out.txt`.
+ * The error output is written into `$workspaceDir/_out/error-out.txt`.
  */
 @Suppress("unused")
 open class RunCodegenPlugins : DefaultTask() {
 
     companion object {
-
         /**
          * Default Gradle build timeout.
          */
@@ -58,20 +61,29 @@ open class RunCodegenPlugins : DefaultTask() {
 
     /**
      * Path to the `codegen-workspace` module where the code generation is actually performed.
+     *
+     * The default value is `${project.rootDir}/codegen/workspace`.
      */
-    private val workspaceDir: String = "${project.rootDir}/codegen/workspace"
+    @Internal
+    var workspaceDir: String = "${project.rootDir}/codegen/workspace"
 
     /**
      * The version of `spine-chords-codegen-plugins` artifact to be used for code generation.
      *
      * The artifact with this version should be located in `mavenLocal` or `spineSnapshots` repo.
+     *
+     * The default value is `project.version.toString()`.
      */
-    private val pluginsVersion: String = project.version.toString()
+    @Internal
+    var pluginsVersion: String = project.version.toString()
 
     /**
-     * Path to the module to generate code for.
+     * Path to the module to generate the code for.
+     *
+     * The default value is `project.projectDir.path`.
      */
-    private val sourceModuleDir: String = project.projectDir.path
+    @Internal
+    var sourceModuleDir: String = project.projectDir.path
 
     /**
      * Dependencies that should be added to classpath of codegen module
@@ -82,7 +94,7 @@ open class RunCodegenPlugins : DefaultTask() {
     /**
      * The names of the tasks to be passed to the Gradle Wrapper script.
      *
-     * The "build" task will be executed by default.
+     * The `build` task will be executed by default.
      */
     private var taskNames: MutableList<String> = mutableListOf("build")
 
@@ -182,7 +194,6 @@ open class RunCodegenPlugins : DefaultTask() {
         }
         command.addAll(taskNames)
         command.add("--console=plain")
-        //command.add("--debug")
         command.add("--stacktrace")
         command.add("--no-daemon")
         addProperties(command)

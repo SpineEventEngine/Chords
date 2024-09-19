@@ -1,9 +1,13 @@
 # `codegen-plugins`
 
-A Gradle project that generates `MessageField` and `MessageOneof` implementations for the fields of Proto messages.
+Gradle project that generates
+[MessageField](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageField.kt),
+[MessageOneof](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageOneof.kt),
+and [MessageDef](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageDef.kt)
+implementations for the fields of Proto messages.
 
-The separate Gradle project is needed because the ProtoData plugin, 
-that generates the code, requires the newer version of Gradle 
+The separate Gradle project is needed because the ProtoData plugins, 
+that generate the code, require the newer version of Gradle 
 comparing to 1DAM and Chords projects.
 
 ### How to use
@@ -11,7 +15,7 @@ comparing to 1DAM and Chords projects.
 The following steps of configuration should be completed in order 
 to run the code generation:
 
-* Add Git submodule that refers [codegen_plugins](https://github.com/SpineEventEngine/Chords/tree/codegen_plugins) 
+* Add Git submodule that refers [codegen_workspace](https://github.com/SpineEventEngine/Chords/tree/codegen_workspace) 
 branch of [Chords](https://github.com/SpineEventEngine/Chords) repository 
 to the main project repository.
 
