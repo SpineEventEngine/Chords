@@ -33,7 +33,7 @@ object Chords {
     private const val prefix = "spine-chords-"
 
     object CodegenPlugins {
-        const val dogFoodVersion = "2.0.0-SNAPSHOT.14"
+        const val dogFoodVersion = "2.0.0-SNAPSHOT.16"
 
         fun lib(version: String?): String {
             val versionToLoad = version ?: dogFoodVersion
