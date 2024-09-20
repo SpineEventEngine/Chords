@@ -11,3 +11,12 @@ This suite contains the following libraries:
   found in standard Spine libraries, and are required by the `protobuf` library.
 - [client](client/README.md) — components that support server connectivity using
   the [Spine Event Engine](https://spine.io/) framework.
+- [codegen-runtime](codegen/runtime) — runtime API onto which the generated code relies.
+- [codegen-plugins](codegen/plugins) — separate Gradle project with ProtoData plugins
+  that generate Kotlin extensions for Proto messages. 
+  See [codegen/plugins/README.md](codegen/plugins/README.md) for detail.
+- [codegen-workspace](codegen/workspace) — separate Gradle project that is 
+  a working-directory module where the [codegen-plugins](codegen/plugins) are to be applied; 
+  it is used as a container for the Proto source code, for which the codegen is to be performed.
+  See [codegen/workspace/README.md](codegen/workspace/README.md) for details.
+- [codegen-tests](codegen/tests) — tests that check the correctness of code generation.

@@ -14,7 +14,7 @@
 .idea/modules
 .idea/shelf
 
-codegen-plugins/.idea/**
+codegen/plugins/.idea/**
 
 # Do not ignore the following IDEA settings
 !.idea/misc.xml
@@ -28,11 +28,17 @@ codegen-plugins/.idea/**
 # Generated source code
 **/generated/**
 
+# Generated source code
+**/workspace/**
+
 # Gradle build files
 **/build/**
 
 # Build files produced by the IDE
 **/out/**
+
+# Build files produced by the `RunGradle`.
+codegen/plugins/_out/**
 
 # Ignore Gradle GUI config
 gradle-app.setting

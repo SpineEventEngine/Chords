@@ -34,7 +34,7 @@ plugins {
 
 dependencies {
     implementation(Spine.base_1_9)
-    implementation(project(":codegen-runtime"))
+    implementation(project(":runtime"))
     implementation(project(":core"))
     api(Spine.money)
     implementation(compose.desktop.currentOs)

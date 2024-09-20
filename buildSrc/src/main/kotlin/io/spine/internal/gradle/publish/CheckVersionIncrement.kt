@@ -90,7 +90,6 @@ open class CheckVersionIncrement : DefaultTask() {
     private fun Project.artifactPath(): String {
         val group = this.group as String
         val name = "$artifactPrefix${this.name}"
-
         val pathElements = ArrayList(group.split('.'))
         pathElements.add(name)
         val path = pathElements.joinToString(separator = "/")

@@ -1,0 +1,95 @@
+/*
+ * Copyright 2024, TeamDev. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Redistribution and use in source and/or binary forms, with or without
+ * modification, must retain the above copyright notice and the following
+ * disclaimer.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+syntax = "proto3";
+
+package spine.chords.codegen;
+
+import "spine/options.proto";
+
+option (type_url_prefix) = "type.onedam.domains";
+option java_package = "io.spine.chords.codegen.command";
+option java_outer_classname = "TestCommandProto";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+
+import "spine/core/user_id.proto";
+import "spine/net/internet_domain.proto";
+import "spine/chords/codegen/external_type.proto";
+
+// A test command message to check the code generation on supported cases.
+message TestCommand {
+    google.protobuf.Timestamp time = 1 [(required) = true];
+
+    spine.net.InternetDomain domain = 2 [(required) = false];
+
+    repeated spine.core.UserId users = 3;
+
+    EnumType enum_field = 4;
+
+    oneof one_of_plain_field {
+        bool one_of_option_1 = 5;
+        string one_of_option_2 = 6;
+        int32 one_of_option_3 = 7;
+    }
+
+    OneOfType one_of_type_field = 8;
+
+    Primitives primitives = 9 [(required) = true];
+
+    message Primitives {
+        bool bool = 1;
+
+        string text = 2 [(required) = true];
+
+        repeated int32 num_int_32 = 3;
+
+        int64 num_int_64 = 4;
+
+        repeated double num_doubles = 5;
+
+        float num_float = 6;
+
+        bytes data = 7;
+    }
+
+    spine.chords.codegen.ExternalType external_type = 10;
+
+    enum EnumType {
+        ET_UNDEFINED = 0;
+        ENUM_FIELD_1 = 1;
+        ENUM_FIELD_2 = 2;
+    }
+
+    message OneOfType {
+        oneof value {
+            bool option_1 = 1;
+            string option_2 = 2;
+            int32 option_3 = 3;
+        }
+    }
+}
