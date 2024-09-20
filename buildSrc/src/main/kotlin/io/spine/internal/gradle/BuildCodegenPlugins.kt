@@ -36,7 +36,7 @@ open class BuildCodegenPlugins : RunBuild() {
      *
      * The super method returns the path to Gradle wrapper located in the project root.
      *
-     * @params buildScript An OS-depended Gradle wrapper executable.
+     * @params buildScript An OS-dependent Gradle wrapper executable.
      */
     override fun buildScriptFullPath(buildScript: String): String {
         return "${directory}/$buildScript"
