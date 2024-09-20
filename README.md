@@ -12,16 +12,11 @@ This suite contains the following libraries:
 - [client](client/README.md) — components that support server connectivity using
   the [Spine Event Engine](https://spine.io/) framework.
 - [codegen/runtime](codegen/runtime) — runtime API onto which the generated code relies.
-- [codegen/plugins](codegen/plugins) — separate Gradle project that generates 
-    [MessageField](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageField.kt),
-    [MessageOneof](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageOneof.kt),
-    and [MessageDef](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageDef.kt)
-    implementations for the fields of Proto messages. 
-    See [codegen/plugins/README.md](codegen/plugins/README.md) for detail.
-- [codegen/workspace](codegen/workspace) — Git submodule that refers
-    [codegen_workspace](https://github.com/SpineEventEngine/Chords/tree/codegen_workspace) branch
-    of the [Chords](https://github.com/SpineEventEngine/Chords) repo
-    and contains `codegen-workspace` Gradle project that is a working-directory module 
-    for code generation; it is used as a container for the Proto source code, 
-    for which the codegen is to be performed.
-- [codegen/tests](codegen/tests) — tests that checks the code generation.
+- [codegen/plugins](codegen/plugins) — separate Gradle project with ProtoData plugins
+  that generate Kotlin extensions for Proto messages. 
+  See [codegen/plugins/README.md](codegen/plugins/README.md) for detail.
+- [codegen/workspace](codegen/workspace) — separate Gradle project that is 
+  a working-directory module for code generation; 
+  it is used as a container for the Proto source code, for which the codegen is to be performed.
+  See [codegen/workspace/README.md](codegen/workspace/README.md) for details.
+- [codegen/tests](codegen/tests) — tests that check the correctness of code generation.

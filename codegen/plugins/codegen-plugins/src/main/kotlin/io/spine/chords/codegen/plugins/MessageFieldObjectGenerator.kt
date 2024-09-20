@@ -137,7 +137,7 @@ internal class MessageFieldObjectGenerator(
             .parameterizedBy(messageFullClassName)
 
         return TypeSpec.objectBuilder(generatedClassName)
-            .superclass(superType)
+            .addSuperinterface(superType)
             .addProperty(
                 PropertySpec
                     .builder("name", stringType, PUBLIC, OVERRIDE)

@@ -41,7 +41,7 @@ dependencies {
     // To generate Kotlin sources.
     implementation(KotlinPoet.lib)
     // To use `codegen-runtime` published to Maven local.
-    implementation(Chords.Runtime.lib(version as String))
+    implementation(Chords.Runtime.lib(version.toString()))
 }
 
 modelCompiler {

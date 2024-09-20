@@ -54,22 +54,22 @@ public typealias MessageFieldValue = Any
  * @param T a type of the Proto message, containing the accessed field.
  * @param V a type of the field value.
  */
-public abstract class MessageField<T : Message, V : MessageFieldValue> {
+public interface MessageField<T : Message, V : MessageFieldValue> {
 
     /**
      * The name of the field as it is defined in Proto file.
      */
-    public abstract val name: String
+    public val name: String
 
     /**
      * Indicates if the `required` option is applied to the field.
      */
-    public abstract val required: Boolean
+    public val required: Boolean
 
     /**
      * Returns a value of the field for the given message.
      */
-    public abstract fun valueIn(message: T): V
+    public fun valueIn(message: T): V
 
     /**
      * Returns `true` if a value was set for this field in the given message.
@@ -80,24 +80,11 @@ public abstract class MessageField<T : Message, V : MessageFieldValue> {
      * There, `hasValue` methods are not being generated for the fields
      * of such kinds.
      */
-    public abstract fun hasValue(message: T): Boolean
+    public fun hasValue(message: T): Boolean
 
     /**
      * Sets a new field value for the given message builder.
      */
-    public abstract fun setValue(builder: ValidatingBuilder<T>, newValue: V)
+    public fun setValue(builder: ValidatingBuilder<T>, newValue: V)
 
-    override fun equals(other: Any?): Boolean {
-        // Since each field has its own implementation class, it is enough to
-        // check the equality of classes to identify the equality of instances.
-        if (this === other) return true
-        return javaClass == other?.javaClass
-    }
-
-    override fun hashCode(): Int {
-        // Since each field has its own implementation class, the instance's
-        // hash code can be identified as a hash code of the
-        // implementation class.
-        return javaClass.hashCode()
-    }
 }
