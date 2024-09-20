@@ -1,4 +1,5 @@
 # Spine Chords Proto
+
 Domain-specific UI components that operate with models defined 
 as Protobuf messages. 
 
@@ -12,8 +13,9 @@ dependencies {
 ```
 
 Besides, make sure to add all dependencies for the following libraries:
-- [Spine Chords Core](../core/README.md) library
-- [Spine Codegen Runtime](../codegen/runtime/README.md) library.
+- [Spine Chords Core](../core/README.md)
+- [Spine Proto Values](../proto-values/README.md)
+- [Spine Codegen Runtime](../codegen/runtime/README.md)
 
 ## Overview of library's facilities
 

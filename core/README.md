@@ -1,6 +1,7 @@
 # Spine Chords Core
+
 Facilities and components for writing desktop applications with 
-the [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) framework
+the [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) framework.
 
 ## Using Spine Chords Core in a Gradle project
 
