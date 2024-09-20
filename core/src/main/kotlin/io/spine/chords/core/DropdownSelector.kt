@@ -76,13 +76,20 @@ import io.spine.chords.core.primitive.preventWidthAutogrowing
 import java.util.*
 
 /**
- * A base class for components, which allows selecting one item from a drop-down
+ * A base class for components, which allow selecting one item from a drop-down
  * items list.
  *
- * A concrete implementation has to provide the list of items to choose from by
- * implementing the [items] property. See the [InputComponent] documentation for
- * the description of a general component's API for accessing selected item's
- * value
+ * An implementation of the concrete component has to provide the following:
+ * - Implement the [items] property to provide a list of items to choose from.
+ * - Implement the [itemText] method to provide a text item's representation,
+ *   which is displayed in the drop-down list by default, and which is usedThe
+ *   when searching items by typing their content.
+ * - By default, dropdown items display the respective item's text as defined by
+ *   [itemText], but it's possible to display an arbitrary composable content in
+ *   respective drop-down items by overriding the [itemContent] property.
+ *
+ * Like any [InputComponent][io.spine.chords.core.InputComponent], this
+ * component identifies the currently selected item using its [value] property.
  *
  * @param I
  *         a type of items from which the selection is made by this component.

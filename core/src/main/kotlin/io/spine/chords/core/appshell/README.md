@@ -1,4 +1,4 @@
-## `io.spine.chords.appshell` — Application's Shell
+## `io.spine.chords.appshell` — Application Shell
 
 This package introduces a generic basis that can be used to simplify the 
 implementation of Compose desktop applications that follow a multiview
