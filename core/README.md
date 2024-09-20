@@ -45,8 +45,8 @@ that appears more appropriate, while using such components interchangeably
 with the usual function-based ones. The syntax of using such components is
 similar that of function-based ones.
  
-See the 
-[Component](src/main/kotlin/io/spine/chords/core/Component.kt) class.
+See the documentation for the
+[Component](src/main/kotlin/io/spine/chords/core/Component.kt) class for details.
 
 ### Base classes for input components
 
@@ -76,7 +76,7 @@ value types, input text validation, etc.
 See the [InputField](src/main/kotlin/io/spine/chords/core/InputField.kt)
 documentation for details.
 
-### `DropdownSelector`
+### `DropdownSelector` — for dropdown item selectors
 
 [DropdownSelector](src/main/kotlin/io/spine/chords/core/DropdownSelector.kt) is
 a base class for creating another type of input components, where item selection
@@ -102,10 +102,9 @@ In addition to components, the library includes such facilities:
   fields (see [Modifier.moveFocusOnTab()](src/main/kotlin/io/spine/chords/core/primitive/TextFieldExts.kt)).
 
 - **Some simple components** that address common needs like
-  [CheckboxWithText](src/main/kotlin/io/spine/chords/primitive/CheckboxWithText.kt),
-  [RadioButtonWithText](src/main/kotlin/io/spine/chords/primitive/RadioButtonWithText.kt),
-  or [WithTooltip](src/main/kotlin/io/spine/chords/layout/WithTooltip.kt).
+  [CheckboxWithText](src/main/kotlin/io/spine/chords/core/primitive/CheckboxWithText.kt),
+  [RadioButtonWithText](src/main/kotlin/io/spine/chords/core/primitive/RadioButtonWithText.kt),
+  or [WithTooltip](src/main/kotlin/io/spine/chords/core/layout/WithTooltip.kt).
 
 - **More complex components** like
-    [Wizard](src/main/kotlin/io/spine/chords/layout/Wizard.kt) and 
-    [DropdownSelector](src/main/kotlin/io/spine/chords/DropdownSelector.kt). 
+    [Wizard](src/main/kotlin/io/spine/chords/core/layout/Wizard.kt). 
