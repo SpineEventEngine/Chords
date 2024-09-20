@@ -1,4 +1,4 @@
-## Spine Chords Core
+# Spine Chords Core
 Facilities and components for writing desktop applications with 
 the [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) framework
 
