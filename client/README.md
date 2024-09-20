@@ -1,4 +1,4 @@
-# Chords Client
+# Spine Chords Client
 
 This library extends the set of components and facilities provided by the 
 Chords Core and Chords Proto libraries with components that support server

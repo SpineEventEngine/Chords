@@ -25,13 +25,21 @@ contents and usage:
   for them to be able to gain advantage of Chords code generation facilities
   which enrich the Protobuf message APIs.
 
-# Maven artifacts for the libraries
+# Using libraries in a Gradle project
 
-The Maven artifacts for each of the libraries are described in respective
-library descriptions above.
-
-These artifacts are published in the following Maven repository:
+The artifacts for all Chords libraries are published in the following 
+Maven repository:
 `https://europe-maven.pkg.dev/spine-event-engine/snapshots`
+
+First, register the repo where the libraries are published:
+```kotlin
+repositories {
+    maven("https://europe-maven.pkg.dev/spine-event-engine/snapshots")
+}
+```
+
+Add dependencies to the required libraries as described in documentation of
+each respective library (referred to in the section above).
 
 # Supported environment
 
@@ -47,7 +55,7 @@ The libraries have been tested to work in the following environment:
 
 ## Development environment
 
-- Initialize the `chords-codegen` Git submodule as follows:
+- Get the content of Git submodules as follows:
   ```
   git submodule update --init --recursive
   ```
@@ -55,6 +63,12 @@ The libraries have been tested to work in the following environment:
 - Install the "detekt" addon for IntelliJ IDEA, and add the
   `quality/detekt-config.yml` file to the "Configuration files" section in
   on the IDEA's Settings > Tools > detekt page.
+
+## Building all libraries locally
+
+```
+./gradlew clean build
+```
 
 ## Code generation facilities
 
@@ -67,12 +81,17 @@ See [codegen/plugins](codegen/plugins/README.md) for more details.
 
 Besides the modules for each of the library mentioned above, this repo contains
 the following key parts:
+
 - [codegen-plugins](codegen/plugins) — separate Gradle project with ProtoData
-  plugins that generate Kotlin extensions for Proto messages. 
+  plugins that generate Kotlin extensions for Proto messages.
+  
   See [codegen/plugins/README.md](codegen/plugins/README.md) for detail.
+
 - [codegen-workspace](codegen/workspace) — separate Gradle project that is 
-  a working-directory module where the [codegen-plugins](codegen/plugins) are to be applied; 
-  it is used as a container for the Proto source code, for which the codegen is
-  to be performed.
+  a working-directory module where the [codegen-plugins](codegen/plugins) are to
+  be applied; it is used as a container for the Proto source code, for which the
+  codegen is to be performed.
+
   See [codegen/workspace/README.md](codegen/workspace/README.md) for details.
+
 - [codegen-tests](codegen/tests) — tests that check the correctness of code generation.
