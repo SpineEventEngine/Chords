@@ -134,6 +134,9 @@ public class CommandMessageForm<C : CommandMessage> :
             content: @Composable MultipartFormScope<C>.() -> Unit
         ): CommandMessageForm<C> = createAndRender({
             this.value = value
+
+            // Storing the builder as ValidatingBuilder internally.
+            @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<C>
             multipartContent = content
             props.run { configure() }
@@ -177,7 +180,13 @@ public class CommandMessageForm<C : CommandMessage> :
         ): CommandMessageForm<C> =
             super.create(null) {
                 this.value = value
+
+                // Storing the builder as ValidatingBuilder internally.
+                @Suppress("UNCHECKED_CAST")
                 this.builder = builder as () -> ValidatingBuilder<C>
+
+                // Storing the builder as ValidatingBuilder internally.
+                @Suppress("UNCHECKED_CAST")
                 this.onBeforeBuild = onBeforeBuild as ValidatingBuilder<out C>.() -> Unit
                 props.run { configure() }
             }
