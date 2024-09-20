@@ -25,6 +25,16 @@ contents and usage:
   for them to be able to gain advantage of Chords code generation facilities
   which enrich the Protobuf message APIs.
 
+# Supported environment
+
+The libraries have been tested to work in the following environment:
+
+- JDK 11
+- Kotlin 1.8.20
+- Compose Multiplatform 1.5.12
+- Spine Event Engine 1.9.0
+- Gradle 6.9.4
+
 # Using libraries in a Gradle project
 
 The artifacts for all Chords libraries are published in the following 
@@ -40,16 +50,6 @@ repositories {
 
 Add dependencies to the required libraries as described in documentation of
 each respective library (referred to in the section above).
-
-# Supported environment
-
-The libraries have been tested to work in the following environment:
-
-- JDK 11
-- Kotlin 1.8.20
-- Compose Multiplatform 1.5.12
-- Spine Event Engine 1.9.0
-- Gradle 6.9.4
 
 # Libraries development
 
