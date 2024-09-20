@@ -15,3 +15,11 @@ dependencies {
 
 ## Overview of library's facilities
 
+The library introduces Protobuf messages that represent such concepts as
+[IP addresses](src/main/proto/spine/chords/proto/value/net/ip_address.proto),
+[payment card numbers and bank accounts](src/main/proto/spine/chords/proto/value/money/payments.proto),
+as well as some Kotlin extensions for these and other existing types like
+[`Money`](src/main/kotlin/io/spine/chords/proto/value/money/MoneyExts.kt),
+[`Timestamp`](src/main/kotlin/io/spine/chords/proto/value/time/TimeExts.kt),
+[`PersonName`](src/main/kotlin/io/spine/chords/proto/value/person/PersonNameExts.kt),
+etc.

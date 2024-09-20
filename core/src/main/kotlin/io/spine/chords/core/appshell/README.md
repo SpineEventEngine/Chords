@@ -10,5 +10,9 @@ In order to create such an application you need to do the following:
   with the respective `AppView` instances.
 - Invoke the `run` method on this `Application` instance.
 
+Once the application is run, its reference becomes available via the global
+[app](Application.kt) property, which allows to get access to certain standard
+application-wide APIs from within any component.
+
 See the details in the [Application](Application.kt) and 
 [AppView](AppView.kt) KDocs.
