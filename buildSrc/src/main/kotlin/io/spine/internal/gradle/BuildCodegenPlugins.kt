@@ -27,10 +27,17 @@
 package io.spine.internal.gradle
 
 /**
- * Runs the build of `codegen-plugins` Gradle project.
+ * Runs the build of `codegen/plugins` Gradle project.
  */
 open class BuildCodegenPlugins : RunBuild() {
 
+    /**
+     * Returns the path to Gradle wrapper located in the configured [directory].
+     *
+     * The super method returns the path to Gradle wrapper located in the project root.
+     *
+     * @params buildScript An OS-depended Gradle wrapper executable.
+     */
     override fun buildScriptFullPath(buildScript: String): String {
         return "${directory}/$buildScript"
     }

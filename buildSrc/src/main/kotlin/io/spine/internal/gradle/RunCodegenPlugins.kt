@@ -142,7 +142,6 @@ open class RunCodegenPlugins : DefaultTask() {
 
     @TaskAction
     private fun execute() {
-        // Ensure build error output log.
         // Since we're executing this task in another process, we redirect error output to
         // the file under the `_out` directory. Using the `build` directory for this purpose
         // proved to cause problems under Windows when executing the `clean` command, which
@@ -185,7 +184,6 @@ open class RunCodegenPlugins : DefaultTask() {
         val script = buildScript()
         val command = mutableListOf<String>()
         command.add(script)
-        //command.add("${project.rootDir}/$script")
         val shouldClean = project.gradle
             .taskGraph
             .hasTask(":clean")

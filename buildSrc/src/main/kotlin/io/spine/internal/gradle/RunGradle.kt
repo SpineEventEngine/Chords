@@ -152,7 +152,6 @@ open class RunGradle : DefaultTask() {
         }
         command.addAll(taskNames)
         command.add("--console=plain")
-        //command.add("--debug")
         command.add("--stacktrace")
         command.add("--no-daemon")
         addProperties(command)

@@ -22,15 +22,15 @@ comparing to 1DAM and Chords projects, which require Gradle version `6.9.x`.
 The following steps of configuration should be completed in order 
 to run the code generation:
 
-* Add Git submodule that refers
+1. Add Git submodule that refers to
   [codegen_workspace](https://github.com/SpineEventEngine/Chords/tree/codegen_workspace) 
   branch of Chords repository 
   to the `codegen/workspace` folder of the main project repository.
 
-* Copy [RunCodegenPlugins](buildSrc/src/main/kotlin/io/spine/internal/gradle/RunCodegenPlugins.kt) 
+2. Copy [RunCodegenPlugins](buildSrc/src/main/kotlin/io/spine/internal/gradle/RunCodegenPlugins.kt) 
 Gradle task to your project.
 
-* Configure and execute this task in the module, which requires the code generation,
+3. Configure and execute this task in the module, which requires the code generation,
 before `compileKotlin` Gradle task in the way like following:
 
 ```kotlin
@@ -112,15 +112,16 @@ If the `RunCodegenPlugins` task fails, this also causes the main build to fail.
 
 ### How it works
 
-Actually, the code generation is performed by building the 
+1. Actually, the code generation is performed by building the 
 [codegen-workspace](https://github.com/SpineEventEngine/Chords/tree/codegen_workspace) 
 Gradle project, into which the configured Proto source code is copied during the build.
 See [codegen-workspace/README.md](https://github.com/SpineEventEngine/Chords/blob/codegen_workspace/README.md) 
 for detail.
 
-In short: before executing the `generateProto` task, the Proto source code 
-of the specified module is copied to the `workspace/src/main/proto` folder; 
-once `launchProtoData` task is executed, the generated Kotlin sources
+2. Before executing the `generateProto` task, the Proto source code 
+of the specified module is copied to the `workspace/src/main/proto` folder.
+
+3. Once `launchProtoData` task is executed, the generated Kotlin sources
 are copied back to the `generatedSources/src/main/kotlin` folder of the original module.
 
 The same logic applies to `test` sources.
