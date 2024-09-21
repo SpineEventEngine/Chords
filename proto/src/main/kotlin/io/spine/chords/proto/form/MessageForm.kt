@@ -487,6 +487,9 @@ public open class MessageForm<M : Message> :
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = createAndRender({
             this.value = value
+
+            // Storing the builder as ValidatingBuilder internally.
+            @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<M>
             this.onBeforeBuild = onBeforeBuild
             multipartContent = content
@@ -535,6 +538,9 @@ public open class MessageForm<M : Message> :
             onBeforeBuild: (ValidatingBuilder<out M>.() -> Unit)? = null,
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = createAndRender({
+
+            // Storing the builder as ValidatingBuilder internally.
+            @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<M>
             this.onBeforeBuild = onBeforeBuild
             multipartContent = content
@@ -571,6 +577,9 @@ public open class MessageForm<M : Message> :
         ): MessageForm<M> =
             super.create(null) {
                 this.value = value
+
+                // Storing the builder as ValidatingBuilder internally.
+                @Suppress("UNCHECKED_CAST")
                 this.builder = builder as () -> ValidatingBuilder<M>
                 props.run { configure() }
             }
