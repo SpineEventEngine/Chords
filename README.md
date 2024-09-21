@@ -3,7 +3,7 @@
 A suite of libraries for desktop UI development with 
 Compose Multiplatform toolkit.
 
-> Note: the libraries are currently on an experimental stage 
+:warning: _Note: the libraries are currently on an experimental stage._ 
 
 Please see the documentation for respective libraries and the details on their
 contents and usage:
