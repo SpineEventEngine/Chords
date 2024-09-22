@@ -28,11 +28,6 @@ import io.spine.internal.dependency.Chords
 import io.spine.internal.dependency.KotlinPoet
 import io.spine.internal.dependency.ProtoData
 
-plugins {
-    `kotlin-dsl`
-    `maven-publish`
-}
-
 dependencies {
     // To use ProtoData API in code generation plugin.
     implementation(ProtoData.backend)
