@@ -27,7 +27,7 @@
 package io.spine.internal.dependency
 
 // https://github.com/google/truth
-@Suppress("unused", "ConstPropertyName")
+@Suppress("ConstPropertyName")
 object Truth {
     private const val version = "1.1.5"
     val libs = listOf(

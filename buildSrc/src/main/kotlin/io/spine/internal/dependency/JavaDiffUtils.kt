@@ -33,10 +33,10 @@ package io.spine.internal.dependency
  * It might become our dependency as a part of
  * the [Spine Text](https://github.com/SpineEventEngine/text) library.
  */
-@Suppress("unused", "ConstPropertyName")
+@Suppress("ConstPropertyName")
 object JavaDiffUtils {
 
     // https://github.com/java-diff-utils/java-diff-utils/releases
     private const val version = "4.12"
-    const val lib = "io.github.java-diff-utils:java-diff-utils:${io.spine.internal.dependency.JavaDiffUtils.version}"
+    const val lib = "io.github.java-diff-utils:java-diff-utils:${version}"
 }
