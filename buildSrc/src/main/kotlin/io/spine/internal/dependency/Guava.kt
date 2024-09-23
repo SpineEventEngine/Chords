@@ -35,9 +35,9 @@ package io.spine.internal.dependency
  *
  * @see <a href="https://github.com/google/guava">Guava at GitHub</a>.
  */
-@Suppress("unused", "ConstPropertyName")
+@Suppress("ConstPropertyName")
 object Guava {
     private const val version = "32.1.2-jre"
-    const val lib     = "com.google.guava:guava:${version}"
+    const val lib = "com.google.guava:guava:${version}"
     const val testLib = "com.google.guava:guava-testlib:${version}"
 }

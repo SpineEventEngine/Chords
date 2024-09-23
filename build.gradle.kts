@@ -27,14 +27,11 @@
 @file:Suppress("RemoveRedundantQualifierName")
 
 import Build_gradle.Module
-import io.spine.internal.dependency.ErrorProne
 import io.spine.internal.dependency.Protobuf
-import io.spine.internal.gradle.javac.configureErrorProne
 import io.spine.internal.gradle.javac.configureJavac
 import io.spine.internal.gradle.kotlin.applyJvmToolchain
 import io.spine.internal.gradle.kotlin.setFreeCompilerArgs
 import io.spine.internal.gradle.standardToSpineSdk
-import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
@@ -49,8 +46,6 @@ buildscript {
 
 plugins {
     kotlin("jvm")
-    id("net.ltgt.errorprone")
-    id("detekt-code-analysis")
     id("com.google.protobuf")
     id("io.spine.protodata") version "0.60.2"
     idea
@@ -92,26 +87,12 @@ allprojects {
 subprojects {
     apply {
         plugin("kotlin")
-        plugin("net.ltgt.errorprone")
-        plugin("detekt-code-analysis")
         plugin("com.google.protobuf")
         plugin("idea")
     }
 
-    if (name.contains("message-fields")) {
-        // Only apply this plugin to the project, which code is Spine-based
-        // (otherwise, it wouldn't compile).
-        apply {
-            plugin("io.spine.mc-java")
-        }
-    }
-
     dependencies {
         Protobuf.libs.forEach { implementation(it) }
-
-        ErrorProne.apply {
-            errorprone(core)
-        }
     }
 
     protobuf {
@@ -132,7 +113,6 @@ typealias Module = Project
 fun Module.applyConfiguration() {
     configureJava()
     configureKotlin()
-    setUpTests()
     applyGeneratedDirectories()
 }
 
@@ -150,22 +130,6 @@ fun Module.configureKotlin() {
     }
 }
 
-fun Module.setUpTests() {
-    tasks.test {
-        useJUnitPlatform()
-
-        testLogging {
-            events = setOf(
-                TestLogEvent.PASSED,
-                TestLogEvent.FAILED,
-                TestLogEvent.SKIPPED
-            )
-            showExceptions = true
-            showCauses = true
-        }
-    }
-}
-
 fun Module.configureJava() {
     java {
         toolchain.languageVersion.set(BuildSettings.javaVersion)
@@ -173,7 +137,6 @@ fun Module.configureJava() {
     tasks {
         withType<JavaCompile>().configureEach {
             configureJavac()
-            configureErrorProne()
         }
         withType<org.gradle.jvm.tasks.Jar>().configureEach {
             duplicatesStrategy = DuplicatesStrategy.INCLUDE

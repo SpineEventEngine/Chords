@@ -27,16 +27,13 @@
 package io.spine.internal.dependency
 
 // https://junit.org/junit5/
-@Suppress("unused", "ConstPropertyName")
+@Suppress("ConstPropertyName")
 object JUnit {
     const val version = "5.10.0"
     private const val legacyVersion = "4.13.1"
 
     // https://github.com/apiguardian-team/apiguardian
     private const val apiGuardianVersion = "1.1.2"
-
-    // https://github.com/junit-pioneer/junit-pioneer
-    private const val pioneerVersion = "2.0.1"
 
     const val legacy = "junit:junit:${legacyVersion}"
 
@@ -48,9 +45,6 @@ object JUnit {
     const val bom = "org.junit:junit-bom:${version}"
 
     const val runner = "org.junit.jupiter:junit-jupiter-engine:${version}"
-    const val params = "org.junit.jupiter:junit-jupiter-params:${version}"
-
-    const val pioneer = "org.junit-pioneer:junit-pioneer:${pioneerVersion}"
 
     object Platform {
         // https://junit.org/junit5/

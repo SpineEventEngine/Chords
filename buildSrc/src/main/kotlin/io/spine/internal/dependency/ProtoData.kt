@@ -52,13 +52,11 @@ package io.spine.internal.dependency
  * See [`SpineEventEngine/ProtoData`](https://github.com/SpineEventEngine/ProtoData/).
  */
 @Suppress(
-    "unused" /* Some subprojects do not use ProtoData directly. */,
     "ConstPropertyName",
     "MemberVisibilityCanBePrivate" /* The properties are used directly by other subprojects. */
 )
 object ProtoData {
     const val group = "io.spine.protodata"
-    const val pluginId = "io.spine.protodata"
 
     /**
      * The version of ProtoData dependencies.
@@ -84,21 +82,9 @@ object ProtoData {
     val backend
         get() = "$group:protodata-backend:$version"
 
-    val protocPlugin
-        get() = "$group:protodata-protoc:$version"
-
-    val gradleApi
-        get() = "$group:protodata-gradle-api:$version"
-
-    val cliApi
-        get() = "$group:protodata-cli-api:$version"
-
     fun java(version: String): String =
         "$group:protodata-java:$version"
 
     val java
         get() = java(version)
-
-    val fatCli
-        get() = "$group:protodata-fat-cli:$version"
 }

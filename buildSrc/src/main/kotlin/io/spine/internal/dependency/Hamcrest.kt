@@ -32,7 +32,7 @@ package io.spine.internal.dependency
  * If you need assertions in Java, please use Google [Truth] instead.
  * For Kotlin, please use [Kotest].
  */
-@Suppress("unused", "ConstPropertyName")
+@Suppress("ConstPropertyName")
 object Hamcrest {
     // https://github.com/hamcrest/JavaHamcrest/releases
     private const val version = "2.2"

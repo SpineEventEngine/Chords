@@ -26,7 +26,7 @@
 
 package io.spine.internal.dependency
 
-@Suppress("unused", "ConstPropertyName")
+@Suppress("ConstPropertyName")
 object KotlinX {
 
     const val group = "org.jetbrains.kotlinx"
