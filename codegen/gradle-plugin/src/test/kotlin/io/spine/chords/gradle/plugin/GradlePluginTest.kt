@@ -24,18 +24,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.chords.gradle.plugin
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+import org.gradle.testfixtures.ProjectBuilder
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Test
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+class GradlePluginTest {
+
+    @Test
+    fun pluginRegistersATask() {
+        // Create a test project and apply the plugin.
+        val project = ProjectBuilder.builder().build()
+        project.plugins.apply("io.spine.chords.gradle.plugin")
+
+        // Verify the result.
+        assertNotNull(project.tasks.findByName("runGradlePlugin"))
+    }
+}

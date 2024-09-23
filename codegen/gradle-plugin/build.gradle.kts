@@ -24,18 +24,45 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+import io.spine.internal.dependency.JUnit
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+plugins {
+    // Apply the Java Gradle plugin development plugin
+    // to add support for developing Gradle plugins.
+    `java-gradle-plugin`
+}
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+repositories {
+    // Use Maven Central for resolving dependencies.
+    mavenCentral()
+}
+
+dependencies {
+    // Use JUnit test framework for unit tests.
+    testImplementation(JUnit.runner)
+}
+
+gradlePlugin {
+    val gradlePlugin by plugins.creating {
+        id = "io.spine.chords.gradle.plugin"
+        implementationClass = "io.spine.chords.gradle.plugin.GradlePlugin"
+    }
+}
+
+// Add a source set and a task for a functional test suite.
+val functionalTest: SourceSet by sourceSets.creating
+gradlePlugin.testSourceSets(functionalTest)
+
+configurations[functionalTest.implementationConfigurationName]
+    .extendsFrom(configurations.testImplementation.get())
+
+val functionalTestTask = tasks.register<Test>("functionalTest") {
+    testClassesDirs = functionalTest.output.classesDirs
+    classpath = configurations[functionalTest.runtimeClasspathConfigurationName]
+        .plus(functionalTest.output)
+}
+
+tasks.check.configure {
+    // Run the functional tests as part of `check.
+    dependsOn(functionalTestTask)
+}

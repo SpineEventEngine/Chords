@@ -24,18 +24,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.chords.gradle.plugin
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+public class GradlePlugin : Plugin<Project> {
+
+    override fun apply(project: Project) {
+        project.tasks.register("runGradlePlugin") { task ->
+            task.doLast {
+                println(
+                    "Hello from plugin 'spine-chords-gradle-plugin'"
+                )
+            }
+        }
+    }
+}
