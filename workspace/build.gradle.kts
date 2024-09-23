@@ -25,7 +25,6 @@
  */
 
 import io.spine.internal.dependency.Chords
-import io.spine.internal.dependency.Kotest
 import io.spine.internal.dependency.Spine
 import io.spine.internal.gradle.standardToSpineSdk
 
@@ -61,7 +60,6 @@ dependencies {
     // as dependencies in Proto sources we process.
     implementation(Spine.CoreJava.server_1_9)
     protoData(Chords.CodegenPlugins.lib(codegenPluginsVersion))
-    testImplementation(Kotest.runnerJUnit5)
 }
 
 /**
