@@ -122,8 +122,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 dependencies {
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
+    //implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    //implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
 
     implementation("com.google.guava:guava:$guavaVersion")
     implementation("net.ltgt.gradle:gradle-errorprone-plugin:${errorPronePluginVersion}")
@@ -136,7 +136,7 @@ dependencies {
     implementation("com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion")
 
     // https://github.com/srikanth-lingala/zip4j
-    implementation("net.lingala.zip4j:zip4j:2.10.0")
+    //implementation("net.lingala.zip4j:zip4j:2.10.0")
 
     implementation("io.kotest:kotest-gradle-plugin:$kotestJvmPluginVersion")
     implementation("org.jetbrains.kotlinx:kover-gradle-plugin:$koverVersion")

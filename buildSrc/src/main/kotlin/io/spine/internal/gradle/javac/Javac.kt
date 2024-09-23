@@ -47,7 +47,6 @@ import org.gradle.process.CommandLineArgumentProvider
  * }
  *```
  */
-@Suppress("unused")
 fun JavaCompile.configureJavac() {
     with(options) {
         encoding = JavacConfig.SOURCE_FILES_ENCODING

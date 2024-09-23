@@ -44,14 +44,12 @@ fun KotlinJvmProjectExtension.applyJvmToolchain(version: Int) {
  * Sets [Java toolchain](https://kotlinlang.org/docs/gradle.html#gradle-java-toolchains-support)
  * to the specified version (e.g. "11" or "8").
  */
-@Suppress("unused")
 fun KotlinJvmProjectExtension.applyJvmToolchain(version: String) =
     applyJvmToolchain(version.toInt())
 
 /**
  * Opts-in to experimental features that we use in our codebase.
  */
-@Suppress("unused")
 fun KotlinCompile.setFreeCompilerArgs() {
     kotlinOptions {
         freeCompilerArgs = listOf(
