@@ -26,16 +26,51 @@
 
 package io.spine.chords.gradle
 
-import org.gradle.api.Plugin
-import org.gradle.api.Project
+import java.io.File
+import java.io.FileWriter
+import java.nio.file.Files
+import org.gradle.testkit.runner.GradleRunner
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 
-public class CodegenPlugin : Plugin<Project> {
+/**
+ * The functional test for `io.spine.chords.gradle` Gradle plugin.
+ */
+@DisplayName("Gradle plugin should")
+class GradlePluginSpec {
 
-    override fun apply(project: Project) {
-        project.tasks.register("runGradlePlugin") { task ->
-            task.doLast {
-                println("The 'spine-chords-gradle-plugin' plugin task executed.")
+    @Test
+    fun runPluginTask() {
+        val projectDir = File("build/functionalTest")
+        Files.createDirectories(projectDir.toPath())
+        writeString(File(projectDir, "settings.gradle"), "")
+        writeString(
+            File(projectDir, "build.gradle"),
+            """
+            plugins {
+                id('io.spine.chords.gradle')
             }
+            """.trimIndent()
+        )
+
+        val result = GradleRunner.create()
+            .forwardOutput()
+            .withPluginClasspath()
+            .withArguments("runGradlePlugin")
+            .withProjectDir(projectDir)
+            .build()
+
+        assertTrue(
+            result.output.contains(
+                "The 'spine-chords-gradle-plugin' plugin task executed."
+            )
+        )
+    }
+
+    private fun writeString(file: File, text: String) {
+        FileWriter(file).use { writer ->
+            writer.write(text)
         }
     }
 }

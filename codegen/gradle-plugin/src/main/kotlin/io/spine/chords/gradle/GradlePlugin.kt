@@ -26,48 +26,25 @@
 
 package io.spine.chords.gradle
 
-import java.io.File
-import java.io.FileWriter
-import java.nio.file.Files
-import org.gradle.testkit.runner.GradleRunner
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 
-@DisplayName("Gradle plugin should")
-class CodegenPluginTest {
+/**
+ * A Gradle [Plugin] that generates Kotlin extensions for Proto messages.
+ *
+ * Actually, it applies
+ * [codegen/plugins](https://github.com/SpineEventEngine/Chords/tree/master/codegen/plugins)
+ * to a module, which requires the code generation.
+ *
+ * It is under construction at the moment.
+ */
+public class GradlePlugin : Plugin<Project> {
 
-    @Test
-    fun runPluginTask() {
-        val projectDir = File("build/functionalTest")
-        Files.createDirectories(projectDir.toPath())
-        writeString(File(projectDir, "settings.gradle"), "")
-        writeString(
-            File(projectDir, "build.gradle"),
-            """
-            plugins {
-                id('io.spine.chords.gradle')
+    override fun apply(project: Project) {
+        project.tasks.register("runGradlePlugin") { task ->
+            task.doLast {
+                println("The 'spine-chords-gradle-plugin' plugin task executed.")
             }
-            """.trimIndent()
-        )
-
-        val result = GradleRunner.create()
-            .forwardOutput()
-            .withPluginClasspath()
-            .withArguments("runGradlePlugin")
-            .withProjectDir(projectDir)
-            .build()
-
-        assertTrue(
-            result.output.contains(
-                "The 'spine-chords-gradle-plugin' plugin task executed."
-            )
-        )
-    }
-
-    private fun writeString(file: File, text: String) {
-        FileWriter(file).use { writer ->
-            writer.write(text)
         }
     }
 }

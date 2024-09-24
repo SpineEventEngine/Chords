@@ -90,7 +90,7 @@ gradlePlugin {
             id = "io.spine.chords.gradle"
             displayName = "Chords Codegen Gradle Plugin"
             description = "A plugin that generates Kotlin extensions for Proto messages."
-            implementationClass = "io.spine.chords.gradle.CodegenPlugin"
+            implementationClass = "io.spine.chords.gradle.GradlePlugin"
         }
     }
 }
