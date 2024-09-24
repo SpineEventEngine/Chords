@@ -26,21 +26,41 @@
 
 package io.spine.internal.gradle.publish
 
+import com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import java.io.FileNotFoundException
 import java.net.URL
 
-@Suppress("unused", "ConstPropertyName")
-object ChordsPublishing {
-    /**
-     * The artifact prefix that should be used for all the Chords modules
-     * before the artifact name for publishing/reading artifacts to/from repositories.
-     */
-    const val artifactPrefix = "spine-chords-"
+/**
+ * Reads `maven-metadata.xml` from the given maven repository.
+ */
+data class MavenMetadata(var versioning: Versioning = Versioning()) {
 
-    const val gradlePluginId = "io.spine.chords.gradle"
+    companion object {
 
-    val gradlePluginMetadataUrl = URL(
-        "https://plugins.gradle.org/m2/" +
-                "$gradlePluginId/$gradlePluginId.gradle.plugin/" +
-                MavenMetadata.FILE_NAME
-    )
+        const val FILE_NAME = "maven-metadata.xml"
+
+        private val mapper = XmlMapper()
+
+        init {
+            mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+        }
+
+        /**
+         * Fetches the metadata for the repository and parses the document.
+         *
+         * <p>If the document could not be found, assumes that the module was never
+         * released and thus has no metadata.
+         */
+        fun fetchAndParse(url: URL): MavenMetadata? {
+            return try {
+                val metadata = mapper.readValue(url, MavenMetadata::class.java)
+                metadata
+            } catch (ignored: FileNotFoundException) {
+                null
+            }
+        }
+    }
 }
+
+data class Versioning(var versions: List<String> = listOf())

@@ -27,6 +27,9 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.spine.internal.dependency.JUnit
 import io.spine.internal.gradle.isSnapshot
+import io.spine.internal.gradle.publish.ChordsPublishing.gradlePluginId
+import io.spine.internal.gradle.publish.ChordsPublishing.gradlePluginMetadataUrl
+import io.spine.internal.gradle.publish.MavenMetadata
 import io.spine.internal.gradle.publish.SpinePublishing
 
 plugins {
@@ -87,7 +90,7 @@ pluginBundle {
 gradlePlugin {
     plugins {
         create("chordsCodegenPlugin") {
-            id = "io.spine.chords.gradle"
+            id = gradlePluginId
             displayName = "Chords Codegen Gradle Plugin"
             description = "A plugin that generates Kotlin extensions for Proto messages."
             implementationClass = "io.spine.chords.gradle.GradlePlugin"
@@ -198,3 +201,32 @@ val publish: Task by tasks.getting {
 }
 
 configureTaskDependencies()
+
+val checkPublishedVersion = tasks.register("checkPublishedVersion") {
+
+    fun checkAndConfigure() {
+        val metadata = MavenMetadata.fetchAndParse(gradlePluginMetadataUrl)
+        val versions = metadata?.versioning?.versions
+        val versionExists = versions?.contains(versionToPublish) ?: false
+        if (versionExists) {
+            tasks.named("publish") {
+                enabled = false
+            }
+            tasks.named("publishPlugins") {
+                enabled = false
+            }
+            logger.warn(
+                "Publishing of Gradle plugin `$gradlePluginId:$versionToPublish`" +
+                        " is disabled because it is already published."
+            )
+        }
+    }
+
+    doLast {
+        checkAndConfigure()
+    }
+}
+
+tasks.named("check") {
+    dependsOn(checkPublishedVersion)
+}

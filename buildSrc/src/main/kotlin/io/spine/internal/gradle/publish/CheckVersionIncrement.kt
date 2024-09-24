@@ -26,11 +26,8 @@
 
 package io.spine.internal.gradle.publish
 
-import com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
-import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import io.spine.internal.gradle.Repository
 import io.spine.internal.gradle.publish.ChordsPublishing.artifactPrefix
-import java.io.FileNotFoundException
 import java.net.URL
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -71,7 +68,8 @@ open class CheckVersionIncrement : DefaultTask() {
         val versions = metadata?.versioning?.versions
         val versionExists = versions?.contains(version) ?: false
         if (versionExists) {
-            throw GradleException("""
+            throw GradleException(
+                """
                     Version `$version` is already published to maven repository `$repoUrl`.
                     Try incrementing the library version.
                     All available versions are: ${versions?.joinToString(separator = ", ")}. 
@@ -96,34 +94,3 @@ open class CheckVersionIncrement : DefaultTask() {
         return path
     }
 }
-
-private data class MavenMetadata(var versioning: Versioning = Versioning()) {
-
-    companion object {
-
-        const val FILE_NAME = "maven-metadata.xml"
-
-        private val mapper = XmlMapper()
-
-        init {
-            mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
-        }
-
-        /**
-         * Fetches the metadata for the repository and parses the document.
-         *
-         * <p>If the document could not be found, assumes that the module was never
-         * released and thus has no metadata.
-         */
-        fun fetchAndParse(url: URL): MavenMetadata? {
-            return try {
-                val metadata = mapper.readValue(url, MavenMetadata::class.java)
-                metadata
-            } catch (ignored: FileNotFoundException) {
-                null
-            }
-        }
-    }
-}
-
-private data class Versioning(var versions: List<String> = listOf())
