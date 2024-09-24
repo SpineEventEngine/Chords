@@ -24,32 +24,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.spine.internal.dependency.JUnit
+import io.spine.internal.gradle.isSnapshot
+import io.spine.internal.gradle.publish.SpinePublishing
 
 plugins {
-    // Apply the Java Gradle plugin development plugin
-    // to add support for developing Gradle plugins.
     `java-gradle-plugin`
+    `maven-publish`
+    id("com.gradle.plugin-publish") version "0.12.0"
+    id("com.github.johnrengelman.shadow").version("6.1.0")
 }
 
 repositories {
-    // Use Maven Central for resolving dependencies.
     mavenCentral()
 }
 
 dependencies {
-    // Use JUnit test framework for unit tests.
+    compileOnly(gradleApi())
     testImplementation(JUnit.runner)
 }
 
-gradlePlugin {
-    val gradlePlugin by plugins.creating {
-        id = "io.spine.chords.gradle.plugin"
-        implementationClass = "io.spine.chords.gradle.plugin.GradlePlugin"
-    }
-}
+// Read the plugin version declared in `version.gradle.kts`.
+apply(from = "$rootDir/version.gradle.kts")
+val versionToPublish: String = extra["gradlePluginVersion"]!! as String
+version = versionToPublish
 
-// Add a source set and a task for a functional test suite.
 val functionalTest: SourceSet by sourceSets.creating
 gradlePlugin.testSourceSets(functionalTest)
 
@@ -62,7 +62,139 @@ val functionalTestTask = tasks.register<Test>("functionalTest") {
         .plus(functionalTest.output)
 }
 
-tasks.check.configure {
-    // Run the functional tests as part of `check.
+tasks.withType(Test::class) {
+    useJUnitPlatform {
+        includeEngines("junit-jupiter")
+    }
+}
+
+tasks.named("test") {
     dependsOn(functionalTestTask)
 }
+
+pluginBundle {
+    website = "https://spine.io"
+    vcsUrl = "https://github.com/SpineEventEngine/Chords/tree/master/codegen/gradle-plugin"
+    tags = listOf("spine", "chords", "gradle", "plugin", "codegen")
+
+    mavenCoordinates {
+        groupId = "io.spine.chords"
+        artifactId = "spine-chords-gradle-plugin"
+        version = versionToPublish
+    }
+}
+
+gradlePlugin {
+    plugins {
+        create("chordsCodegenPlugin") {
+            id = "io.spine.chords.gradle"
+            displayName = "Chords Codegen Gradle Plugin"
+            description = "A plugin that generates Kotlin extensions for Proto messages."
+            implementationClass = "io.spine.chords.gradle.CodegenPlugin"
+        }
+    }
+}
+
+val shadowJar by tasks.getting(ShadowJar::class) {
+    archiveClassifier.set("")
+    exclude(
+        "org/checkerframework/**",
+        "org/jboss/**",
+
+        // Exclude license files that cause or may cause issues with LicenseReport.
+        // We analyze these files when building artifacts we depend on.
+        "about_files/**",
+
+        "ant_tasks/**", // `resource-ant.jar` is of no use here.
+
+        // Protobuf files.
+        "google/**",
+        "spine/**",
+        "src/**",
+
+        // Java source code files of the package `org.osgi`.
+        "OSGI-OPT/**",
+
+        // Unnecessary settings from the Eclipse Platform.
+        "OSGI-INF/**",
+
+        "META-INF/com.android.tools/**",
+        "META-INF/maven/**",
+        "META-INF/native-image/**",
+        "META-INF/proguard/**",
+        "META-INF/services/org.jboss.forge.roaster.*.*",
+        "META-INF/eclipse.inf",
+
+        // Checker Framework license.
+        "META-INF/LICENSE.txt",
+
+        // OSGi notices
+        "META-INF/NOTICE",
+
+        // Unnecessary stuff from the Eclipse Platform and other dependencies.
+        ".api_description",
+        ".options",
+        "_base_main_unspecified.desc",
+        "_base_main_unspecified.desc",
+        "about.html",
+        "profile.plist",
+        "*.profile",
+        "jdtCompilerAdapter.jar",
+        "plugin.properties",
+        "plugin.xml",
+        "systembundle.properties"
+    )
+}
+
+// Add the common prefix to the `pluginMaven` publication.
+//
+// The publication is automatically created in `project.afterEvaluate` by Plugin Publishing plugin.
+// See https://docs.gradle.org/current/userguide/java_gradle_plugin.html#maven_publish_plugin
+//
+// We add the prefix also in `afterEvaluate` assuming we're later in the sequence of
+// the actions and the publications have been already created.
+//
+project.afterEvaluate {
+    publishing {
+        // Get the prefix used for all the modules of this project.
+        val prefix = project.rootProject.the<SpinePublishing>().artifactPrefix
+
+        // Add the prefix to the `pluginMaven` publication only.
+        publications.named<MavenPublication>("pluginMaven") {
+            if (!artifactId.startsWith(prefix)) {
+                artifactId = prefix + artifactId
+            }
+        }
+
+        // Do not add the prefix for the publication which produces
+        // the `io.spine.chords.gradle.plugin` marker.
+
+        // Add the prefix to the `artifactId` of the plugin dependency used in the marker.
+        publications.withType<MavenPublication>().configureEach {
+            if (name.endsWith("PluginMarkerMaven")) {
+                pom.withXml {
+                    asNode().apply {
+                        val root = asElement()
+                        // Get the `dependencies/dependency/artifactId` node.
+                        // It's the second node with such a name from the top.
+                        // The first one is the `artifactId` of the marker itself.
+                        val artifactIdNode = root.getElementsByTagName("artifactId").item(1)
+                        artifactIdNode.textContent = "$prefix${project.name}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Do not attempt to publish snapshot versions to comply with publishing rules.
+// See: https://plugins.gradle.org/docs/publish-plugin#approval
+val publishPlugins: Task by tasks.getting {
+    enabled = !versionToPublish.isSnapshot()
+}
+
+val publish: Task by tasks.getting {
+    dependsOn(publishPlugins)
+}
+
+configureTaskDependencies()

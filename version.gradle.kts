@@ -28,3 +28,17 @@
   * The version of all Chords libraries.
   */
 val chordsVersion: String by extra("2.0.0-SNAPSHOT.21")
+
+
+/**
+ * The version of the Gradle plugin to publish.
+ *
+ * We can't use `SNAPSHOT` notation to comply the publishing rules, so
+ * we use `1.9.x` notation, similar to Spine `1.9.x`, which the project depends on.
+ * See https://plugins.gradle.org/docs/publish-plugin#approval
+ *
+ * The version should be updated to `2.0.x` after migrating to Spine `2.0.x`.
+ *
+ * DO NOT UPDATE this version if the Gradle plugin is not changed.
+ */
+val gradlePluginVersion: String by extra("1.9.0")

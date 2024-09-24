@@ -86,9 +86,17 @@ subprojects {
 }
 
 spinePublishing {
+    val gradlePluginModuleName = "gradle-plugin"
+
     modules = productionModules
         .map { project -> project.name }
+        // Exclude Gradle plugin.
+        .filter {
+            !it.contains(gradlePluginModuleName)
+        }
         .toSet()
+
+    modulesWithCustomPublishing = setOf(gradlePluginModuleName)
 
     destinations = setOf(
         PublishingRepos.gitHub("Chords"),

@@ -24,21 +24,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.gradle.plugin
+package io.spine.chords.gradle
 
-import org.gradle.testfixtures.ProjectBuilder
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Test
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 
-class GradlePluginTest {
+public class CodegenPlugin : Plugin<Project> {
 
-    @Test
-    fun pluginRegistersATask() {
-        // Create a test project and apply the plugin.
-        val project = ProjectBuilder.builder().build()
-        project.plugins.apply("io.spine.chords.gradle.plugin")
-
-        // Verify the result.
-        assertNotNull(project.tasks.findByName("runGradlePlugin"))
+    override fun apply(project: Project) {
+        project.tasks.register("runGradlePlugin") { task ->
+            task.doLast {
+                println("The 'spine-chords-gradle-plugin' plugin task executed.")
+            }
+        }
     }
 }
