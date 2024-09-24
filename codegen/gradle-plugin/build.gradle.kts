@@ -29,7 +29,7 @@ import io.spine.internal.dependency.JUnit
 import io.spine.internal.gradle.isSnapshot
 import io.spine.internal.gradle.publish.ChordsPublishing.gradlePluginId
 import io.spine.internal.gradle.publish.ChordsPublishing.gradlePluginMetadataUrl
-import io.spine.internal.gradle.publish.MavenMetadata
+import io.spine.internal.gradle.publish.MavenMetadata.Companion.fetchAndParse
 import io.spine.internal.gradle.publish.SpinePublishing
 
 plugins {
@@ -205,7 +205,7 @@ configureTaskDependencies()
 val checkPublishedVersion = tasks.register("checkPublishedVersion") {
 
     fun checkAndConfigure() {
-        val metadata = MavenMetadata.fetchAndParse(gradlePluginMetadataUrl)
+        val metadata = fetchAndParse(gradlePluginMetadataUrl)
         val versions = metadata?.versioning?.versions
         val versionExists = versions?.contains(versionToPublish) ?: false
         if (versionExists) {
