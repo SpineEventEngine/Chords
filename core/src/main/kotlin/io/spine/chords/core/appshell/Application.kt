@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
 import io.spine.chords.core.writeOnce
+import java.awt.Dimension
 
 /**
  * An application's instance running in this JVM.
@@ -68,19 +69,18 @@ public var app: Application by writeOnce()
  * this, the [signInScreenContent] method has to be implemented to render
  * the respective composable content, and invoke the sign-in callback as needed.
  *
- * @param name
- *         an application's name, which is in particular displayed in
- *         the application window's title.
- * @param views
- *         the list application's views.
- * @param initialView
- *         allows to specify a view from the list of [views], if any view other
- *         than the first one has to be displayed when the application starts.
+ * @param name An application's name, which is in particular displayed in
+ *   the application window's title.
+ * @param views The list application's views.
+ * @param initialView Allows to specify a view from the list of [views], if any view other
+ *   than the first one has to be displayed when the application starts.
+ * @param minWindowSize The minimal size of the application window.
  */
 public open class Application(
     public val name: String,
     private val views: List<AppView>,
-    private val initialView: AppView? = null
+    private val initialView: AppView? = null,
+    private val minWindowSize: Dimension = Dimension(1100, 800)
 ) {
 
     /**
@@ -132,7 +132,15 @@ public open class Application(
     }
 
     private fun createAppWindow(onCloseRequest: () -> Unit): AppWindow {
-        return AppWindow({ this.signInScreenContent(it) }, views, initialView, onCloseRequest)
+        return AppWindow(
+            {
+                this.signInScreenContent(it)
+            },
+            views,
+            initialView,
+            onCloseRequest,
+            minWindowSize
+        )
     }
 
     /**

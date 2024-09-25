@@ -30,6 +30,7 @@ import io.spine.chords.client.Client
 import io.spine.chords.core.appshell.AppView
 import io.spine.chords.core.appshell.Application
 import io.spine.chords.core.appshell.app
+import java.awt.Dimension
 
 /**
  * Makes the [ClientApplication]'s [client][ClientApplication.client] property
@@ -43,21 +44,19 @@ public val Application.client: Client get() = (app as ClientApplication).client
  * A variant of [Application] that represents a client application, which
  * interacts with the application server.
  *
- * @param name
- *         an application's name, which is in particular displayed in
- *         the application window's title.
- * @param client
- *         a [Client] that handles the server communication, which should be
- *         used throughout the application.
- * @param views
- *         the list application's views.
- * @param initialView
- *         allows to specify a view from the list of [views], if any view other
- *         than the first one has to be displayed when the application starts.
+ * @param name An application's name, which is in particular displayed in
+ *   the application window's title.
+ * @param client A [Client] that handles the server communication, which should be
+ *   used throughout the application.
+ * @param views The list application's views.
+ * @param initialView Allows to specify a view from the list of [views], if any view other
+ *   than the first one has to be displayed when the application starts.
+ * @param minWindowSize The minimal size of the application window.
  */
 public open class ClientApplication(
     name: String,
     public val client: Client,
     views: List<AppView>,
-    initialView: AppView? = null
-) : Application(name, views, initialView)
+    initialView: AppView? = null,
+    minWindowSize: Dimension = Dimension(1100, 800)
+) : Application(name, views, initialView, minWindowSize)
