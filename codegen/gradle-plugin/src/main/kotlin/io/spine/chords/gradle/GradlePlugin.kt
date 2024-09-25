@@ -26,8 +26,15 @@
 
 package io.spine.chords.gradle
 
+import java.io.File
+import java.io.InputStream
+import java.net.URL
+import java.net.URLDecoder
+import java.util.jar.JarFile
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.internal.os.OperatingSystem
+
 
 /**
  * A Gradle [Plugin] that generates Kotlin extensions for Proto messages.
@@ -40,15 +47,89 @@ import org.gradle.api.Project
  */
 public class GradlePlugin : Plugin<Project> {
 
-    public companion object {
-        private const val pluginId = "io.spine.chords.gradle"
+    @Suppress("ConstPropertyName")
+    private companion object {
+        private const val moduleName = "codegen-workspace"
     }
 
     override fun apply(project: Project) {
-        project.tasks.register("applyCodegenPlugins") { task ->
+
+        val workspaceDir = File(project.buildDir, moduleName)
+
+        val copyResources = project.tasks.register(
+            "copyResources"
+        ) { task ->
             task.doLast {
-                println("The `$pluginId` plugin task executed.")
+                copyResources(workspaceDir)
+                addRunPermissionToGradle(workspaceDir)
             }
         }
+
+        project.tasks.register(
+            "applyCodegenPlugins",
+            ApplyCodegenPlugins::class.java
+        ) { task ->
+            task.dependsOn(copyResources)
+            task.workspaceDir = workspaceDir.absolutePath
+            task.pluginsVersion = "2.0.0-SNAPSHOT.20"
+        }
+    }
+
+    private fun addRunPermissionToGradle(workspaceDir: File) {
+        if (OperatingSystem.current().isWindows) {
+            return
+        }
+
+        ProcessBuilder()
+            .command("chmod", "+x", "./gradlew")
+            .directory(workspaceDir)
+            .start()
+    }
+
+    private fun copyResources(workspaceDir: File) {
+        val resourcesRoot = "/$moduleName"
+        listResources(resourcesRoot).forEach { resource ->
+            val outputFile = File(workspaceDir, resource)
+            val inputStream = loadResourceAsStream(
+                resourcesRoot + resource
+            )
+            outputFile.parentFile.mkdirs()
+            outputFile.writeBytes(inputStream.readBytes())
+        }
+    }
+
+    private fun loadResource(path: String): URL {
+        val resourceUrl = this::class.java.getResource(path)
+        checkNotNull(resourceUrl) {
+            "Resource not found in classpath: `$path`."
+        }
+        return resourceUrl
+    }
+
+    private fun loadResourceAsStream(path: String): InputStream {
+        return loadResource(path).openStream()
+    }
+
+    private fun listResources(path: String): Set<String> {
+        val resourceUrl = loadResource(path)
+        check(resourceUrl.protocol == "jar") {
+            "Protocol not supported yet: `${resourceUrl.protocol}`."
+        }
+        val result: MutableSet<String> = mutableSetOf()
+        val resourcePath = resourceUrl.path
+        val afterProtocol = "file:".length
+        val beforeJarEntry = resourcePath.indexOf("!")
+        val jarPath = resourcePath.substring(afterProtocol, beforeJarEntry)
+        val jarFile = JarFile(URLDecoder.decode(jarPath, "UTF-8"))
+        val jarEntries = jarFile.entries()
+        while (jarEntries.hasMoreElements()) {
+            val entryName = jarEntries.nextElement().name
+            if (entryName.startsWith(path.substring(1))
+                && !entryName.endsWith("/")
+            ) {
+                result.add(entryName.substring(path.length - 1))
+            }
+        }
+        return result
     }
 }

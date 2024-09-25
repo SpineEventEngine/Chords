@@ -40,38 +40,91 @@ import org.junit.jupiter.api.Test
 @DisplayName("Gradle plugin should")
 class GradlePluginSpec {
 
+    @Suppress("ConstPropertyName")
+    companion object {
+
+        private const val pluginId = "io.spine.chords.gradle"
+
+        private const val sourceProtoFile =
+            "src/main/proto/chords/commands.proto"
+
+        private const val generatedKotlinFile =
+            "generated/main/kotlin/io/chords/command/TestCommandDef.kt"
+    }
+
     @Test
-    fun runPluginTask() {
-        val pluginId = "io.spine.chords.gradle"
+    fun copyResourcesAndApplyCodegenPlugins() {
         val projectDir = File("build/functionalTest")
+
         Files.createDirectories(projectDir.toPath())
         writeString(File(projectDir, "settings.gradle"), "")
+
         writeString(
             File(projectDir, "build.gradle"),
-            """
-            plugins {
-                id('$pluginId')
-            }
-            """.trimIndent()
+            buildGradleFileContent
+        )
+        writeString(
+            File(projectDir, sourceProtoFile),
+            protoFileContent
         )
 
+        val outputDir = File(projectDir, "_out")
+        outputDir.mkdirs()
+        val stdoutFile = File(outputDir, "std-out.txt")
+        val stderrFile = File(outputDir, "err-out.txt")
+
         val result = GradleRunner.create()
-            .forwardOutput()
+            .forwardStdOutput(FileWriter(stdoutFile))
+            .forwardStdError(FileWriter(stderrFile))
             .withPluginClasspath()
             .withArguments("applyCodegenPlugins")
             .withProjectDir(projectDir)
             .build()
 
-        assertTrue(
-            result.output.contains(
-                "The `$pluginId` plugin task executed."
+        listOf(
+            "> Task :copyResources",
+            "> Task :applyCodegenPlugins",
+            "BUILD SUCCESSFUL"
+        ).forEach {
+            assertTrue(
+                result.output.contains(it)
             )
+        }
+
+        assertTrue(
+            File(projectDir, generatedKotlinFile).exists()
         )
     }
 
-    private fun writeString(file: File, text: String) {
-        FileWriter(file).use { writer ->
-            writer.write(text)
+    private val buildGradleFileContent = """
+        plugins {
+            id('$pluginId')
         }
+    """.trimIndent()
+}
+
+private fun writeString(file: File, text: String) {
+    file.parentFile.mkdirs()
+    FileWriter(file).use { writer ->
+        writer.write(text)
     }
 }
+
+private val protoFileContent = """
+
+syntax = "proto3";
+
+package chords;
+
+import "spine/options.proto";
+
+option (type_url_prefix) = "type.chords";
+option java_package = "io.chords.command";
+option java_outer_classname = "TestCommandProto";
+option java_multiple_files = true;
+
+message TestCommand {
+    string id = 1;
+}
+
+""".trimIndent()
