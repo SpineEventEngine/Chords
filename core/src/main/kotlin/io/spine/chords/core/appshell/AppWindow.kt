@@ -39,7 +39,7 @@ import java.awt.Dimension
  * of the application, for example for wizards, full screen dialogs, etc.
  *
  * @param signInScreenContent A content for the sign-in screen.
- * @param views The list application's views.
+ * @param views The list of application's views.
  * @param initialView Allows to specify a view from the list of [views], if any view other
  *   than the first one has to be displayed when the application starts.
  * @param onCloseRequest An action that should be performed on window closing.
@@ -50,7 +50,7 @@ public class AppWindow(
     views: List<AppView>,
     initialView: AppView?,
     private val onCloseRequest: () -> Unit,
-    private val minWindowSize: Dimension = Dimension(1100, 800)
+    private val minWindowSize: Dimension
 ) {
 
     /**

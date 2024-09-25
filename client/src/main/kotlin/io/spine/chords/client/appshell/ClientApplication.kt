@@ -48,7 +48,7 @@ public val Application.client: Client get() = (app as ClientApplication).client
  *   the application window's title.
  * @param client A [Client] that handles the server communication, which should be
  *   used throughout the application.
- * @param views The list application's views.
+ * @param views The list of application's views.
  * @param initialView Allows to specify a view from the list of [views], if any view other
  *   than the first one has to be displayed when the application starts.
  * @param minWindowSize The minimal size of the application window.
@@ -58,5 +58,5 @@ public open class ClientApplication(
     public val client: Client,
     views: List<AppView>,
     initialView: AppView? = null,
-    minWindowSize: Dimension = Dimension(1100, 800)
+    minWindowSize: Dimension
 ) : Application(name, views, initialView, minWindowSize)

@@ -71,7 +71,7 @@ public var app: Application by writeOnce()
  *
  * @param name An application's name, which is in particular displayed in
  *   the application window's title.
- * @param views The list application's views.
+ * @param views The list of application's views.
  * @param initialView Allows to specify a view from the list of [views], if any view other
  *   than the first one has to be displayed when the application starts.
  * @param minWindowSize The minimal size of the application window.
@@ -80,7 +80,7 @@ public open class Application(
     public val name: String,
     private val views: List<AppView>,
     private val initialView: AppView? = null,
-    private val minWindowSize: Dimension = Dimension(1100, 800)
+    private val minWindowSize: Dimension
 ) {
 
     /**
