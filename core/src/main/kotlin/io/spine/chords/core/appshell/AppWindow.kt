@@ -32,30 +32,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.window.Window
 import java.awt.Dimension
 
-private val minWindowSize = Dimension(1100, 800)
-
-
 /**
  * Represents the main application window and provides API to display
  * a modal screens using the entire area of the application window.
  * This API should be used to change the current visible screen
  * of the application, for example for wizards, full screen dialogs, etc.
  *
- * @param signInScreenContent
- *         a content for the sign-in screen.
- * @param views
- *         the list application's views.
- * @param initialView
- *         allows to specify a view from the list of [views], if any view other
- *         than the first one has to be displayed when the application starts.
- * @param onCloseRequest
- *         an action that should be performed on window closing.
+ * @param signInScreenContent A content for the sign-in screen.
+ * @param views The list of application's views.
+ * @param initialView Allows to specify a view from the list of [views], if any view other
+ *   than the first one has to be displayed when the application starts.
+ * @param onCloseRequest An action that should be performed on window closing.
+ * @param minWindowSize The minimal size of the application window.
  */
 public class AppWindow(
     private val signInScreenContent: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
     views: List<AppView>,
     initialView: AppView?,
-    private val onCloseRequest: () -> Unit
+    private val onCloseRequest: () -> Unit,
+    private val minWindowSize: Dimension
 ) {
 
     /**
