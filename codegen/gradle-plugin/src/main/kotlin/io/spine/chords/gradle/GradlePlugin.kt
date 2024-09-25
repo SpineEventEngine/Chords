@@ -40,10 +40,14 @@ import org.gradle.api.Project
  */
 public class GradlePlugin : Plugin<Project> {
 
+    public companion object {
+        private const val pluginId = "io.spine.chords.gradle"
+    }
+
     override fun apply(project: Project) {
-        project.tasks.register("runGradlePlugin") { task ->
+        project.tasks.register("applyCodegenPlugins") { task ->
             task.doLast {
-                println("The 'spine-chords-gradle-plugin' plugin task executed.")
+                println("The `$pluginId` plugin task executed.")
             }
         }
     }

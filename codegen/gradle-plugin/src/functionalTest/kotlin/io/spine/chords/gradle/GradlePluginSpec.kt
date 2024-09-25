@@ -42,6 +42,7 @@ class GradlePluginSpec {
 
     @Test
     fun runPluginTask() {
+        val pluginId = "io.spine.chords.gradle"
         val projectDir = File("build/functionalTest")
         Files.createDirectories(projectDir.toPath())
         writeString(File(projectDir, "settings.gradle"), "")
@@ -49,7 +50,7 @@ class GradlePluginSpec {
             File(projectDir, "build.gradle"),
             """
             plugins {
-                id('io.spine.chords.gradle')
+                id('$pluginId')
             }
             """.trimIndent()
         )
@@ -57,13 +58,13 @@ class GradlePluginSpec {
         val result = GradleRunner.create()
             .forwardOutput()
             .withPluginClasspath()
-            .withArguments("runGradlePlugin")
+            .withArguments("applyCodegenPlugins")
             .withProjectDir(projectDir)
             .build()
 
         assertTrue(
             result.output.contains(
-                "The 'spine-chords-gradle-plugin' plugin task executed."
+                "The `$pluginId` plugin task executed."
             )
         )
     }
