@@ -27,8 +27,8 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.spine.internal.dependency.JUnit
 import io.spine.internal.gradle.isSnapshot
-import io.spine.internal.gradle.publish.ChordsPublishing.gradlePluginId
-import io.spine.internal.gradle.publish.ChordsPublishing.gradlePluginMetadataUrl
+import io.spine.internal.gradle.publish.ChordsPublishing
+import io.spine.internal.gradle.publish.ChordsPublishing.GradlePlugin.metadataUrl
 import io.spine.internal.gradle.publish.MavenMetadata.Companion.fetchAndParse
 import io.spine.internal.gradle.publish.SpinePublishing
 
@@ -51,7 +51,7 @@ dependencies {
 // Read the plugin version declared in `version.gradle.kts`.
 apply(from = "$rootDir/version.gradle.kts")
 val versionToPublish: String = extra["gradlePluginVersion"]!! as String
-version = versionToPublish
+project.version = versionToPublish
 
 val functionalTest: SourceSet by sourceSets.creating
 gradlePlugin.testSourceSets(functionalTest)
@@ -90,7 +90,7 @@ pluginBundle {
 gradlePlugin {
     plugins {
         create("chordsCodegenPlugin") {
-            id = gradlePluginId
+            id = ChordsPublishing.GradlePlugin.id
             displayName = "Chords Codegen Gradle Plugin"
             description = "A plugin that generates Kotlin extensions for Proto messages."
             implementationClass = "io.spine.chords.gradle.GradlePlugin"
@@ -202,10 +202,15 @@ val publish: Task by tasks.getting {
 
 configureTaskDependencies()
 
+// A Gradle task that checks whether the current version of the Gradle plugin
+// is published, and if so, cancels the publishing, since publishing the plugin
+// with an existing version will cause the build to fail.
+//
 val checkPublishedVersion = tasks.register("checkPublishedVersion") {
 
     fun checkAndConfigure() {
-        val metadata = fetchAndParse(gradlePluginMetadataUrl)
+        val pluginId = ChordsPublishing.GradlePlugin.id
+        val metadata = fetchAndParse(metadataUrl)
         val versions = metadata?.versioning?.versions
         val versionExists = versions?.contains(versionToPublish) ?: false
         if (versionExists) {
@@ -216,7 +221,7 @@ val checkPublishedVersion = tasks.register("checkPublishedVersion") {
                 enabled = false
             }
             logger.warn(
-                "Publishing of Gradle plugin `$gradlePluginId:$versionToPublish`" +
+                "Publishing of Gradle plugin `$pluginId:$versionToPublish`" +
                         " is disabled because it is already published."
             )
         }

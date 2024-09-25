@@ -26,6 +26,7 @@
 
 package io.spine.internal.gradle.publish
 
+import io.spine.internal.gradle.publish.MavenMetadata.Companion.FILE_NAME
 import java.net.URL
 
 @Suppress("unused", "ConstPropertyName")
@@ -36,11 +37,16 @@ object ChordsPublishing {
      */
     const val artifactPrefix = "spine-chords-"
 
-    const val gradlePluginId = "io.spine.chords.gradle"
+    /**
+     * The Gradle plugin publishing info.
+     *
+     * See `codegen/gradle-plugin` for detail.
+     */
+    object GradlePlugin {
+        const val id = "io.spine.chords.gradle"
 
-    val gradlePluginMetadataUrl = URL(
-        "https://plugins.gradle.org/m2/" +
-                "$gradlePluginId/$gradlePluginId.gradle.plugin/" +
-                MavenMetadata.FILE_NAME
-    )
+        val metadataUrl = URL(
+            "https://plugins.gradle.org/m2/$id/$id.gradle.plugin/$FILE_NAME"
+        )
+    }
 }
