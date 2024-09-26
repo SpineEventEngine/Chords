@@ -113,6 +113,10 @@ plugins {
         
 apply(from = "../../../../version.gradle.kts")
 version = extra["chordsVersion"]!!
+
+chordsGradlePlugin {
+    protoDependencies("io.spine:spine-money:1.5.0")
+}
        
 """.trimIndent()
 
@@ -129,8 +133,11 @@ option java_package = "io.chords.command";
 option java_outer_classname = "TestCommandProto";
 option java_multiple_files = true;
 
+import "spine/money/money.proto";
+
 message TestCommand {
     string id = 1;
+    spine.money.Money money = 2;
 }
 
 """.trimIndent()

@@ -50,11 +50,15 @@ public class GradlePlugin : Plugin<Project> {
     @Suppress("ConstPropertyName")
     private companion object {
         private const val moduleName = "codegen-workspace"
+
+        private const val extensionName = "chordsGradlePlugin"
     }
 
     override fun apply(project: Project) {
 
         val workspaceDir = File(project.buildDir, moduleName)
+
+        project.createExtension()
 
         val copyResources = project.tasks
             .register("copyResources") { task ->
@@ -76,6 +80,7 @@ public class GradlePlugin : Plugin<Project> {
             .register("generateCode", GenerateCode::class.java) { task ->
                 task.dependsOn(addRunPermission)
                 task.workspaceDir = workspaceDir.path
+                task.dependencies(project.extension.dependencies)
             }
     }
 
@@ -100,6 +105,12 @@ public class GradlePlugin : Plugin<Project> {
             outputFile.parentFile.mkdirs()
             outputFile.writeBytes(inputStream.readBytes())
         }
+    }
+
+    private fun Project.createExtension(): ParametersExtension {
+        val extension = ParametersExtension()
+        extensions.add(ParametersExtension::class.java, extensionName, extension)
+        return extension
     }
 
     private fun loadResource(path: String): URL {
@@ -137,3 +148,9 @@ public class GradlePlugin : Plugin<Project> {
         return result
     }
 }
+
+/**
+ * Obtains the extension our plugin added to this Gradle project.
+ */
+private val Project.extension: ParametersExtension
+    get() = extensions.getByType(ParametersExtension::class.java)

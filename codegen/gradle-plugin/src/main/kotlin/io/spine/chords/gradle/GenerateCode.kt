@@ -101,6 +101,15 @@ public open class GenerateCode : DefaultTask() {
      * Configures dependencies that should be added to the codegen module's classpath.
      */
     public fun dependencies(vararg dependencies: String) {
+        this.dependencies.clear()
+        this.dependencies.addAll(dependencies)
+    }
+
+    /**
+     * Configures dependencies that should be added to the codegen module's classpath.
+     */
+    public fun dependencies(dependencies: Set<String>) {
+        this.dependencies.clear()
         this.dependencies.addAll(dependencies)
     }
 
