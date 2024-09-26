@@ -60,18 +60,26 @@ public class GradlePlugin : Plugin<Project> {
             .register("copyResources") { task ->
                 task.doLast {
                     copyResources(workspaceDir)
-                    addRunPermissionToGradle(workspaceDir)
+                    addRunPermission(workspaceDir)
+                }
+            }
+
+        val addRunPermission = project.tasks
+            .register("addRunPermission") { task ->
+                task.dependsOn(copyResources)
+                task.doLast {
+                    addRunPermission(workspaceDir)
                 }
             }
 
         project.tasks
             .register("generateCode", GenerateCode::class.java) { task ->
-                task.dependsOn(copyResources)
+                task.dependsOn(addRunPermission)
                 task.workspaceDir = workspaceDir.path
             }
     }
 
-    private fun addRunPermissionToGradle(workspaceDir: File) {
+    private fun addRunPermission(workspaceDir: File) {
         if (OperatingSystem.current().isWindows) {
             return
         }

@@ -83,6 +83,7 @@ class GradlePluginSpec {
 
         listOf(
             "> Task :copyResources",
+            "> Task :addRunPermission",
             "> Task :generateCode",
             "BUILD SUCCESSFUL"
         ).forEach {
