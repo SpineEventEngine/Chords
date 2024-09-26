@@ -50,10 +50,8 @@ public class GradlePlugin : Plugin<Project> {
     @Suppress("ConstPropertyName")
     private companion object {
         private const val moduleName = "codegen-workspace"
+
         private const val extensionName = "chordsGradlePlugin"
-        //private const val gradleWrapperJar = "gradle/wrapper/gradle-wrapper.jar"
-        private const val mainTaskName = "generateCode"
-        //private const val compileKotlinTaskName = "compileKotlin"
     }
 
     override fun apply(project: Project) {
@@ -77,28 +75,12 @@ public class GradlePlugin : Plugin<Project> {
                 }
             }
 
-        //val generateCode =
-            project.tasks
-            .register(mainTaskName, GenerateCode::class.java) { task ->
+        project.tasks
+            .register("generateCode", GenerateCode::class.java) { task ->
                 task.dependsOn(addRunPermission)
                 task.workspaceDir = workspaceDir.path
-                //task.pluginsVersion = "2.0.0-SNAPSHOT.21"
                 task.dependencies(project.extension.dependencies)
             }
-
-//        val compileKotlin = project.tasks.findByName(compileKotlinTaskName)
-//        if (compileKotlin != null) {
-//            compileKotlin.dependsOn(generateCode)
-//        } else {
-//            project.logger.warn(
-//                """
-//
-//                Warning! The task `$compileKotlinTaskName` not found.
-//                To run the code generation, execute or add dependency on `$mainTaskName` task .
-//
-//                """.trimIndent()
-//            )
-//        }
     }
 
     private fun addRunPermission(workspaceDir: File) {
@@ -120,17 +102,8 @@ public class GradlePlugin : Plugin<Project> {
                 resourcesRoot + resource
             )
             outputFile.parentFile.mkdirs()
-            //System.err.println("Copy file:" + outputFile.path)
-            inputStream.copyTo(outputFile.outputStream())
+            outputFile.writeBytes(inputStream.readBytes())
         }
-
-//        val gradleWrapperJar = File(workspaceDir, gradleWrapperJar)
-//        if (!gradleWrapperJar.exists()) {
-//            gradleWrapperJar.parentFile.mkdirs()
-//            //System.err.println("Copy file:" + gradleWrapperJar.path)
-//            loadResourceAsStream("/gradle-wrapper.zip")
-//                .copyTo(gradleWrapperJar.outputStream())
-//        }
     }
 
     private fun Project.createExtension(): ParametersExtension {
