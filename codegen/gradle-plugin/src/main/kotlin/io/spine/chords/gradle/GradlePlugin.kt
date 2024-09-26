@@ -82,6 +82,7 @@ public class GradlePlugin : Plugin<Project> {
             .register(mainTaskName, GenerateCode::class.java) { task ->
                 task.dependsOn(addRunPermission)
                 task.workspaceDir = workspaceDir.path
+                task.pluginsVersion = "2.0.0-SNAPSHOT.22"
                 task.dependencies(project.extension.dependencies)
             }
 
