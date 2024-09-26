@@ -50,8 +50,9 @@ public class GradlePlugin : Plugin<Project> {
     @Suppress("ConstPropertyName")
     private companion object {
         private const val moduleName = "codegen-workspace"
-
         private const val extensionName = "chordsGradlePlugin"
+        private const val gradleWrapperJar = "gradle/wrapper/gradle-wrapper.jar"
+        //private const val compileKotlinTaskName = "compileKotlin"
     }
 
     override fun apply(project: Project) {
@@ -103,6 +104,14 @@ public class GradlePlugin : Plugin<Project> {
             )
             outputFile.parentFile.mkdirs()
             outputFile.writeBytes(inputStream.readBytes())
+        }
+
+        val gradleWrapperJar = File(workspaceDir, gradleWrapperJar)
+        if (!gradleWrapperJar.exists()) {
+            gradleWrapperJar.parentFile.mkdirs()
+            //System.err.println("Copy file:" + gradleWrapperJar.path)
+            loadResourceAsStream("/gradle-wrapper.zip")
+                .copyTo(gradleWrapperJar.outputStream())
         }
     }
 
