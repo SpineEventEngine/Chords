@@ -60,6 +60,9 @@ configurations[functionalTest.implementationConfigurationName]
     .extendsFrom(configurations.testImplementation.get())
 
 val functionalTestTask = tasks.register<Test>("functionalTest") {
+    dependsOn(
+        rootProject.tasks.named("buildCodegenPlugins")
+    )
     testClassesDirs = functionalTest.output.classesDirs
     classpath = configurations[functionalTest.runtimeClasspathConfigurationName]
         .plus(functionalTest.output)
@@ -248,10 +251,4 @@ val checkPublishedVersion = tasks.register("checkPublishedVersion") {
 
 tasks.named("check") {
     dependsOn(checkPublishedVersion)
-}
-
-tasks.withType<Test>().forEach { task ->
-    task.dependsOn(
-        rootProject.tasks.named("buildCodegenPlugins")
-    )
 }
