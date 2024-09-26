@@ -51,6 +51,7 @@ dependencies {
 // Read the plugin version declared in `version.gradle.kts`.
 apply(from = "$rootDir/version.gradle.kts")
 val versionToPublish: String = extra["gradlePluginVersion"]!! as String
+val chordsVersion = project.version
 project.version = versionToPublish
 
 val functionalTest: SourceSet by sourceSets.creating
@@ -60,6 +61,7 @@ configurations[functionalTest.implementationConfigurationName]
     .extendsFrom(configurations.testImplementation.get())
 
 val functionalTestTask = tasks.register<Test>("functionalTest") {
+    project.version = chordsVersion
     testClassesDirs = functionalTest.output.classesDirs
     classpath = configurations[functionalTest.runtimeClasspathConfigurationName]
         .plus(functionalTest.output)
