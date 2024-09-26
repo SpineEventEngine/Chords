@@ -52,7 +52,7 @@ public class GradlePlugin : Plugin<Project> {
         private const val moduleName = "codegen-workspace"
         private const val extensionName = "chordsGradlePlugin"
         private const val gradleWrapperJar = "gradle/wrapper/gradle-wrapper.jar"
-        private const val mainTaskName = "applyCodegenPlugins"
+        private const val mainTaskName = "generateCode"
         private const val compileKotlinTaskName = "compileKotlin"
     }
 
@@ -66,7 +66,6 @@ public class GradlePlugin : Plugin<Project> {
             .register("copyResources") { task ->
                 task.doLast {
                     copyResources(workspaceDir)
-                    addRunPermission(workspaceDir)
                 }
             }
 
@@ -82,7 +81,7 @@ public class GradlePlugin : Plugin<Project> {
             .register(mainTaskName, GenerateCode::class.java) { task ->
                 task.dependsOn(addRunPermission)
                 task.workspaceDir = workspaceDir.path
-                task.pluginsVersion = "2.0.0-SNAPSHOT.21"
+                //task.pluginsVersion = "2.0.0-SNAPSHOT.21"
                 task.dependencies(project.extension.dependencies)
             }
 
