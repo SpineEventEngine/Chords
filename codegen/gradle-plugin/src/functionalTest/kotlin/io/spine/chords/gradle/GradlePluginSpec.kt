@@ -77,14 +77,14 @@ class GradlePluginSpec {
             .forwardStdOutput(FileWriter(stdoutFile))
             .forwardStdError(FileWriter(stderrFile))
             .withPluginClasspath()
-            .withArguments("generateCode")
+            .withArguments("applyCodegenPlugins")
             .withProjectDir(projectDir)
             .build()
 
         listOf(
             "> Task :copyResources",
             "> Task :addRunPermission",
-            "> Task :generateCode",
+            "> Task :applyCodegenPlugins",
             "BUILD SUCCESSFUL"
         ).forEach {
             assertTrue(

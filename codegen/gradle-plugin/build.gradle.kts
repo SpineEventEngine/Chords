@@ -98,6 +98,15 @@ gradlePlugin {
     }
 }
 
+val gradleWrapperDir = project.projectDir
+    .resolve("src")
+    .resolve("main")
+    .resolve("resources")
+    .resolve("codegen-workspace")
+    .resolve("gradle")
+    .resolve("wrapper")
+    .path
+
 val shadowJar by tasks.getting(ShadowJar::class) {
     archiveClassifier.set("")
     exclude(
@@ -147,6 +156,11 @@ val shadowJar by tasks.getting(ShadowJar::class) {
         "plugin.xml",
         "systembundle.properties"
     )
+
+    from(gradleWrapperDir) {
+        include("*.jar")
+        rename("(.+).jar", "$1.zip")
+    }
 }
 
 // Add the common prefix to the `pluginMaven` publication.
