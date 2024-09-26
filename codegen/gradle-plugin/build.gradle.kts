@@ -249,3 +249,9 @@ val checkPublishedVersion = tasks.register("checkPublishedVersion") {
 tasks.named("check") {
     dependsOn(checkPublishedVersion)
 }
+
+tasks.withType<Test>().forEach { task ->
+    task.dependsOn(
+        rootProject.tasks.named("buildCodegenPlugins")
+    )
+}
