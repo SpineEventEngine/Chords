@@ -57,13 +57,13 @@ class GradlePluginSpec {
         val projectDir = File("build/functionalTest")
 
         Files.createDirectories(projectDir.toPath())
-        writeString(File(projectDir, "settings.gradle"), "")
+        writeFile(File(projectDir, "settings.gradle.kts"), "")
 
-        writeString(
-            File(projectDir, "build.gradle"),
-            buildGradleFileContent
+        writeFile(
+            File(projectDir, "build.gradle.kts"),
+            buildGradleFileContent(pluginId)
         )
-        writeString(
+        writeFile(
             File(projectDir, sourceProtoFile),
             protoFileContent
         )
@@ -77,13 +77,13 @@ class GradlePluginSpec {
             .forwardStdOutput(FileWriter(stdoutFile))
             .forwardStdError(FileWriter(stderrFile))
             .withPluginClasspath()
-            .withArguments("applyCodegenPlugins")
+            .withArguments("generateCode")
             .withProjectDir(projectDir)
             .build()
 
         listOf(
             "> Task :copyResources",
-            "> Task :applyCodegenPlugins",
+            "> Task :generateCode",
             "BUILD SUCCESSFUL"
         ).forEach {
             assertTrue(
@@ -95,20 +95,25 @@ class GradlePluginSpec {
             File(projectDir, generatedKotlinFile).exists()
         )
     }
-
-    private val buildGradleFileContent = """
-        plugins {
-            id('$pluginId')
-        }
-    """.trimIndent()
 }
 
-private fun writeString(file: File, text: String) {
+private fun writeFile(file: File, text: String) {
     file.parentFile.mkdirs()
     FileWriter(file).use { writer ->
         writer.write(text)
     }
 }
+
+private fun buildGradleFileContent(pluginId: String): String = """
+        
+plugins {
+    id("$pluginId")
+}
+        
+apply(from = "../../../../version.gradle.kts")
+version = extra["chordsVersion"]!!
+       
+""".trimIndent()
 
 private val protoFileContent = """
 

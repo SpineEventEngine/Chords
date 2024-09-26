@@ -56,23 +56,19 @@ public class GradlePlugin : Plugin<Project> {
 
         val workspaceDir = File(project.buildDir, moduleName)
 
-        val copyResources = project.tasks.register(
-            "copyResources"
-        ) { task ->
-            task.doLast {
-                copyResources(workspaceDir)
-                addRunPermissionToGradle(workspaceDir)
+        val copyResources = project.tasks
+            .register("copyResources") { task ->
+                task.doLast {
+                    copyResources(workspaceDir)
+                    addRunPermissionToGradle(workspaceDir)
+                }
             }
-        }
 
-        project.tasks.register(
-            "applyCodegenPlugins",
-            ApplyCodegenPlugins::class.java
-        ) { task ->
-            task.dependsOn(copyResources)
-            task.workspaceDir = workspaceDir.absolutePath
-            task.pluginsVersion = "2.0.0-SNAPSHOT.20"
-        }
+        project.tasks
+            .register("generateCode", GenerateCode::class.java) { task ->
+                task.dependsOn(copyResources)
+                task.workspaceDir = workspaceDir.path
+            }
     }
 
     private fun addRunPermissionToGradle(workspaceDir: File) {

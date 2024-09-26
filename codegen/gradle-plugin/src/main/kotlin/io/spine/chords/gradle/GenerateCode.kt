@@ -24,7 +24,7 @@ import org.gradle.internal.os.OperatingSystem
  * The error output is written into `$workspaceDir/_out/error-out.txt`.
  */
 @Suppress("unused")
-public open class ApplyCodegenPlugins : DefaultTask() {
+public open class GenerateCode : DefaultTask() {
 
     public companion object {
         /**
