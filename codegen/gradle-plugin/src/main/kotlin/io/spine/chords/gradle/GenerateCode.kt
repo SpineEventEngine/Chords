@@ -18,7 +18,7 @@ import org.gradle.internal.os.OperatingSystem
  * The [sourceModuleDir] and [pluginsVersion] properties may be specified
  * if the default values are unsuitable.
  *
- * The `clean` task is also run if current build includes a `clean` task.
+ * The `clean` task is also run if the current build includes a `clean` task.
  *
  * The build writes verbose log into `$workspaceDir/_out/debug-out.txt`.
  * The error output is written into `$workspaceDir/_out/error-out.txt`.
@@ -81,7 +81,8 @@ public open class GenerateCode : DefaultTask() {
     /**
      * Names of Gradle properties to copy into the launched build.
      *
-     * The properties are looked up in the root project. If a property is not found, it is ignored.
+     * The properties are looked up in the root project.
+     * If a property is not found, it is ignored.
      *
      * See [Gradle doc](https://docs.gradle.org/current/userguide/build_environment.html#sec:gradle_configuration_properties)
      * for more info about Gradle properties.

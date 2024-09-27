@@ -41,7 +41,7 @@ import org.gradle.internal.os.OperatingSystem
  *
  * Actually, it applies
  * [codegen/plugins](https://github.com/SpineEventEngine/Chords/tree/master/codegen/plugins)
- * to a module, which requires the code generation.
+ * to a module, which requires the code generation for Proto sources.
  *
  * It is under construction at the moment.
  */
@@ -49,15 +49,18 @@ public class GradlePlugin : Plugin<Project> {
 
     @Suppress("ConstPropertyName")
     private companion object {
-        private const val moduleName = "codegen-workspace"
+        private const val workspaceModuleName = "codegen-workspace"
         private const val extensionName = "chordsGradlePlugin"
         private const val gradleWrapperJar = "gradle/wrapper/gradle-wrapper.jar"
-        //private const val compileKotlinTaskName = "compileKotlin"
     }
 
+    /**
+     * Creates plugin extension, which allows to configure the plugin,
+     * and tasks, that perform the necessary actions.
+     */
     override fun apply(project: Project) {
 
-        val workspaceDir = File(project.buildDir, moduleName)
+        val workspaceDir = File(project.buildDir, workspaceModuleName)
 
         project.createExtension()
 
@@ -84,6 +87,12 @@ public class GradlePlugin : Plugin<Project> {
             }
     }
 
+    /**
+     * Executes a native command to add run permission to `gradlew`.
+     *
+     * The operation is performed under Linux-based OS
+     * and is skipped under Windows.
+     */
     private fun addRunPermission(workspaceDir: File) {
         if (OperatingSystem.current().isWindows) {
             return
@@ -95,8 +104,14 @@ public class GradlePlugin : Plugin<Project> {
             .start()
     }
 
+    /**
+     * Copies the necessary resources from classpath.
+     *
+     * Actually, it creates a `workspace` module, in which the code generation
+     * is to be performed.
+     */
     private fun copyResources(workspaceDir: File) {
-        val resourcesRoot = "/$moduleName"
+        val resourcesRoot = "/$workspaceModuleName"
         listResources(resourcesRoot).forEach { resource ->
             val outputFile = File(workspaceDir, resource)
             val inputStream = loadResourceAsStream(
@@ -115,12 +130,21 @@ public class GradlePlugin : Plugin<Project> {
         }
     }
 
+    /**
+     * Creates plugin extension which allows to configure the plugin
+     * in Gradle build script.
+     */
     private fun Project.createExtension(): ParametersExtension {
         val extension = ParametersExtension()
         extensions.add(ParametersExtension::class.java, extensionName, extension)
         return extension
     }
 
+    /**
+     * Loads the specified resource from classpath.
+     *
+     * @throws IllegalStateException If the requested resource is not available.
+     */
     private fun loadResource(path: String): URL {
         val resourceUrl = this::class.java.getResource(path)
         checkNotNull(resourceUrl) {
@@ -129,10 +153,16 @@ public class GradlePlugin : Plugin<Project> {
         return resourceUrl
     }
 
+    /**
+     * Opens [InputStream] on the specified resource in the classpath.
+     */
     private fun loadResourceAsStream(path: String): InputStream {
         return loadResource(path).openStream()
     }
 
+    /**
+     * Returns the list of resources in the classpath by the [path] specified.
+     */
     private fun listResources(path: String): Set<String> {
         val resourceUrl = loadResource(path)
         check(resourceUrl.protocol == "jar") {
@@ -158,7 +188,7 @@ public class GradlePlugin : Plugin<Project> {
 }
 
 /**
- * Obtains the extension our plugin added to this Gradle project.
+ * Obtains the extension the plugin added to this Gradle project.
  */
 private val Project.extension: ParametersExtension
     get() = extensions.getByType(ParametersExtension::class.java)

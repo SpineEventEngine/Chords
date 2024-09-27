@@ -101,6 +101,12 @@ gradlePlugin {
     }
 }
 
+
+// Path to the directory that contains `gradle-wrapper.jar`.
+//
+// It is needed to add this jar as a resource because `ShadowJar`
+// merges the content of the jars instead of copying.
+//
 val gradleWrapperDir = project.projectDir
     .resolve("src")
     .resolve("main")
@@ -160,6 +166,7 @@ val shadowJar by tasks.getting(ShadowJar::class) {
         "systembundle.properties"
     )
 
+    // Copies `gradle-wrapper.jar` as a `zip` file.
     from(gradleWrapperDir) {
         include("*.jar")
         rename("(.+).jar", "$1.zip")

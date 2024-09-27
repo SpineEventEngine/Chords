@@ -27,19 +27,49 @@
 package io.spine.chords.gradle
 
 /**
- * The extension for [GradlePlugin] that allows to apply some parameters
- * in Gradle build script.
+ * Utilities to create some test data.
  */
-public class ParametersExtension {
 
-    internal val dependencies: MutableSet<String> = mutableSetOf()
 
-    /**
-     * Allows to specify dependencies on Proto sources that are required
-     * to generate the code.
-     */
-    public fun protoDependencies(vararg protoDependencies: String) {
-        dependencies.clear()
-        dependencies.addAll(protoDependencies)
-    }
+/**
+ * Generates the content of `build.gradle.kts` to execute the tests with.
+ */
+internal fun generateGradleBuildFile(pluginId: String): String = """
+        
+plugins {
+    id("$pluginId")
 }
+        
+apply(from = "../../../../version.gradle.kts")
+version = extra["chordsVersion"]!!
+
+chordsGradlePlugin {
+    protoDependencies("io.spine:spine-money:1.5.0")
+}
+       
+""".trimIndent()
+
+/**
+ * Returns the content of the Proto file for which code will be generated.
+ */
+internal val protoFileContent = """
+
+syntax = "proto3";
+
+package chords;
+
+import "spine/options.proto";
+
+option (type_url_prefix) = "type.chords";
+option java_package = "io.chords.command";
+option java_outer_classname = "TestCommandProto";
+option java_multiple_files = true;
+
+import "spine/money/money.proto";
+
+message TestCommand {
+    string id = 1;
+    spine.money.Money money = 2;
+}
+
+""".trimIndent()

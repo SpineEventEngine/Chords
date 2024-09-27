@@ -48,23 +48,25 @@ class GradlePluginSpec {
         private const val sourceProtoFile =
             "src/main/proto/chords/commands.proto"
 
-        private const val generatedKotlinFile =
+        private const val expectedKotlinFile =
             "generated/main/kotlin/io/chords/command/TestCommandDef.kt"
     }
 
+    /**
+     * Checks that the required tasks are executed by the `GradlePlugin`
+     * and Kotlin code is generated for Proto files.
+     */
     @Test
     fun copyResourcesAndApplyCodegenPlugins() {
         val projectDir = File("build/functionalTest")
 
         Files.createDirectories(projectDir.toPath())
-        writeFile(File(projectDir, "settings.gradle.kts"), "")
+        File(projectDir, "settings.gradle.kts").writeText("")
 
-        writeFile(
-            File(projectDir, "build.gradle.kts"),
-            buildGradleFileContent(pluginId)
+        File(projectDir, "build.gradle.kts").writeText(
+            generateGradleBuildFile(pluginId)
         )
-        writeFile(
-            File(projectDir, sourceProtoFile),
+        File(projectDir, sourceProtoFile).writeText(
             protoFileContent
         )
 
@@ -93,51 +95,17 @@ class GradlePluginSpec {
         }
 
         assertTrue(
-            File(projectDir, generatedKotlinFile).exists()
+            File(projectDir, expectedKotlinFile).exists()
         )
     }
 }
 
-private fun writeFile(file: File, text: String) {
-    file.parentFile.mkdirs()
-    FileWriter(file).use { writer ->
+/**
+ * Writes the specified [text] to this File.
+ */
+private fun File.writeText(text: String) {
+    parentFile.mkdirs()
+    FileWriter(this).use { writer ->
         writer.write(text)
     }
 }
-
-private fun buildGradleFileContent(pluginId: String): String = """
-        
-plugins {
-    id("$pluginId")
-}
-        
-apply(from = "../../../../version.gradle.kts")
-version = extra["chordsVersion"]!!
-
-chordsGradlePlugin {
-    protoDependencies("io.spine:spine-money:1.5.0")
-}
-       
-""".trimIndent()
-
-private val protoFileContent = """
-
-syntax = "proto3";
-
-package chords;
-
-import "spine/options.proto";
-
-option (type_url_prefix) = "type.chords";
-option java_package = "io.chords.command";
-option java_outer_classname = "TestCommandProto";
-option java_multiple_files = true;
-
-import "spine/money/money.proto";
-
-message TestCommand {
-    string id = 1;
-    spine.money.Money money = 2;
-}
-
-""".trimIndent()
