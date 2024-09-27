@@ -57,6 +57,7 @@ class GradlePluginSpec {
      * and Kotlin code is generated for Proto files.
      */
     @Test
+    @Suppress("All")
     fun copyResourcesAndApplyCodegenPlugins() {
         val projectDir = File("build/functionalTest")
 
@@ -72,16 +73,22 @@ class GradlePluginSpec {
 
         val outputDir = File(projectDir, "_out")
         outputDir.mkdirs()
-        val stdoutFile = File(outputDir, "std-out.txt")
-        val stderrFile = File(outputDir, "err-out.txt")
+        //val stdoutFile = File(outputDir, "std-out.txt")
+        //val stderrFile = File(outputDir, "err-out.txt")
 
-        val result = GradleRunner.create()
-            .forwardStdOutput(FileWriter(stdoutFile))
-            .forwardStdError(FileWriter(stderrFile))
-            .withPluginClasspath()
-            .withArguments("generateCode")
-            .withProjectDir(projectDir)
-            .build()
+        val result = try {
+            GradleRunner.create()
+                //.forwardStdOutput(FileWriter(stdoutFile))
+                // .forwardStdError(FileWriter(stderrFile))
+                .forwardOutput()
+                .withPluginClasspath()
+                .withArguments("generateCode")
+                .withProjectDir(projectDir)
+                .build()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw RuntimeException(e)
+        }
 
         listOf(
             "> Task :copyResources",

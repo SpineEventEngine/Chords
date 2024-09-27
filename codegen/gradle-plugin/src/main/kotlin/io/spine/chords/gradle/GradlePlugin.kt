@@ -79,12 +79,26 @@ public class GradlePlugin : Plugin<Project> {
                 }
             }
 
-        project.tasks
+        val generateCode = project.tasks
             .register("generateCode", GenerateCode::class.java) { task ->
                 task.dependsOn(addRunPermission)
                 task.workspaceDir = workspaceDir.path
                 task.dependencies(project.extension.dependencies)
             }
+
+        val compileKotlin = project.tasks.findByName("compileKotlin")
+        if (compileKotlin != null) {
+            compileKotlin.dependsOn(generateCode)
+        } else {
+            project.logger.warn(
+                """
+
+                Warning! The task `compileKotlin` not found.
+                To run the code generation, execute or add dependency on `generateCode` task .
+
+                """.trimIndent()
+            )
+        }
     }
 
     /**
