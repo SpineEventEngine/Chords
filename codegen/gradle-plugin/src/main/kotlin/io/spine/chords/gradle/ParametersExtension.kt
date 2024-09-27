@@ -26,11 +26,26 @@
 
 package io.spine.chords.gradle
 
+import io.spine.chords.gradle.ParametersExtension.Companion.extensionName
+import org.gradle.api.Project
+
 /**
  * The extension for [GradlePlugin] that allows to apply some parameters
  * in Gradle build script.
+ *
+ * The sample plugin configuration:
+ * ```
+ * chordsGradlePlugin {
+ *     protoDependencies("io.spine:spine-money:1.5.0")
+ * }
+ * ```
  */
 public class ParametersExtension {
+
+    @Suppress("ConstPropertyName")
+    internal companion object {
+        internal const val extensionName = "chordsGradlePlugin"
+    }
 
     internal val dependencies: MutableSet<String> = mutableSetOf()
 
@@ -42,4 +57,13 @@ public class ParametersExtension {
         dependencies.clear()
         dependencies.addAll(protoDependencies)
     }
+}
+
+/**
+ * Creates extension which allows to configure the plugin in Gradle build script.
+ */
+internal fun Project.createExtension(): ParametersExtension {
+    val extension = ParametersExtension()
+    extensions.add(ParametersExtension::class.java, extensionName, extension)
+    return extension
 }

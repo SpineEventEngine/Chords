@@ -43,20 +43,29 @@ import org.gradle.internal.os.OperatingSystem
  * [codegen/plugins](https://github.com/SpineEventEngine/Chords/tree/master/codegen/plugins)
  * to a module, which requires the code generation for Proto sources.
  *
- * It is under construction at the moment.
+ * Adds a dependency for the `compileKotlin` task if it is present in the project.
+ * Otherwise, it should be configured manually in the project build script.
+ * The task `generateCode` should be configured to execute in this case.
+ *
+ * The dependencies on Proto sources that are required for code generation
+ * can be configured in the following way:
+ * ```
+ * chordsGradlePlugin {
+ *     protoDependencies("io.spine:spine-money:1.5.0")
+ * }
+ * ```
  */
 public class GradlePlugin : Plugin<Project> {
 
     @Suppress("ConstPropertyName")
     private companion object {
         private const val workspaceModuleName = "codegen-workspace"
-        private const val extensionName = "chordsGradlePlugin"
         private const val gradleWrapperJar = "gradle/wrapper/gradle-wrapper.jar"
     }
 
     /**
      * Creates plugin extension, which allows to configure the plugin,
-     * and tasks, that perform the necessary actions.
+     * and tasks that perform the necessary actions.
      */
     override fun apply(project: Project) {
 
@@ -92,10 +101,8 @@ public class GradlePlugin : Plugin<Project> {
         } else {
             project.logger.warn(
                 """
-
-                Warning! The task `compileKotlin` not found.
-                To run the code generation, execute or add dependency on `generateCode` task .
-
+                Warning! Task `compileKotlin` not found, so required dependency not added.
+                To generate code, the `generateCode` task should be executed.
                 """.trimIndent()
             )
         }
@@ -145,16 +152,6 @@ public class GradlePlugin : Plugin<Project> {
     }
 
     /**
-     * Creates plugin extension which allows to configure the plugin
-     * in Gradle build script.
-     */
-    private fun Project.createExtension(): ParametersExtension {
-        val extension = ParametersExtension()
-        extensions.add(ParametersExtension::class.java, extensionName, extension)
-        return extension
-    }
-
-    /**
      * Loads the specified resource from classpath.
      *
      * @throws IllegalStateException If the requested resource is not available.
@@ -180,7 +177,7 @@ public class GradlePlugin : Plugin<Project> {
     private fun listResources(path: String): Set<String> {
         val resourceUrl = loadResource(path)
         check(resourceUrl.protocol == "jar") {
-            "Protocol not supported yet: `${resourceUrl.protocol}`."
+            "Protocol is not supported yet: `${resourceUrl.protocol}`."
         }
         val result: MutableSet<String> = mutableSetOf()
         val resourcePath = resourceUrl.path
