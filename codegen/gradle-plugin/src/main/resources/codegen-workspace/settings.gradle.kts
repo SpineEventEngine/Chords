@@ -25,17 +25,4 @@
  */
 
 rootProject.name = "Chords"
-
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
-
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+include("workspace")

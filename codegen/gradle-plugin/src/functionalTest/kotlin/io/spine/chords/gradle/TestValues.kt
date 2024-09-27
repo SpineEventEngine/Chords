@@ -24,18 +24,52 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.chords.gradle
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+/**
+ * Utilities to create some test data.
+ */
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+
+/**
+ * Generates the content of `build.gradle.kts` to execute the tests with.
+ */
+internal fun generateGradleBuildFile(pluginId: String): String = """
+        
+plugins {
+    id("$pluginId")
+}
+        
+apply(from = "../../../../version.gradle.kts")
+version = extra["chordsVersion"]!!
+
+chordsGradlePlugin {
+    protoDependencies("io.spine:spine-money:1.5.0")
+}
+       
+""".trimIndent()
+
+/**
+ * Returns the content of the Proto file for which code will be generated.
+ */
+internal val protoFileContent = """
+
+syntax = "proto3";
+
+package chords;
+
+import "spine/options.proto";
+
+option (type_url_prefix) = "type.chords";
+option java_package = "io.chords.command";
+option java_outer_classname = "TestCommandProto";
+option java_multiple_files = true;
+
+import "spine/money/money.proto";
+
+message TestCommand {
+    string id = 1;
+    spine.money.Money money = 2;
+}
+
+""".trimIndent()

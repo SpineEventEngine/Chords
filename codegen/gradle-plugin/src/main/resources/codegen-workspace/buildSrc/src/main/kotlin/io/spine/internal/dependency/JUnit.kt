@@ -24,18 +24,35 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+// https://junit.org/junit5/
+@Suppress("ConstPropertyName")
+object JUnit {
+    const val version = "5.10.0"
+    private const val legacyVersion = "4.13.1"
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+    // https://github.com/apiguardian-team/apiguardian
+    private const val apiGuardianVersion = "1.1.2"
+
+    const val legacy = "junit:junit:${legacyVersion}"
+
+    val api = listOf(
+        "org.apiguardian:apiguardian-api:${apiGuardianVersion}",
+        "org.junit.jupiter:junit-jupiter-api:${version}",
+        "org.junit.jupiter:junit-jupiter-params:${version}"
+    )
+    const val bom = "org.junit:junit-bom:${version}"
+
+    const val runner = "org.junit.jupiter:junit-jupiter-engine:${version}"
+
+    object Platform {
+        // https://junit.org/junit5/
+        const val version = "1.10.0"
+        internal const val group = "org.junit.platform"
+        const val commons = "$group:junit-platform-commons:$version"
+        const val launcher = "$group:junit-platform-launcher:$version"
+        const val engine = "$group:junit-platform-engine:$version"
+        const val suiteApi = "$group:junit-platform-suite-api:$version"
+    }
+}

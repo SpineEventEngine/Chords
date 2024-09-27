@@ -24,18 +24,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
-
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+/**
+ * The dependencies for Guava.
+ *
+ * When changing the version, also change the version used in the `build.gradle.kts`. We need
+ * to synchronize the version used in `buildSrc` and in Spine modules. Otherwise, when testing
+ * Gradle plugins, errors may occur due to version clashes.
+ *
+ * @see <a href="https://github.com/google/guava">Guava at GitHub</a>.
+ */
+@Suppress("ConstPropertyName")
+object Guava {
+    private const val version = "32.1.2-jre"
+    const val lib = "com.google.guava:guava:${version}"
+    const val testLib = "com.google.guava:guava-testlib:${version}"
+}

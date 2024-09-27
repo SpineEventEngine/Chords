@@ -24,29 +24,39 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.internal.gradle.publish
+package io.spine.internal.dependency
 
-import io.spine.internal.gradle.publish.MavenMetadata.Companion.FILE_NAME
-import java.net.URL
+// https://github.com/JetBrains/kotlin
+// https://github.com/Kotlin
+@Suppress("ConstPropertyName")
+object Kotlin {
 
-@Suppress("unused", "ConstPropertyName")
-object ChordsPublishing {
     /**
-     * The artifact prefix that should be used for all the Chords modules
-     * before the artifact name for publishing/reading artifacts to/from repositories.
+     * When changing the version, also change the version used in the `buildSrc/build.gradle.kts`.
      */
-    const val artifactPrefix = "spine-chords-"
+    @Suppress("MemberVisibilityCanBePrivate") // used directly from the outside.
+    const val version = "1.8.22"
 
     /**
-     * The Gradle plugin publishing info.
+     * The version of the JetBrains annotations library, which is a transitive
+     * dependency for us via Kotlin libraries.
      *
-     * See `codegen/gradle-plugin` for detail.
+     * @see <a href="https://github.com/JetBrains/java-annotations">Java Annotations</a>
      */
-    object GradlePlugin {
-        const val id = "io.spine.chords.gradle"
+    private const val annotationsVersion = "24.0.1"
 
-        val metadataUrl = URL(
-            "https://plugins.gradle.org/m2/$id/$id.gradle.plugin/$FILE_NAME"
-        )
-    }
+    private const val group = "org.jetbrains.kotlin"
+
+    const val stdLib = "${group}:kotlin-stdlib:${version}"
+    const val stdLibCommon = "${group}:kotlin-stdlib-common:${version}"
+
+    @Deprecated("Please use `stdLib` instead.")
+    const val stdLibJdk7 = "${group}:kotlin-stdlib-jdk7:${version}"
+
+    @Deprecated("Please use `stdLib` instead.")
+    const val stdLibJdk8 = "${group}:kotlin-stdlib-jdk8:${version}"
+
+    const val reflect = "${group}:kotlin-reflect:${version}"
+
+    const val jetbrainsAnnotations = "org.jetbrains:annotations:${annotationsVersion}"
 }

@@ -24,18 +24,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
-
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+/**
+ * Spine used to log with SLF4J. Now we use Flogger. Whenever a choice comes up, we recommend to
+ * use the latter.
+ *
+ * The primary purpose of having this dependency object is working in combination with
+ * [Flogger.Runtime.slf4JBackend].
+ *
+ * Some third-party libraries may clash with different versions of the library.
+ * Thus, we specify this version and force it via [forceVersions].
+ * Please see `DependencyResolution.kt` for details.
+ */
+@Suppress("ConstPropertyName")
+object Slf4J {
+    private const val version = "2.0.7"
+    const val lib = "org.slf4j:slf4j-api:${version}"
+}

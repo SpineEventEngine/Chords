@@ -24,18 +24,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+// https://errorprone.info/
+@Suppress("ConstPropertyName")
+object ErrorProne {
+    // https://github.com/google/error-prone
+    private const val version = "2.21.1"
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+    val annotations = listOf(
+        "com.google.errorprone:error_prone_annotations:${version}",
+        "com.google.errorprone:error_prone_type_annotations:${version}"
+    )
+    const val core = "com.google.errorprone:error_prone_core:${version}"
+
+    // https://github.com/tbroyer/gradle-errorprone-plugin/releases
+    object GradlePlugin {
+        const val id = "net.ltgt.errorprone"
+
+        /**
+         * The version of this plugin is already specified in `buildSrc/build.gradle.kts` file.
+         * Thus, when applying the plugin in projects build files, only the [id] should be used.
+         *
+         * When the plugin is used as a library (e.g. in tools), its version and the library
+         * artifacts are of importance.
+         */
+        const val version = "3.1.0"
+        const val lib = "net.ltgt.gradle:gradle-errorprone-plugin:${version}"
+    }
+}

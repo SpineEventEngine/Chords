@@ -24,18 +24,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+/**
+ * The dependency on the `java-diff-utils` library, which is transitive for us at the time
+ * of writing.
+ *
+ * It might become our dependency as a part of
+ * the [Spine Text](https://github.com/SpineEventEngine/text) library.
+ */
+@Suppress("ConstPropertyName")
+object JavaDiffUtils {
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+    // https://github.com/java-diff-utils/java-diff-utils/releases
+    private const val version = "4.12"
+    const val lib = "io.github.java-diff-utils:java-diff-utils:${version}"
+}

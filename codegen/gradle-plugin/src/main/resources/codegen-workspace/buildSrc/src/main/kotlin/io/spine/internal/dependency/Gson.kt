@@ -24,18 +24,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
-
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+/**
+ * Gson is a transitive dependency which we don't use directly.
+ * We `force` it in [DependencyResolution.forceConfiguration()].
+ *
+ * [Gson](https://github.com/google/gson)
+ */
+@Suppress("ConstPropertyName")
+object Gson {
+    private const val version = "2.10.1"
+    const val lib = "com.google.code.gson:gson:${version}"
+}

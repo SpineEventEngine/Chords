@@ -24,18 +24,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+import io.spine.internal.gradle.standardToSpineSdk
+import org.gradle.kotlin.dsl.ScriptHandlerScope
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
-
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+/**
+ * Applies [standard][standardToSpineSdk] repositories to this `buildscript`.
+ */
+fun ScriptHandlerScope.standardSpineSdkRepositories() {
+    repositories.standardToSpineSdk()
+}

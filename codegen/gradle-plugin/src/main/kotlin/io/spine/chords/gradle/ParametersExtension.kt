@@ -24,18 +24,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.chords.gradle
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+import io.spine.chords.gradle.ParametersExtension.Companion.extensionName
+import org.gradle.api.Project
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+/**
+ * The extension for [GradlePlugin] that allows to apply some parameters
+ * in Gradle build script.
+ *
+ * The sample plugin configuration:
+ * ```
+ * chordsGradlePlugin {
+ *     protoDependencies("io.spine:spine-money:1.5.0")
+ * }
+ * ```
+ */
+public class ParametersExtension {
+
+    @Suppress("ConstPropertyName")
+    internal companion object {
+        internal const val extensionName = "chordsGradlePlugin"
+    }
+
+    internal val dependencies: MutableSet<String> = mutableSetOf()
+
+    /**
+     * Allows to specify dependencies on Proto sources that are required
+     * to generate the code.
+     */
+    public fun protoDependencies(vararg protoDependencies: String) {
+        dependencies.clear()
+        dependencies.addAll(protoDependencies)
+    }
+}
+
+/**
+ * Creates extension which allows to configure the plugin in Gradle build script.
+ */
+internal fun Project.createExtension(): ParametersExtension {
+    val extension = ParametersExtension()
+    extensions.add(ParametersExtension::class.java, extensionName, extension)
+    return extension
+}

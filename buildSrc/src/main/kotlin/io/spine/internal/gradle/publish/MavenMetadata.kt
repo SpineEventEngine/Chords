@@ -24,18 +24,43 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.gradle.publish
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+import com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import java.io.FileNotFoundException
+import java.net.URL
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+/**
+ * Reads `maven-metadata.xml` from the given maven repository.
+ */
+data class MavenMetadata(var versioning: Versioning = Versioning()) {
+
+    companion object {
+
+        const val FILE_NAME = "maven-metadata.xml"
+
+        private val mapper = XmlMapper()
+
+        init {
+            mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+        }
+
+        /**
+         * Fetches the metadata for the repository and parses the document.
+         *
+         * <p>If the document could not be found, assumes that the module was never
+         * released and thus has no metadata.
+         */
+        fun fetchAndParse(url: URL): MavenMetadata? {
+            return try {
+                val metadata = mapper.readValue(url, MavenMetadata::class.java)
+                metadata
+            } catch (ignored: FileNotFoundException) {
+                null
+            }
+        }
+    }
+}
+
+data class Versioning(var versions: List<String> = listOf())

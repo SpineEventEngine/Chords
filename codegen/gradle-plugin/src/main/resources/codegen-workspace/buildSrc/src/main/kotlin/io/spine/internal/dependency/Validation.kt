@@ -24,18 +24,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
-
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+/**
+ * Dependencies on Spine Validation SDK.
+ *
+ * See [`SpineEventEngine/validation`](https://github.com/SpineEventEngine/validation/).
+ */
+@Suppress("ConstPropertyName")
+object Validation {
+    const val version = "2.0.0-SNAPSHOT.126"
+    const val group = "io.spine.validation"
+    const val runtime = "${group}:spine-validation-java-runtime:${version}"
+    const val java = "${group}:spine-validation-java:${version}"
+    const val model = "${group}:spine-validation-model:${version}"
+}

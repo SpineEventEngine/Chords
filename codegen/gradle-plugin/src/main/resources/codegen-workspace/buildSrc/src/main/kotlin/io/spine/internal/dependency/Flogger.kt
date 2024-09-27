@@ -24,18 +24,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+// https://github.com/google/flogger
+@Suppress("ConstPropertyName")
+object Flogger {
+    internal const val version = "0.7.4"
+    const val lib = "com.google.flogger:flogger:${version}"
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+    object Runtime {
+        const val slf4JBackend  = "com.google.flogger:flogger-slf4j-backend:${version}"
+    }
+}

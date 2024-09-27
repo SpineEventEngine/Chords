@@ -24,18 +24,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
-
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+/**
+ * Commons CLI is a transitive dependency which we don't use directly.
+ * We `force` it in [forceVersions].
+ *
+ * [Commons CLI](https://commons.apache.org/proper/commons-cli/)
+ */
+@Suppress("ConstPropertyName")
+object CommonsCli {
+    private const val version = "1.5.0"
+    const val lib = "commons-cli:commons-cli:${version}"
+}

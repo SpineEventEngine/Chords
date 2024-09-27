@@ -94,4 +94,7 @@ the following key parts:
 
   See [codegen/workspace/README.md](codegen/workspace/README.md) for details.
 
+- [codegen/gradle-plugin](codegen/gradle-plugin) — Gradle plugin that applies
+  [codegen-plugins](codegen/plugins) to a module which requires code generation.
+
 - [codegen-tests](codegen/tests) — tests that check the correctness of code generation.

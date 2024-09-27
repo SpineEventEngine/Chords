@@ -30,7 +30,7 @@ package spine.chords.codegen;
 
 import "spine/options.proto";
 
-option (type_url_prefix) = "type.onedam.domains";
+option (type_url_prefix) = "type.spine.chords";
 option java_package = "io.spine.chords.codegen.command";
 option java_outer_classname = "TestCommandProto";
 option java_multiple_files = true;

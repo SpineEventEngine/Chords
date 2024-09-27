@@ -24,18 +24,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+@file:Suppress("unused", "ConstPropertyName")
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+package io.spine.internal.dependency
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+// https://github.com/google/auto
+object AutoCommon {
+    private const val version = "1.2.2"
+    const val lib = "com.google.auto:auto-common:${version}"
+}
+
+// https://github.com/google/auto
+object AutoService {
+    private const val version = "1.1.1"
+    const val annotations = "com.google.auto.service:auto-service-annotations:${version}"
+    @Suppress("unused")
+    const val processor   = "com.google.auto.service:auto-service:${version}"
+}
+
+// https://github.com/google/auto
+object AutoValue {
+    private const val version = "1.10.2"
+    const val annotations = "com.google.auto.value:auto-value-annotations:${version}"
+}

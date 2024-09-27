@@ -24,18 +24,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+@Suppress("ConstPropertyName")
+object KotlinX {
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+    const val group = "org.jetbrains.kotlinx"
+
+    object Coroutines {
+
+        // https://github.com/Kotlin/kotlinx.coroutines
+        const val version = "1.7.3"
+        const val core = "$group:kotlinx-coroutines-core:$version"
+        const val jvm = "$group:kotlinx-coroutines-core-jvm:$version"
+        const val jdk8 = "$group:kotlinx-coroutines-jdk8:$version"
+    }
+}

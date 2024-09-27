@@ -24,18 +24,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
-
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+/**
+ * Testing framework for Kotlin.
+ *
+ * @see <a href="https://kotest.io/">Kotest site</a>
+ */
+@Suppress("ConstPropertyName")
+object Kotest {
+    const val version = "5.6.2"
+    const val group = "io.kotest"
+    const val assertions = "$group:kotest-assertions-core:$version"
+}

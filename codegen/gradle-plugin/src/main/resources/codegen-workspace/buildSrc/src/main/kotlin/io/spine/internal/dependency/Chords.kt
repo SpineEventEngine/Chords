@@ -24,18 +24,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
+@Suppress("unused", "ConstPropertyName")
+object Chords {
+    private const val group = "io.spine.chords"
+    private const val prefix = "spine-chords-"
 
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+    object CodegenPlugins {
+        fun lib(version: String): String {
+            return "$group:${prefix}codegen-plugins:$version"
+        }
+    }
+}

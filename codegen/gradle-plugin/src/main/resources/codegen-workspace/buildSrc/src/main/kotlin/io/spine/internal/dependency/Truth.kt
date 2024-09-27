@@ -24,18 +24,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
-
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+// https://github.com/google/truth
+@Suppress("ConstPropertyName")
+object Truth {
+    private const val version = "1.1.5"
+    val libs = listOf(
+        "com.google.truth:truth:${version}",
+        "com.google.truth.extensions:truth-java8-extension:${version}",
+        "com.google.truth.extensions:truth-proto-extension:${version}"
+    )
+}

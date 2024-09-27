@@ -24,18 +24,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-rootProject.name = "Chords"
+package io.spine.internal.dependency
 
-include(
-    "core",
-    "runtime",
-    "proto-values",
-    "proto",
-    "client",
-    "codegen-tests",
-    "gradle-plugin"
-)
-
-project(":runtime").projectDir = file("codegen/runtime")
-project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")
+/**
+ * The dependency on the Hamcrest, which is transitive for us.
+ *
+ * If you need assertions in Java, please use Google [Truth] instead.
+ * For Kotlin, please use [Kotest].
+ */
+@Suppress("ConstPropertyName")
+object Hamcrest {
+    // https://github.com/hamcrest/JavaHamcrest/releases
+    private const val version = "2.2"
+    const val core = "org.hamcrest:hamcrest-core:${version}"
+}
