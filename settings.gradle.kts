@@ -26,6 +26,13 @@
 
 rootProject.name = "Chords"
 
+pluginManagement {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+    }
+}
+
 include(
     "core",
     "runtime",

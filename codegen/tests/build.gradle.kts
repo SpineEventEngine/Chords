@@ -37,6 +37,7 @@ plugins {
     id("io.spine.tools.gradle.bootstrap")
     id("com.google.protobuf")
     `maven-publish`
+    id("io.spine.chords.gradle")
 }
 
 apply<JavaPlugin>()
@@ -76,15 +77,15 @@ dependencies {
  *
  * See the [RunCodegenPlugins] for details.
  */
-val applyCodegenPlugins = tasks.register<RunCodegenPlugins>("applyCodegenPlugins") {
-    dependsOn(
-        rootProject.tasks.named("buildCodegenPlugins")
-    )
-}
-
-// Generate the code before the `compileKotlin` task.
-tasks.named("compileKotlin") {
-    dependsOn(
-        applyCodegenPlugins
-    )
-}
+//val applyCodegenPlugins = tasks.register<RunCodegenPlugins>("applyCodegenPlugins") {
+//    dependsOn(
+//        rootProject.tasks.named("buildCodegenPlugins")
+//    )
+//}
+//
+//// Generate the code before the `compileKotlin` task.
+//tasks.named("compileKotlin") {
+//    dependsOn(
+//        applyCodegenPlugins
+//    )
+//}
