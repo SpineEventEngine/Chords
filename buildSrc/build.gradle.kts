@@ -40,8 +40,6 @@ plugins {
     id("com.github.jk1.dependency-license-report").version("1.16")
     // https://github.com/johnrengelman/shadow/releases
     id("com.github.johnrengelman.shadow").version("6.1.0")
-
-    id("io.spine.chords.gradle") version "1.9.0"
 }
 
 repositories {
