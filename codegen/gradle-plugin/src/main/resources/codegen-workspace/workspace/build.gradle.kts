@@ -39,25 +39,17 @@ repositories {
 }
 
 /**
- * Read `codegenPluginsVersion` value from project properties
- * or use [Chords.CodegenPlugins.dogFoodVersion] if the property is not specified.
+ * Read `codegenPluginsVersion` value from the project properties.
  */
-val codegenPluginsVersion = if (project.hasProperty("codegenPluginsVersion"))
-    project.properties["codegenPluginsVersion"] as String
-else {
-    logger.warn(
-        """
-        WARNING!!! Property `codegenPluginsVersion` is not set.
-        The version `${Chords.CodegenPlugins.dogFoodVersion}` of `codegen-plugins` will be used.
-        """.trimIndent()
-    )
-    Chords.CodegenPlugins.dogFoodVersion
-}
+val codegenPluginsVersion = project.properties["codegenPluginsVersion"] as String
+
+/**
+ * Read `sourceModuleDir` value from project properties.
+ */
+val sourceModuleDir = project.properties["sourceModuleDir"] as String
 
 dependencies {
-    // All the following libraries are required,
-    // since they provide Proto files, which are used
-    // as dependencies in Proto sources we process.
+    // The generated code relies onto `ValidatingBuilder` from Spine `1.9.x`.
     implementation(Spine.CoreJava.server_1_9)
     protoData(Chords.CodegenPlugins.lib(codegenPluginsVersion))
 }
@@ -78,21 +70,6 @@ protoData {
     plugins(
         "io.spine.chords.codegen.plugins.MessageFieldsPlugin"
     )
-}
-
-/**
- * Read `sourceModuleDir` value from project properties.
- */
-val sourceModuleDir = if (project.hasProperty("sourceModuleDir"))
-    project.properties["sourceModuleDir"] as String
-else {
-    logger.warn(
-        """
-        WARNING!!! Property `sourceModuleDir` is not set.
-        There are no sources to generate the code for.
-        """.trimIndent()
-    )
-    ""
 }
 
 /**
