@@ -66,11 +66,11 @@ import java.util.concurrent.CompletableFuture
      * Retrieves an entity of the specified class with the given ID.
      *
      * @param entityClass The class of the entity to retrieve.
-     * @param entityIdFieldValue The ID of the entity to retrieve.
+     * @param id The ID of the entity to retrieve.
      */
     public fun <E : EntityState, M : Message> read(
         entityClass: Class<E>,
-        entityIdFieldValue: M
+        id: M
     ): E?
 
     /**
