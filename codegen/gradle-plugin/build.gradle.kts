@@ -35,7 +35,7 @@ import io.spine.internal.gradle.publish.SpinePublishing
 plugins {
     `java-gradle-plugin`
     `maven-publish`
-    id("com.gradle.plugin-publish") version "0.12.0"
+//    id("com.gradle.plugin-publish") version "0.12.0"
     id("com.github.johnrengelman.shadow").version("6.1.0")
 }
 
@@ -78,17 +78,17 @@ tasks.named("test") {
     dependsOn(functionalTestTask)
 }
 
-pluginBundle {
-    website = "https://spine.io"
-    vcsUrl = "https://github.com/SpineEventEngine/Chords/tree/master/codegen/gradle-plugin"
-    tags = listOf("spine", "chords", "gradle", "plugin", "codegen")
-
-    mavenCoordinates {
-        groupId = "io.spine.chords"
-        artifactId = "spine-chords-gradle-plugin"
-        version = versionToPublish
-    }
-}
+//pluginBundle {
+//    website = "https://spine.io"
+//    vcsUrl = "https://github.com/SpineEventEngine/Chords/tree/master/codegen/gradle-plugin"
+//    tags = listOf("spine", "chords", "gradle", "plugin", "codegen")
+//
+//    mavenCoordinates {
+//        groupId = "io.spine.chords"
+//        artifactId = "spine-chords-gradle-plugin"
+//        version = versionToPublish
+//    }
+//}
 
 gradlePlugin {
     plugins {
@@ -216,13 +216,13 @@ project.afterEvaluate {
 
 // Do not attempt to publish snapshot versions to comply with publishing rules.
 // See: https://plugins.gradle.org/docs/publish-plugin#approval
-val publishPlugins: Task by tasks.getting {
-    enabled = !versionToPublish.isSnapshot()
-}
-
-val publish: Task by tasks.getting {
-    dependsOn(publishPlugins)
-}
+//val publishPlugins: Task by tasks.getting {
+//    enabled = !versionToPublish.isSnapshot()
+//}
+//
+//val publish: Task by tasks.getting {
+//    dependsOn(publishPlugins)
+//}
 
 configureTaskDependencies()
 
