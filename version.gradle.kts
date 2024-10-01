@@ -41,4 +41,4 @@ val chordsVersion: String by extra("2.0.0-SNAPSHOT.24")
  *
  * Update this version if the `chordsVersion` is updated.
  */
-val gradlePluginVersion: String by extra("1.9.1")
+val gradlePluginVersion: String by extra("1.9.2")
