@@ -26,6 +26,7 @@
 
 package io.spine.chords.core.appshell
 
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
@@ -203,5 +204,25 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      */
     public fun closeCurrentModalScreen() {
         appWindow.closeCurrentModalScreen()
+    }
+
+    /**
+     * Displays the given content in a modal window.
+     *
+     * The modal window is created on top of the current visible content
+     * with the provided content. No other components from other screens
+     * will be interactable, focusing user interaction on the modal content.
+     *
+     * @param content The content of the modal window.
+     */
+    public fun showModalWindow(window: @Composable BoxScope.() -> Unit) {
+        appWindow.showModalWindow(window)
+    }
+
+    /**
+     * Closes the currently displayed modal window.
+     */
+    public fun closeModalWindow() {
+        appWindow.closeModalWindow()
     }
 }
