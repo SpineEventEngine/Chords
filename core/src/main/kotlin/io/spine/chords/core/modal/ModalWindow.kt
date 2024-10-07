@@ -52,10 +52,10 @@ import java.awt.event.KeyEvent.VK_ESCAPE
 /**
  * The modal window with a customizable content.
  *
- * This component itself does not provide a visual presentation unless
- * content is supplied via the corresponding parameter. The responsibility
- * for handling the appearance, layout, and structure of the modal window
- * is delegated to the provided composable content block.
+ * This component itself does not provide any visual presentation.
+ * It only displays the content that is supplied via the corresponding parameter.
+ * The responsibility for handling the appearance, layout, and structure
+ * of the modal window is delegated to the provided composable content block.
  *
  * @param onCancel The callback triggered when the user clicks outside the modal window.
  * @param content The content to display as a modal window.
