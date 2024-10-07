@@ -37,7 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.awtEventOrNull
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEvent
-import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.KeyEventType.Companion.KeyDown
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
@@ -66,7 +66,7 @@ public fun ModalWindow(
     content: @Composable BoxScope.() -> Unit
 ) {
     Popup(
-        popupPositionProvider = centerPopupPositionProvider,
+        popupPositionProvider = centerWindowPositionProvider,
         onDismissRequest = onCancel,
         properties = PopupProperties(focusable = true),
         onPreviewKeyEvent = { false },
@@ -96,7 +96,7 @@ public fun ModalWindow(
  * Provides a modal window setting that forces it
  * to appear at the center of the screen.
  */
-private val centerPopupPositionProvider = object : PopupPositionProvider {
+private val centerWindowPositionProvider = object : PopupPositionProvider {
     override fun calculatePosition(
         anchorBounds: IntRect,
         windowSize: IntSize,
@@ -111,7 +111,7 @@ private val centerPopupPositionProvider = object : PopupPositionProvider {
  */
 private fun cancelOnEscape(onCancel: () -> Unit): ((KeyEvent) -> Boolean) =
     {
-        if (it.type == KeyEventType.KeyDown && it.awtEventOrNull?.keyCode == VK_ESCAPE) {
+        if (it.type == KeyDown && it.awtEventOrNull?.keyCode == VK_ESCAPE) {
             onCancel()
             true
         } else {
