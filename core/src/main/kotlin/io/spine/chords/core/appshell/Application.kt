@@ -212,7 +212,7 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * @param content The content of the modal window.
+     * @param window The window to show.
      */
     public fun showModalWindow(window: @Composable BoxScope.() -> Unit) {
         appWindow.showModalWindow(window)

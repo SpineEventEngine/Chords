@@ -146,13 +146,13 @@ public class AppWindow(
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * @param content The content of the modal window.
+     * @param window The window to show.
      */
-    public fun showModalWindow(content: @Composable BoxScope.() -> Unit) {
+    public fun showModalWindow(window: @Composable BoxScope.() -> Unit) {
         check(modalWindow.value == null) {
             "Another modal window is visible already."
         }
-        modalWindow.value = content
+        modalWindow.value = window
     }
 
     /**
