@@ -150,7 +150,7 @@ public class AppWindow(
      * @param content The content of the modal window.
      */
     public fun showModalWindow(content: @Composable BoxScope.() -> Unit) {
-        check(modalWindow.value != null) {
+        check(modalWindow.value == null) {
             "Another modal window is visible already."
         }
         modalWindow.value = content

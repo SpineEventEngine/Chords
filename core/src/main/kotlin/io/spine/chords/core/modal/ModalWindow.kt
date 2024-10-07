@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.awtEventOrNull
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
@@ -46,7 +47,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
-import java.awt.event.KeyEvent
+import java.awt.event.KeyEvent.VK_ESCAPE
 
 /**
  * The modal window with a customizable content.
@@ -65,27 +66,12 @@ public fun ModalWindow(
     content: @Composable BoxScope.() -> Unit
 ) {
     Popup(
-        popupPositionProvider = object : PopupPositionProvider {
-            override fun calculatePosition(
-                anchorBounds: IntRect,
-                windowSize: IntSize,
-                layoutDirection: LayoutDirection,
-                popupContentSize: IntSize
-            ): IntOffset = IntOffset.Zero
-        },
+        popupPositionProvider = centerPopupPositionProvider,
         onDismissRequest = onCancel,
         properties = PopupProperties(focusable = true),
         onPreviewKeyEvent = { false },
-        onKeyEvent = {
-            if (it.type == KeyEventType.KeyDown &&
-                it.awtEventOrNull?.keyCode == KeyEvent.VK_ESCAPE
-            ) {
-                onCancel()
-                true
-            } else {
-                false
-            }
-        }) {
+        onKeyEvent = cancelOnEscape(onCancel)
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -105,3 +91,30 @@ public fun ModalWindow(
         }
     }
 }
+
+/**
+ * Provides a modal window setting that forces it
+ * to appear at the center of the screen.
+ */
+private val centerPopupPositionProvider = object : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize
+    ): IntOffset = IntOffset.Zero
+}
+
+/**
+ * Returns a function that executes a provided `onCancel` callback
+ * whenever the `Escape` keyboard button is pressed.
+ */
+private fun cancelOnEscape(onCancel: () -> Unit): ((KeyEvent) -> Boolean) =
+    {
+        if (it.type == KeyEventType.KeyDown && it.awtEventOrNull?.keyCode == VK_ESCAPE) {
+            onCancel()
+            true
+        } else {
+            false
+        }
+    }
