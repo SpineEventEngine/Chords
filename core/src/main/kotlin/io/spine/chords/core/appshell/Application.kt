@@ -207,10 +207,9 @@ public class ApplicationUI(private val appWindow: AppWindow) {
     }
 
     /**
-     * Displays the given content in a modal window.
+     * Displays the given content as a modal window.
      *
-     * The modal window is created on top of the currently visible screen
-     * with the provided content. No other components from other screens
+     * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
      * @param content The content of the modal window.
