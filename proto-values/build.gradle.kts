@@ -32,7 +32,6 @@ import io.spine.internal.dependency.JavaX
 import io.spine.internal.dependency.Kotest
 import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
-import io.spine.internal.gradle.RunCodegenPlugins
 
 plugins {
     id("io.spine.tools.gradle.bootstrap")
@@ -41,6 +40,7 @@ plugins {
 }
 
 apply<JavaPlugin>()
+apply(plugin = "io.spine.chords.gradle")
 
 spine {
     // Spine Model Compiler is enabled only for generating validation code for
@@ -70,29 +70,8 @@ dependencies {
     testImplementation(Kotest.runnerJUnit5)
 }
 
-/**
- * The task below executes a separate Gradle build of the `codegen-plugins`
- * project. It is needed because the ProtoData plugin, that helps to generate
- * the Kotlin extensions for the Proto messages, requires the newer version
- * of Gradle.
- *
- * See the [RunCodegenPlugins] for details.
- */
-val applyCodegenPlugins = tasks.register<RunCodegenPlugins>("applyCodegenPlugins") {
-    // Dependencies that are required to load the Proto files from.
-    dependencies(
-        // A list of the external dependencies,
-        // onto which the processed Proto sources depend.
-        Spine.money
-    )
+tasks.named("generateCode") {
     dependsOn(
         rootProject.tasks.named("buildCodegenPlugins")
-    )
-}
-
-// Run the code generation before `compileKotlin` task.
-tasks.named("compileKotlin") {
-    dependsOn(
-        applyCodegenPlugins
     )
 }
