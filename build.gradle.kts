@@ -40,7 +40,7 @@ buildscript {
     standardSpineSdkRepositories()
 
     dependencies {
-        classpath("io.spine.chords.gradle:io.spine.chords.gradle.gradle.plugin:1.9.2")
+        classpath(io.spine.internal.dependency.Spine.Chords.gradlePlugin)
     }
 }
 

@@ -239,4 +239,12 @@ object Spine {
         const val server = "$group:spine-server:$version"
         const val testUtilServer = "$toolsGroup:spine-testutil-server:$version"
     }
+
+    object Chords {
+        private const val pluginGroup = "$group.chords.gradle"
+        private const val pluginId = "$pluginGroup.gradle.plugin"
+        private const val pluginVersion = "1.9.2"
+
+        const val gradlePlugin = "$pluginGroup:$pluginId:$pluginVersion"
+    }
 }
