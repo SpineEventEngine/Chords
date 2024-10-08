@@ -26,7 +26,6 @@
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.spine.internal.dependency.JUnit
-import io.spine.internal.gradle.isSnapshot
 import io.spine.internal.gradle.publish.ChordsPublishing
 import io.spine.internal.gradle.publish.ChordsPublishing.GradlePlugin.metadataUrl
 import io.spine.internal.gradle.publish.MavenMetadata.Companion.fetchAndParse
@@ -78,6 +77,12 @@ tasks.named("test") {
     dependsOn(functionalTestTask)
 }
 
+// We do not publish the plugin to Gradle Plugin Portal because
+// the plugin should be in a dedicated Git repository.
+// See https://github.com/SpineEventEngine/Chords/issues/50 for detail.
+//
+// It is published to Spine Cloud Artifacts repository for now.
+//
 //pluginBundle {
 //    website = "https://spine.io"
 //    vcsUrl = "https://github.com/SpineEventEngine/Chords/tree/master/codegen/gradle-plugin"
@@ -88,6 +93,16 @@ tasks.named("test") {
 //        artifactId = "spine-chords-gradle-plugin"
 //        version = versionToPublish
 //    }
+//}
+//
+// Do not attempt to publish snapshot versions to comply with publishing rules.
+// See: https://plugins.gradle.org/docs/publish-plugin#approval
+//val publishPlugins: Task by tasks.getting {
+//    enabled = !versionToPublish.isSnapshot()
+//}
+//
+//val publish: Task by tasks.getting {
+//    dependsOn(publishPlugins)
 //}
 
 gradlePlugin {
@@ -213,16 +228,6 @@ project.afterEvaluate {
         }
     }
 }
-
-// Do not attempt to publish snapshot versions to comply with publishing rules.
-// See: https://plugins.gradle.org/docs/publish-plugin#approval
-//val publishPlugins: Task by tasks.getting {
-//    enabled = !versionToPublish.isSnapshot()
-//}
-//
-//val publish: Task by tasks.getting {
-//    dependsOn(publishPlugins)
-//}
 
 configureTaskDependencies()
 
