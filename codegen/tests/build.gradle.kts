@@ -31,16 +31,14 @@ import com.google.protobuf.gradle.protoc
 import io.spine.internal.dependency.Kotest
 import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
-import io.spine.internal.gradle.RunCodegenPlugins
 
 plugins {
     id("io.spine.tools.gradle.bootstrap")
     id("com.google.protobuf")
-    `maven-publish`
-    id("io.spine.chords.gradle") version "1.9.0"
 }
 
 apply<JavaPlugin>()
+apply(plugin = "io.spine.chords.gradle")
 
 spine {
     // Spine Model Compiler is enabled only for generating validation code for
@@ -67,4 +65,10 @@ dependencies {
     implementation(Spine.server)
     implementation(project(":runtime"))
     testImplementation(Kotest.runnerJUnit5)
+}
+
+tasks.named("generateCode") {
+    dependsOn(
+        rootProject.tasks.named("buildCodegenPlugins")
+    )
 }

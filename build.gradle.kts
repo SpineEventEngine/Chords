@@ -38,6 +38,10 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 buildscript {
     standardSpineSdkRepositories()
+
+    dependencies {
+        classpath("io.spine.chords.gradle:io.spine.chords.gradle.gradle.plugin:1.9.2")
+    }
 }
 
 plugins {
