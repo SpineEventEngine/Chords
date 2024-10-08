@@ -27,7 +27,7 @@
 /**
   * The version of all Chords libraries.
   */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.22")
+val chordsVersion: String by extra("2.0.0-SNAPSHOT.24")
 
 
 /**
@@ -39,6 +39,6 @@ val chordsVersion: String by extra("2.0.0-SNAPSHOT.22")
  *
  * The version should be updated to `2.0.x` after migrating to Spine `2.0.x`.
  *
- * DO NOT UPDATE this version if the Gradle plugin is not changed.
+ * Update this version if the `chordsVersion` is updated.
  */
-val gradlePluginVersion: String by extra("1.9.0")
+val gradlePluginVersion: String by extra("1.9.2")

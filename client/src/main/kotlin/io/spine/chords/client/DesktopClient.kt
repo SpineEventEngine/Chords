@@ -105,6 +105,26 @@ public class DesktopClient(
     }
 
     /**
+     * Retrieves an entity of the specified class with the given ID.
+     *
+     * @param entityClass The class of the entity to retrieve.
+     * @param id The ID of the entity to retrieve.
+     */
+    public override fun <E : EntityState, M : Message> read(
+        entityClass: Class<E>,
+        id: M
+    ): E? {
+        val entities = clientRequest()
+            .select(entityClass)
+            .byId(id)
+            .run()
+        if (entities.isEmpty()) {
+            return null
+        }
+        return entities[0];
+    }
+
+    /**
      * Posts a command to the server.
      *
      * @param cmd A command that has to be posted.
