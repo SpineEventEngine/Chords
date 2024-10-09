@@ -30,6 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.window.Window
+import io.spine.chords.core.modal.ModalWindow
+import io.spine.chords.core.modal.ModalWindowConfig
 import java.awt.Dimension
 
 /**
@@ -73,6 +75,9 @@ public class AppWindow(
     private val currentScreen: MutableState<@Composable () -> Unit> =
         mutableStateOf(signInScreen)
 
+    private val modalWindow: MutableState<(ModalWindowConfig)?> =
+        mutableStateOf(null)
+
     /**
      * Renders the application window's content.
      */
@@ -89,6 +94,12 @@ public class AppWindow(
                 window.minimumSize = minWindowSize
             }
             currentScreen.value()
+            if (modalWindow.value != null) {
+                ModalWindow(
+                    onCancel = { modalWindow.value = null },
+                    config = modalWindow.value!!
+                )
+            }
         }
     }
 
@@ -108,9 +119,12 @@ public class AppWindow(
      *          to indicate the illegal state when another modal screen
      *          is already displayed.
      */
-    public fun showModalScreen(screen: @Composable () -> Unit) {
+    public fun openModalScreen(screen: @Composable () -> Unit) {
         check(currentScreen.value == mainScreen) {
             "Another modal screen is visible already."
+        }
+        check(modalWindow.value != null) {
+            "Cannot display the modal screen above the modal window."
         }
         currentScreen.value = screen
     }
@@ -122,9 +136,28 @@ public class AppWindow(
      *          to indicate the illegal state when no modal screen to close.
      */
     public fun closeCurrentModalScreen() {
-        check(currentScreen.value != mainScreen) {
-            "There is no modal screen to close."
-        }
         currentScreen.value = mainScreen
+    }
+
+    /**
+     * Displays a modal window.
+     *
+     * When the modal window is shown, no other components from other screens
+     * will be interactable, focusing user interaction on the modal content.
+     *
+     * @param config The configuration of the modal window.
+     */
+    public fun openModalWindow(config: ModalWindowConfig) {
+        check(modalWindow.value == null) {
+            "Another modal window is visible already."
+        }
+        modalWindow.value = config
+    }
+
+    /**
+     * Closes the currently displayed modal window.
+     */
+    public fun closeModalWindow() {
+        modalWindow.value = null
     }
 }
