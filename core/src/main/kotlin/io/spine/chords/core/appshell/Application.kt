@@ -31,6 +31,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
+import io.spine.chords.core.modal.ModalWindowConfig
 import io.spine.chords.core.writeOnce
 import java.awt.Dimension
 
@@ -191,8 +192,8 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      *         to indicate the illegal state when another modal screen
      *         is already displayed.
      */
-    public fun showModalScreen(screen: @Composable () -> Unit) {
-        appWindow.showModalScreen(screen)
+    public fun openModalScreen(screen: @Composable () -> Unit) {
+        appWindow.openModalScreen(screen)
     }
 
     /**
@@ -203,5 +204,24 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      */
     public fun closeCurrentModalScreen() {
         appWindow.closeCurrentModalScreen()
+    }
+
+    /**
+     * Displays a modal window.
+     *
+     * When the modal window is shown, no other components from other screens
+     * will be interactable, focusing user interaction on the modal content.
+     *
+     * @param config The configuration of the modal window.
+     */
+    public fun openModalWindow(config: ModalWindowConfig) {
+        appWindow.openModalWindow(config)
+    }
+
+    /**
+     * Closes the currently displayed modal window.
+     */
+    public fun closeModalWindow() {
+        appWindow.closeModalWindow()
     }
 }
