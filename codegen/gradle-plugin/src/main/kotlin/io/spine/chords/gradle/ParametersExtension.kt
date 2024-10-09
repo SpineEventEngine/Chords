@@ -57,6 +57,14 @@ public class ParametersExtension {
         dependencies.clear()
         dependencies.addAll(protoDependencies)
     }
+
+    /**
+     * The full name of the codegen plugins artifact to generate the code with,
+     * e.g. `io.spine.chords:spine-chords-codegen-plugins:2.0.0-SNAPSHOT.25`.
+     *
+     * See [GenerateCode.codegenPluginsArtifact] for detail.
+     */
+    public var codegenPluginsArtifact: String? = null
 }
 
 /**

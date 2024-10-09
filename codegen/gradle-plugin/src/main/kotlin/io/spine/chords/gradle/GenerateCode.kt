@@ -15,7 +15,7 @@ import org.gradle.internal.os.OperatingSystem
  * Launches Gradle wrapper under a [workspaceDir] with the
  * specified [taskNames] and [dependencies].
  *
- * The [sourceModuleDir] and [pluginsVersion] properties may be specified
+ * The [sourceModuleDir] and [codegenPluginsArtifact] properties may be specified
  * if the default values are unsuitable.
  *
  * The `clean` task is also run if the current build includes a `clean` task.
@@ -42,16 +42,6 @@ public open class GenerateCode : DefaultTask() {
     public var workspaceDir: String = "${project.rootDir}/codegen/workspace"
 
     /**
-     * The version of `spine-chords-codegen-plugins` artifact to be used for code generation.
-     *
-     * The artifact with this version should be located in `mavenLocal` or `spineSnapshots` repo.
-     *
-     * The default value is `project.version.toString()`.
-     */
-    @Internal
-    public var pluginsVersion: String = project.version.toString()
-
-    /**
      * Path to the module to generate the code for.
      *
      * The default value is `project.projectDir.path`.
@@ -63,14 +53,25 @@ public open class GenerateCode : DefaultTask() {
      * Dependencies that should be added to classpath of codegen module
      * to read the necessary Proto files.
      */
-    private var dependencies: MutableSet<String> = mutableSetOf()
+    private val dependencies: MutableSet<String> = mutableSetOf()
+
+    /**
+     * The full name of the codegen plugins artifact to generate the code with,
+     * e.g. `io.spine.chords:spine-chords-codegen-plugins:2.0.0-SNAPSHOT.25`.
+     *
+     * If this property is not set the current version of the project
+     * will be used to form the full artifact name.
+     */
+    @Internal
+    public var codegenPluginsArtifact: String =
+        "io.spine.chords:spine-chords-codegen-plugins:${project.version}"
 
     /**
      * The names of the tasks to be passed to the Gradle Wrapper script.
      *
      * The `build` task will be executed by default.
      */
-    private var taskNames: MutableList<String> = mutableListOf("build")
+    private val taskNames: MutableList<String> = mutableListOf("build")
 
     /**
      * For how many minutes to wait for the Gradle build to complete.
@@ -193,7 +194,7 @@ public open class GenerateCode : DefaultTask() {
             val classPath = dependencies.joinToString(";")
             command.add("-PdependencyItems=$classPath")
         }
-        command.add("-PcodegenPluginsVersion=$pluginsVersion")
+        command.add("-PcodegenPluginsArtifact=$codegenPluginsArtifact")
     }
 
     private fun buildScript(): String {
