@@ -26,12 +26,12 @@
 
 package io.spine.chords.core.appshell
 
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
+import io.spine.chords.core.modal.ModalWindowConfig
 import io.spine.chords.core.writeOnce
 import java.awt.Dimension
 
@@ -207,15 +207,15 @@ public class ApplicationUI(private val appWindow: AppWindow) {
     }
 
     /**
-     * Displays the given content as a modal window.
+     * Displays a modal window.
      *
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * @param window The window to show.
+     * @param config The configuration of the modal window.
      */
-    public fun showModalWindow(window: @Composable BoxScope.() -> Unit) {
-        appWindow.showModalWindow(window)
+    public fun showModalWindow(config: ModalWindowConfig) {
+        appWindow.showModalWindow(config)
     }
 
     /**

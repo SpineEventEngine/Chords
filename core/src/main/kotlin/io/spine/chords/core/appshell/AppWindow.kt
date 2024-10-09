@@ -26,12 +26,12 @@
 
 package io.spine.chords.core.appshell
 
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.window.Window
 import io.spine.chords.core.modal.ModalWindow
+import io.spine.chords.core.modal.ModalWindowConfig
 import java.awt.Dimension
 
 /**
@@ -75,7 +75,7 @@ public class AppWindow(
     private val currentScreen: MutableState<@Composable () -> Unit> =
         mutableStateOf(signInScreen)
 
-    private val modalWindow: MutableState<(@Composable BoxScope.() -> Unit)?> =
+    private val modalWindow: MutableState<(ModalWindowConfig)?> =
         mutableStateOf(null)
 
     /**
@@ -96,10 +96,9 @@ public class AppWindow(
             currentScreen.value()
             if (modalWindow.value != null) {
                 ModalWindow(
-                    { modalWindow.value = null }
-                ) {
-                    modalWindow.value!!()
-                }
+                    onCancel = { modalWindow.value = null },
+                    config = modalWindow.value!!
+                )
             }
         }
     }
@@ -141,18 +140,18 @@ public class AppWindow(
     }
 
     /**
-     * Displays the given content as a modal window.
+     * Displays a modal window.
      *
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * @param window The window to show.
+     * @param config The configuration of the modal window.
      */
-    public fun showModalWindow(window: @Composable BoxScope.() -> Unit) {
+    public fun showModalWindow(config: ModalWindowConfig) {
         check(modalWindow.value == null) {
             "Another modal window is visible already."
         }
-        modalWindow.value = window
+        modalWindow.value = config
     }
 
     /**
