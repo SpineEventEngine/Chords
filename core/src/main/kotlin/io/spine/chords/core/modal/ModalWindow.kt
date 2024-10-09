@@ -117,7 +117,7 @@ public fun ModalWindow(
             }
         }
         if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
-            CancelConfirmationDialogView(
+            CancelConfirmationDialogContainer(
                 onCancel = { cancelConfirmationShown.value = false },
                 onConfirm = { onCancel() },
                 content = cancelConfirmationDialog
@@ -146,13 +146,13 @@ public data class ModalWindowConfig(
 /**
  * A type of the cancel confirmation modal window.
  *
- * @see CancelConfirmationDialogView
+ * @see CancelConfirmationDialogContainer
  */
 public typealias CancelConfirmationDialog =
         @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit
 
 /**
- * The cancel confirmation dialog for the [ModalWindow] component.
+ * The container for the cancel confirmation dialog of the [ModalWindow] component.
  *
  * This dialog confirms or denies the intention of the user to close the main modal window.
  *
@@ -161,7 +161,7 @@ public typealias CancelConfirmationDialog =
  * @param content The content to display as a dialog.
  */
 @Composable
-private fun CancelConfirmationDialogView(
+private fun CancelConfirmationDialogContainer(
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
     content: CancelConfirmationDialog
