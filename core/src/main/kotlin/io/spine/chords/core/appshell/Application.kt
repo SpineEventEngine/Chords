@@ -192,8 +192,8 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      *         to indicate the illegal state when another modal screen
      *         is already displayed.
      */
-    public fun showModalScreen(screen: @Composable () -> Unit) {
-        appWindow.showModalScreen(screen)
+    public fun openModalScreen(screen: @Composable () -> Unit) {
+        appWindow.openModalScreen(screen)
     }
 
     /**
@@ -214,8 +214,8 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      *
      * @param config The configuration of the modal window.
      */
-    public fun showModalWindow(config: ModalWindowConfig) {
-        appWindow.showModalWindow(config)
+    public fun openModalWindow(config: ModalWindowConfig) {
+        appWindow.openModalWindow(config)
     }
 
     /**

@@ -119,7 +119,7 @@ public class AppWindow(
      *          to indicate the illegal state when another modal screen
      *          is already displayed.
      */
-    public fun showModalScreen(screen: @Composable () -> Unit) {
+    public fun openModalScreen(screen: @Composable () -> Unit) {
         check(currentScreen.value == mainScreen) {
             "Another modal screen is visible already."
         }
@@ -147,7 +147,7 @@ public class AppWindow(
      *
      * @param config The configuration of the modal window.
      */
-    public fun showModalWindow(config: ModalWindowConfig) {
+    public fun openModalWindow(config: ModalWindowConfig) {
         check(modalWindow.value == null) {
             "Another modal window is visible already."
         }
