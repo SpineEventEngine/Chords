@@ -60,11 +60,9 @@ import java.awt.event.KeyEvent.VK_ESCAPE
  * of the modal window is delegated to the provided composable content block.
  *
  * The closing behavior of the modal window can be configured in two ways:
- *
  * 1. The cancel confirmation dialog. When the user attempts to close the modal,
  *    a confirmation dialog is shown before closing. This can be configured using
  *    the `ModalWindowConfig.cancelConfirmationWindow` parameter.
- *
  * 2. Immediate close (default). The modal can be closed by either:
  *    - Clicking outside the window.
  *    - Pressing the `Escape` key.
@@ -154,13 +152,13 @@ public typealias CancelConfirmationDialog =
         @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit
 
 /**
- * The cancel confirmation modal window for the [ModalWindow] component.
+ * The cancel confirmation dialog for the [ModalWindow] component.
  *
- * This window confirms or denies the intention of the user to close the main modal window.
+ * This dialog confirms or denies the intention of the user to close the main modal window.
  *
- * @param onCancel The callback triggered on this window cancellation.
+ * @param onCancel The callback triggered on the dialog cancellation.
  * @param onConfirm The callback triggered on the confirmation to cancel the main modal window.
- * @param content The content to display as a modal window.
+ * @param content The content to display as a dialog.
  */
 @Composable
 private fun CancelConfirmationDialogView(
