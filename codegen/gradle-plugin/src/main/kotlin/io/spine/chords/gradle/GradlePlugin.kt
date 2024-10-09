@@ -93,6 +93,9 @@ public class GradlePlugin : Plugin<Project> {
                 task.dependsOn(addRunPermission)
                 task.workspaceDir = workspaceDir.path
                 task.dependencies(project.extension.dependencies)
+                project.extension.codegenPluginsArtifact?.let {
+                    task.codegenPluginsArtifact = it
+                }
             }
 
         val compileKotlin = project.tasks.findByName("compileKotlin")

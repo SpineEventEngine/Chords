@@ -24,7 +24,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Chords
 import io.spine.internal.dependency.Spine
 import io.spine.internal.gradle.standardToSpineSdk
 
@@ -39,9 +38,9 @@ repositories {
 }
 
 /**
- * Read `codegenPluginsVersion` value from the project properties.
+ * Read `codegenPluginsArtifact` value from the project properties.
  */
-val codegenPluginsVersion = project.properties["codegenPluginsVersion"] as String
+val codegenPluginsArtifact = project.properties["codegenPluginsArtifact"] as String
 
 /**
  * Read `sourceModuleDir` value from project properties.
@@ -51,7 +50,7 @@ val sourceModuleDir = project.properties["sourceModuleDir"] as String
 dependencies {
     // The generated code relies onto `ValidatingBuilder` from Spine `1.9.x`.
     implementation(Spine.CoreJava.server_1_9)
-    protoData(Chords.CodegenPlugins.lib(codegenPluginsVersion))
+    protoData(codegenPluginsArtifact)
 }
 
 /**
