@@ -144,9 +144,13 @@ public data class ModalWindowConfig(
 )
 
 /**
- * A type of the cancel confirmation modal window.
+ * A type of the cancel confirmation dialog.
  *
- * @see CancelConfirmationDialogContainer
+ * The cancel confirmation dialog prompts the user to confirm whether they want to close
+ * the modal. It receives two parameters:
+ * - `onConfirm`: A callback triggered when the user confirms the cancellation.
+ * - `onCancel`: A callback triggered when the user cancels the cancellation
+ *   (i.e., decides not to close the modal).
  */
 public typealias CancelConfirmationDialog =
         @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit
