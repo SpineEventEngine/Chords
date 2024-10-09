@@ -27,7 +27,7 @@
 /**
   * The version of all Chords libraries.
   */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.26")
+val chordsVersion: String by extra("2.0.0-SNAPSHOT.27")
 
 
 /**
@@ -41,4 +41,4 @@ val chordsVersion: String by extra("2.0.0-SNAPSHOT.26")
  *
  * Update this version if the `chordsVersion` is updated.
  */
-val gradlePluginVersion: String by extra("1.9.4")
+val gradlePluginVersion: String by extra("1.9.5")
