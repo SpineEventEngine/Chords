@@ -123,7 +123,7 @@ public class AppWindow(
         check(currentScreen.value == mainScreen) {
             "Another modal screen is visible already."
         }
-        check(modalWindow.value != null) {
+        check(modalWindow.value == null) {
             "Cannot display the modal screen above the modal window."
         }
         currentScreen.value = screen
