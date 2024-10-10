@@ -12,6 +12,10 @@ jobs:
     name: Ensure license reports updated
     runs-on: ubuntu-latest
 
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
     steps:
       - uses: actions/checkout@v4
         with:
