@@ -26,6 +26,7 @@
 
 package io.spine.chords.codegen.plugins
 
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.asClassName
@@ -151,5 +152,27 @@ internal val TypeName.simpleClassName: String
             "",
             ".$simpleName"
         )
-    else
-        simpleName
+    else simpleName
+
+/**
+ * Builds `@Suppress` annotation with `UNCHECKED_CAST` and
+ * `RemoveRedundantQualifierName` arguments.
+ */
+internal fun suppressUncheckedCastAndRedundantQualifier() =
+    buildSuppressAnnotation(
+        "UNCHECKED_CAST",
+        "RemoveRedundantQualifierName"
+    )
+
+/**
+ * Builds `@Suppress` annotation with given [warnings].
+ */
+@Suppress("SameParameterValue")
+private fun buildSuppressAnnotation(vararg warnings: String) =
+    AnnotationSpec.builder(Suppress::class.asClassName())
+        .also { builder ->
+            warnings.forEach { warning ->
+                builder.addMember("%S", warning)
+            }
+        }
+        .build()

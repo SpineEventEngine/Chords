@@ -30,10 +30,10 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
@@ -85,8 +85,11 @@ internal class MessageDefObjectGenerator(
      *
      *     public val `value`: IpAddressValueOneof = IpAddressValueOneof
      *
-     *     public override val fields: Collection<MessageField<IpAddress, out Any>>
-     *         = listOf(ipv4, ipv6)
+     *     public override val fields: Collection<MessageField<IpAddress, Any>>
+     *         = listOf(
+     *             ipv4 as MessageField<IpAddress, Any>,
+     *             ipv6 as MessageField<IpAddress, Any>
+     *         )
      *
      *     public override val oneofs: Collection<MessageOneof<IpAddress>>
      *         = listOf(value)
@@ -132,14 +135,18 @@ internal class MessageDefObjectGenerator(
      * Builds the `fields` property of [MessageDef] implementation.
      */
     private fun buildFieldsProperty(): PropertySpec {
+        val messageDefClassName = messageFieldClassName.parameterizedBy(
+            messageTypeName.fullClassName(typeSystem),
+            messageFieldValueTypeAlias
+        )
         val propType = Collection::class.asClassName().parameterizedBy(
-            messageFieldClassName.parameterizedBy(
-                messageTypeName.fullClassName(typeSystem),
-                WildcardTypeName.producerOf(messageFieldValueTypeAlias)
-            )
+            messageDefClassName
         )
         return PropertySpec.builder("fields", propType, PUBLIC, OVERRIDE)
-            .initializer(fieldListInitializer(fieldNames))
+            .addAnnotation(
+                suppressUncheckedCastAndRedundantQualifier()
+            )
+            .initializer(fieldListInitializer(fieldNames, messageDefClassName))
             .build()
     }
 
@@ -181,6 +188,31 @@ internal class MessageDefObjectGenerator(
 
 /**
  * Generates initialization code for the `fields` property
+ * of the [MessageDef] implementation.
+ *
+ * The generated code looks like the following:
+ * ```
+ * listOf(
+ *     ipv4 as MessageField<IpAddress, Any>,
+ *     ipv6 as MessageField<IpAddress, Any>
+ * )
+ * ```
+ */
+private fun fieldListInitializer(
+    fieldNames: Iterable<String>,
+    messageField: ParameterizedTypeName
+): String {
+    return fieldNames.joinToString(
+        ",${lineSeparator()}",
+        "listOf(${lineSeparator()}",
+        ")"
+    ) {
+        "${it.propertyName} as $messageField"
+    }
+}
+
+/**
+ * Generates initialization code for the `oneofs` property
  * of the [MessageDef] implementation.
  *
  * The generated code looks like the following:
