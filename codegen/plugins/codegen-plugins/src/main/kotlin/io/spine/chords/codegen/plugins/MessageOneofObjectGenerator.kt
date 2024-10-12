@@ -32,10 +32,10 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.Field
@@ -87,10 +87,10 @@ internal class MessageOneofObjectGenerator(
      * The generated code for some `oneof` filed looks like the following:
      * ```
      *     public object IpAddressValueOneof : MessageOneof<IpAddress> {
-     *         private val fieldMap: Map<Int, MessageField<IpAddress, *>> =
+     *         private val fieldMap: Map<Int, MessageField<IpAddress, Any>> =
      *             mapOf(
-     *                 1 to IpAddressDef.ipv4,
-     *                 2 to IpAddressDef.ipv6
+     *                 1 to IpAddressDef.ipv4 as MessageField<IpAddress, Any>,
+     *                 2 to IpAddressDef.ipv6 as MessageField<IpAddress, Any>
      *             )
      *
      *         public override val name: String = "value"
@@ -109,7 +109,7 @@ internal class MessageOneofObjectGenerator(
     ): TypeSpec {
         val messageFieldType = messageFieldClassName.parameterizedBy(
             messageFullClassName,
-            WildcardTypeName.producerOf(messageFieldValueTypeAlias)
+            messageFieldValueTypeAlias
         )
         val fieldMapType = Map::class.asClassName().parameterizedBy(
             Int::class.asClassName(),
@@ -129,10 +129,14 @@ internal class MessageOneofObjectGenerator(
             .addProperty(
                 PropertySpec
                     .builder("fieldMap", fieldMapType, PRIVATE)
+                    .addAnnotation(
+                        suppressUncheckedCastAndRedundantQualifier()
+                    )
                     .initializer(
                         fieldMapInitializer(
                             oneofFields,
-                            messageTypeName.messageDefClassName()
+                            messageTypeName.messageDefClassName(),
+                            messageFieldType
                         )
                     )
                     .build()
@@ -168,20 +172,21 @@ internal class MessageOneofObjectGenerator(
  * The generated code looks like the following:
  * ```
  * mapOf(
- *     1 to IpAddressDef.ipv4,
- *     2 to IpAddressDef.ipv6
+ *     1 to IpAddressDef.ipv4 as MessageField<IpAddressDef, Any>,
+ *     2 to IpAddressDef.ipv6 as MessageField<IpAddressDef, Any>
  * )
  * ```
  */
 private fun fieldMapInitializer(
     fields: Iterable<Field>,
-    generatedClassName: String
+    messageDefClassName: String,
+    messageField: ParameterizedTypeName
 ): String {
     return fields.joinToString(
         ",${lineSeparator()}",
         "mapOf(${lineSeparator()}",
         ")"
     ) {
-        "${it.number} to $generatedClassName.${it.name.javaCase()}"
+        "${it.number} to $messageDefClassName.${it.name.javaCase()} as $messageField"
     }
 }
