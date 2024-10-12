@@ -243,9 +243,18 @@ object Spine {
     object Chords {
         private const val chordsGroup = "$group.chords"
         private const val artifactPrefix = "spine-chords-"
-        private const val gradlePluginId = "${artifactPrefix}gradle-plugin"
-        private const val gradlePluginVersion = "1.9.4"
 
-        const val gradlePlugin = "$chordsGroup:$gradlePluginId:$gradlePluginVersion"
+        object CodegenPlugins {
+            fun artifact(version: String) =
+                "$chordsGroup:${artifactPrefix}codegen-plugins:$version"
+        }
+
+        object GradlePlugin {
+            private const val artifact = "${artifactPrefix}gradle-plugin"
+            private const val version = "1.9.8"
+
+            const val id = "io.spine.chords"
+            const val lib = "$chordsGroup:$artifact:$version"
+        }
     }
 }

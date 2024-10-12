@@ -38,7 +38,11 @@ plugins {
 }
 
 apply<JavaPlugin>()
-apply(plugin = "io.spine.chords.gradle")
+
+chordsGradlePlugin {
+    codegenPluginsArtifact =
+        Spine.Chords.CodegenPlugins.artifact(project.version.toString())
+}
 
 spine {
     // Spine Model Compiler is enabled only for generating validation code for
@@ -67,7 +71,7 @@ dependencies {
     testImplementation(Kotest.runnerJUnit5)
 }
 
-tasks.named("generateCode") {
+tasks.named("applyCodegenPlugins") {
     dependsOn(
         rootProject.tasks.named("buildCodegenPlugins")
     )
