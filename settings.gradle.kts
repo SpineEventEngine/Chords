@@ -32,10 +32,8 @@ include(
     "proto-values",
     "proto",
     "client",
-    "codegen-tests",
-    "gradle-plugin"
+    "codegen-tests"
 )
 
 project(":runtime").projectDir = file("codegen/runtime")
 project(":codegen-tests").projectDir = file("codegen/tests")
-project(":gradle-plugin").projectDir = file("codegen/gradle-plugin")

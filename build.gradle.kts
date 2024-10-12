@@ -40,7 +40,7 @@ buildscript {
     standardSpineSdkRepositories()
 
     dependencies {
-        classpath(io.spine.internal.dependency.Spine.Chords.gradlePlugin)
+        classpath(io.spine.internal.dependency.Spine.Chords.GradlePlugin.lib)
     }
 }
 
@@ -82,25 +82,25 @@ allprojects {
     }
 }
 
+// The set of modules that require Chords code generation.
+val modulesWithChordsCodegen = setOf("proto-values", "codegen-tests")
+
 subprojects {
     apply {
         plugin("jvm-module")
     }
     apply<JavaPlugin>()
+    // Apply codegen Gradle plugin to modules that require code generation.
+    if (modulesWithChordsCodegen.contains(name)) {
+        apply {
+            plugin(io.spine.internal.dependency.Spine.Chords.GradlePlugin.id)
+        }
+    }
 }
 
 spinePublishing {
-    val gradlePluginModuleName = "gradle-plugin"
-
     modules = productionModules
-        .map { project -> project.name }
-        // Exclude Gradle plugin.
-        .filter {
-            !it.contains(gradlePluginModuleName)
-        }
-        .toSet()
-
-    modulesWithCustomPublishing = setOf(gradlePluginModuleName)
+        .map { project -> project.name }.toSet()
 
     destinations = setOf(
         PublishingRepos.gitHub("Chords"),
