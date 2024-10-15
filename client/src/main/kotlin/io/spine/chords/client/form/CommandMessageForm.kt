@@ -72,31 +72,38 @@ public class CommandMessageForm<C : CommandMessage> :
          * expected to include field editors for all command message's fields,
          * which are required to create a valid value of type [C].
          *
-         * @param C
-         *         a type of the command being edited with the form.
-         * @param B
-         *         a type of the command message builder.
-         * @param builder
-         *         a lambda that should create and return a new builder for
-         *         a command of type [C].
-         * @param value
-         *         the command message value to be edited within the form.
-         * @param props
-         *         a lambda that can set any additional props on the form.
-         * @param content
-         *         a form's content, which can contain an arbitrary layout along
-         *         with field editor declarations.
-         * @return a form's instance that has been created for this
-         *         declaration site.
+         * @param C A type of the command being edited with the form.
+         * @param B A type of the command message builder.
+         * @param builder A lambda that should create and return a new builder for
+         *   a command of type [C].
+         * @param value The command message value to be edited within the form.
+         * @param onBeforeBuild A lambda that allows to amend the command message
+         *   after any valid field is entered to it.
+         * @param props A lambda that can set any additional props on the form.
+         * @param content A form's content, which can contain an arbitrary layout along
+         *   with field editor declarations.
+         * @return A form's instance that has been created for this
+         *   declaration site.
          */
         @Composable
         public operator fun <C : CommandMessage, B: ValidatingBuilder<out C>> invoke(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
+            onBeforeBuild: B.() -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable FormPartScope<C>.() -> Unit
-        ): CommandMessageForm<C> = Multipart(builder, value, props) {
-            FormPart(content)
+        ): CommandMessageForm<C> = createAndRender({
+            this.value = value
+
+            @Suppress("UNCHECKED_CAST")
+            this.builder = builder as () -> ValidatingBuilder<C>
+            this.content = content
+
+            @Suppress("UNCHECKED_CAST")
+            this.onBeforeBuild = onBeforeBuild as ValidatingBuilder<out C>.() -> Unit
+            props.run { configure() }
+        }) {
+            Content()
         }
 
         /**
