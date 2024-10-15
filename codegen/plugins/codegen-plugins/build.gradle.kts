@@ -46,3 +46,51 @@ modelCompiler {
         }
     }
 }
+
+val workspaceDir = "src/main/resources/codegen-workspace"
+
+val copyWorkspaceResources = tasks.register("copyWorkspaceResources") {
+    doLast {
+        copy {
+            from("$rootDir/buildSrc") {
+                exclude(
+                    ".gradle",
+                    "build"
+                )
+            }
+            into("$workspaceDir/buildSrc")
+        }
+        copy {
+            from("$rootDir/gradle")
+            into("$workspaceDir/gradle")
+        }
+        copy {
+            from("$rootDir") {
+                include(
+                    "gradlew",
+                    "gradlew.bat",
+                    "gradle.properties"
+                )
+            }
+            into(workspaceDir)
+        }
+    }
+}
+
+tasks.named("compileKotlin") {
+    dependsOn(copyWorkspaceResources)
+}
+
+val cleanWorkspaceResources = tasks.register("cleanWorkspaceResources") {
+    doLast {
+        delete("$workspaceDir/buildSrc")
+        delete("$workspaceDir/gradle")
+        delete("$rootDir/gradlew")
+        delete("$rootDir/gradlew.bat")
+        delete("$rootDir/gradle.properties")
+    }
+}
+
+tasks.named("clean") {
+    dependsOn(cleanWorkspaceResources)
+}
