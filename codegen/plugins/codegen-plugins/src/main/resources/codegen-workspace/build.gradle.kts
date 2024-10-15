@@ -88,7 +88,6 @@ subprojects {
     apply {
         plugin("kotlin")
         plugin("com.google.protobuf")
-        plugin("idea")
     }
 
     dependencies {
@@ -113,7 +112,6 @@ typealias Module = Project
 fun Module.applyConfiguration() {
     configureJava()
     configureKotlin()
-    applyGeneratedDirectories()
 }
 
 fun Module.configureKotlin() {
@@ -140,49 +138,6 @@ fun Module.configureJava() {
         }
         withType<org.gradle.jvm.tasks.Jar>().configureEach {
             duplicatesStrategy = DuplicatesStrategy.INCLUDE
-        }
-    }
-}
-
-/**
- * Adds directories with the generated source code to source sets
- * of the project and to IntelliJ IDEA module settings.
- */
-fun Module.applyGeneratedDirectories() {
-
-    /* The name of the root directory with the generated code. */
-    val generatedDir = "${projectDir}/generated"
-
-    val generatedMain = "$generatedDir/main"
-    val generatedJava = "$generatedMain/java"
-    val generatedKotlin = "$generatedMain/kotlin"
-    val generatedGrpc = "$generatedMain/grpc"
-    val generatedSpine = "$generatedMain/spine"
-
-    val generatedTest = "$generatedDir/test"
-    val generatedTestJava = "$generatedTest/java"
-    val generatedTestKotlin = "$generatedTest/kotlin"
-    val generatedTestGrpc = "$generatedTest/grpc"
-    val generatedTestSpine = "$generatedTest/spine"
-
-    idea {
-        module {
-            generatedSourceDirs.addAll(
-                files(
-                    generatedJava,
-                    generatedKotlin,
-                    generatedGrpc,
-                    generatedSpine,
-                )
-            )
-            testSources.from(
-                generatedTestJava,
-                generatedTestKotlin,
-                generatedTestGrpc,
-                generatedTestSpine,
-            )
-            isDownloadJavadoc = true
-            isDownloadSources = true
         }
     }
 }
