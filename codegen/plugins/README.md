@@ -22,6 +22,22 @@ comparing to Chords-based projects, which require Gradle version `6.9.x`.
 The [Chords Gradle plugin](https://github.com/SpineEventEngine/Chords-Gradle-plugin) 
 should be used to apply `codegen-plugins` to a project.
 
+### Resources for the Gradle plugin
+
+The following files are copied to the
+[resources/codegen-workspace](codegen-plugins/src/main/resources/codegen-workspace)
+folder during the build:
+* `buildSrc` folder.
+* Gradle wrapper files.
+
+These resources will be packaged into the resulting jar and then used by 
+the Gradle plugin to create a placeholder module in which to perform code generation.
+
+This is necessary for to the following reasons:
+* The Gradle plugin may not keep another copy of these files.
+* There is no need to synchronize dependencies between `codegen-plugins` project
+and the Gradle plugin.
+
 ### Modules
 
 * [codegen-plugins](codegen-plugins) — the ProtoData plugins generating the code.
