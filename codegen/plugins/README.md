@@ -31,9 +31,9 @@ folder during the build:
 * Gradle wrapper files.
 
 These resources will be packaged into the resulting jar and then used by 
-the Gradle plugin to create a placeholder module in which to perform code generation.
+the Gradle plugin to create a placeholder module for code generation.
 
-This is necessary for to the following reasons:
+This is necessary for the following reasons:
 * The Gradle plugin may not keep another copy of these files.
 * There is no need to synchronize dependencies between `codegen-plugins` project
 and the Gradle plugin.
