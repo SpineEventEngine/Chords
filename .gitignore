@@ -28,7 +28,7 @@ codegen/plugins/.idea/**
 # Generated source code
 **/generated/**
 
-# Generated source code
+# Files copied during the build
 **/codegen-workspace/buildSrc/**
 **/codegen-workspace/gradle/**
 **/codegen-workspace/gradle.properties
