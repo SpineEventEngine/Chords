@@ -85,9 +85,9 @@ val cleanWorkspaceResources = tasks.register("cleanWorkspaceResources") {
     doLast {
         delete("$workspaceDir/buildSrc")
         delete("$workspaceDir/gradle")
-        delete("$rootDir/gradlew")
-        delete("$rootDir/gradlew.bat")
-        delete("$rootDir/gradle.properties")
+        delete("$workspaceDir/gradlew")
+        delete("$workspaceDir/gradlew.bat")
+        delete("$workspaceDir/gradle.properties")
     }
 }
 
