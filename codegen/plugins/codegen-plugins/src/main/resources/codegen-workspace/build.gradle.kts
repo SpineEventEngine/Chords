@@ -40,14 +40,14 @@ buildscript {
     doForceVersions(configurations)
 
     dependencies {
-        classpath(io.spine.internal.dependency.Spine.McJava.pluginLib)
+        classpath(io.spine.internal.dependency.McJava.pluginLib)
     }
 }
 
 plugins {
     kotlin("jvm")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.60.2"
+    id("io.spine.protodata") version "0.61.7"
     idea
 }
 

@@ -39,14 +39,6 @@ dependencies {
     implementation(Chords.Runtime.lib(version.toString()))
 }
 
-modelCompiler {
-    java {
-        codegen {
-            validation().enabled.set(false)
-        }
-    }
-}
-
 /**
  * Path to `codegen-workspace` folder in the module resources.
  *

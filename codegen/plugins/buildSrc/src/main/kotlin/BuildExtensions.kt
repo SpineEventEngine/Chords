@@ -31,6 +31,7 @@ import io.spine.internal.dependency.GradleDoctor
 import io.spine.internal.dependency.Kotest
 import io.spine.internal.dependency.Kover
 import io.spine.internal.dependency.Ksp
+import io.spine.internal.dependency.McJava
 import io.spine.internal.dependency.ProtoData
 import io.spine.internal.dependency.ProtoTap
 import io.spine.internal.dependency.Protobuf
@@ -77,8 +78,8 @@ private const val ABOUT_DEPENDENCY_EXTENSIONS = ""
  * This plugin is not published to Gradle Portal and cannot be applied directly to a project.
  * Firstly, it should be put to buildscript's classpath and then applied by ID only.
  */
-val PluginDependenciesSpec.mcJava: Spine.McJava
-    get() = Spine.McJava
+val PluginDependenciesSpec.mcJava: McJava
+    get() = McJava
 
 /**
  * Shortcut to [ProtoData] dependency object.

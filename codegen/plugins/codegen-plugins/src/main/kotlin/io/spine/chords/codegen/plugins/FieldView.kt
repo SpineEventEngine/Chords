@@ -27,7 +27,7 @@ package io.spine.chords.codegen.plugins
 
 import io.spine.core.External
 import io.spine.core.Subscribe
-import io.spine.protodata.event.FieldEntered
+import io.spine.protodata.ast.event.FieldEntered
 import io.spine.protodata.plugin.View
 
 /**

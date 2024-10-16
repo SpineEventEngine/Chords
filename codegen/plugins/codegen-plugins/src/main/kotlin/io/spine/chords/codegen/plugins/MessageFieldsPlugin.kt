@@ -31,7 +31,7 @@ import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.plugin.Plugin
 import io.spine.protodata.plugin.ViewRepository
-import io.spine.protodata.renderer.Renderer
+import io.spine.protodata.render.Renderer
 
 /**
  * The ProtoData [Plugin] that generates [MessageDef], [MessageField],

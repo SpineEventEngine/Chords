@@ -38,19 +38,19 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.AnyPacker.unpack
-import io.spine.protodata.Field
-import io.spine.protodata.Type
-import io.spine.protodata.TypeName
-import io.spine.protodata.isEnum
-import io.spine.protodata.isPrimitive
-import io.spine.protodata.isRepeated
+import io.spine.protodata.ast.Field
+import io.spine.protodata.ast.Type
+import io.spine.protodata.ast.TypeName
+import io.spine.protodata.ast.isEnum
+import io.spine.protodata.ast.isPrimitive
+import io.spine.protodata.ast.isRepeated
 import io.spine.protodata.java.getterName
 import io.spine.protodata.java.javaPackage
 import io.spine.protodata.java.primarySetterName
 import io.spine.protodata.java.primitiveClass
 import io.spine.protodata.type.TypeSystem
 import io.spine.protodata.type.findHeader
-import io.spine.protodata.typeName
+import io.spine.protodata.ast.typeName
 import io.spine.string.camelCase
 
 /**

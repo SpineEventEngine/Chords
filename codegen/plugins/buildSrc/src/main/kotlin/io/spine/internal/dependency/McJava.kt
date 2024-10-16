@@ -23,33 +23,33 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package io.spine.chords.codegen.plugins
 
-import io.spine.core.EventContext
-import io.spine.protodata.ast.event.FieldEntered
-import io.spine.protodata.ast.typeName
-import io.spine.protodata.plugin.ViewRepository
-import io.spine.server.route.EventRoute
-import io.spine.server.route.EventRouting
+package io.spine.internal.dependency
 
 /**
- * The repository for [FieldView].
+ * Dependencies on Spine Model Compiler for Java.
+ *
+ * See [mc-java](https://github.com/SpineEventEngine/mc-java).
  */
-internal class FieldViewRepository : ViewRepository<FieldMetadataId,
-        FieldView,
-        FieldMetadata>() {
+@Suppress(
+    "MemberVisibilityCanBePrivate" /* `pluginLib()` is used by subprojects. */,
+    "ConstPropertyName"
+)
+object McJava {
+    const val group = Spine.toolsGroup
 
-    override fun setupEventRouting(routing: EventRouting<FieldMetadataId>) {
-        super.setupEventRouting(routing)
-        routing.route(FieldEntered::class.java)
-        { message: FieldEntered, _: EventContext? ->
-            EventRoute.withId(
-                fieldMetadataId {
-                    file = message.file
-                    typeName = message.type
-                    field = message.field
-                }
-            )
-        }
-    }
+    /** The version to be used for integration tests. */
+    const val version = "2.0.0-SNAPSHOT.245"
+
+    const val pluginId = "io.spine.mc-java"
+
+    val pluginLib = pluginLib(version)
+    fun pluginLib(version: String): String = "$group:spine-mc-java-plugins:$version:all"
+
+    /** The artifact reference for forcing in configurations. */
+    @Suppress("unused")
+    const val pluginsArtifact: String = "$group:spine-mc-java-plugins:$version"
+
+    val base = base(version)
+    fun base(version: String): String = "$group:spine-mc-java-base:$version"
 }

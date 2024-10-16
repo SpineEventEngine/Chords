@@ -35,8 +35,8 @@ import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
-import io.spine.protodata.Field
-import io.spine.protodata.TypeName
+import io.spine.protodata.ast.Field
+import io.spine.protodata.ast.TypeName
 import io.spine.protodata.type.TypeSystem
 import io.spine.string.camelCase
 
