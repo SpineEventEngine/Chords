@@ -27,42 +27,17 @@
 package io.spine.chords.runtime
 
 import com.google.protobuf.Message
-import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
-import io.spine.protobuf.ValidatingBuilder
 
 /**
- * Returns the generated implementation of [MessageDef] for the [M] Proto message.
- *
- * Uses Reflection API to read the `messageDef` property on a message builder instance.
- *
- * @param M The type of Proto message.
- */
-@Suppress("Unchecked_cast")
-public fun <M : Message> ValidatingBuilder<M>.messageDef(): MessageDef<M> {
-    val builderClass = this::class.java
-    val messageDefClassName = builderClass.name
-        .substringBeforeLast("$")
-        .replace("$", "")
-        .plus(MESSAGE_DEF_CLASS_SUFFIX)
-        .plus("Kt")
-    val messageDefClass = Class.forName(messageDefClassName)
-    val getMessageDefMethod = messageDefClass.getMethod(
-        "getMessageDef",
-        builderClass
-    )
-    return getMessageDefMethod.invoke(builderClass, this) as MessageDef<M>
-}
-
-/**
- * Exposes an array-like syntax to set a new field value in the message builder.
+ * Provides an array-like syntax for reading the value of a message field.
  *
  * Example:
  * ```
- * builder[messageField] = newValue
+ * val fieldValue = message[messageField]
  * ```
  * @param M The type of Proto message.
  * @param V The type of message field value.
  */
-public operator fun <M : Message, V : MessageFieldValue> ValidatingBuilder<M>.set(
-    field: MessageField<M, V>, value: V
-): Unit = field.setValue(this, value)
+public operator fun <M : Message, V : MessageFieldValue> M.get(
+    field: MessageField<M, V>
+): V = field.valueIn(this)

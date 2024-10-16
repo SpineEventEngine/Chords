@@ -92,7 +92,4 @@ message TestCommand {
             int32 option_3 = 3;
         }
     }
-
-    message EmptyInnerMessage {
-    }
 }

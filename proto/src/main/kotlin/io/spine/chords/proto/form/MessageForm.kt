@@ -1300,7 +1300,7 @@ public open class MessageForm<M : Message> :
     ): FormOneof = oneofs.getOrPut(oneof) {
         val initialSelectedField =
             if (value.value != null) {
-                oneof.selectedField(value.value!!) as MessageField<M, MessageFieldValue>?
+                oneof.selectedField(value.value!!)
             } else {
                 null
             }

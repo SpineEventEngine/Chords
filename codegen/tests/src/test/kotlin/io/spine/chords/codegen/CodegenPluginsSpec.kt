@@ -29,16 +29,23 @@ package io.spine.chords.codegen
 import com.google.protobuf.Message
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
+import io.spine.chords.codegen.Given.byteString
+import io.spine.chords.codegen.Given.domain
+import io.spine.chords.codegen.Given.externalType
+import io.spine.chords.codegen.Given.primitives
+import io.spine.chords.codegen.Given.timestamp
+import io.spine.chords.codegen.Given.userId
 import io.spine.chords.codegen.command.TestCommand.EnumType
 import io.spine.chords.codegen.command.TestCommandDef
-import io.spine.chords.codegen.command.TestCommandEmptyInnerMessageDef
 import io.spine.chords.codegen.command.TestCommandOneOfTypeDef
 import io.spine.chords.codegen.command.TestCommandPrimitivesDef
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
+import io.spine.chords.runtime.get
 import io.spine.chords.runtime.messageDef
+import io.spine.chords.runtime.set
 import io.spine.protobuf.ValidatingBuilder
 import java.util.stream.Stream
 import org.junit.jupiter.api.DisplayName
@@ -49,7 +56,7 @@ import org.junit.jupiter.params.provider.Arguments.of
 import org.junit.jupiter.params.provider.MethodSource
 
 /**
- * Checks various use-cases on code generation for [MessageField]
+ * Checks various use-cases on code generation for [MessageDef], [MessageField],
  * and [MessageOneof] implementations.
  */
 @DisplayName("CodegenPlugins should")
@@ -81,13 +88,13 @@ internal class CodegenPluginsSpec {
             field.hasValue(builder.build()) shouldBe initialHasValue
         }
         fieldValues.forEach { newValue ->
-            field.setValue(builder, newValue)
+            builder[field] = newValue
             val message = builder.build()
             withClue("Wrong result of `hasValue()` when new value is set.") {
                 field.hasValue(message) shouldBe true
             }
             withClue("`valueIn()` returns the wrong value.") {
-                field.valueIn(message) shouldBe newValue
+                message[field] shouldBe newValue
             }
         }
     }
@@ -151,7 +158,6 @@ internal class CodegenPluginsSpec {
             of(TestCommandPrimitivesDef, primitivesBuilder(), 7, 0),
             of(ExternalTypeDef, externalTypeBuilder(), 1, 0),
             of(NoFieldsMessageDef, noFieldsMessageBuilder(), 0, 0),
-            of(TestCommandEmptyInnerMessageDef, emptyInnerMessageBuilder(), 0, 0)
         )
     }
 

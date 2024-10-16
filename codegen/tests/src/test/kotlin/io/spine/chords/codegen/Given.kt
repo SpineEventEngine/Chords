@@ -35,18 +35,26 @@ import io.spine.net.InternetDomain
 /**
  * A set of utility functions that create various test data.
  */
+object Given {
 
-internal fun timestamp(seconds: Long) =
-    Timestamp.newBuilder().setSeconds(seconds).build()
+    internal fun timestamp(seconds: Long) =
+        Timestamp.newBuilder().setSeconds(seconds).build()
 
-internal fun userId(value: String) =
-    UserId.newBuilder().setValue(value).build()
+    internal fun userId(value: String) =
+        UserId.newBuilder().setValue(value).build()
 
-internal fun domain(value: String) =
-    InternetDomain.newBuilder().setValue(value).build()
+    internal fun domain(value: String) =
+        InternetDomain.newBuilder().setValue(value).build()
 
-internal fun primitives(value: Boolean) =
-    primitivesBuilder().setBool(value).build()
+    internal fun primitives(value: Boolean) =
+        primitivesBuilder().setBool(value).build()
+
+    internal fun byteString(value: String) =
+        ByteString.copyFromUtf8(value)
+
+    internal fun externalType(id: String) =
+        externalTypeBuilder().setId(id).build()
+}
 
 internal fun oneOfTypeBuilder() =
     TestCommand.OneOfType.newBuilder()
@@ -57,17 +65,8 @@ internal fun testCommandBuilder() =
 internal fun primitivesBuilder() =
     TestCommand.Primitives.newBuilder()
 
-internal fun byteString(value: String) =
-    ByteString.copyFromUtf8(value)
-
-internal fun externalType(id: String) =
-    externalTypeBuilder().setId(id).build()
-
 internal fun externalTypeBuilder() =
     ExternalType.newBuilder()
 
 internal fun noFieldsMessageBuilder() =
     NoFieldsMessage.newBuilder()
-
-internal fun emptyInnerMessageBuilder() =
-    TestCommand.EmptyInnerMessage.newBuilder()
