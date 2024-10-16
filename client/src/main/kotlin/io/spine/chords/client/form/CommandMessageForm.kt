@@ -89,7 +89,7 @@ public class CommandMessageForm<C : CommandMessage> :
         public operator fun <C : CommandMessage, B: ValidatingBuilder<out C>> invoke(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
-            onBeforeBuild: B.() -> Unit = {},
+            onBeforeBuild: ((B) -> B) = { it },
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable FormPartScope<C>.() -> Unit
         ): CommandMessageForm<C> = createAndRender({
@@ -100,7 +100,8 @@ public class CommandMessageForm<C : CommandMessage> :
             this.content = content
 
             @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild as ValidatingBuilder<out C>.() -> Unit
+            this.onBeforeBuild = onBeforeBuild
+                    as (ValidatingBuilder<out C>) -> ValidatingBuilder<out C>
             props.run { configure() }
         }) {
             Content()
@@ -182,7 +183,7 @@ public class CommandMessageForm<C : CommandMessage> :
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> create(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
-            onBeforeBuild: B.() -> Unit = {},
+            onBeforeBuild: ((B) -> B) = { it },
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {}
         ): CommandMessageForm<C> =
             super.create(null) {
@@ -194,7 +195,8 @@ public class CommandMessageForm<C : CommandMessage> :
 
                 // Storing the builder as ValidatingBuilder internally.
                 @Suppress("UNCHECKED_CAST")
-                this.onBeforeBuild = onBeforeBuild as ValidatingBuilder<out C>.() -> Unit
+                this.onBeforeBuild = onBeforeBuild
+                        as (ValidatingBuilder<out C>) -> ValidatingBuilder<out C>
                 props.run { configure() }
             }
     }
