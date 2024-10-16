@@ -71,8 +71,11 @@ import io.spine.protobuf.ValidatingBuilder
 public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<out C>> : Wizard() {
 
     internal val commandMessageForm: CommandMessageForm<C> =
-        CommandMessageForm.create({ createCommandBuilder() },
-            onBeforeBuild = { beforeBuild(this) }) {
+        CommandMessageForm.create(
+            { createCommandBuilder() },
+            onBeforeBuild = { beforeBuild(it) }
+        )
+        {
             validationDisplayMode = MANUAL
             eventSubscription = { subscribeToEvent(it) }
         }
@@ -125,22 +128,24 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * valid values. Note that there is no guarantee that the command message
      * that is about to be built is going to be valid.
      *
-     * The builder is passed as the receiver of this function,
-     * so properties can be set and read without referring to the builder
-     * explicitly. For example, if we wanted to set command's `field1` and
+     * The altered builder should be returned as a result of this method.
+     * For example, if we wanted to set command's `field1` and
      * `field2` explicitly, this could be done like this:
      *
      * ```
      *     class WizardImpl: CommandWizard(...) {
      *
-     *         override fun CommandMessage.Builder.onBeforeBuild() = {
-     *             field1 = field1Value
-     *             field2 = field2Value
+     *         override fun beforeBuild(builder: Message.Builder): Message.Builder {
+     *             with(builder) {
+     *                 field1 = field1Value
+     *                 field2 = field2Value
+     *             }
+     *             return builder
      *         }
      *     }
      * ```
      */
-    protected open fun beforeBuild(builder: B) {}
+    protected open fun beforeBuild(builder: B): B { return builder }
 
     override suspend fun submit(): Boolean {
         return commandMessageForm.postCommand()

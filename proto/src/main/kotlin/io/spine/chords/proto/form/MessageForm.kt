@@ -387,29 +387,24 @@ public open class MessageForm<M : Message> :
          * expected to include field editors for all message's fields, which
          * are required to create a valid value of type [M].
          *
-         * @param M
-         *         a type of the message being edited with the form.
-         * @param B
-         *         a type of the message builder.
-         * @param value
-         *         the message value to be edited within the form.
-         * @param builder
-         *         a lambda that should create and return a new builder for
-         *         a message of type [M].
-         * @param props
-         *         a lambda that can set any additional props on the form.
-         * @param content
-         *         a form's content, which can contain an arbitrary layout along
-         *         with field editor declarations.
-         * @return a form's instance that has been created for this
-         *         declaration site.
+         * @param M A type of the message being edited with the form.
+         * @param B A type of the message builder.
+         * @param value The message value to be edited within the form.
+         * @param builder A lambda that should create and return a new builder for
+         *   a message of type [M].
+         * @param props A lambda that can set any additional props on the form.
+         * @param onBeforeBuild A lambda that allows to amend the message
+         *   after any valid field is entered to it.
+         * @param content A form's content, which can contain an arbitrary layout along
+         *   with field editor declarations.
+         * @return A form's instance that has been created for this declaration site.
          */
         @Composable
         public operator fun <M : Message, B : ValidatingBuilder<out M>> invoke(
             value: MutableState<M?>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
-            onBeforeBuild: (ValidatingBuilder<out M>.() -> Unit)? = null,
+            onBeforeBuild: ((ValidatingBuilder<out M>) -> ValidatingBuilder<out M>) = { it },
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = Multipart(value, builder, props, onBeforeBuild) {
             FormPart(content)
@@ -433,6 +428,9 @@ public open class MessageForm<M : Message> :
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
+         * @param defaultValue A value that should be displayed in the form by default.
+         * @param onBeforeBuild A lambda that allows to amend the message
+         *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
          * @return A form's instance that has been created for this
@@ -450,7 +448,7 @@ public open class MessageForm<M : Message> :
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             defaultValue: M? = null,
-            onBeforeBuild: (ValidatingBuilder<out M>.() -> Unit)? = null,
+            onBeforeBuild: ((ValidatingBuilder<out M>) -> ValidatingBuilder<out M>) = { it },
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = Multipart(field, builder, props, defaultValue, onBeforeBuild) {
             FormPart(content)
@@ -473,6 +471,8 @@ public open class MessageForm<M : Message> :
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
+         * @param onBeforeBuild A lambda that allows to amend the message
+         *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
          * @return A form's instance that has been created for this
@@ -483,7 +483,7 @@ public open class MessageForm<M : Message> :
             value: MutableState<M?>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
-            onBeforeBuild: (ValidatingBuilder<out M>.() -> Unit)? = null,
+            onBeforeBuild: ((ValidatingBuilder<out M>) -> ValidatingBuilder<out M>) = { it },
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = createAndRender({
             this.value = value
@@ -518,6 +518,9 @@ public open class MessageForm<M : Message> :
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
+         * @param defaultValue A value that should be displayed in the form by default.
+         * @param onBeforeBuild A lambda that allows to amend the message
+         *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
          * @return a form's instance that has been created for this
@@ -535,7 +538,7 @@ public open class MessageForm<M : Message> :
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             defaultValue: M? = null,
-            onBeforeBuild: (ValidatingBuilder<out M>.() -> Unit)? = null,
+            onBeforeBuild: ((ValidatingBuilder<out M>) -> ValidatingBuilder<out M>) = { it },
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = createAndRender({
 
@@ -979,19 +982,21 @@ public open class MessageForm<M : Message> :
      * which currently have valid values. Note that there is no guarantee that the message
      * that is about to be built is going to be valid.
      *
-     * The builder is passed as the receiver of this callback,
-     * so properties can be set and read without referring to the builder explicitly.
+     * The altered builder should be returned as a result of this method.
      * For example, if we wanted to set message's `field1` and `field2` explicitly,
      * this could be done like this:
      *
      * ```
      *     MessageForm(..., onBeforeBuild = {
-     *         field1 = field1Value
-     *         field2 = field2Value
+     *         with(it) {
+     *             field1 = field1Value
+     *             field2 = field2Value
+     *         }
+     *         it
      *     },  ...) ...
      * ```
      */
-    protected var onBeforeBuild: (ValidatingBuilder<out M>.() -> Unit)? = null
+    protected var onBeforeBuild: ((ValidatingBuilder<out M>) -> ValidatingBuilder<out M>) = { it }
 
     init {
         valueRequired = true
@@ -1374,11 +1379,9 @@ public open class MessageForm<M : Message> :
         }
 
         val validatedMessage = try {
-            val builder = builderWithCurrentFields()
+            var builder = builderWithCurrentFields()
             val beforeBuildCallback = onBeforeBuild
-            if (beforeBuildCallback != null) {
-                builder.beforeBuildCallback()
-            }
+            builder = beforeBuildCallback(builder)
             builder.vBuild()
         } catch (e: ValidationException) {
             if (updateValidationErrors) {
