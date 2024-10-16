@@ -143,9 +143,13 @@ internal class MessageDefObjectGenerator(
             messageDefClassName
         )
         return PropertySpec.builder("fields", propType, PUBLIC, OVERRIDE)
-            .addAnnotation(
-                suppressUncheckedCastAndRedundantQualifier()
-            )
+            .also { builder ->
+                if (fieldNames.isNotEmpty()) {
+                    builder.addAnnotation(
+                        suppressUncheckedCastAndRedundantQualifier()
+                    )
+                }
+            }
             .initializer(fieldListInitializer(fieldNames, messageDefClassName))
             .build()
     }

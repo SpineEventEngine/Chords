@@ -35,9 +35,11 @@ option java_package = "io.spine.chords.codegen";
 option java_outer_classname = "ExternalMessageProto";
 option java_multiple_files = true;
 
-// A message that is not defined in `commands.proto`, but is used in
-// `TestCommand` and therefore `MessageField` implementations should be
-// generated for the fields of this message.
+// The code should be generated for messages defined not only in `commands.proto`.
 message ExternalType {
     string id = 1 [(required) = true];
+}
+
+// `MessageDef` implementation should be generated for messages without fields.
+message NoFieldsMessage {
 }

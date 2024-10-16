@@ -23,38 +23,32 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package io.spine.chords.codegen.plugins
 
-syntax = "proto3";
+import io.spine.core.EventContext
+import io.spine.protodata.ast.event.TypeDiscovered
+import io.spine.protodata.plugin.ViewRepository
+import io.spine.protodata.ast.typeName
+import io.spine.server.route.EventRoute
+import io.spine.server.route.EventRouting
 
-package spine.chords.codegen.plugins;
+/**
+ * The repository for [MessageTypeView].
+ */
+internal class MessageViewRepository : ViewRepository<MessageViewId,
+        MessageTypeView,
+        MessageView>() {
 
-import "spine/options.proto";
-import "spine/protodata/file.proto";
-
-option (type_url_prefix) = "type.spine.io";
-option java_package = "io.spine.chords.codegen.plugins";
-option java_outer_classname = "FieldViewProto";
-option java_multiple_files = true;
-
-import "spine/protodata/ast.proto";
-
-// View on the field's metadata.
-message FieldMetadata {
-    option (entity).kind = PROJECTION;
-
-    // The ID of a FieldMetadata
-    FieldMetadataId id = 1 [(required) = true];
-}
-
-// Identifies a field of a certain `Message` declared in a particular Proto file.
-message FieldMetadataId {
-
-    // The file where the message with the field is declared.
-    spine.protodata.File file = 1 [(required) = true];
-
-    // The type of the message where the field is declared.
-    spine.protodata.TypeName type_name = 2 [(required) = true];
-
-    // The field of the message.
-    spine.protodata.Field field = 3 [(required) = true];
+    override fun setupEventRouting(routing: EventRouting<MessageViewId>) {
+        super.setupEventRouting(routing)
+        routing.route(TypeDiscovered::class.java)
+        { message: TypeDiscovered, _: EventContext? ->
+            EventRoute.withId(
+                messageViewId {
+                    file = message.file
+                    typeName = message.type.name
+                }
+            )
+        }
+    }
 }

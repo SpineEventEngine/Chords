@@ -27,19 +27,19 @@ package io.spine.chords.codegen.plugins
 
 import io.spine.core.External
 import io.spine.core.Subscribe
-import io.spine.protodata.ast.event.FieldEntered
+import io.spine.protodata.ast.event.TypeDiscovered
 import io.spine.protodata.plugin.View
 
 /**
- * Records the [FieldMetadata].
+ * Records the [MessageView].
  */
-internal class FieldView : View<FieldMetadataId,
-        FieldMetadata,
-        FieldMetadata.Builder>() {
+internal class MessageTypeView : View<MessageViewId,
+        MessageView,
+        MessageView.Builder>() {
 
     @Subscribe
     @Suppress("EmptyFunctionBlock", "UNUSED_PARAMETER")
-    internal fun on(@External event: FieldEntered) {
+    internal fun on(@External event: TypeDiscovered) {
         // There is nothing to do here — ID holds all the required state.
     }
 }

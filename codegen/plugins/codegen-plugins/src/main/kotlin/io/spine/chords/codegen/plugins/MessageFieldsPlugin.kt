@@ -49,6 +49,6 @@ public class MessageFieldsPlugin : Plugin {
     }
 
     override fun viewRepositories(): Set<ViewRepository<*, *, *>> {
-        return setOf(FieldViewRepository())
+        return setOf(MessageViewRepository())
     }
 }

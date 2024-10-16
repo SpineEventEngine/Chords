@@ -65,3 +65,9 @@ internal fun externalType(id: String) =
 
 internal fun externalTypeBuilder() =
     ExternalType.newBuilder()
+
+internal fun noFieldsMessageBuilder() =
+    NoFieldsMessage.newBuilder()
+
+internal fun emptyInnerMessageBuilder() =
+    TestCommand.EmptyInnerMessage.newBuilder()
