@@ -28,14 +28,17 @@ package io.spine.chords.codegen.plugins
 
 import com.google.protobuf.BoolValue
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
+import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
+import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.ast.Field
@@ -44,13 +47,13 @@ import io.spine.protodata.ast.TypeName
 import io.spine.protodata.ast.isEnum
 import io.spine.protodata.ast.isPrimitive
 import io.spine.protodata.ast.isRepeated
+import io.spine.protodata.ast.typeName
 import io.spine.protodata.java.getterName
 import io.spine.protodata.java.javaPackage
 import io.spine.protodata.java.primarySetterName
 import io.spine.protodata.java.primitiveClass
 import io.spine.protodata.type.TypeSystem
 import io.spine.protodata.type.findHeader
-import io.spine.protodata.ast.typeName
 import io.spine.string.camelCase
 
 /**
@@ -126,7 +129,7 @@ internal class MessageFieldObjectGenerator(
         val fieldName = field.name.value
         val generatedClassName = messageTypeName.messageFieldClassName(fieldName)
         val fieldValueClassName = field.valueClassName(typeSystem)
-        val superType = messageFieldClassName
+        val superType = MessageField::class.asClassName()
             .parameterizedBy(
                 messageFullClassName,
                 fieldValueClassName
@@ -139,6 +142,7 @@ internal class MessageFieldObjectGenerator(
         return TypeSpec.objectBuilder(generatedClassName)
             .addSuperinterface(superType)
             .addAnnotation(buildGeneratedAnnotation())
+            .addKdoc(buildKDoc(field))
             .addProperty(
                 PropertySpec
                     .builder("name", stringType, PUBLIC, OVERRIDE)
@@ -172,6 +176,14 @@ internal class MessageFieldObjectGenerator(
                     .build()
             ).build()
     }
+
+    private fun buildKDoc(field: Field) = CodeBlock.of(
+        "A [%T] implementation that allows access to the `%L` field " +
+                "of the [%T] message at runtime.",
+        MessageField::class.asClassName(),
+        field.name.value,
+        messageTypeName.fullClassName(typeSystem)
+    )
 }
 
 /**

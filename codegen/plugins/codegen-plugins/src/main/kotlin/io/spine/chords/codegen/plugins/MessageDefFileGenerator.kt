@@ -33,7 +33,6 @@ import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
 import io.spine.chords.runtime.MessageField
-import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.TypeName
@@ -87,24 +86,6 @@ internal class MessageDefFileGenerator(
  */
 internal val String.propertyName
     get() = camelCase().replaceFirstChar { it.lowercase() }
-
-/**
- * Returns a [ClassName] of [MessageField].
- */
-internal val messageFieldClassName: ClassName
-    get() = MessageField::class.asClassName()
-
-/**
- * Returns a [ClassName] of [MessageOneof].
- */
-internal val messageOneofClassName: ClassName
-    get() = MessageOneof::class.asClassName()
-
-/**
- * Returns a [ClassName] of [MessageFieldValue].
- */
-internal val messageFieldValueTypeAlias: ClassName
-    get() = MessageFieldValue::class.asClassName()
 
 /**
  * Generates a simple class name for the implementation of [MessageField].
@@ -161,19 +142,16 @@ internal val TypeName.simpleClassName: String
 internal fun buildGeneratedAnnotation() =
     buildSuppressAnnotation(
         Generated::class.asClassName(),
-        "by Chords codegen plugins",
-        "https://github.com/SpineEventEngine/Chords/tree/master/codegen/plugins"
+        "by Spine Chords codegen plugins"
     )
 
 /**
- * Builds `@Suppress` annotation with `UNCHECKED_CAST` and
- * `RemoveRedundantQualifierName` arguments.
+ * Builds `@Suppress` annotation with `UNCHECKED_CAST` argument.
  */
-internal fun suppressUncheckedCastAndRedundantQualifier() =
+internal fun buildSuppressUncheckedCastAnnotation() =
     buildSuppressAnnotation(
         Suppress::class.asClassName(),
-        "UNCHECKED_CAST",
-        "RemoveRedundantQualifierName"
+        "UNCHECKED_CAST"
     )
 
 /**
@@ -183,11 +161,8 @@ internal fun suppressUncheckedCastAndRedundantQualifier() =
 private fun buildSuppressAnnotation(
     annotationClassName: ClassName,
     vararg parameters: String
-) =
-    AnnotationSpec.builder(annotationClassName)
-        .also { builder ->
-            parameters.forEach { parameter ->
-                builder.addMember("%S", parameter)
-            }
-        }
-        .build()
+) = AnnotationSpec.builder(annotationClassName).also { builder ->
+    parameters.forEach { parameter ->
+        builder.addMember("%S", parameter)
+    }
+}.build()

@@ -27,6 +27,7 @@
 package io.spine.chords.codegen.plugins
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
@@ -37,6 +38,8 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
+import io.spine.chords.runtime.MessageField
+import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.TypeName
@@ -107,9 +110,9 @@ internal class MessageOneofObjectGenerator(
         oneofName: String,
         oneofFields: List<Field>
     ): TypeSpec {
-        val messageFieldType = messageFieldClassName.parameterizedBy(
+        val messageFieldType = MessageField::class.asClassName().parameterizedBy(
             messageFullClassName,
-            messageFieldValueTypeAlias
+            MessageFieldValue::class.asClassName()
         )
         val fieldMapType = Map::class.asClassName().parameterizedBy(
             Int::class.asClassName(),
@@ -118,7 +121,7 @@ internal class MessageOneofObjectGenerator(
         val stringType = String::class.asClassName()
         val fieldsReturnType = Collection::class.asClassName()
             .parameterizedBy(messageFieldType)
-        val superInterface = messageOneofClassName
+        val superInterface = MessageOneof::class.asClassName()
             .parameterizedBy(messageFullClassName)
         val propName = oneofName.propertyName
         val generatedClassName = messageTypeName
@@ -127,14 +130,15 @@ internal class MessageOneofObjectGenerator(
         return TypeSpec.objectBuilder(generatedClassName)
             .addSuperinterface(superInterface)
             .addAnnotation(buildGeneratedAnnotation())
+            .addKdoc(buildKDoc(oneofName))
             .addProperty(
                 PropertySpec
                     .builder("fieldMap", fieldMapType, PRIVATE)
                     .addAnnotation(
-                        suppressUncheckedCastAndRedundantQualifier()
+                        buildSuppressUncheckedCastAnnotation()
                     )
                     .initializer(
-                        fieldMapInitializer(
+                        buildFieldMapInitializer(
                             oneofFields,
                             messageTypeName.messageDefClassName(),
                             messageFieldType
@@ -164,6 +168,14 @@ internal class MessageOneofObjectGenerator(
             )
             .build()
     }
+
+    private fun buildKDoc(oneofName: String) = CodeBlock.of(
+        "A [%T] implementation that allows access to the `%L` oneof field " +
+                "of the [%T] message at runtime.",
+        MessageOneof::class.asClassName(),
+        oneofName,
+        messageTypeName.fullClassName(typeSystem)
+    )
 }
 
 /**
@@ -178,16 +190,17 @@ internal class MessageOneofObjectGenerator(
  * )
  * ```
  */
-private fun fieldMapInitializer(
-    fields: Iterable<Field>,
+@Suppress("SpreadOperator")
+private fun buildFieldMapInitializer(
+    fields: List<Field>,
     messageDefClassName: String,
     messageField: ParameterizedTypeName
-): String {
-    return fields.joinToString(
+) = CodeBlock.of(
+    fields.joinToString(
         ",${lineSeparator()}",
         "mapOf(${lineSeparator()}",
         ")"
     ) {
-        "${it.number} to $messageDefClassName.${it.name.javaCase()} as $messageField"
-    }
-}
+        "${it.number} to $messageDefClassName.${it.name.javaCase()} as %T"
+    }, *fields.map { messageField }.toTypedArray()
+)
