@@ -251,7 +251,7 @@ object Spine {
 
         object GradlePlugin {
             private const val artifact = "${artifactPrefix}gradle-plugin"
-            private const val version = "1.9.8"
+            private const val version = "1.9.10"
 
             const val id = "io.spine.chords"
             const val lib = "$chordsGroup:$artifact:$version"

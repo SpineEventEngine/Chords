@@ -29,11 +29,11 @@ package io.spine.chords.codegen.plugins
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
-import io.spine.protodata.Field
-import io.spine.protodata.TypeName
+import io.spine.protodata.ast.Field
+import io.spine.protodata.ast.TypeName
 import io.spine.protodata.java.javaPackage
-import io.spine.protodata.renderer.Renderer
-import io.spine.protodata.renderer.SourceFileSet
+import io.spine.protodata.render.Renderer
+import io.spine.protodata.render.SourceFileSet
 import io.spine.protodata.type.TypeSystem
 import io.spine.string.Indent
 import io.spine.tools.code.Kotlin

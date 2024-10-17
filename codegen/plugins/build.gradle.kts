@@ -46,7 +46,7 @@ buildscript {
     doForceVersions(configurations)
 
     dependencies {
-        classpath(io.spine.internal.dependency.Spine.McJava.pluginLib)
+        classpath(io.spine.internal.dependency.McJava.pluginLib)
     }
 }
 
@@ -55,7 +55,7 @@ plugins {
     id("net.ltgt.errorprone")
     id("detekt-code-analysis")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.60.3"
+    id("io.spine.protodata") version "0.61.7"
     idea
 }
 

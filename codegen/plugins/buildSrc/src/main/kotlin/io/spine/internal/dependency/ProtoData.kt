@@ -27,59 +27,42 @@
 package io.spine.internal.dependency
 
 /**
- * Dependencies on ProtoData modules.
- *
- * To use a locally published ProtoData version instead of the version from a public plugin
- * registry, set the `PROTODATA_VERSION` and/or the `PROTODATA_DF_VERSION` environment variables
- * and stop the Gradle daemons so that Gradle observes the env change:
- * ```
- * export PROTODATA_VERSION=0.43.0-local
- * export PROTODATA_DF_VERSION=0.41.0
- *
- * ./gradle --stop
- * ./gradle build   # Conduct the intended checks.
- * ```
- *
- * Then, to reset the console to run the usual versions again, remove the values of
- * the environment variables and stop the daemon:
- * ```
- * export PROTODATA_VERSION=""
- * export PROTODATA_DF_VERSION=""
- *
- * ./gradle --stop
- * ```
- *
- * See [`SpineEventEngine/ProtoData`](https://github.com/SpineEventEngine/ProtoData/).
- */
+* Dependencies on ProtoData modules.
+*
+* See [`SpineEventEngine/ProtoData`](https://github.com/SpineEventEngine/ProtoData/).
+*/
 @Suppress(
     "unused" /* Some subprojects do not use ProtoData directly. */,
-    "ConstPropertyName",
+    "ConstPropertyName" /* We use custom convention for artifact properties. */,
     "MemberVisibilityCanBePrivate" /* The properties are used directly by other subprojects. */
 )
 object ProtoData {
+    const val pluginGroup = Spine.group
     const val group = "io.spine.protodata"
     const val pluginId = "io.spine.protodata"
 
     /**
      * The version of ProtoData dependencies.
      */
-    const val version: String = "0.60.2"
+    const val version = "0.61.7"
 
-    const val lib: String =
-        "io.spine:protodata:$version"
+    /**
+     * Identifies ProtoData as a `classpath` dependency under `buildScript` block.
+     *
+     * The dependency is obtained from https://plugins.gradle.org/m2/.
+     */
+    const val lib = "io.spine:protodata:$version"
 
-    const val pluginLib: String =
-        "$group:gradle-plugin:$version"
+    /**
+     * The artifact for the ProtoData Gradle plugin.
+     */
+    const val pluginLib =  "$group:gradle-plugin:$version"
 
     fun api(version: String): String =
         "$group:protodata-api:$version"
 
     val api
         get() = api(version)
-
-    @Deprecated("Use `backend` instead", ReplaceWith("backend"))
-    val compiler
-        get() = backend
 
     val backend
         get() = "$group:protodata-backend:$version"
@@ -101,4 +84,7 @@ object ProtoData {
 
     val fatCli
         get() = "$group:protodata-fat-cli:$version"
+
+    val testlib
+        get() = "$group:protodata-testlib:$version"
 }

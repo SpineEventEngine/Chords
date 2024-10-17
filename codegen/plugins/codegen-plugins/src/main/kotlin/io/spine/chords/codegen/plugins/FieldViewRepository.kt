@@ -26,9 +26,9 @@
 package io.spine.chords.codegen.plugins
 
 import io.spine.core.EventContext
-import io.spine.protodata.event.FieldEntered
+import io.spine.protodata.ast.event.FieldEntered
+import io.spine.protodata.ast.typeName
 import io.spine.protodata.plugin.ViewRepository
-import io.spine.protodata.typeName
 import io.spine.server.route.EventRoute
 import io.spine.server.route.EventRouting
 

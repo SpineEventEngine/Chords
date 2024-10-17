@@ -17,14 +17,39 @@
  * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
  * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,2
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
  * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.internal.dependency
+
 /**
-  * The version of all Chords libraries.
-  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.34")
+ * Dependencies on Spine Model Compiler for Java.
+ *
+ * See [mc-java](https://github.com/SpineEventEngine/mc-java).
+ */
+@Suppress(
+    "MemberVisibilityCanBePrivate" /* `pluginLib()` is used by subprojects. */,
+    "ConstPropertyName"
+)
+object McJava {
+    const val group = Spine.toolsGroup
+
+    /** The version to be used for integration tests. */
+    const val version = "2.0.0-SNAPSHOT.245"
+
+    const val pluginId = "io.spine.mc-java"
+
+    val pluginLib = pluginLib(version)
+    fun pluginLib(version: String): String = "$group:spine-mc-java-plugins:$version:all"
+
+    /** The artifact reference for forcing in configurations. */
+    @Suppress("unused")
+    const val pluginsArtifact: String = "$group:spine-mc-java-plugins:$version"
+
+    val base = base(version)
+    fun base(version: String): String = "$group:spine-mc-java-base:$version"
+}
