@@ -141,6 +141,15 @@ internal fun buildGeneratedAnnotation() =
     )
 
 /**
+ * Builds `@Suppress` annotation with `unused` argument.
+ */
+internal fun buildSuppressUnusedAnnotation() =
+    buildSuppressAnnotation(
+        Suppress::class.asClassName(),
+        "unused"
+    )
+
+/**
  * Builds `@Suppress` annotation with `UNCHECKED_CAST` argument.
  */
 internal fun buildSuppressUncheckedCastAnnotation() =

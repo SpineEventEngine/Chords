@@ -38,6 +38,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
+import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
@@ -169,6 +170,9 @@ internal class MessageOneofObjectGenerator(
             .build()
     }
 
+    /**
+     * Builds the KDoc section for the generated implementation of [MessageOneof].
+     */
     private fun buildKDoc(oneofName: String) = CodeBlock.of(
         "A [%T] implementation that allows access to the `%L` oneof field " +
                 "of the [%T] message at runtime.",

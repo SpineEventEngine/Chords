@@ -177,6 +177,9 @@ internal class MessageFieldObjectGenerator(
             ).build()
     }
 
+    /**
+     * Builds the KDoc section for the generated implementation of [MessageField].
+     */
     private fun buildKDoc(field: Field) = CodeBlock.of(
         "A [%T] implementation that allows access to the `%L` field " +
                 "of the [%T] message at runtime.",

@@ -137,6 +137,9 @@ internal class MessageDefObjectGenerator(
         )
     }
 
+    /**
+     * Builds the KDoc section for the generated implementation of [MessageDef].
+     */
     private fun buildKDoc() = CodeBlock.of(
         "A [%T] implementation that allows access to the [%T] message fields at runtime.",
         MessageDef::class.asClassName(),
