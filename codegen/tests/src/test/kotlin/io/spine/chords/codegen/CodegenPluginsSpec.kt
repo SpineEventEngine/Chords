@@ -84,6 +84,9 @@ internal class CodegenPluginsSpec {
         withClue("Wrong value of `required` property was generated.") {
             field.required shouldBe fieldIsRequired
         }
+        withClue("Wrong value of `descriptor` property was generated.") {
+            field.descriptor.name shouldBe protoFieldName
+        }
         withClue("Wrong result of `hasValue()` if value is not set.") {
             field.hasValue(builder.build()) shouldBe initialHasValue
         }

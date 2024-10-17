@@ -26,6 +26,7 @@
 
 package io.spine.chords.runtime
 
+import com.google.protobuf.Descriptors
 import com.google.protobuf.Message
 import io.spine.protobuf.ValidatingBuilder
 
@@ -65,6 +66,11 @@ public interface MessageField<T : Message, V : MessageFieldValue> {
      * Indicates if the `required` option is applied to the field.
      */
     public val required: Boolean
+
+    /**
+     * Returns the Protobuf field descriptor.
+     */
+    public val descriptor: Descriptors.FieldDescriptor
 
     /**
      * Returns a value of the field for the given message.
