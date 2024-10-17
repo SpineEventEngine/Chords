@@ -39,6 +39,7 @@ import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.TypeName
 import io.spine.protodata.type.TypeSystem
 import io.spine.string.camelCase
+import javax.annotation.Generated
 
 /**
  * Implementation of [FileFragmentGenerator] that combines several other
@@ -155,24 +156,38 @@ internal val TypeName.simpleClassName: String
     else simpleName
 
 /**
+ * Builds `@Generated` annotation with the corresponding notes.
+ */
+internal fun buildGeneratedAnnotation() =
+    buildSuppressAnnotation(
+        Generated::class.asClassName(),
+        "by Chords codegen plugins",
+        "https://github.com/SpineEventEngine/Chords/tree/master/codegen/plugins"
+    )
+
+/**
  * Builds `@Suppress` annotation with `UNCHECKED_CAST` and
  * `RemoveRedundantQualifierName` arguments.
  */
 internal fun suppressUncheckedCastAndRedundantQualifier() =
     buildSuppressAnnotation(
+        Suppress::class.asClassName(),
         "UNCHECKED_CAST",
         "RemoveRedundantQualifierName"
     )
 
 /**
- * Builds `@Suppress` annotation with given [warnings].
+ * Builds [AnnotationSpec] with given [parameters].
  */
 @Suppress("SameParameterValue")
-private fun buildSuppressAnnotation(vararg warnings: String) =
-    AnnotationSpec.builder(Suppress::class.asClassName())
+private fun buildSuppressAnnotation(
+    annotationClassName: ClassName,
+    vararg parameters: String
+) =
+    AnnotationSpec.builder(annotationClassName)
         .also { builder ->
-            warnings.forEach { warning ->
-                builder.addMember("%S", warning)
+            parameters.forEach { parameter ->
+                builder.addMember("%S", parameter)
             }
         }
         .build()

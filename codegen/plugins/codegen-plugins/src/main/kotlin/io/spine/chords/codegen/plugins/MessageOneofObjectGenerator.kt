@@ -126,6 +126,7 @@ internal class MessageOneofObjectGenerator(
 
         return TypeSpec.objectBuilder(generatedClassName)
             .addSuperinterface(superInterface)
+            .addAnnotation(buildGeneratedAnnotation())
             .addProperty(
                 PropertySpec
                     .builder("fieldMap", fieldMapType, PRIVATE)

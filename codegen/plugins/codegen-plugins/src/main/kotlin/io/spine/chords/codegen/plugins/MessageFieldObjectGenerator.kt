@@ -138,6 +138,7 @@ internal class MessageFieldObjectGenerator(
 
         return TypeSpec.objectBuilder(generatedClassName)
             .addSuperinterface(superType)
+            .addAnnotation(buildGeneratedAnnotation())
             .addProperty(
                 PropertySpec
                     .builder("name", stringType, PUBLIC, OVERRIDE)

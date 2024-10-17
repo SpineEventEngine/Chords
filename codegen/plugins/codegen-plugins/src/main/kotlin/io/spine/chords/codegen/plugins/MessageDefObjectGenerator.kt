@@ -104,6 +104,8 @@ internal class MessageDefObjectGenerator(
                 MessageDef::class.asClassName().parameterizedBy(
                     messageTypeName.fullClassName(typeSystem)
                 )
+            ).addAnnotation(
+                buildGeneratedAnnotation()
             ).also { objectBuilder ->
                 fieldNames.forEach { fieldName ->
                     objectBuilder.addProperty(
