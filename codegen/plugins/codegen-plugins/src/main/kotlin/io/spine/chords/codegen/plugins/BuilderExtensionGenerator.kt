@@ -27,10 +27,12 @@
 package io.spine.chords.codegen.plugins
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageDef
 import io.spine.protodata.ast.TypeName
 import io.spine.protodata.type.TypeSystem
@@ -60,20 +62,35 @@ internal class BuilderExtensionGenerator(
      */
     override fun generateCode(fileBuilder: FileSpec.Builder) {
         val messageClass = messageTypeName.fullClassName(typeSystem)
-        val messageDefSimpleName = messageTypeName.messageDefClassName()
         val messageDefClass = ClassName(
             messageTypeName.javaPackage(typeSystem),
-            messageDefSimpleName
+            messageTypeName.messageDefClassName()
         )
         fileBuilder.addProperty(
             PropertySpec.builder("messageDef", messageDefClass, PUBLIC)
                 .receiver(messageClass.nestedClass("Builder"))
-                .getter(
-                    FunSpec.getterBuilder()
-                        .addCode("return $messageDefSimpleName")
-                        .build()
-                )
+                .addKdoc(buildKDoc())
+                .addAnnotation(buildSuppressUnusedAnnotation())
+                .getter(buildGetter(messageDefClass))
                 .build()
         )
     }
+
+    /**
+     * Builds the getter implementation for the `messageDef` property.
+     */
+    private fun buildGetter(messageDefClass: ClassName) =
+        FunSpec.getterBuilder()
+            .addAnnotation(buildGeneratedAnnotation())
+            .addCode(CodeBlock.of("return %T", messageDefClass))
+            .build()
+
+    /**
+     * Builds the KDoc section for the `messageDef` property.
+     */
+    private fun buildKDoc() = CodeBlock.of(
+        "Returns [%T] implementation that is generated for the [%T] message.",
+        MessageDef::class.asClassName(),
+        messageTypeName.fullClassName(typeSystem)
+    )
 }

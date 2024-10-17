@@ -24,37 +24,49 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-syntax = "proto3";
+package io.spine.chords.codegen
 
-package spine.chords.codegen.plugins;
+import com.google.protobuf.ByteString
+import com.google.protobuf.Timestamp
+import io.spine.chords.codegen.command.TestCommand
+import io.spine.core.UserId
+import io.spine.net.InternetDomain
 
-import "spine/options.proto";
-import "spine/protodata/file.proto";
+/**
+ * A set of utility functions that create various test data.
+ */
+object Given {
 
-option (type_url_prefix) = "type.spine.io";
-option java_package = "io.spine.chords.codegen.plugins";
-option java_outer_classname = "FieldViewProto";
-option java_multiple_files = true;
+    internal fun timestamp(seconds: Long) =
+        Timestamp.newBuilder().setSeconds(seconds).build()
 
-import "spine/protodata/ast.proto";
+    internal fun userId(value: String) =
+        UserId.newBuilder().setValue(value).build()
 
-// View on the field's metadata.
-message FieldMetadata {
-    option (entity).kind = PROJECTION;
+    internal fun domain(value: String) =
+        InternetDomain.newBuilder().setValue(value).build()
 
-    // The ID of a FieldMetadata
-    FieldMetadataId id = 1 [(required) = true];
+    internal fun primitives(value: Boolean) =
+        primitivesBuilder().setBool(value).build()
+
+    internal fun byteString(value: String) =
+        ByteString.copyFromUtf8(value)
+
+    internal fun externalType(id: String) =
+        externalTypeBuilder().setId(id).build()
 }
 
-// Identifies a field of a certain `Message` declared in a particular Proto file.
-message FieldMetadataId {
+internal fun oneOfTypeBuilder() =
+    TestCommand.OneOfType.newBuilder()
 
-    // The file where the message with the field is declared.
-    spine.protodata.File file = 1 [(required) = true];
+internal fun testCommandBuilder() =
+    TestCommand.newBuilder()
 
-    // The type of the message where the field is declared.
-    spine.protodata.TypeName type_name = 2 [(required) = true];
+internal fun primitivesBuilder() =
+    TestCommand.Primitives.newBuilder()
 
-    // The field of the message.
-    spine.protodata.Field field = 3 [(required) = true];
-}
+internal fun externalTypeBuilder() =
+    ExternalType.newBuilder()
+
+internal fun noFieldsMessageBuilder() =
+    NoFieldsMessage.newBuilder()

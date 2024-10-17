@@ -23,23 +23,32 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package io.spine.chords.codegen.plugins
 
-syntax = "proto3";
+import io.spine.core.EventContext
+import io.spine.protodata.ast.event.TypeDiscovered
+import io.spine.protodata.plugin.ViewRepository
+import io.spine.protodata.ast.typeName
+import io.spine.server.route.EventRoute
+import io.spine.server.route.EventRouting
 
-package spine.chords.codegen;
+/**
+ * The repository for [MessageTypeView].
+ */
+internal class MessageViewRepository : ViewRepository<MessageViewId,
+        MessageTypeView,
+        MessageView>() {
 
-import "spine/options.proto";
-
-option (type_url_prefix) = "type.spine.chords";
-option java_package = "io.spine.chords.codegen";
-option java_outer_classname = "ExternalMessageProto";
-option java_multiple_files = true;
-
-// The code should be generated for messages defined not only in `commands.proto`.
-message ExternalType {
-    string id = 1 [(required) = true];
-}
-
-// `MessageDef` implementation should be generated for messages without fields.
-message NoFieldsMessage {
+    override fun setupEventRouting(routing: EventRouting<MessageViewId>) {
+        super.setupEventRouting(routing)
+        routing.route(TypeDiscovered::class.java)
+        { message: TypeDiscovered, _: EventContext? ->
+            EventRoute.withId(
+                messageViewId {
+                    file = message.file
+                    typeName = message.type.name
+                }
+            )
+        }
+    }
 }

@@ -27,6 +27,7 @@
 package io.spine.chords.codegen.plugins
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
@@ -37,6 +38,7 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
+import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.TypeName
@@ -104,6 +106,10 @@ internal class MessageDefObjectGenerator(
                 MessageDef::class.asClassName().parameterizedBy(
                     messageTypeName.fullClassName(typeSystem)
                 )
+            ).addKdoc(
+                buildKDoc()
+            ).addAnnotation(
+                buildGeneratedAnnotation()
             ).also { objectBuilder ->
                 fieldNames.forEach { fieldName ->
                     objectBuilder.addProperty(
@@ -132,21 +138,34 @@ internal class MessageDefObjectGenerator(
     }
 
     /**
+     * Builds the KDoc section for the generated implementation of [MessageDef].
+     */
+    private fun buildKDoc() = CodeBlock.of(
+        "A [%T] implementation that allows access to the [%T] message fields at runtime.",
+        MessageDef::class.asClassName(),
+        messageTypeName.fullClassName(typeSystem)
+    )
+
+    /**
      * Builds the `fields` property of [MessageDef] implementation.
      */
     private fun buildFieldsProperty(): PropertySpec {
-        val messageDefClassName = messageFieldClassName.parameterizedBy(
+        val messageDefClassName = MessageField::class.asClassName().parameterizedBy(
             messageTypeName.fullClassName(typeSystem),
-            messageFieldValueTypeAlias
+            MessageFieldValue::class.asClassName()
         )
         val propType = Collection::class.asClassName().parameterizedBy(
             messageDefClassName
         )
         return PropertySpec.builder("fields", propType, PUBLIC, OVERRIDE)
-            .addAnnotation(
-                suppressUncheckedCastAndRedundantQualifier()
-            )
-            .initializer(fieldListInitializer(fieldNames, messageDefClassName))
+            .also { builder ->
+                if (fieldNames.isNotEmpty()) {
+                    builder.addAnnotation(
+                        buildSuppressUncheckedCastAnnotation()
+                    )
+                }
+            }
+            .initializer(buildFieldsInitializer(fieldNames, messageDefClassName))
             .build()
     }
 
@@ -155,12 +174,12 @@ internal class MessageDefObjectGenerator(
      */
     private fun buildOneofsProperty(): PropertySpec {
         val propType = Collection::class.asClassName().parameterizedBy(
-            messageOneofClassName.parameterizedBy(
+            MessageOneof::class.asClassName().parameterizedBy(
                 messageTypeName.fullClassName(typeSystem)
             )
         )
         return PropertySpec.builder("oneofs", propType, PUBLIC, OVERRIDE)
-            .initializer(fieldListInitializer(oneofNames))
+            .initializer(buildOneofsInitializer(oneofNames))
             .build()
     }
 
@@ -198,18 +217,19 @@ internal class MessageDefObjectGenerator(
  * )
  * ```
  */
-private fun fieldListInitializer(
+@Suppress("SpreadOperator")
+private fun buildFieldsInitializer(
     fieldNames: Iterable<String>,
     messageField: ParameterizedTypeName
-): String {
-    return fieldNames.joinToString(
+) = CodeBlock.of(
+    fieldNames.joinToString(
         ",${lineSeparator()}",
         "listOf(${lineSeparator()}",
         ")"
     ) {
-        "${it.propertyName} as $messageField"
-    }
-}
+        "${it.propertyName} as %T"
+    }, *fieldNames.map { messageField }.toTypedArray()
+)
 
 /**
  * Generates initialization code for the `oneofs` property
@@ -223,7 +243,7 @@ private fun fieldListInitializer(
  * )
  * ```
  */
-private fun fieldListInitializer(
+private fun buildOneofsInitializer(
     fieldNames: Iterable<String>
 ): String {
     return fieldNames.joinToString(

@@ -24,44 +24,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.codegen
+package io.spine.chords.runtime
 
-import com.google.protobuf.ByteString
-import com.google.protobuf.Timestamp
-import io.spine.chords.codegen.command.TestCommand
-import io.spine.core.UserId
-import io.spine.net.InternetDomain
+import com.google.protobuf.Message
 
 /**
- * A set of utility functions that create various test data.
+ * Provides an array-like syntax for reading the value of a message field.
+ *
+ * Example:
+ * ```
+ * val fieldValue = message[messageField]
+ * ```
+ * @param M The type of Proto message.
+ * @param V The type of message field value.
  */
-
-internal fun timestamp(seconds: Long) =
-    Timestamp.newBuilder().setSeconds(seconds).build()
-
-internal fun userId(value: String) =
-    UserId.newBuilder().setValue(value).build()
-
-internal fun domain(value: String) =
-    InternetDomain.newBuilder().setValue(value).build()
-
-internal fun primitives(value: Boolean) =
-    primitivesBuilder().setBool(value).build()
-
-internal fun oneOfTypeBuilder() =
-    TestCommand.OneOfType.newBuilder()
-
-internal fun testCommandBuilder() =
-    TestCommand.newBuilder()
-
-internal fun primitivesBuilder() =
-    TestCommand.Primitives.newBuilder()
-
-internal fun byteString(value: String) =
-    ByteString.copyFromUtf8(value)
-
-internal fun externalType(id: String) =
-    externalTypeBuilder().setId(id).build()
-
-internal fun externalTypeBuilder() =
-    ExternalType.newBuilder()
+public operator fun <M : Message, V : MessageFieldValue> M.get(
+    field: MessageField<M, V>
+): V = field.valueIn(this)

@@ -35,6 +35,7 @@ import io.spine.protodata.java.javaPackage
 import io.spine.protodata.render.Renderer
 import io.spine.protodata.render.SourceFileSet
 import io.spine.protodata.type.TypeSystem
+import io.spine.protodata.ast.typeName
 import io.spine.string.Indent
 import io.spine.tools.code.Kotlin
 import java.nio.file.Path
@@ -54,7 +55,7 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
     }
 
     /**
-     * Gathers available [FieldMetadata]s for Proto messages
+     * Gathers available [MessageView]s for Proto messages
      * and performs the code generation.
      */
     override fun render(sources: SourceFileSet) {
@@ -66,13 +67,12 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
             "`TypeSystem` is not initialized."
         }
 
-        select(FieldMetadata::class.java).all()
+        select(MessageView::class.java).all()
             .filter {
-                // Exclude fields that are declared in rejections.
+                // Exclude rejections.
                 !it.id.file.path.endsWith(REJECTIONS_PROTO_FILE_NAME)
-            }.map {
-                it.id.typeName
-            }.forEach { typeName ->
+            }.forEach { mssageView ->
+                val typeName = mssageView.id.typeName
                 val messageToHeader = typeSystem!!.findMessage(typeName)
                 checkNotNull(messageToHeader) {
                     "Message not found for type `$typeName`."
