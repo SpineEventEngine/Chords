@@ -45,10 +45,6 @@ import javax.annotation.Generated
  * generators to create a separate Kotlin file with implementations of
  * [MessageDef], [MessageField], and [MessageOneof] for a Proto message.
  *
- * Also, the properties for the corresponding message class are
- * generated to provide static-like access to these implementations.
- * See [KClassPropertiesGenerator] for detail.
- *
  * @param messageTypeName The [TypeName] of the message to generate the code for.
  * @param fields The collection of [Field]s to generate the code for.
  * @param typeSystem The [TypeSystem] to read external Proto messages.
@@ -66,7 +62,6 @@ internal class MessageDefFileGenerator(
         MessageDefObjectGenerator(messageTypeName, fields, typeSystem),
         MessageFieldObjectGenerator(messageTypeName, fields, typeSystem),
         MessageOneofObjectGenerator(messageTypeName, fields, typeSystem),
-        KClassPropertiesGenerator(messageTypeName, fields, typeSystem),
         BuilderExtensionGenerator(messageTypeName, typeSystem)
     )
 
