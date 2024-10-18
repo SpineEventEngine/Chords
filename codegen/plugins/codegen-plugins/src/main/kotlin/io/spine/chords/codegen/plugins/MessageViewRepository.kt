@@ -27,24 +27,24 @@ package io.spine.chords.codegen.plugins
 
 import io.spine.core.EventContext
 import io.spine.protodata.ast.event.TypeDiscovered
-import io.spine.protodata.plugin.ViewRepository
 import io.spine.protodata.ast.typeName
+import io.spine.protodata.plugin.ViewRepository
 import io.spine.server.route.EventRoute
 import io.spine.server.route.EventRouting
 
 /**
- * The repository for [MessageTypeView].
+ * The repository for [MessageView].
  */
-internal class MessageViewRepository : ViewRepository<MessageViewId,
-        MessageTypeView,
-        MessageView>() {
+internal class MessageViewRepository : ViewRepository<MessageTypeViewId,
+        MessageView,
+        MessageTypeView>() {
 
-    override fun setupEventRouting(routing: EventRouting<MessageViewId>) {
+    override fun setupEventRouting(routing: EventRouting<MessageTypeViewId>) {
         super.setupEventRouting(routing)
         routing.route(TypeDiscovered::class.java)
         { message: TypeDiscovered, _: EventContext? ->
             EventRoute.withId(
-                messageViewId {
+                messageTypeViewId {
                     file = message.file
                     typeName = message.type.name
                 }

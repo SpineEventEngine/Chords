@@ -38,20 +38,20 @@ option java_multiple_files = true;
 
 import "spine/protodata/ast.proto";
 
-// View on the field's metadata.
-message MessageView {
+// View on the message type.
+message MessageTypeView {
     option (entity).kind = PROJECTION;
 
-    // The ID of a FieldMetadata
-    MessageViewId id = 1 [(required) = true];
+    // The ID of a MessageTypeView
+    MessageTypeViewId id = 1 [(required) = true];
 }
 
-// Identifies a `Message` declared in a particular Proto file.
-message MessageViewId {
+// Identifies a message type declared in a particular Proto file.
+message MessageTypeViewId {
 
-    // The file where the message with the field is declared.
+    // The file where the message is declared.
     spine.protodata.File file = 1 [(required) = true];
 
-    // The type of the message where the field is declared.
+    // The type of the message.
     spine.protodata.TypeName type_name = 2 [(required) = true];
 }

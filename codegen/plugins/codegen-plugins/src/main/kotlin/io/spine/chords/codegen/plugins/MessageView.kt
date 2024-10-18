@@ -31,11 +31,11 @@ import io.spine.protodata.ast.event.TypeDiscovered
 import io.spine.protodata.plugin.View
 
 /**
- * Records the [MessageView].
+ * Records the [MessageTypeView]s.
  */
-internal class MessageTypeView : View<MessageViewId,
-        MessageView,
-        MessageView.Builder>() {
+internal class MessageView : View<MessageTypeViewId,
+        MessageTypeView,
+        MessageTypeView.Builder>() {
 
     @Subscribe
     @Suppress("EmptyFunctionBlock", "UNUSED_PARAMETER")
