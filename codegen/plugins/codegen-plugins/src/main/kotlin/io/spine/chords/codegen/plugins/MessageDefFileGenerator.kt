@@ -30,6 +30,7 @@ import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.asClassName
+import io.spine.chords.codegen.plugins.MessageDefFileGenerator.Companion.GENERATED_ANNOTATION_TEXT
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
 import io.spine.chords.runtime.MessageField
@@ -54,6 +55,10 @@ internal class MessageDefFileGenerator(
     private val fields: Iterable<Field>,
     private val typeSystem: TypeSystem
 ) : FileFragmentGenerator {
+
+    companion object {
+        const val GENERATED_ANNOTATION_TEXT = "by Spine Chords codegen plugins"
+    }
 
     /**
      * The list of [FileFragmentGenerator]s which are used to generate the file.
@@ -134,17 +139,17 @@ internal val TypeName.simpleClassName: String
 /**
  * Builds `@Generated` annotation with the corresponding notes.
  */
-internal fun buildGeneratedAnnotation() =
-    buildSuppressAnnotation(
+internal fun generatedAnnotation() =
+    buildAnnotation(
         Generated::class.asClassName(),
-        "by Spine Chords codegen plugins"
+        GENERATED_ANNOTATION_TEXT
     )
 
 /**
  * Builds `@Suppress` annotation with `unused` argument.
  */
-internal fun buildSuppressUnusedAnnotation() =
-    buildSuppressAnnotation(
+internal fun suppressUnusedAnnotation() =
+    buildAnnotation(
         Suppress::class.asClassName(),
         "unused"
     )
@@ -152,8 +157,8 @@ internal fun buildSuppressUnusedAnnotation() =
 /**
  * Builds `@Suppress` annotation with `UNCHECKED_CAST` argument.
  */
-internal fun buildSuppressUncheckedCastAnnotation() =
-    buildSuppressAnnotation(
+internal fun suppressUncheckedCastAnnotation() =
+    buildAnnotation(
         Suppress::class.asClassName(),
         "UNCHECKED_CAST"
     )
@@ -162,7 +167,7 @@ internal fun buildSuppressUncheckedCastAnnotation() =
  * Builds [AnnotationSpec] with given [parameters].
  */
 @Suppress("SameParameterValue")
-private fun buildSuppressAnnotation(
+private fun buildAnnotation(
     annotationClassName: ClassName,
     vararg parameters: String
 ) = AnnotationSpec.builder(annotationClassName).also { builder ->

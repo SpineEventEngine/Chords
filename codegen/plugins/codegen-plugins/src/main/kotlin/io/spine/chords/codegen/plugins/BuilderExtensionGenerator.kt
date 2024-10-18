@@ -69,9 +69,9 @@ internal class BuilderExtensionGenerator(
         fileBuilder.addProperty(
             PropertySpec.builder("messageDef", messageDefClass, PUBLIC)
                 .receiver(messageClass.nestedClass("Builder"))
-                .addKdoc(buildKDoc())
-                .addAnnotation(buildSuppressUnusedAnnotation())
-                .getter(buildGetter(messageDefClass))
+                .addKdoc(generateKDoc())
+                .addAnnotation(suppressUnusedAnnotation())
+                .getter(theGetter(messageDefClass))
                 .build()
         )
     }
@@ -79,16 +79,16 @@ internal class BuilderExtensionGenerator(
     /**
      * Builds the getter implementation for the `messageDef` property.
      */
-    private fun buildGetter(messageDefClass: ClassName) =
+    private fun theGetter(messageDefClass: ClassName) =
         FunSpec.getterBuilder()
-            .addAnnotation(buildGeneratedAnnotation())
+            .addAnnotation(generatedAnnotation())
             .addCode(CodeBlock.of("return %T", messageDefClass))
             .build()
 
     /**
      * Builds the KDoc section for the `messageDef` property.
      */
-    private fun buildKDoc() = CodeBlock.of(
+    private fun generateKDoc() = CodeBlock.of(
         "Returns [%T] implementation that is generated for the [%T] message.",
         MessageDef::class.asClassName(),
         messageTypeName.fullClassName(typeSystem)

@@ -106,8 +106,7 @@ internal class MessageFieldObjectGenerator(
      *         public override val required: Boolean = true
      *
      *         public override val descriptor: Descriptors.FieldDescriptor =
-     *             RegistrationInfo.getDescriptor()
-     *                 .fields[RegistrationInfo.DOMAIN_NAME_FIELD_NUMBER]
+     *             RegistrationInfo.getDescriptor().findFieldByName(name)
      *
      *         public override fun valueIn(message: RegistrationInfo) : InternetDomain {
      *             return message.domainName
@@ -137,21 +136,21 @@ internal class MessageFieldObjectGenerator(
         return TypeSpec
             .objectBuilder(messageFieldClassName)
             .addSuperinterface(superinterface)
-            .addAnnotation(buildGeneratedAnnotation())
-            .addKdoc(buildKDoc(field))
-            .addProperty(buildTheNameProperty(field))
-            .addProperty(buildTheRequiredProperty(field))
-            .addProperty(buildTheDescriptorProperty(field))
-            .addFunction(buildTheValueInFunction(field))
-            .addFunction(buildTheHasValueFunction(field))
-            .addFunction(buildTheSetValueFunction(field))
+            .addAnnotation(generatedAnnotation())
+            .addKdoc(generateKDoc(field))
+            .addProperty(theNameProperty(field))
+            .addProperty(theRequiredProperty(field))
+            .addProperty(theDescriptorProperty())
+            .addFunction(theValueInFunction(field))
+            .addFunction(theHasValueFunction(field))
+            .addFunction(theSetValueFunction(field))
             .build()
     }
 
     /**
      * Builds the `setValue` function of [MessageField] implementation.
      */
-    private fun buildTheSetValueFunction(field: Field) =
+    private fun theSetValueFunction(field: Field) =
         FunSpec.builder("setValue")
             .addModifiers(PUBLIC, OVERRIDE)
             .addParameter(
@@ -166,7 +165,7 @@ internal class MessageFieldObjectGenerator(
     /**
      * Builds the `hasValue` function of [MessageField] implementation.
      */
-    private fun buildTheHasValueFunction(field: Field) =
+    private fun theHasValueFunction(field: Field) =
         FunSpec.builder("hasValue")
             .addModifiers(PUBLIC, OVERRIDE)
             .returns(Boolean::class.asClassName())
@@ -177,7 +176,7 @@ internal class MessageFieldObjectGenerator(
     /**
      * Builds the `valueIn` function of [MessageField] implementation.
      */
-    private fun buildTheValueInFunction(field: Field) =
+    private fun theValueInFunction(field: Field) =
         FunSpec.builder("valueIn")
             .addModifiers(PUBLIC, OVERRIDE)
             .returns(field.valueClassName(typeSystem))
@@ -188,24 +187,22 @@ internal class MessageFieldObjectGenerator(
     /**
      * Builds the `descriptor` property of [MessageField] implementation.
      */
-    private fun buildTheDescriptorProperty(field: Field) =
+    private fun theDescriptorProperty() =
         PropertySpec.builder(
             "descriptor",
             FieldDescriptor::class.asClassName(),
             PUBLIC, OVERRIDE
         ).initializer(
             CodeBlock.of(
-                "%T.getDescriptor().fields[%T.%L_FIELD_NUMBER - 1]",
-                messageFullClassName,
-                messageFullClassName,
-                field.name.value.uppercase()
+                "%T.getDescriptor().findFieldByName(name)",
+                messageFullClassName
             )
         ).build()
 
     /**
      * Builds the `required` property of [MessageField] implementation.
      */
-    private fun buildTheRequiredProperty(field: Field) =
+    private fun theRequiredProperty(field: Field) =
         PropertySpec
             .builder("required", Boolean::class.asClassName(), PUBLIC, OVERRIDE)
             .initializer("${field.required}")
@@ -214,7 +211,7 @@ internal class MessageFieldObjectGenerator(
     /**
      * Builds the `name` property of [MessageField] implementation.
      */
-    private fun buildTheNameProperty(field: Field) =
+    private fun theNameProperty(field: Field) =
         PropertySpec
             .builder("name", String::class.asClassName(), PUBLIC, OVERRIDE)
             .initializer(CodeBlock.of("%S", field.name.value))
@@ -223,7 +220,7 @@ internal class MessageFieldObjectGenerator(
     /**
      * Builds the KDoc section for the generated implementation of [MessageField].
      */
-    private fun buildKDoc(field: Field) =
+    private fun generateKDoc(field: Field) =
         CodeBlock.of(
             "A [%T] implementation that allows access to the `%L` field " +
                     "of the [%T] message at runtime.",

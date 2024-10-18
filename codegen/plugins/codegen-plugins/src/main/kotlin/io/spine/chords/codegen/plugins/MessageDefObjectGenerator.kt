@@ -99,48 +99,57 @@ internal class MessageDefObjectGenerator(
      * ```
      */
     override fun generateCode(fileBuilder: FileSpec.Builder) {
-        fileBuilder.addType(
-            TypeSpec.objectBuilder(
-                messageTypeName.messageDefClassName()
-            ).addSuperinterface(
-                MessageDef::class.asClassName().parameterizedBy(
-                    messageTypeName.fullClassName(typeSystem)
-                )
-            ).addKdoc(
-                buildKDoc()
-            ).addAnnotation(
-                buildGeneratedAnnotation()
-            ).also { objectBuilder ->
-                fieldNames.forEach { fieldName ->
-                    objectBuilder.addProperty(
-                        buildFieldInstanceProperty(
-                            fieldName,
-                            messageTypeName.messageFieldClassName(fieldName)
-                        )
-                    )
-                }
-                oneofNames.forEach { fieldName ->
-                    objectBuilder.addProperty(
-                        buildFieldInstanceProperty(
-                            fieldName,
-                            messageTypeName.messageOneofClassName(fieldName)
-                        )
-                    )
-                }
-                objectBuilder.addProperty(
-                    buildFieldsProperty()
-                )
-                objectBuilder.addProperty(
-                    buildOneofsProperty()
-                )
-            }.build()
+        val superinterface = MessageDef::class.asClassName().parameterizedBy(
+            messageTypeName.fullClassName(typeSystem)
         )
+        val messageDefClassName = messageTypeName.messageDefClassName()
+        fileBuilder.addType(
+            TypeSpec.objectBuilder(messageDefClassName)
+                .addSuperinterface(superinterface)
+                .addKdoc(generateKDoc())
+                .addAnnotation(generatedAnnotation())
+                .also { objectBuilder ->
+                    theFieldsInstances(objectBuilder)
+                    theOneofsInstances(objectBuilder)
+                }
+                .addProperty(theFieldsProperty())
+                .addProperty(theOneofsProperty())
+                .build()
+        )
+    }
+
+    /**
+     * Generates the properties with oneofs instances.
+     */
+    private fun theOneofsInstances(objectBuilder: TypeSpec.Builder) {
+        oneofNames.forEach { fieldName ->
+            objectBuilder.addProperty(
+                theFieldInstanceProperty(
+                    fieldName,
+                    messageTypeName.messageOneofClassName(fieldName)
+                )
+            )
+        }
+    }
+
+    /**
+     * Generates the properties with fields instances.
+     */
+    private fun theFieldsInstances(objectBuilder: TypeSpec.Builder) {
+        fieldNames.forEach { fieldName ->
+            objectBuilder.addProperty(
+                theFieldInstanceProperty(
+                    fieldName,
+                    messageTypeName.messageFieldClassName(fieldName)
+                )
+            )
+        }
     }
 
     /**
      * Builds the KDoc section for the generated implementation of [MessageDef].
      */
-    private fun buildKDoc() = CodeBlock.of(
+    private fun generateKDoc() = CodeBlock.of(
         "A [%T] implementation that allows access to the [%T] message fields at runtime.",
         MessageDef::class.asClassName(),
         messageTypeName.fullClassName(typeSystem)
@@ -149,30 +158,29 @@ internal class MessageDefObjectGenerator(
     /**
      * Builds the `fields` property of [MessageDef] implementation.
      */
-    private fun buildFieldsProperty(): PropertySpec {
+    private fun theFieldsProperty(): PropertySpec {
         val messageDefClassName = MessageField::class.asClassName().parameterizedBy(
             messageTypeName.fullClassName(typeSystem),
             MessageFieldValue::class.asClassName()
         )
-        val propType = Collection::class.asClassName().parameterizedBy(
+        val type = Collection::class.asClassName().parameterizedBy(
             messageDefClassName
         )
-        return PropertySpec.builder("fields", propType, PUBLIC, OVERRIDE)
+        return PropertySpec.builder("fields", type, PUBLIC, OVERRIDE)
             .also { builder ->
-                if (fieldNames.isNotEmpty()) {
-                    builder.addAnnotation(
-                        buildSuppressUncheckedCastAnnotation()
-                    )
+                fieldNames.ifNotEmpty {
+                    builder.addAnnotation(suppressUncheckedCastAnnotation())
                 }
             }
-            .initializer(buildFieldsInitializer(fieldNames, messageDefClassName))
-            .build()
+            .initializer(
+                theFieldsPropertyInitializer(fieldNames, messageDefClassName)
+            ).build()
     }
 
     /**
      * Builds the `oneofs` property of [MessageDef] implementation.
      */
-    private fun buildOneofsProperty(): PropertySpec {
+    private fun theOneofsProperty(): PropertySpec {
         val propType = Collection::class.asClassName().parameterizedBy(
             MessageOneof::class.asClassName().parameterizedBy(
                 messageTypeName.fullClassName(typeSystem)
@@ -187,7 +195,7 @@ internal class MessageDefObjectGenerator(
      * Builds a property that references the instance of [MessageField]
      * or [MessageOneof] implementation.
      */
-    private fun buildFieldInstanceProperty(
+    private fun theFieldInstanceProperty(
         fieldName: String,
         implSimpleClassName: String
     ): PropertySpec {
@@ -206,6 +214,13 @@ internal class MessageDefObjectGenerator(
 }
 
 /**
+ * Executes the given [action] if the list is not empty.
+ */
+private fun List<String>.ifNotEmpty(action: (list: List<String>) -> Unit) {
+    action(this)
+}
+
+/**
  * Generates initialization code for the `fields` property
  * of the [MessageDef] implementation.
  *
@@ -218,7 +233,7 @@ internal class MessageDefObjectGenerator(
  * ```
  */
 @Suppress("SpreadOperator")
-private fun buildFieldsInitializer(
+private fun theFieldsPropertyInitializer(
     fieldNames: Iterable<String>,
     messageField: ParameterizedTypeName
 ) = CodeBlock.of(

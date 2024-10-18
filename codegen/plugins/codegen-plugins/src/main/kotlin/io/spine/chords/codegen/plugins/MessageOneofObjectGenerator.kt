@@ -38,7 +38,6 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
-import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
@@ -78,9 +77,9 @@ internal class MessageOneofObjectGenerator(
             field.isPartOfOneof
         }.groupBy { oneofField ->
             oneofField.oneofName.value
-        }.forEach { filedMap ->
+        }.forEach { nameToFields ->
             fileBuilder.addType(
-                buildMessageOneofObject(filedMap.key, filedMap.value)
+                buildMessageOneofObject(nameToFields.key, nameToFields.value)
             )
         }
     }
@@ -111,69 +110,86 @@ internal class MessageOneofObjectGenerator(
         oneofName: String,
         oneofFields: List<Field>
     ): TypeSpec {
-        val messageFieldType = MessageField::class.asClassName().parameterizedBy(
+        val fieldType = MessageField::class.asClassName().parameterizedBy(
             messageFullClassName,
             MessageFieldValue::class.asClassName()
         )
-        val fieldMapType = Map::class.asClassName().parameterizedBy(
-            Int::class.asClassName(),
-            messageFieldType
-        )
-        val stringType = String::class.asClassName()
-        val fieldsReturnType = Collection::class.asClassName()
-            .parameterizedBy(messageFieldType)
-        val superInterface = MessageOneof::class.asClassName()
-            .parameterizedBy(messageFullClassName)
-        val propName = oneofName.propertyName
         val generatedClassName = messageTypeName
             .messageOneofClassName(oneofName)
+        val superInterface = MessageOneof::class.asClassName()
+            .parameterizedBy(messageFullClassName)
 
         return TypeSpec.objectBuilder(generatedClassName)
             .addSuperinterface(superInterface)
-            .addAnnotation(buildGeneratedAnnotation())
-            .addKdoc(buildKDoc(oneofName))
-            .addProperty(
-                PropertySpec
-                    .builder("fieldMap", fieldMapType, PRIVATE)
-                    .addAnnotation(
-                        buildSuppressUncheckedCastAnnotation()
-                    )
-                    .initializer(
-                        buildFieldMapInitializer(
-                            oneofFields,
-                            messageTypeName.messageDefClassName(),
-                            messageFieldType
-                        )
-                    )
-                    .build()
-            )
-            .addProperty(
-                PropertySpec
-                    .builder("name", stringType, PUBLIC, OVERRIDE)
-                    .initializer("\"$oneofName\"")
-                    .build()
-            )
-            .addProperty(
-                PropertySpec
-                    .builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
-                    .initializer("fieldMap.values")
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("selectedField")
-                    .addModifiers(PUBLIC, OVERRIDE)
-                    .returns(messageFieldType.copy(nullable = true))
-                    .addParameter("message", messageFullClassName)
-                    .addCode("return fieldMap[message.${propName}Case.number]")
-                    .build()
-            )
+            .addAnnotation(generatedAnnotation())
+            .addKdoc(generateKDoc(oneofName))
+            .addProperty(theFieldMapProperty(oneofFields, fieldType))
+            .addProperty(theNameProperty(oneofName))
+            .addProperty(theFieldsProperty(fieldType))
+            .addFunction(theSelectedFieldFunction(oneofName, fieldType))
             .build()
     }
 
     /**
+     * Generates the `fieldMap` property.
+     */
+    private fun theFieldMapProperty(
+        oneofFields: List<Field>,
+        fieldType: ParameterizedTypeName
+    ): PropertySpec {
+        val fieldMapType = Map::class.asClassName().parameterizedBy(
+            Int::class.asClassName(),
+            fieldType
+        )
+        return PropertySpec
+            .builder("fieldMap", fieldMapType, PRIVATE)
+            .addAnnotation(suppressUncheckedCastAnnotation())
+            .initializer(
+                buildFieldMapInitializer(
+                    oneofFields,
+                    messageTypeName.messageDefClassName(),
+                    fieldType
+                )
+            ).build()
+    }
+
+    /**
+     * Generates the `name` property.
+     */
+    private fun theNameProperty(oneofName: String) = PropertySpec
+        .builder("name", String::class.asClassName(), PUBLIC, OVERRIDE)
+        .initializer("\"$oneofName\"")
+        .build()
+
+    /**
+     * Generates the `fields` property.
+     */
+    private fun theFieldsProperty(fieldType: ParameterizedTypeName): PropertySpec {
+        val fieldsReturnType = Collection::class.asClassName()
+            .parameterizedBy(fieldType)
+        return PropertySpec
+            .builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
+            .initializer("fieldMap.values")
+            .build()
+    }
+
+    /**
+     * Generates the `selectedField` function.
+     */
+    private fun theSelectedFieldFunction(
+        oneofName: String,
+        messageFieldType: ParameterizedTypeName
+    ) = FunSpec.builder("selectedField")
+        .addModifiers(PUBLIC, OVERRIDE)
+        .returns(messageFieldType.copy(nullable = true))
+        .addParameter("message", messageFullClassName)
+        .addCode("return fieldMap[message.${oneofName.propertyName}Case.number]")
+        .build()
+
+    /**
      * Builds the KDoc section for the generated implementation of [MessageOneof].
      */
-    private fun buildKDoc(oneofName: String) = CodeBlock.of(
+    private fun generateKDoc(oneofName: String) = CodeBlock.of(
         "A [%T] implementation that allows access to the `%L` oneof field " +
                 "of the [%T] message at runtime.",
         MessageOneof::class.asClassName(),
