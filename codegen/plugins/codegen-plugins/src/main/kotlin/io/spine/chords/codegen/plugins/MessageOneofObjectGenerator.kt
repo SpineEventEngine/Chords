@@ -123,17 +123,17 @@ internal class MessageOneofObjectGenerator(
             .addSuperinterface(superInterface)
             .addAnnotation(generatedAnnotation())
             .addKdoc(generateKDoc(oneofName))
-            .addProperty(theFieldMapProperty(oneofFields, fieldType))
-            .addProperty(theNameProperty(oneofName))
-            .addProperty(theFieldsProperty(fieldType))
-            .addFunction(theSelectedFieldFunction(oneofName, fieldType))
+            .addProperty(fieldMapProperty(oneofFields, fieldType))
+            .addProperty(nameProperty(oneofName))
+            .addProperty(fieldsProperty(fieldType))
+            .addFunction(selectedFieldFunction(oneofName, fieldType))
             .build()
     }
 
     /**
      * Generates the `fieldMap` property.
      */
-    private fun theFieldMapProperty(
+    private fun fieldMapProperty(
         oneofFields: List<Field>,
         fieldType: ParameterizedTypeName
     ): PropertySpec {
@@ -145,7 +145,7 @@ internal class MessageOneofObjectGenerator(
             .builder("fieldMap", fieldMapType, PRIVATE)
             .addAnnotation(suppressUncheckedCastAnnotation())
             .initializer(
-                buildFieldMapInitializer(
+                fieldMapInitializer(
                     oneofFields,
                     messageTypeName.messageDefClassName(),
                     fieldType
@@ -156,15 +156,16 @@ internal class MessageOneofObjectGenerator(
     /**
      * Generates the `name` property.
      */
-    private fun theNameProperty(oneofName: String) = PropertySpec
-        .builder("name", String::class.asClassName(), PUBLIC, OVERRIDE)
-        .initializer("\"$oneofName\"")
-        .build()
+    private fun nameProperty(oneofName: String) =
+        PropertySpec
+            .builder("name", String::class.asClassName(), PUBLIC, OVERRIDE)
+            .initializer(CodeBlock.of("%S", oneofName))
+            .build()
 
     /**
      * Generates the `fields` property.
      */
-    private fun theFieldsProperty(fieldType: ParameterizedTypeName): PropertySpec {
+    private fun fieldsProperty(fieldType: ParameterizedTypeName): PropertySpec {
         val fieldsReturnType = Collection::class.asClassName()
             .parameterizedBy(fieldType)
         return PropertySpec
@@ -176,7 +177,7 @@ internal class MessageOneofObjectGenerator(
     /**
      * Generates the `selectedField` function.
      */
-    private fun theSelectedFieldFunction(
+    private fun selectedFieldFunction(
         oneofName: String,
         messageFieldType: ParameterizedTypeName
     ) = FunSpec.builder("selectedField")
@@ -211,7 +212,7 @@ internal class MessageOneofObjectGenerator(
  * ```
  */
 @Suppress("SpreadOperator")
-private fun buildFieldMapInitializer(
+private fun fieldMapInitializer(
     fields: List<Field>,
     messageDefClassName: String,
     messageField: ParameterizedTypeName
