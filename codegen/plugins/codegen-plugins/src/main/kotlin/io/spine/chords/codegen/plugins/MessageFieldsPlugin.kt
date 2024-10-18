@@ -35,10 +35,7 @@ import io.spine.protodata.render.Renderer
 
 /**
  * The ProtoData [Plugin] that generates [MessageDef], [MessageField],
- * and [MessageOneof] implementations for a Proto messages.
- *
- * It is required to avoid usages of Protobuf reflection API calls. Read more
- * in this [issue](https://github.com/Projects-tm/1DAM/issues/41).
+ * and [MessageOneof] implementations for Proto messages.
  *
  * See the [MessageFieldsRenderer] for detail on code generation.
  */
@@ -49,6 +46,6 @@ public class MessageFieldsPlugin : Plugin {
     }
 
     override fun viewRepositories(): Set<ViewRepository<*, *, *>> {
-        return setOf(FieldViewRepository())
+        return setOf(MessageViewRepository())
     }
 }

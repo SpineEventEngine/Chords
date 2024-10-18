@@ -46,7 +46,23 @@ public fun <M : Message> ValidatingBuilder<M>.messageDef(): MessageDef<M> {
         .plus(MESSAGE_DEF_CLASS_SUFFIX)
         .plus("Kt")
     val messageDefClass = Class.forName(messageDefClassName)
-    val getMessageDefMethod = messageDefClass
-        .getMethod("getMessageDef", builderClass)
+    val getMessageDefMethod = messageDefClass.getMethod(
+        "getMessageDef",
+        builderClass
+    )
     return getMessageDefMethod.invoke(builderClass, this) as MessageDef<M>
 }
+
+/**
+ * Exposes an array-like syntax to set a new field value in the message builder.
+ *
+ * Example:
+ * ```
+ * builder[messageField] = newValue
+ * ```
+ * @param M The type of Proto message.
+ * @param V The type of message field value.
+ */
+public operator fun <M : Message, V : MessageFieldValue> ValidatingBuilder<M>.set(
+    field: MessageField<M, V>, value: V
+): Unit = field.setValue(this, value)

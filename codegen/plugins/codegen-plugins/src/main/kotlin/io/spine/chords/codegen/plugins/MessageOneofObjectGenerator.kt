@@ -27,6 +27,7 @@
 package io.spine.chords.codegen.plugins
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
@@ -37,6 +38,8 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
+import io.spine.chords.runtime.MessageField
+import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.TypeName
@@ -74,9 +77,9 @@ internal class MessageOneofObjectGenerator(
             field.isPartOfOneof
         }.groupBy { oneofField ->
             oneofField.oneofName.value
-        }.forEach { filedMap ->
+        }.forEach { nameToFields ->
             fileBuilder.addType(
-                buildMessageOneofObject(filedMap.key, filedMap.value)
+                buildMessageOneofObject(nameToFields.key, nameToFields.value)
             )
         }
     }
@@ -107,62 +110,93 @@ internal class MessageOneofObjectGenerator(
         oneofName: String,
         oneofFields: List<Field>
     ): TypeSpec {
-        val messageFieldType = messageFieldClassName.parameterizedBy(
+        val fieldType = MessageField::class.asClassName().parameterizedBy(
             messageFullClassName,
-            messageFieldValueTypeAlias
+            MessageFieldValue::class.asClassName()
         )
-        val fieldMapType = Map::class.asClassName().parameterizedBy(
-            Int::class.asClassName(),
-            messageFieldType
-        )
-        val stringType = String::class.asClassName()
-        val fieldsReturnType = Collection::class.asClassName()
-            .parameterizedBy(messageFieldType)
-        val superInterface = messageOneofClassName
-            .parameterizedBy(messageFullClassName)
-        val propName = oneofName.propertyName
         val generatedClassName = messageTypeName
             .messageOneofClassName(oneofName)
+        val superInterface = MessageOneof::class.asClassName()
+            .parameterizedBy(messageFullClassName)
 
         return TypeSpec.objectBuilder(generatedClassName)
             .addSuperinterface(superInterface)
-            .addProperty(
-                PropertySpec
-                    .builder("fieldMap", fieldMapType, PRIVATE)
-                    .addAnnotation(
-                        suppressUncheckedCastAndRedundantQualifier()
-                    )
-                    .initializer(
-                        fieldMapInitializer(
-                            oneofFields,
-                            messageTypeName.messageDefClassName(),
-                            messageFieldType
-                        )
-                    )
-                    .build()
-            )
-            .addProperty(
-                PropertySpec
-                    .builder("name", stringType, PUBLIC, OVERRIDE)
-                    .initializer("\"$oneofName\"")
-                    .build()
-            )
-            .addProperty(
-                PropertySpec
-                    .builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
-                    .initializer("fieldMap.values")
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("selectedField")
-                    .addModifiers(PUBLIC, OVERRIDE)
-                    .returns(messageFieldType.copy(nullable = true))
-                    .addParameter("message", messageFullClassName)
-                    .addCode("return fieldMap[message.${propName}Case.number]")
-                    .build()
-            )
+            .addAnnotation(generatedAnnotation())
+            .addKdoc(generateKDoc(oneofName))
+            .addProperty(fieldMapProperty(oneofFields, fieldType))
+            .addProperty(nameProperty(oneofName))
+            .addProperty(fieldsProperty(fieldType))
+            .addFunction(selectedFieldFunction(oneofName, fieldType))
             .build()
     }
+
+    /**
+     * Generates the `fieldMap` property.
+     */
+    private fun fieldMapProperty(
+        oneofFields: List<Field>,
+        fieldType: ParameterizedTypeName
+    ): PropertySpec {
+        val fieldMapType = Map::class.asClassName().parameterizedBy(
+            Int::class.asClassName(),
+            fieldType
+        )
+        return PropertySpec
+            .builder("fieldMap", fieldMapType, PRIVATE)
+            .addAnnotation(suppressUncheckedCastAnnotation())
+            .initializer(
+                fieldMapInitializer(
+                    oneofFields,
+                    messageTypeName.messageDefClassName(),
+                    fieldType
+                )
+            ).build()
+    }
+
+    /**
+     * Generates the `name` property.
+     */
+    private fun nameProperty(oneofName: String) =
+        PropertySpec
+            .builder("name", String::class.asClassName(), PUBLIC, OVERRIDE)
+            .initializer(CodeBlock.of("%S", oneofName))
+            .build()
+
+    /**
+     * Generates the `fields` property.
+     */
+    private fun fieldsProperty(fieldType: ParameterizedTypeName): PropertySpec {
+        val fieldsReturnType = Collection::class.asClassName()
+            .parameterizedBy(fieldType)
+        return PropertySpec
+            .builder("fields", fieldsReturnType, PUBLIC, OVERRIDE)
+            .initializer("fieldMap.values")
+            .build()
+    }
+
+    /**
+     * Generates the `selectedField` function.
+     */
+    private fun selectedFieldFunction(
+        oneofName: String,
+        messageFieldType: ParameterizedTypeName
+    ) = FunSpec.builder("selectedField")
+        .addModifiers(PUBLIC, OVERRIDE)
+        .returns(messageFieldType.copy(nullable = true))
+        .addParameter("message", messageFullClassName)
+        .addCode("return fieldMap[message.${oneofName.propertyName}Case.number]")
+        .build()
+
+    /**
+     * Builds the KDoc section for the generated implementation of [MessageOneof].
+     */
+    private fun generateKDoc(oneofName: String) = CodeBlock.of(
+        "A [%T] implementation that allows access to the `%L` oneof field " +
+                "of the [%T] message at runtime.",
+        MessageOneof::class.asClassName(),
+        oneofName,
+        messageTypeName.fullClassName(typeSystem)
+    )
 }
 
 /**
@@ -177,16 +211,17 @@ internal class MessageOneofObjectGenerator(
  * )
  * ```
  */
+@Suppress("SpreadOperator")
 private fun fieldMapInitializer(
-    fields: Iterable<Field>,
+    fields: List<Field>,
     messageDefClassName: String,
     messageField: ParameterizedTypeName
-): String {
-    return fields.joinToString(
+) = CodeBlock.of(
+    fields.joinToString(
         ",${lineSeparator()}",
         "mapOf(${lineSeparator()}",
         ")"
     ) {
-        "${it.number} to $messageDefClassName.${it.name.javaCase()} as $messageField"
-    }
-}
+        "${it.number} to $messageDefClassName.${it.name.javaCase()} as %T"
+    }, *fields.map { messageField }.toTypedArray()
+)

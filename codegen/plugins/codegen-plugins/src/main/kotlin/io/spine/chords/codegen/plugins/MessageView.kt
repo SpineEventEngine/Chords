@@ -23,45 +23,23 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package io.spine.chords.codegen.plugins
 
-package io.spine.chords.codegen
-
-import com.google.protobuf.ByteString
-import com.google.protobuf.Timestamp
-import io.spine.chords.codegen.command.TestCommand
-import io.spine.core.UserId
-import io.spine.net.InternetDomain
+import io.spine.core.External
+import io.spine.core.Subscribe
+import io.spine.protodata.ast.event.TypeDiscovered
+import io.spine.protodata.plugin.View
 
 /**
- * A set of utility functions that create various test data.
+ * Records the [MessageTypeView]s.
  */
+internal class MessageView : View<MessageTypeViewId,
+        MessageTypeView,
+        MessageTypeView.Builder>() {
 
-internal fun timestamp(seconds: Long) =
-    Timestamp.newBuilder().setSeconds(seconds).build()
-
-internal fun userId(value: String) =
-    UserId.newBuilder().setValue(value).build()
-
-internal fun domain(value: String) =
-    InternetDomain.newBuilder().setValue(value).build()
-
-internal fun primitives(value: Boolean) =
-    primitivesBuilder().setBool(value).build()
-
-internal fun oneOfTypeBuilder() =
-    TestCommand.OneOfType.newBuilder()
-
-internal fun testCommandBuilder() =
-    TestCommand.newBuilder()
-
-internal fun primitivesBuilder() =
-    TestCommand.Primitives.newBuilder()
-
-internal fun byteString(value: String) =
-    ByteString.copyFromUtf8(value)
-
-internal fun externalType(id: String) =
-    externalTypeBuilder().setId(id).build()
-
-internal fun externalTypeBuilder() =
-    ExternalType.newBuilder()
+    @Subscribe
+    @Suppress("EmptyFunctionBlock", "UNUSED_PARAMETER")
+    internal fun on(@External event: TypeDiscovered) {
+        // There is nothing to do here — ID holds all the required state.
+    }
+}

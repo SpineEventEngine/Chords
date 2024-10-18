@@ -27,7 +27,9 @@
 package io.spine.chords.codegen.plugins
 
 import com.google.protobuf.BoolValue
+import com.google.protobuf.Descriptors.FieldDescriptor
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
@@ -44,13 +46,13 @@ import io.spine.protodata.ast.TypeName
 import io.spine.protodata.ast.isEnum
 import io.spine.protodata.ast.isPrimitive
 import io.spine.protodata.ast.isRepeated
+import io.spine.protodata.ast.typeName
 import io.spine.protodata.java.getterName
 import io.spine.protodata.java.javaPackage
 import io.spine.protodata.java.primarySetterName
 import io.spine.protodata.java.primitiveClass
 import io.spine.protodata.type.TypeSystem
 import io.spine.protodata.type.findHeader
-import io.spine.protodata.ast.typeName
 import io.spine.string.camelCase
 
 /**
@@ -87,9 +89,7 @@ internal class MessageFieldObjectGenerator(
      */
     override fun generateCode(fileBuilder: FileSpec.Builder) {
         fields.forEach { field ->
-            fileBuilder.addType(
-                buildMessageFieldObject(field)
-            )
+            fileBuilder.addType(buildMessageFieldObject(field))
         }
     }
 
@@ -104,6 +104,9 @@ internal class MessageFieldObjectGenerator(
      *         public override val name: String = "domain_name"
      *
      *         public override val required: Boolean = true
+     *
+     *         public override val descriptor: Descriptors.FieldDescriptor =
+     *             RegistrationInfo.getDescriptor().findFieldByName(name)
      *
      *         public override fun valueIn(message: RegistrationInfo) : InternetDomain {
      *             return message.domainName
@@ -123,54 +126,108 @@ internal class MessageFieldObjectGenerator(
      * ```
      */
     private fun buildMessageFieldObject(field: Field): TypeSpec {
-        val fieldName = field.name.value
-        val generatedClassName = messageTypeName.messageFieldClassName(fieldName)
-        val fieldValueClassName = field.valueClassName(typeSystem)
-        val superType = messageFieldClassName
+        val messageFieldClassName = messageTypeName
+            .messageFieldClassName(field.name.value)
+        val superinterface = MessageField::class.asClassName()
             .parameterizedBy(
                 messageFullClassName,
-                fieldValueClassName
+                field.valueClassName(typeSystem)
             )
-        val stringType = String::class.asClassName()
-        val boolType = Boolean::class.asClassName()
-        val builderType = validatingBuilderClassName
-            .parameterizedBy(messageFullClassName)
-
-        return TypeSpec.objectBuilder(generatedClassName)
-            .addSuperinterface(superType)
-            .addProperty(
-                PropertySpec
-                    .builder("name", stringType, PUBLIC, OVERRIDE)
-                    .initializer("\"$fieldName\"")
-                    .build()
-            ).addProperty(
-                PropertySpec
-                    .builder("required", boolType, PUBLIC, OVERRIDE)
-                    .initializer("${field.required}")
-                    .build()
-            ).addFunction(
-                FunSpec.builder("valueIn")
-                    .addModifiers(PUBLIC, OVERRIDE)
-                    .returns(fieldValueClassName)
-                    .addParameter("message", messageFullClassName)
-                    .addCode("return message.${field.getterName}()")
-                    .build()
-            ).addFunction(
-                FunSpec.builder("hasValue")
-                    .addModifiers(PUBLIC, OVERRIDE)
-                    .returns(boolType)
-                    .addParameter("message", messageFullClassName)
-                    .addCode("return ${field.hasValueInvocation}")
-                    .build()
-            ).addFunction(
-                FunSpec.builder("setValue")
-                    .addModifiers(PUBLIC, OVERRIDE)
-                    .addParameter("builder", builderType)
-                    .addParameter("newValue", fieldValueClassName)
-                    .addCode(field.generateSetValueCode(messageTypeName))
-                    .build()
-            ).build()
+        return TypeSpec
+            .objectBuilder(messageFieldClassName)
+            .addSuperinterface(superinterface)
+            .addAnnotation(generatedAnnotation())
+            .addKdoc(generateKDoc(field))
+            .addProperty(nameProperty(field))
+            .addProperty(requiredProperty(field))
+            .addProperty(descriptorProperty())
+            .addFunction(valueInFunction(field))
+            .addFunction(hasValueFunction(field))
+            .addFunction(setValueFunction(field))
+            .build()
     }
+
+    /**
+     * Builds the `setValue` function of [MessageField] implementation.
+     */
+    private fun setValueFunction(field: Field) =
+        FunSpec.builder("setValue")
+            .addModifiers(PUBLIC, OVERRIDE)
+            .addParameter(
+                "builder",
+                validatingBuilderClassName
+                    .parameterizedBy(messageFullClassName)
+            )
+            .addParameter("newValue", field.valueClassName(typeSystem))
+            .addCode(field.generateSetValueCode(messageTypeName))
+            .build()
+
+    /**
+     * Builds the `hasValue` function of [MessageField] implementation.
+     */
+    private fun hasValueFunction(field: Field) =
+        FunSpec.builder("hasValue")
+            .addModifiers(PUBLIC, OVERRIDE)
+            .returns(Boolean::class.asClassName())
+            .addParameter("message", messageFullClassName)
+            .addCode("return ${field.hasValueInvocation}")
+            .build()
+
+    /**
+     * Builds the `valueIn` function of [MessageField] implementation.
+     */
+    private fun valueInFunction(field: Field) =
+        FunSpec.builder("valueIn")
+            .addModifiers(PUBLIC, OVERRIDE)
+            .returns(field.valueClassName(typeSystem))
+            .addParameter("message", messageFullClassName)
+            .addCode("return message.${field.getterName}()")
+            .build()
+
+    /**
+     * Builds the `descriptor` property of [MessageField] implementation.
+     */
+    private fun descriptorProperty() =
+        PropertySpec.builder(
+            "descriptor",
+            FieldDescriptor::class.asClassName(),
+            PUBLIC, OVERRIDE
+        ).initializer(
+            CodeBlock.of(
+                "%T.getDescriptor().findFieldByName(name)",
+                messageFullClassName
+            )
+        ).build()
+
+    /**
+     * Builds the `required` property of [MessageField] implementation.
+     */
+    private fun requiredProperty(field: Field) =
+        PropertySpec
+            .builder("required", Boolean::class.asClassName(), PUBLIC, OVERRIDE)
+            .initializer("${field.required}")
+            .build()
+
+    /**
+     * Builds the `name` property of [MessageField] implementation.
+     */
+    private fun nameProperty(field: Field) =
+        PropertySpec
+            .builder("name", String::class.asClassName(), PUBLIC, OVERRIDE)
+            .initializer(CodeBlock.of("%S", field.name.value))
+            .build()
+
+    /**
+     * Builds the KDoc section for the generated implementation of [MessageField].
+     */
+    private fun generateKDoc(field: Field) =
+        CodeBlock.of(
+            "A [%T] implementation that allows access to the `%L` field " +
+                    "of the [%T] message at runtime.",
+            MessageField::class.asClassName(),
+            field.name.value,
+            messageTypeName.fullClassName(typeSystem)
+        )
 }
 
 /**

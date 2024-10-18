@@ -25,21 +25,30 @@
  */
 package io.spine.chords.codegen.plugins
 
-import io.spine.core.External
-import io.spine.core.Subscribe
-import io.spine.protodata.ast.event.FieldEntered
-import io.spine.protodata.plugin.View
+import io.spine.core.EventContext
+import io.spine.protodata.ast.event.TypeDiscovered
+import io.spine.protodata.ast.typeName
+import io.spine.protodata.plugin.ViewRepository
+import io.spine.server.route.EventRoute
+import io.spine.server.route.EventRouting
 
 /**
- * Records the [FieldMetadata].
+ * The repository for [MessageView].
  */
-internal class FieldView : View<FieldMetadataId,
-        FieldMetadata,
-        FieldMetadata.Builder>() {
+internal class MessageViewRepository : ViewRepository<MessageTypeViewId,
+        MessageView,
+        MessageTypeView>() {
 
-    @Subscribe
-    @Suppress("EmptyFunctionBlock", "UNUSED_PARAMETER")
-    internal fun on(@External event: FieldEntered) {
-        // There is nothing to do here — ID holds all the required state.
+    override fun setupEventRouting(routing: EventRouting<MessageTypeViewId>) {
+        super.setupEventRouting(routing)
+        routing.route(TypeDiscovered::class.java)
+        { message: TypeDiscovered, _: EventContext? ->
+            EventRoute.withId(
+                messageTypeViewId {
+                    file = message.file
+                    typeName = message.type.name
+                }
+            )
+        }
     }
 }

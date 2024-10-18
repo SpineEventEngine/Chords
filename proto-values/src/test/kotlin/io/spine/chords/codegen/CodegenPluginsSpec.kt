@@ -34,20 +34,12 @@ import io.spine.chords.proto.value.money.PaymentCardNumber
 import io.spine.chords.proto.value.money.PaymentCardNumberDef
 import io.spine.chords.proto.value.money.PaymentMethod
 import io.spine.chords.proto.value.money.PaymentMethodDef
-import io.spine.chords.proto.value.money.bankAccount
-import io.spine.chords.proto.value.money.method
-import io.spine.chords.proto.value.money.number
-import io.spine.chords.proto.value.money.paymentCard
-import io.spine.chords.proto.value.money.value
 import io.spine.chords.proto.value.net.IpAddress
 import io.spine.chords.proto.value.net.IpAddressDef
 import io.spine.chords.proto.value.net.Ipv4Address
 import io.spine.chords.proto.value.net.Ipv4AddressDef
 import io.spine.chords.proto.value.net.Ipv6Address
 import io.spine.chords.proto.value.net.Ipv6AddressDef
-import io.spine.chords.proto.value.net.ipv4
-import io.spine.chords.proto.value.net.ipv6
-import io.spine.chords.proto.value.net.value
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageOneof
@@ -69,35 +61,25 @@ internal class CodegenPluginsSpec {
     @Test
     fun `generate 'MessageField', 'MessageOneof', and 'MessageDef' implementations`() {
 
-        BankAccount::class.number shouldNotBe null
         BankAccountDef.number shouldNotBe null
         BankAccount.newBuilder().messageDef() shouldBe BankAccountDef
 
-        PaymentCardNumber::class.value shouldNotBe null
         PaymentCardNumberDef.value shouldNotBe null
         PaymentCardNumber.newBuilder().messageDef() shouldBe PaymentCardNumberDef
 
-        PaymentMethod::class.paymentCard shouldNotBe null
         PaymentMethodDef.paymentCard shouldNotBe null
-        PaymentMethod::class.bankAccount shouldNotBe null
         PaymentMethodDef.bankAccount shouldNotBe null
-        PaymentMethod::class.method shouldNotBe null
         PaymentMethodDef.method shouldNotBe null
         PaymentMethod.newBuilder().messageDef() shouldBe PaymentMethodDef
 
-        IpAddress::class.ipv4 shouldNotBe null
         IpAddressDef.ipv4 shouldNotBe null
-        IpAddress::class.ipv6 shouldNotBe null
         IpAddressDef.ipv6 shouldNotBe null
-        IpAddress::class.value shouldNotBe null
         IpAddressDef.value shouldNotBe null
         IpAddress.newBuilder().messageDef() shouldBe IpAddressDef
 
-        Ipv4Address::class.value shouldNotBe null
         Ipv4AddressDef.value shouldNotBe null
         Ipv4Address.newBuilder().messageDef() shouldBe Ipv4AddressDef
 
-        Ipv6Address::class.value shouldNotBe null
         Ipv6AddressDef.value shouldNotBe null
         Ipv6Address.newBuilder().messageDef() shouldBe Ipv6AddressDef
     }
