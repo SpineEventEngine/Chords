@@ -214,7 +214,9 @@ internal class MessageDefObjectGenerator(
  * Executes the given [action] if the list is not empty.
  */
 private fun <E> List<E>.ifNotEmpty(action: (list: List<E>) -> Unit) {
-    action(this)
+    if (isNotEmpty()) {
+        action(this)
+    }
 }
 
 /**
