@@ -29,6 +29,7 @@ package io.spine.chords.codegen
 import com.google.protobuf.Message
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.spine.chords.codegen.Given.byteString
 import io.spine.chords.codegen.Given.domain
 import io.spine.chords.codegen.Given.externalType
@@ -85,6 +86,7 @@ internal class CodegenPluginsSpec {
             field.required shouldBe fieldIsRequired
         }
         withClue("Wrong value of `descriptor` property was generated.") {
+            field.descriptor shouldNotBe null
             field.descriptor.name shouldBe protoFieldName
         }
         withClue("Wrong result of `hasValue()` if value is not set.") {

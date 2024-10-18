@@ -68,7 +68,7 @@ public interface MessageField<T : Message, V : MessageFieldValue> {
     public val required: Boolean
 
     /**
-     * Returns the Protobuf field descriptor.
+     * Returns the Protobuf's field descriptor.
      */
     public val descriptor: Descriptors.FieldDescriptor
 
@@ -92,5 +92,4 @@ public interface MessageField<T : Message, V : MessageFieldValue> {
      * Sets a new field value for the given message builder.
      */
     public fun setValue(builder: ValidatingBuilder<T>, newValue: V)
-
 }
