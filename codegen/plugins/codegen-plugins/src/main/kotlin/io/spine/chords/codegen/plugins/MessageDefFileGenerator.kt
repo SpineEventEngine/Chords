@@ -146,28 +146,9 @@ internal fun generatedAnnotation() =
     )
 
 /**
- * Builds `@Suppress` annotation with `unused` argument.
- */
-internal fun suppressUnusedAnnotation() =
-    buildAnnotation(
-        Suppress::class.asClassName(),
-        "unused"
-    )
-
-/**
- * Builds `@Suppress` annotation with `UNCHECKED_CAST` argument.
- */
-internal fun suppressUncheckedCastAnnotation() =
-    buildAnnotation(
-        Suppress::class.asClassName(),
-        "UNCHECKED_CAST"
-    )
-
-/**
  * Builds [AnnotationSpec] with given [parameters].
  */
-@Suppress("SameParameterValue")
-private fun buildAnnotation(
+internal fun buildAnnotation(
     annotationClassName: ClassName,
     vararg parameters: String
 ) = AnnotationSpec.builder(annotationClassName).also { builder ->

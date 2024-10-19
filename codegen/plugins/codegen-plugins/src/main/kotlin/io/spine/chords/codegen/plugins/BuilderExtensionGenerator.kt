@@ -70,7 +70,6 @@ internal class BuilderExtensionGenerator(
             PropertySpec.builder("messageDef", messageDefClass, PUBLIC)
                 .receiver(messageClass.nestedClass("Builder"))
                 .addKdoc(generateKDoc())
-                .addAnnotation(suppressUnusedAnnotation())
                 .getter(theGetter(messageDefClass))
                 .build()
         )

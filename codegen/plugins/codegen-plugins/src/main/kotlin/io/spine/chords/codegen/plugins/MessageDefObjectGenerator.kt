@@ -89,8 +89,8 @@ internal class MessageDefObjectGenerator(
      *
      *     public override val fields: Collection<MessageField<IpAddress, Any>>
      *         = listOf(
-     *             ipv4 as MessageField<IpAddress, Any>,
-     *             ipv6 as MessageField<IpAddress, Any>
+     *             ipv4.safeCast<MessageField<IpAddressDef, Any>>()!!,
+     *             ipv6.safeCast<MessageField<IpAddressDef, Any>>()!!
      *         )
      *
      *     public override val oneofs: Collection<MessageOneof<IpAddress>>
@@ -99,6 +99,9 @@ internal class MessageDefObjectGenerator(
      * ```
      */
     override fun generateCode(fileBuilder: FileSpec.Builder) {
+        fields.ifNotEmpty {
+            fileBuilder.addImport(MessageDef::class.java.packageName, "safeCast")
+        }
         val messageDefClassName = messageTypeName.messageDefClassName()
         val superinterface = MessageDef::class.asClassName().parameterizedBy(
             messageTypeName.fullClassName(typeSystem)
@@ -159,19 +162,15 @@ internal class MessageDefObjectGenerator(
      * Builds the `fields` property of [MessageDef] implementation.
      */
     private fun fieldsProperty(): PropertySpec {
+        val messageType = messageTypeName.fullClassName(typeSystem)
         val messageDefClassName = MessageField::class.asClassName().parameterizedBy(
-            messageTypeName.fullClassName(typeSystem),
+            messageType,
             MessageFieldValue::class.asClassName()
         )
         val type = Collection::class.asClassName().parameterizedBy(
             messageDefClassName
         )
         return PropertySpec.builder("fields", type, PUBLIC, OVERRIDE)
-            .also { builder ->
-                fieldNames.ifNotEmpty {
-                    builder.addAnnotation(suppressUncheckedCastAnnotation())
-                }
-            }
             .initializer(
                 fieldsPropertyInitializer(fieldNames, messageDefClassName)
             ).build()
@@ -211,12 +210,10 @@ internal class MessageDefObjectGenerator(
 }
 
 /**
- * Executes the given [action] if the list is not empty.
+ * Executes the given [action] if this [Iterable] is not empty.
  */
-private fun <E> List<E>.ifNotEmpty(action: (list: List<E>) -> Unit) {
-    if (isNotEmpty()) {
-        action(this)
-    }
+private fun <E> Iterable<E>.ifNotEmpty(action: (Iterable<E>) -> Unit) {
+    if (iterator().hasNext()) action(this)
 }
 
 /**
@@ -226,8 +223,8 @@ private fun <E> List<E>.ifNotEmpty(action: (list: List<E>) -> Unit) {
  * The generated code looks like the following:
  * ```
  * listOf(
- *     ipv4 as MessageField<IpAddress, Any>,
- *     ipv6 as MessageField<IpAddress, Any>
+ *     ipv4.safeCast<MessageField<IpAddressDef, Any>>()!!,
+ *     ipv6.safeCast<MessageField<IpAddressDef, Any>>()!!
  * )
  * ```
  */
@@ -241,7 +238,7 @@ private fun fieldsPropertyInitializer(
         "listOf(${lineSeparator()}",
         ")"
     ) { fieldName ->
-        "${fieldName.propertyName} as %T"
+        "${fieldName.propertyName}.safeCast<%T>()!!"
     }, *fieldNames.map { messageField }.toTypedArray()
 )
 

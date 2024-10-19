@@ -92,8 +92,8 @@ internal class MessageOneofObjectGenerator(
      *     public object IpAddressValueOneof : MessageOneof<IpAddress> {
      *         private val fieldMap: Map<Int, MessageField<IpAddress, Any>> =
      *             mapOf(
-     *                 1 to IpAddressDef.ipv4 as MessageField<IpAddress, Any>,
-     *                 2 to IpAddressDef.ipv6 as MessageField<IpAddress, Any>
+     *                 1 to IpAddressDef.ipv4.safeCast<MessageField<IpAddressDef, Any>>()!!,
+     *                 2 to IpAddressDef.ipv6.safeCast<MessageField<IpAddressDef, Any>>()!!
      *             )
      *
      *         public override val name: String = "value"
@@ -143,7 +143,6 @@ internal class MessageOneofObjectGenerator(
         )
         return PropertySpec
             .builder("fieldMap", fieldMapType, PRIVATE)
-            .addAnnotation(suppressUncheckedCastAnnotation())
             .initializer(
                 fieldMapInitializer(
                     oneofFields,
@@ -206,8 +205,8 @@ internal class MessageOneofObjectGenerator(
  * The generated code looks like the following:
  * ```
  * mapOf(
- *     1 to IpAddressDef.ipv4 as MessageField<IpAddressDef, Any>,
- *     2 to IpAddressDef.ipv6 as MessageField<IpAddressDef, Any>
+ *     1 to IpAddressDef.ipv4.safeCast<MessageField<IpAddressDef, Any>>()!!,
+ *     2 to IpAddressDef.ipv6.safeCast<MessageField<IpAddressDef, Any>>()!!
  * )
  * ```
  */
@@ -222,6 +221,6 @@ private fun fieldMapInitializer(
         "mapOf(${lineSeparator()}",
         ")"
     ) {
-        "${it.number} to $messageDefClassName.${it.name.javaCase()} as %T"
+        "${it.number} to $messageDefClassName.${it.name.javaCase()}.safeCast<%T>()!!"
     }, *fields.map { messageField }.toTypedArray()
 )
