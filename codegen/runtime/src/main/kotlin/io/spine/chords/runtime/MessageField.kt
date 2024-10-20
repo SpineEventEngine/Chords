@@ -26,6 +26,7 @@
 
 package io.spine.chords.runtime
 
+import com.google.protobuf.Descriptors
 import com.google.protobuf.Message
 import io.spine.protobuf.ValidatingBuilder
 
@@ -67,6 +68,11 @@ public interface MessageField<T : Message, V : MessageFieldValue> {
     public val required: Boolean
 
     /**
+     * Returns the Protobuf's field descriptor.
+     */
+    public val descriptor: Descriptors.FieldDescriptor
+
+    /**
      * Returns a value of the field for the given message.
      */
     public fun valueIn(message: T): V
@@ -86,5 +92,4 @@ public interface MessageField<T : Message, V : MessageFieldValue> {
      * Sets a new field value for the given message builder.
      */
     public fun setValue(builder: ValidatingBuilder<T>, newValue: V)
-
 }

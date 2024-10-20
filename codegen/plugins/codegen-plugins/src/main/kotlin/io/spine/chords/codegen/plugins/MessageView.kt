@@ -23,38 +23,23 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package io.spine.chords.codegen.plugins
 
-syntax = "proto3";
+import io.spine.core.External
+import io.spine.core.Subscribe
+import io.spine.protodata.ast.event.TypeDiscovered
+import io.spine.protodata.plugin.View
 
-package spine.chords.codegen.plugins;
+/**
+ * Records the [MessageTypeView]s.
+ */
+internal class MessageView : View<MessageTypeViewId,
+        MessageTypeView,
+        MessageTypeView.Builder>() {
 
-import "spine/options.proto";
-import "spine/protodata/file.proto";
-
-option (type_url_prefix) = "type.spine.io";
-option java_package = "io.spine.chords.codegen.plugins";
-option java_outer_classname = "FieldViewProto";
-option java_multiple_files = true;
-
-import "spine/protodata/ast.proto";
-
-// View on the field's metadata.
-message FieldMetadata {
-    option (entity).kind = PROJECTION;
-
-    // The ID of a FieldMetadata
-    FieldMetadataId id = 1 [(required) = true];
-}
-
-// Identifies a field of a certain `Message` declared in a particular Proto file.
-message FieldMetadataId {
-
-    // The file where the message with the field is declared.
-    spine.protodata.File file = 1 [(required) = true];
-
-    // The type of the message where the field is declared.
-    spine.protodata.TypeName type_name = 2 [(required) = true];
-
-    // The field of the message.
-    spine.protodata.Field field = 3 [(required) = true];
+    @Subscribe
+    @Suppress("EmptyFunctionBlock", "UNUSED_PARAMETER")
+    internal fun on(@External event: TypeDiscovered) {
+        // There is nothing to do here — ID holds all the required state.
+    }
 }

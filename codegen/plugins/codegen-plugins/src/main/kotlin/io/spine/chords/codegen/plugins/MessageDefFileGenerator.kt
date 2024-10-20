@@ -30,24 +30,21 @@ import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.asClassName
+import io.spine.chords.codegen.plugins.MessageDefFileGenerator.Companion.GENERATED_ANNOTATION_TEXT
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
 import io.spine.chords.runtime.MessageField
-import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.TypeName
 import io.spine.protodata.type.TypeSystem
 import io.spine.string.camelCase
+import javax.annotation.Generated
 
 /**
  * Implementation of [FileFragmentGenerator] that combines several other
  * generators to create a separate Kotlin file with implementations of
  * [MessageDef], [MessageField], and [MessageOneof] for a Proto message.
- *
- * Also, the properties for the corresponding message class are
- * generated to provide static-like access to these implementations.
- * See [KClassPropertiesGenerator] for detail.
  *
  * @param messageTypeName The [TypeName] of the message to generate the code for.
  * @param fields The collection of [Field]s to generate the code for.
@@ -59,6 +56,10 @@ internal class MessageDefFileGenerator(
     private val typeSystem: TypeSystem
 ) : FileFragmentGenerator {
 
+    companion object {
+        const val GENERATED_ANNOTATION_TEXT = "by Spine Chords codegen plugins"
+    }
+
     /**
      * The list of [FileFragmentGenerator]s which are used to generate the file.
      */
@@ -66,7 +67,6 @@ internal class MessageDefFileGenerator(
         MessageDefObjectGenerator(messageTypeName, fields, typeSystem),
         MessageFieldObjectGenerator(messageTypeName, fields, typeSystem),
         MessageOneofObjectGenerator(messageTypeName, fields, typeSystem),
-        KClassPropertiesGenerator(messageTypeName, fields, typeSystem),
         BuilderExtensionGenerator(messageTypeName, typeSystem)
     )
 
@@ -86,24 +86,6 @@ internal class MessageDefFileGenerator(
  */
 internal val String.propertyName
     get() = camelCase().replaceFirstChar { it.lowercase() }
-
-/**
- * Returns a [ClassName] of [MessageField].
- */
-internal val messageFieldClassName: ClassName
-    get() = MessageField::class.asClassName()
-
-/**
- * Returns a [ClassName] of [MessageOneof].
- */
-internal val messageOneofClassName: ClassName
-    get() = MessageOneof::class.asClassName()
-
-/**
- * Returns a [ClassName] of [MessageFieldValue].
- */
-internal val messageFieldValueTypeAlias: ClassName
-    get() = MessageFieldValue::class.asClassName()
 
 /**
  * Generates a simple class name for the implementation of [MessageField].
@@ -155,24 +137,22 @@ internal val TypeName.simpleClassName: String
     else simpleName
 
 /**
- * Builds `@Suppress` annotation with `UNCHECKED_CAST` and
- * `RemoveRedundantQualifierName` arguments.
+ * Builds `@Generated` annotation with the corresponding notes.
  */
-internal fun suppressUncheckedCastAndRedundantQualifier() =
-    buildSuppressAnnotation(
-        "UNCHECKED_CAST",
-        "RemoveRedundantQualifierName"
+internal fun generatedAnnotation() =
+    buildAnnotation(
+        Generated::class.asClassName(),
+        GENERATED_ANNOTATION_TEXT
     )
 
 /**
- * Builds `@Suppress` annotation with given [warnings].
+ * Builds [AnnotationSpec] with given [parameters].
  */
-@Suppress("SameParameterValue")
-private fun buildSuppressAnnotation(vararg warnings: String) =
-    AnnotationSpec.builder(Suppress::class.asClassName())
-        .also { builder ->
-            warnings.forEach { warning ->
-                builder.addMember("%S", warning)
-            }
-        }
-        .build()
+internal fun buildAnnotation(
+    annotationClassName: ClassName,
+    vararg parameters: String
+) = AnnotationSpec.builder(annotationClassName).also { builder ->
+    parameters.forEach { parameter ->
+        builder.addMember("%S", parameter)
+    }
+}.build()

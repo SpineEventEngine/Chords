@@ -23,45 +23,32 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package io.spine.chords.codegen.plugins
 
-package io.spine.chords.codegen
-
-import com.google.protobuf.ByteString
-import com.google.protobuf.Timestamp
-import io.spine.chords.codegen.command.TestCommand
-import io.spine.core.UserId
-import io.spine.net.InternetDomain
+import io.spine.core.EventContext
+import io.spine.protodata.ast.event.TypeDiscovered
+import io.spine.protodata.ast.typeName
+import io.spine.protodata.plugin.ViewRepository
+import io.spine.server.route.EventRoute
+import io.spine.server.route.EventRouting
 
 /**
- * A set of utility functions that create various test data.
+ * The repository for [MessageView].
  */
+internal class MessageViewRepository : ViewRepository<MessageTypeViewId,
+        MessageView,
+        MessageTypeView>() {
 
-internal fun timestamp(seconds: Long) =
-    Timestamp.newBuilder().setSeconds(seconds).build()
-
-internal fun userId(value: String) =
-    UserId.newBuilder().setValue(value).build()
-
-internal fun domain(value: String) =
-    InternetDomain.newBuilder().setValue(value).build()
-
-internal fun primitives(value: Boolean) =
-    primitivesBuilder().setBool(value).build()
-
-internal fun oneOfTypeBuilder() =
-    TestCommand.OneOfType.newBuilder()
-
-internal fun testCommandBuilder() =
-    TestCommand.newBuilder()
-
-internal fun primitivesBuilder() =
-    TestCommand.Primitives.newBuilder()
-
-internal fun byteString(value: String) =
-    ByteString.copyFromUtf8(value)
-
-internal fun externalType(id: String) =
-    externalTypeBuilder().setId(id).build()
-
-internal fun externalTypeBuilder() =
-    ExternalType.newBuilder()
+    override fun setupEventRouting(routing: EventRouting<MessageTypeViewId>) {
+        super.setupEventRouting(routing)
+        routing.route(TypeDiscovered::class.java)
+        { message: TypeDiscovered, _: EventContext? ->
+            EventRoute.withId(
+                messageTypeViewId {
+                    file = message.file
+                    typeName = message.type.name
+                }
+            )
+        }
+    }
+}

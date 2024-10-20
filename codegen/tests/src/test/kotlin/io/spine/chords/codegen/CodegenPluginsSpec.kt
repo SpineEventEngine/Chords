@@ -29,6 +29,13 @@ package io.spine.chords.codegen
 import com.google.protobuf.Message
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.spine.chords.codegen.Given.byteString
+import io.spine.chords.codegen.Given.domain
+import io.spine.chords.codegen.Given.externalType
+import io.spine.chords.codegen.Given.primitives
+import io.spine.chords.codegen.Given.timestamp
+import io.spine.chords.codegen.Given.userId
 import io.spine.chords.codegen.command.TestCommand.EnumType
 import io.spine.chords.codegen.command.TestCommandDef
 import io.spine.chords.codegen.command.TestCommandOneOfTypeDef
@@ -37,17 +44,20 @@ import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
+import io.spine.chords.runtime.get
 import io.spine.chords.runtime.messageDef
+import io.spine.chords.runtime.set
 import io.spine.protobuf.ValidatingBuilder
 import java.util.stream.Stream
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.Arguments.of
 import org.junit.jupiter.params.provider.MethodSource
 
 /**
- * Checks various use-cases on code generation for [MessageField]
+ * Checks various use-cases on code generation for [MessageDef], [MessageField],
  * and [MessageOneof] implementations.
  */
 @DisplayName("CodegenPlugins should")
@@ -75,17 +85,21 @@ internal class CodegenPluginsSpec {
         withClue("Wrong value of `required` property was generated.") {
             field.required shouldBe fieldIsRequired
         }
+        withClue("Wrong value of `descriptor` property was generated.") {
+            field.descriptor shouldNotBe null
+            field.descriptor.name shouldBe protoFieldName
+        }
         withClue("Wrong result of `hasValue()` if value is not set.") {
             field.hasValue(builder.build()) shouldBe initialHasValue
         }
         fieldValues.forEach { newValue ->
-            field.setValue(builder, newValue)
+            builder[field] = newValue
             val message = builder.build()
             withClue("Wrong result of `hasValue()` when new value is set.") {
                 field.hasValue(message) shouldBe true
             }
             withClue("`valueIn()` returns the wrong value.") {
-                field.valueIn(message) shouldBe newValue
+                message[field] shouldBe newValue
             }
         }
     }
@@ -101,13 +115,13 @@ internal class CodegenPluginsSpec {
         message: T,
         selectedFieldValue: V,
         protoOneofName: String,
-        fieldsCount: Int
+        fieldCount: Int
     ) {
         withClue("Property `name` was not correctly generated.") {
             oneof.name shouldBe protoOneofName
         }
         withClue("Property `fields` was not correctly generated.") {
-            oneof.fields.size shouldBe fieldsCount
+            oneof.fields.size shouldBe fieldCount
         }
         withClue("Method `selectedField()` was not correctly generated.") {
             oneof.selectedField(message)
@@ -144,26 +158,27 @@ internal class CodegenPluginsSpec {
     @Suppress("unused")
     private fun messageDefTestData(): Stream<Arguments> {
         return Stream.of(
-            Arguments.of(TestCommandDef, testCommandBuilder(), 10, 1),
-            Arguments.of(TestCommandOneOfTypeDef, oneOfTypeBuilder(), 3, 1),
-            Arguments.of(TestCommandPrimitivesDef, primitivesBuilder(), 7, 0),
-            Arguments.of(ExternalTypeDef, externalTypeBuilder(), 1, 0)
+            of(TestCommandDef, testCommandBuilder(), 10, 1),
+            of(TestCommandOneOfTypeDef, oneOfTypeBuilder(), 3, 1),
+            of(TestCommandPrimitivesDef, primitivesBuilder(), 7, 0),
+            of(ExternalTypeDef, externalTypeBuilder(), 1, 0),
+            of(NoFieldsMessageDef, noFieldsMessageBuilder(), 0, 0),
         )
     }
 
     /**
      * Provides test data on various use-cases supported
-     * in code generation of [MessageField] implementations.
+     * in code generation of [MessageOneof] implementations.
      */
     @Suppress("unused")
     private fun messageOneofTestData(): Stream<Arguments> {
         return Stream.of(
-            Arguments.of(
+            of(
                 TestCommandDef.oneOfPlainField,
                 testCommandBuilder().setOneOfOption1(true).build(),
                 true, "one_of_plain_field", 3
             ),
-            Arguments.of(
+            of(
                 TestCommandOneOfTypeDef.value,
                 oneOfTypeBuilder().setOption3(100).build(),
                 100, "value", 3
@@ -178,12 +193,12 @@ internal class CodegenPluginsSpec {
     @Suppress("unused", "LongMethod")
     private fun messageFieldTestData(): Stream<Arguments> {
         return Stream.of(
-            Arguments.of(
+            of(
                 TestCommandDef.time, testCommandBuilder(),
                 listOf(timestamp(1024), timestamp(2048)),
                 "time", true, false
             ),
-            Arguments.of(
+            of(
                 TestCommandDef.users, testCommandBuilder(),
                 listOf(
                     listOf(userId("user1"), userId("user2")),
@@ -191,12 +206,12 @@ internal class CodegenPluginsSpec {
                 ),
                 "users", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandDef.domain, testCommandBuilder(),
                 listOf(domain("spine.io"), domain("onedam.com")),
                 "domain", false, false
             ),
-            Arguments.of(
+            of(
                 TestCommandDef.enumField, testCommandBuilder(),
                 listOf(
                     EnumType.ET_UNDEFINED,
@@ -205,19 +220,19 @@ internal class CodegenPluginsSpec {
                 ),
                 "enum_field", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandDef.oneOfOption1, testCommandBuilder(),
                 listOf(true, false), "one_of_option_1", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandDef.oneOfOption2, testCommandBuilder(),
                 listOf("string", "value"), "one_of_option_2", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandDef.oneOfOption3, testCommandBuilder(),
                 listOf(1, 0, -1), "one_of_option_3", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandDef.oneOfTypeField, testCommandBuilder(),
                 listOf(
                     oneOfTypeBuilder().setOption1(true).build(),
@@ -226,20 +241,20 @@ internal class CodegenPluginsSpec {
                 ),
                 "one_of_type_field", false, false
             ),
-            Arguments.of(
+            of(
                 TestCommandDef.primitives, testCommandBuilder(),
                 listOf(primitives(true), primitives(false)),
                 "primitives", true, false
             ),
-            Arguments.of(
+            of(
                 TestCommandPrimitivesDef.bool, primitivesBuilder(),
                 listOf(true, false), "bool", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandPrimitivesDef.text, primitivesBuilder(),
                 listOf("abracadabra", "barbara"), "text", true, true
             ),
-            Arguments.of(
+            of(
                 TestCommandPrimitivesDef.numInt32, primitivesBuilder(),
                 listOf(
                     listOf(1, 0, -1),
@@ -247,17 +262,17 @@ internal class CodegenPluginsSpec {
                 ),
                 "num_int_32", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandPrimitivesDef.numInt64, primitivesBuilder(),
                 listOf(Long.MAX_VALUE, Long.MIN_VALUE),
                 "num_int_64", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandPrimitivesDef.numFloat, primitivesBuilder(),
                 listOf(Float.MAX_VALUE, Float.MIN_VALUE),
                 "num_float", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandPrimitivesDef.numDoubles, primitivesBuilder(),
                 listOf(
                     listOf(1.0, 0.0, -1.0),
@@ -265,17 +280,17 @@ internal class CodegenPluginsSpec {
                 ),
                 "num_doubles", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandPrimitivesDef.data, primitivesBuilder(),
                 listOf(byteString("bytes"), byteString("data")),
                 "data", false, true
             ),
-            Arguments.of(
+            of(
                 TestCommandDef.externalType, testCommandBuilder(),
                 listOf(externalType("ET1"), externalType("ET2")),
                 "external_type", false, false
             ),
-            Arguments.of(
+            of(
                 ExternalTypeDef.id, ExternalType.newBuilder(),
                 listOf("id1", "id2"),
                 "id", true, true

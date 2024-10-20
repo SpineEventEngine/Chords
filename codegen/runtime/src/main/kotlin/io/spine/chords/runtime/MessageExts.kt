@@ -24,22 +24,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-syntax = "proto3";
+package io.spine.chords.runtime
 
-package spine.chords.codegen;
+import com.google.protobuf.Message
 
-import "spine/options.proto";
-
-option (type_url_prefix) = "type.spine.chords";
-option java_package = "io.spine.chords.codegen";
-option java_outer_classname = "ExternalMessageProto";
-option java_multiple_files = true;
-
-// The code should be generated for messages defined not only in `commands.proto`.
-message ExternalType {
-    string id = 1 [(required) = true];
-}
-
-// `MessageDef` implementation should be generated for messages without fields.
-message NoFieldsMessage {
-}
+/**
+ * Provides an array-like syntax for reading the value of a message field.
+ *
+ * Example:
+ * ```
+ * val fieldValue = message[messageField]
+ * ```
+ * @param M The type of Proto message.
+ * @param V The type of message field value.
+ */
+public operator fun <M : Message, V : MessageFieldValue> M.get(
+    field: MessageField<M, V>
+): V = field.valueIn(this)

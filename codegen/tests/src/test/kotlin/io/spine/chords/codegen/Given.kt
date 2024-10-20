@@ -24,22 +24,49 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-syntax = "proto3";
+package io.spine.chords.codegen
 
-package spine.chords.codegen;
+import com.google.protobuf.ByteString
+import com.google.protobuf.Timestamp
+import io.spine.chords.codegen.command.TestCommand
+import io.spine.core.UserId
+import io.spine.net.InternetDomain
 
-import "spine/options.proto";
+/**
+ * A set of utility functions that create various test data.
+ */
+object Given {
 
-option (type_url_prefix) = "type.spine.chords";
-option java_package = "io.spine.chords.codegen";
-option java_outer_classname = "ExternalMessageProto";
-option java_multiple_files = true;
+    internal fun timestamp(seconds: Long) =
+        Timestamp.newBuilder().setSeconds(seconds).build()
 
-// The code should be generated for messages defined not only in `commands.proto`.
-message ExternalType {
-    string id = 1 [(required) = true];
+    internal fun userId(value: String) =
+        UserId.newBuilder().setValue(value).build()
+
+    internal fun domain(value: String) =
+        InternetDomain.newBuilder().setValue(value).build()
+
+    internal fun primitives(value: Boolean) =
+        primitivesBuilder().setBool(value).build()
+
+    internal fun byteString(value: String) =
+        ByteString.copyFromUtf8(value)
+
+    internal fun externalType(id: String) =
+        externalTypeBuilder().setId(id).build()
 }
 
-// `MessageDef` implementation should be generated for messages without fields.
-message NoFieldsMessage {
-}
+internal fun oneOfTypeBuilder() =
+    TestCommand.OneOfType.newBuilder()
+
+internal fun testCommandBuilder() =
+    TestCommand.newBuilder()
+
+internal fun primitivesBuilder() =
+    TestCommand.Primitives.newBuilder()
+
+internal fun externalTypeBuilder() =
+    ExternalType.newBuilder()
+
+internal fun noFieldsMessageBuilder() =
+    NoFieldsMessage.newBuilder()

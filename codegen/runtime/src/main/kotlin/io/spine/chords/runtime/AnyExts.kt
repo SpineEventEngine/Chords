@@ -23,23 +23,14 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package io.spine.chords.codegen.plugins
 
-import io.spine.core.External
-import io.spine.core.Subscribe
-import io.spine.protodata.ast.event.FieldEntered
-import io.spine.protodata.plugin.View
+package io.spine.chords.runtime
 
 /**
- * Records the [FieldMetadata].
+ * Returns `this` if this object is instance of [T], otherwise `null`.
+ *
+ * Helps avoid the `UNCHECKED_CAST` warning.
  */
-internal class FieldView : View<FieldMetadataId,
-        FieldMetadata,
-        FieldMetadata.Builder>() {
-
-    @Subscribe
-    @Suppress("EmptyFunctionBlock", "UNUSED_PARAMETER")
-    internal fun on(@External event: FieldEntered) {
-        // There is nothing to do here — ID holds all the required state.
-    }
+public inline fun <reified T: Any> Any.safeCast() : T? {
+    return if (this is T) this else null
 }

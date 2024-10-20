@@ -26,6 +26,9 @@
 
 package io.spine.chords.codegen.plugins
 
+import io.spine.chords.runtime.MessageDef
+import io.spine.chords.runtime.MessageField
+import io.spine.chords.runtime.MessageOneof
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
@@ -40,8 +43,8 @@ import io.spine.tools.code.Kotlin
 import java.nio.file.Path
 
 /**
- * ProtoData [Renderer] that generates `MessageField` and `MessageOneof`
- * implementations for the fields of Proto messages.
+ * ProtoData [Renderer] that generates [MessageDef], [MessageField],
+ * and [MessageOneof] implementations for Proto messages.
  *
  * The renderer prepares all the required data for code generation
  * and runs [MessageDefFileGenerator] to generate Kotlin files.
@@ -54,7 +57,7 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
     }
 
     /**
-     * Gathers available [FieldMetadata]s for Proto messages
+     * Gathers available [MessageTypeView]s for Proto messages
      * and performs the code generation.
      */
     override fun render(sources: SourceFileSet) {
@@ -66,13 +69,12 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
             "`TypeSystem` is not initialized."
         }
 
-        select(FieldMetadata::class.java).all()
+        select(MessageTypeView::class.java).all()
             .filter {
-                // Exclude fields that are declared in rejections.
+                // Exclude rejections.
                 !it.id.file.path.endsWith(REJECTIONS_PROTO_FILE_NAME)
-            }.map {
-                it.id.typeName
-            }.forEach { typeName ->
+            }.forEach { messageTypeView ->
+                val typeName = messageTypeView.id.typeName
                 val messageToHeader = typeSystem!!.findMessage(typeName)
                 checkNotNull(messageToHeader) {
                     "Message not found for type `$typeName`."
@@ -90,16 +92,15 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
      * Runs [MessageDefFileGenerator] to generate a content of the file
      * for the [fields] provided.
      */
-    private fun TypeName.generateFileContent(
-        fields: Iterable<Field>
-    ) = FileSpec.builder(fullClassName(typeSystem!!))
-        .indent(Indent.defaultJavaIndent.toString())
-        .also { fileBuilder ->
-            MessageDefFileGenerator(this, fields, typeSystem!!)
-                .generateCode(fileBuilder)
-        }
-        .build()
-        .toString()
+    private fun TypeName.generateFileContent(fields: Iterable<Field>) =
+        FileSpec.builder(fullClassName(typeSystem!!))
+            .indent(Indent.defaultJavaIndent.toString())
+            .also { fileBuilder ->
+                MessageDefFileGenerator(this, fields, typeSystem!!)
+                    .generateCode(fileBuilder)
+            }
+            .build()
+            .toString()
 
     /**
      * Returns a [Path] to the generated file for the given [TypeName].
