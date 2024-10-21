@@ -26,6 +26,7 @@
 
 package io.spine.chords.codegen.plugins
 
+import com.google.protobuf.BoolValue
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
@@ -41,6 +42,7 @@ import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
+import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.TypeName
 import io.spine.protodata.ast.isPartOfOneof
@@ -125,6 +127,7 @@ internal class MessageOneofObjectGenerator(
             .addKdoc(generateKDoc(oneofName))
             .addProperty(fieldMapProperty(oneofFields, fieldType))
             .addProperty(nameProperty(oneofName))
+            .addProperty(requiredProperty(oneofName))
             .addProperty(fieldsProperty(fieldType))
             .addFunction(selectedFieldFunction(oneofName, fieldType))
             .build()
@@ -151,6 +154,30 @@ internal class MessageOneofObjectGenerator(
                 )
             ).build()
     }
+
+    /**
+     * Builds the `required` property of [MessageOneof] implementation.
+     */
+    private fun requiredProperty(oneofName: String) =
+        PropertySpec
+            .builder("required", Boolean::class.asClassName(), PUBLIC, OVERRIDE)
+            .initializer("${isOneofRequired(oneofName)}")
+            .build()
+
+    /**
+     * Returns a value of the `is_required` option if it is applied to the
+     * oneof group with the given [oneofName].
+     *
+     * Returns `false` if the option `is_required` is not set.
+     */
+    private fun isOneofRequired(oneofName: String) =
+        typeSystem.findMessage(messageTypeName)!!
+            .first.oneofGroupList.find {
+                it.name.value == oneofName
+            }!!.optionList.any { option ->
+                option.name == "is_required" &&
+                        unpack(option.value, BoolValue::class.java).value
+            }
 
     /**
      * Generates the `name` property.
