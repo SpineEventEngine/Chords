@@ -34,5 +34,5 @@ package io.spine.chords.runtime
  */
 public inline fun <reified T : Any> Any.safeCast(): T {
     return if (this is T) this
-    else error("Cannot cast `$this` to `${T::class}`")
+    else error("Cannot cast `$this` to `${T::class}`.")
 }
