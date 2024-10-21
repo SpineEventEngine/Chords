@@ -27,7 +27,8 @@
 package io.spine.chords.runtime
 
 /**
- * Returns `this` if this object is instance of [T], otherwise `null`.
+ * Returns `this` if this object is instance of [T],
+ * otherwise throws [IllegalStateException].
  *
  * Helps avoid the `UNCHECKED_CAST` warning.
  */
