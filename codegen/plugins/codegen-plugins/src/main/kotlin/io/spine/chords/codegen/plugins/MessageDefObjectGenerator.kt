@@ -89,8 +89,8 @@ internal class MessageDefObjectGenerator(
      *
      *     public override val fields: Collection<MessageField<IpAddress, Any>>
      *         = listOf(
-     *             ipv4.safeCast<MessageField<IpAddressDef, Any>>()!!,
-     *             ipv6.safeCast<MessageField<IpAddressDef, Any>>()!!
+     *             ipv4.safeCast<MessageField<IpAddressDef, Any>>(),
+     *             ipv6.safeCast<MessageField<IpAddressDef, Any>>()
      *         )
      *
      *     public override val oneofs: Collection<MessageOneof<IpAddress>>
@@ -223,8 +223,8 @@ private fun <E> Iterable<E>.ifNotEmpty(action: (Iterable<E>) -> Unit) {
  * The generated code looks like the following:
  * ```
  * listOf(
- *     ipv4.safeCast<MessageField<IpAddressDef, Any>>()!!,
- *     ipv6.safeCast<MessageField<IpAddressDef, Any>>()!!
+ *     ipv4.safeCast<MessageField<IpAddressDef, Any>>(),
+ *     ipv6.safeCast<MessageField<IpAddressDef, Any>>()
  * )
  * ```
  */
@@ -238,7 +238,7 @@ private fun fieldsPropertyInitializer(
         "listOf(${lineSeparator()}",
         ")"
     ) { fieldName ->
-        "${fieldName.propertyName}.safeCast<%T>()!!"
+        "${fieldName.propertyName}.safeCast<%T>()"
     }, *fieldNames.map { messageField }.toTypedArray()
 )
 

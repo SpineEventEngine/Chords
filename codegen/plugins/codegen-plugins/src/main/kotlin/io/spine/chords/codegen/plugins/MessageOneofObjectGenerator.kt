@@ -92,8 +92,8 @@ internal class MessageOneofObjectGenerator(
      *     public object IpAddressValueOneof : MessageOneof<IpAddress> {
      *         private val fieldMap: Map<Int, MessageField<IpAddress, Any>> =
      *             mapOf(
-     *                 1 to IpAddressDef.ipv4.safeCast<MessageField<IpAddressDef, Any>>()!!,
-     *                 2 to IpAddressDef.ipv6.safeCast<MessageField<IpAddressDef, Any>>()!!
+     *                 1 to IpAddressDef.ipv4.safeCast<MessageField<IpAddressDef, Any>>(),
+     *                 2 to IpAddressDef.ipv6.safeCast<MessageField<IpAddressDef, Any>>()
      *             )
      *
      *         public override val name: String = "value"
@@ -205,8 +205,8 @@ internal class MessageOneofObjectGenerator(
  * The generated code looks like the following:
  * ```
  * mapOf(
- *     1 to IpAddressDef.ipv4.safeCast<MessageField<IpAddressDef, Any>>()!!,
- *     2 to IpAddressDef.ipv6.safeCast<MessageField<IpAddressDef, Any>>()!!
+ *     1 to IpAddressDef.ipv4.safeCast<MessageField<IpAddressDef, Any>>(),
+ *     2 to IpAddressDef.ipv6.safeCast<MessageField<IpAddressDef, Any>>()
  * )
  * ```
  */
@@ -221,6 +221,6 @@ private fun fieldMapInitializer(
         "mapOf(${lineSeparator()}",
         ")"
     ) {
-        "${it.number} to $messageDefClassName.${it.name.javaCase()}.safeCast<%T>()!!"
+        "${it.number} to $messageDefClassName.${it.name.javaCase()}.safeCast<%T>()"
     }, *fields.map { messageField }.toTypedArray()
 )

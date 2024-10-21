@@ -31,6 +31,7 @@ package io.spine.chords.runtime
  *
  * Helps avoid the `UNCHECKED_CAST` warning.
  */
-public inline fun <reified T: Any> Any.safeCast() : T? {
-    return if (this is T) this else null
+public inline fun <reified T : Any> Any.safeCast(): T {
+    return if (this is T) this
+    else error("Cannot cast `$this` to `${T::class}`")
 }
