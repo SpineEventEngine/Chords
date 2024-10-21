@@ -109,16 +109,21 @@ internal class CodegenPluginsSpec {
      */
     @ParameterizedTest
     @MethodSource("messageOneofTestData")
+    @Suppress("LongParameterList")
     fun <T : Message, V>
             `generate 'MessageOneof' implementations`(
         oneof: MessageOneof<T>,
         message: T,
         selectedFieldValue: V,
         protoOneofName: String,
+        required: Boolean,
         fieldCount: Int
     ) {
         withClue("Property `name` was not correctly generated.") {
             oneof.name shouldBe protoOneofName
+        }
+        withClue("Property `required` was not correctly generated.") {
+            oneof.required shouldBe required
         }
         withClue("Property `fields` was not correctly generated.") {
             oneof.fields.size shouldBe fieldCount
@@ -176,12 +181,12 @@ internal class CodegenPluginsSpec {
             of(
                 TestCommandDef.oneOfPlainField,
                 testCommandBuilder().setOneOfOption1(true).build(),
-                true, "one_of_plain_field", 3
+                true, "one_of_plain_field", true, 3
             ),
             of(
                 TestCommandOneOfTypeDef.value,
                 oneOfTypeBuilder().setOption3(100).build(),
-                100, "value", 3
+                100, "value", false, 3
             )
         )
     }

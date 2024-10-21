@@ -42,12 +42,18 @@ import com.google.protobuf.Message
 public interface MessageOneof<T : Message> {
 
     /**
-     * The name of the oneof field in a message as it is defined in Proto file.
+     * The name of the oneof group in a message as it is defined in Proto file.
      */
     public val name: String
 
     /**
-     * Returns collection of [MessageField]s declared by this `oneof`.
+     * Returns a value of the `is_required` option if it is applied to this oneof,
+     * otherwise returns `false`.
+     */
+    public val required: Boolean
+
+    /**
+     * Returns collection of [MessageField]s declared by this oneof.
      */
     public val fields: Collection<MessageField<T, MessageFieldValue>>
 
