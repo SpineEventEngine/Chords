@@ -27,10 +27,12 @@
 package io.spine.chords.runtime
 
 /**
- * Returns `this` if this object is instance of [T], otherwise `null`.
+ * Returns `this` if this object is instance of [T],
+ * otherwise throws [IllegalStateException].
  *
  * Helps avoid the `UNCHECKED_CAST` warning.
  */
-public inline fun <reified T: Any> Any.safeCast() : T? {
-    return if (this is T) this else null
+public inline fun <reified T : Any> Any.safeCast(): T {
+    return if (this is T) this
+    else error("Cannot cast `$this` to `${T::class}`.")
 }

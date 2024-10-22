@@ -52,6 +52,8 @@ message TestCommand {
     EnumType enum_field = 4;
 
     oneof one_of_plain_field {
+        option (is_required) = true;
+
         bool one_of_option_1 = 5;
         string one_of_option_2 = 6;
         int32 one_of_option_3 = 7;
