@@ -389,6 +389,7 @@ public open class MessageForm<M : Message> :
          *
          * @param M A type of the message being edited with the form.
          * @param B A type of the message builder.
+         *
          * @param value The message value to be edited within the form.
          * @param builder A lambda that should create and return a new builder for
          *   a message of type [M].
@@ -404,7 +405,7 @@ public open class MessageForm<M : Message> :
             value: MutableState<M?>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
-            onBeforeBuild: ((ValidatingBuilder<out M>) -> ValidatingBuilder<out M>) = { it },
+            onBeforeBuild: ((B) -> B) = { it },
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = Multipart(value, builder, props, onBeforeBuild) {
             FormPart(content)
@@ -428,7 +429,8 @@ public open class MessageForm<M : Message> :
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
-         * @param defaultValue A value that should be displayed in the form by default.
+         * @param defaultValue A value that should be displayed in the form
+         *   by default.
          * @param onBeforeBuild A lambda that allows to amend the message
          *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
@@ -448,7 +450,7 @@ public open class MessageForm<M : Message> :
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             defaultValue: M? = null,
-            onBeforeBuild: ((ValidatingBuilder<out M>) -> ValidatingBuilder<out M>) = { it },
+            onBeforeBuild: ((B) -> B) = { it },
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = Multipart(field, builder, props, defaultValue, onBeforeBuild) {
             FormPart(content)
@@ -483,7 +485,7 @@ public open class MessageForm<M : Message> :
             value: MutableState<M?>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
-            onBeforeBuild: ((ValidatingBuilder<out M>) -> ValidatingBuilder<out M>) = { it },
+            onBeforeBuild: ((B) -> B) = { it },
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = createAndRender({
             this.value = value
@@ -491,7 +493,9 @@ public open class MessageForm<M : Message> :
             // Storing the builder as ValidatingBuilder internally.
             @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<M>
-            this.onBeforeBuild = onBeforeBuild
+            // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
+            @Suppress("UNCHECKED_CAST")
+            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> ValidatingBuilder<out M>
             multipartContent = content
             props.run { configure() }
         }) {
@@ -538,14 +542,16 @@ public open class MessageForm<M : Message> :
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             defaultValue: M? = null,
-            onBeforeBuild: ((ValidatingBuilder<out M>) -> ValidatingBuilder<out M>) = { it },
+            onBeforeBuild: ((B) -> B) = { it },
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = createAndRender({
 
             // Storing the builder as ValidatingBuilder internally.
             @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<M>
-            this.onBeforeBuild = onBeforeBuild
+            // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
+            @Suppress("UNCHECKED_CAST")
+            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> ValidatingBuilder<out M>
             multipartContent = content
             props.run { configure() }
         }) {
@@ -595,7 +601,7 @@ public open class MessageForm<M : Message> :
      * @param initialSelectedField The initially selected oneof's field.
      */
     internal inner class FormOneof(
-        val oneof: MessageOneof<M>,
+        private val oneof: MessageOneof<M>,
         initialSelectedField: MessageField<M, MessageFieldValue>?
     ) {
 
@@ -721,7 +727,7 @@ public open class MessageForm<M : Message> :
      * @property formOneof A oneof to which this field belongs.
      */
     internal inner class FormField(
-        internal val formFieldsScopeImpl: FormFieldsScopeImpl<M>,
+        private val formFieldsScopeImpl: FormFieldsScopeImpl<M>,
         internal val field: MessageField<M, MessageFieldValue>,
         initialValue: MessageFieldValue? = null,
         val formOneof: FormOneof? = null
@@ -1097,6 +1103,8 @@ public open class MessageForm<M : Message> :
      * A [MultipartFormScope] instance, which is an outermost scope for
      * declarations within this form.
      */
+    @Suppress("LeakingThis" /* Leaking this shouldn't be a problem
+        since this field is designed for post-construction usage. */)
     private val formScope = MultipartFormScopeImpl(this)
 
     /**

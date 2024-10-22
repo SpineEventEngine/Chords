@@ -228,6 +228,10 @@ public abstract class InputComponent<V> : FocusableComponent() {
      * input component is used (e.g., by a form that it's a part of), and thus
      * such an external validation state is identified independently in addition
      * to the component's internal validation.
+     *
+     * // TODO:2024-10-21:dmitry.pikhulya: Make it clear in the documentation
+     *      that it shouldn't be customized by the user when component instance
+     *      declaration is made.
      */
     public open var externalValidationMessage: State<String?>? = null
 

@@ -70,7 +70,7 @@ support, etc.
 
 This is a subclass of `InputComponent`, which simplifies creating input
 components for entering arbitrary value types in text form. It includes support
-such aspects of entry, as customizable parsing and formatting of respective
+for such aspects of entry as customizable parsing and formatting of respective
 value types, input text validation, etc.
 
 See the [InputField](src/main/kotlin/io/spine/chords/core/InputField.kt)
