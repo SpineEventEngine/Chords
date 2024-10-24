@@ -27,6 +27,7 @@
 import io.spine.internal.dependency.Dokka
 import io.spine.internal.dependency.Guava
 import io.spine.internal.dependency.KotlinX
+import io.spine.internal.dependency.Spine
 import io.spine.internal.gradle.BuildCodegenPlugins
 import io.spine.internal.gradle.publish.ChordsPublishing
 import io.spine.internal.gradle.publish.PublishingRepos
@@ -39,8 +40,8 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 buildscript {
     standardSpineSdkRepositories()
 
-    dependencies {
-        classpath(io.spine.internal.dependency.Spine.Chords.GradlePlugin.lib)
+    plugins {
+        id("io.spine.chords") version "1.9.20"
     }
 }
 
@@ -92,10 +93,26 @@ subprojects {
     apply<JavaPlugin>()
     // Apply codegen Gradle plugin to modules that require code generation.
     if (modulesWithChordsCodegen.contains(name)) {
-        apply {
-            plugin(io.spine.internal.dependency.Spine.Chords.GradlePlugin.id)
-        }
+        applyGradleCodegenPlugin()
     }
+}
+
+/**
+ * Applies and configures `io.spine.chords` Gradle plugin.
+ */
+fun Project.applyGradleCodegenPlugin() {
+    apply {
+        plugin(Spine.Chords.GradlePlugin.id)
+    }
+    // Build `codegen-plugins` project before it can be applied.
+    tasks.named("applyCodegenPlugins") {
+        dependsOn(
+            rootProject.tasks.named("buildCodegenPlugins")
+        )
+    }
+    // Configure the plugin with the current version of `codegen-plugins`.
+    chordsGradlePlugin.codegenPluginsArtifact =
+        Spine.Chords.CodegenPlugins.artifact(version.toString())
 }
 
 spinePublishing {
