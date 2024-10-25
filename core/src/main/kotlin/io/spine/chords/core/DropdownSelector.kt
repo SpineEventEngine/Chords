@@ -76,7 +76,7 @@ import io.spine.chords.core.primitive.preventWidthAutogrowing
 import java.util.*
 
 /**
- * A base class for components, which allow selecting one item from a drop-down
+ * A base class for components that allow selecting one item from a drop-down
  * items list.
  *
  * An implementation of the concrete component has to provide the following:
