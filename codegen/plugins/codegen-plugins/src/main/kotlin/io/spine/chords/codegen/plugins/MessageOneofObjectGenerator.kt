@@ -26,6 +26,7 @@
 
 package io.spine.chords.codegen.plugins
 
+import com.google.protobuf.BoolValue
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
@@ -41,6 +42,7 @@ import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
+import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.TypeName
 import io.spine.protodata.ast.isPartOfOneof
@@ -79,7 +81,9 @@ internal class MessageOneofObjectGenerator(
             oneofField.oneofName.value
         }.forEach { nameToFields ->
             fileBuilder.addType(
-                buildMessageOneofObject(nameToFields.key, nameToFields.value)
+                buildMessageOneofObject(
+                    fileBuilder, nameToFields.key, nameToFields.value
+                )
             )
         }
     }
@@ -92,8 +96,8 @@ internal class MessageOneofObjectGenerator(
      *     public object IpAddressValueOneof : MessageOneof<IpAddress> {
      *         private val fieldMap: Map<Int, MessageField<IpAddress, Any>> =
      *             mapOf(
-     *                 1 to IpAddressDef.ipv4.safeCast<MessageField<IpAddressDef, Any>>()!!,
-     *                 2 to IpAddressDef.ipv6.safeCast<MessageField<IpAddressDef, Any>>()!!
+     *                 1 to IpAddressDef.ipv4.safeCast<MessageField<IpAddressDef, Any>>(),
+     *                 2 to IpAddressDef.ipv6.safeCast<MessageField<IpAddressDef, Any>>()
      *             )
      *
      *         public override val name: String = "value"
@@ -107,6 +111,7 @@ internal class MessageOneofObjectGenerator(
      * ```
      */
     private fun buildMessageOneofObject(
+        fileBuilder: FileSpec.Builder,
         oneofName: String,
         oneofFields: List<Field>
     ): TypeSpec {
@@ -123,8 +128,9 @@ internal class MessageOneofObjectGenerator(
             .addSuperinterface(superInterface)
             .addAnnotation(generatedAnnotation())
             .addKdoc(generateKDoc(oneofName))
-            .addProperty(fieldMapProperty(oneofFields, fieldType))
+            .addProperty(fieldMapProperty(fileBuilder, oneofFields, fieldType))
             .addProperty(nameProperty(oneofName))
+            .addProperty(requiredProperty(oneofName))
             .addProperty(fieldsProperty(fieldType))
             .addFunction(selectedFieldFunction(oneofName, fieldType))
             .build()
@@ -134,6 +140,7 @@ internal class MessageOneofObjectGenerator(
      * Generates the `fieldMap` property.
      */
     private fun fieldMapProperty(
+        fileBuilder: FileSpec.Builder,
         oneofFields: List<Field>,
         fieldType: ParameterizedTypeName
     ): PropertySpec {
@@ -144,13 +151,33 @@ internal class MessageOneofObjectGenerator(
         return PropertySpec
             .builder("fieldMap", fieldMapType, PRIVATE)
             .initializer(
-                fieldMapInitializer(
-                    oneofFields,
-                    messageTypeName.messageDefClassName(),
-                    fieldType
-                )
+                fieldMapInitializer(fileBuilder, oneofFields, fieldType)
             ).build()
     }
+
+    /**
+     * Builds the `required` property of [MessageOneof] implementation.
+     */
+    private fun requiredProperty(oneofName: String) =
+        PropertySpec
+            .builder("required", Boolean::class.asClassName(), PUBLIC, OVERRIDE)
+            .initializer("${isOneofRequired(oneofName)}")
+            .build()
+
+    /**
+     * Returns a value of the `is_required` option if it is applied to the
+     * oneof group with the given [oneofName].
+     *
+     * Returns `false` if the option `is_required` is not set.
+     */
+    private fun isOneofRequired(oneofName: String) =
+        typeSystem.findMessage(messageTypeName)!!
+            .first.oneofGroupList.find {
+                it.name.value == oneofName
+            }!!.optionList.any { option ->
+                option.name == "is_required" &&
+                        unpack(option.value, BoolValue::class.java).value
+            }
 
     /**
      * Generates the `name` property.
@@ -196,31 +223,40 @@ internal class MessageOneofObjectGenerator(
         oneofName,
         messageTypeName.fullClassName(typeSystem)
     )
-}
 
-/**
- * Generates initialization code for the `fieldMap` property
- * of the [MessageOneof] implementation.
- *
- * The generated code looks like the following:
- * ```
- * mapOf(
- *     1 to IpAddressDef.ipv4.safeCast<MessageField<IpAddressDef, Any>>()!!,
- *     2 to IpAddressDef.ipv6.safeCast<MessageField<IpAddressDef, Any>>()!!
- * )
- * ```
- */
-@Suppress("SpreadOperator")
-private fun fieldMapInitializer(
-    fields: List<Field>,
-    messageDefClassName: String,
-    messageField: ParameterizedTypeName
-) = CodeBlock.of(
-    fields.joinToString(
-        ",${lineSeparator()}",
-        "mapOf(${lineSeparator()}",
-        ")"
-    ) {
-        "${it.number} to $messageDefClassName.${it.name.javaCase()}.safeCast<%T>()!!"
-    }, *fields.map { messageField }.toTypedArray()
-)
+    /**
+     * Generates initialization code for the `fieldMap` property
+     * of the [MessageOneof] implementation.
+     *
+     * The generated code looks like the following:
+     * ```
+     * mapOf(
+     *     1 to ipv4.safeCast<MessageField<IpAddressDef, Any>>(),
+     *     2 to ipv6.safeCast<MessageField<IpAddressDef, Any>>()
+     * )
+     * ```
+     */
+    @Suppress("SpreadOperator")
+    private fun fieldMapInitializer(
+        fileBuilder: FileSpec.Builder,
+        fields: List<Field>,
+        messageField: ParameterizedTypeName
+    ): CodeBlock {
+        val packageName = messageTypeName.javaPackage(typeSystem)
+        val messageDefClassName = messageTypeName.messageDefClassName()
+        return CodeBlock.of(
+            fields.onEach { field ->
+                fileBuilder.addImport(
+                    packageName,
+                    "$messageDefClassName.${field.name.javaCase()}"
+                )
+            }.joinToString(
+                ",${lineSeparator()}",
+                "mapOf(${lineSeparator()}",
+                ")"
+            ) {
+                "${it.number} to ${it.name.javaCase()}.safeCast<%T>()"
+            }, *fields.map { messageField }.toTypedArray()
+        )
+    }
+}
