@@ -50,6 +50,100 @@ import kotlinx.coroutines.TimeoutCancellationException
  * the [postCommand] function, which post the command with the entered field
  * values, and awaits for receiving the feedback upon its processing.
  *
+ * Please see the [MessageForm]'s documentation, which applies to
+ * [CommandMessageForm] as well for the details on its usage. Besides, here's
+ * an example of configuring `CommandMessageForm`, which allows the user
+ * to enter username and password, and then post the respective command
+ * (called `AuthorizeUser` here).
+ *
+ * ```
+ * // The value returned by such `CommandMessageForm`'s declaration represents
+ * // a `CommandMessageForm` instance, which was implicitly created and cached
+ * // for this declaration specifically, so you can use its API as needed.
+ * val form = CommandMessageForm({ AuthorizeUser.newBuilder() }) {
+ *
+ *     // It is perfectly valid to organize the actual field editors into any
+ *     // layout that might be required.
+ *     Column {
+ *
+ *          // Each field editor would typically be a class-based input
+ *          // component, which is a subclass of
+ *          // `io.spine.chords.core.InputComponent`, and would be associated
+ *          // with some of the command message's fields, by passing the
+ *          // respective command's field as
+ *          // an `io.spine.chords.runtime.MessageField` instance.
+ *          UserNameField(AuthorizedUser.userName)
+ *          PasswordField(AuthorizedUser.password)
+ *
+ *          // You can implement the UI for posting the form with any component
+ *          // that appears appropriate as long as the form's `postCommand`
+ *          // method is invoked when the form needs to be posted.
+ *          Button(
+ *              onClick = { form.postCommand() }
+ *          ) {
+ *              Text("Login")
+ *          }
+ * }
+ * ```
+ *
+ * The example above shows a simplest possible configuration of
+ * `CommandMessageForm`, and whenever needed, you can also use other
+ * customization options. For example, if you need to have the form display
+ * pre-populated contents as defined by some non-default `CommandMessage`
+ * instance, and also prevent form's validation errors from being displayed
+ * live during editing (by triggering validation explicitly), you can do it
+ * like this:
+ *
+ * ```
+ * val authorizeUserCommand: MutableState<AuthorizeUser> =
+ *     getPrepopulatedAuthorizeUserCommand()
+ * val form = CommandMessageForm(
+ *     builder = { AuthorizeUser.newBuilder() }
+ *
+ *     // Providing a `MutableState` based value in this way ensures that
+ *     // the form uses current value found in `MutableState` AND that
+ *     // the value in this `MutableState` is updated whenever it is edited
+ *     // in the form.
+ *     value = authorizeUserCommand,
+ *
+ *     props = {
+ *
+ *         // In this section you can configure the `CommandMessageForm`
+ *         // component by specifying its property values just like you would
+ *         // do if you were passing parameter values to a "traditional" Compose
+ *         // function-based component.
+ *
+ *         validationDisplayMode = MANUAL
+ *     }
+ * ) {
+ *
+ *     Column {
+ *          UserNameField(AuthorizedUser.userName)
+ *          PasswordField(AuthorizedUser.password)
+ *
+ *          // We're invoking the form's `updateValidationDisplay()` method in
+ *          // this way just as an example, and in practice it can be invoked
+ *          // when needed to achieve the required validation behavior.
+ *          Button(
+ *              onClick = {
+ *
+ *                  // Manually triggers the form's field editors to display the
+ *                  // validation messages that correspond to the current
+ *                  // form's editing state.
+ *                  form.updateValidationDisplay()
+ *              }
+ *          ) {
+ *              Text("Login")
+ *          }
+ *
+ *          Button(
+ *              onClick = { form.postCommand() }
+ *          ) {
+ *              Text("Login")
+ *          }
+ * }
+ * ```
+ *
  * @param C
  *         a type of the command message being edited with the form.
  */
