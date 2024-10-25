@@ -495,7 +495,8 @@ public open class MessageForm<M : Message> :
             this.builder = builder as () -> ValidatingBuilder<M>
             // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
             @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> ValidatingBuilder<out M>
+            this.onBeforeBuild =
+                onBeforeBuild as (ValidatingBuilder<out M>) -> ValidatingBuilder<out M>
             multipartContent = content
             props.run { configure() }
         }) {
@@ -551,7 +552,8 @@ public open class MessageForm<M : Message> :
             this.builder = builder as () -> ValidatingBuilder<M>
             // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
             @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> ValidatingBuilder<out M>
+            this.onBeforeBuild =
+                onBeforeBuild as (ValidatingBuilder<out M>) -> ValidatingBuilder<out M>
             multipartContent = content
             props.run { configure() }
         }) {
@@ -568,6 +570,14 @@ public open class MessageForm<M : Message> :
          * its [Content] method (for singlepart forms) or its
          * [MultipartContent] method (for rendering a multipart form) in
          * a composable context where it needs to be displayed.
+         *
+         * NOTE: this method creates a new instance each time it is invoked.
+         * When invoking it in context of a `@Composable` method, make sure to
+         * take this fact into account (e.g. caching the instance with
+         * [remember][androidx.compose.runtime.remember]). This method would
+         * typically not need to be invoked from `@Composable` methods though,
+         * and the regular `@Composable` declarations (using one of the [invoke]
+         * functions) would need to be used in the majority of cases.
          *
          * @param M A type of the message being edited with the form.
          * @param B A type of the message builder.

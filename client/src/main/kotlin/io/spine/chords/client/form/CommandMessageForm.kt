@@ -248,7 +248,8 @@ public class CommandMessageForm<C : CommandMessage> :
          * [MultipartContent] method (for rendering a multipart form) in
          * a composable context where it needs to be displayed.
          *
-         * NOTE: `create` would typically not need to be invoked from composable
+         * NOTE: `create` returns a new instance each time it is invoked and
+         * would typically not need to be invoked from composable
          * functions/methods. If you need to render a component inside
          * a composable function or method, then you probably need one of the
          * [invoke] based instance declarations instead of using the

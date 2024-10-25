@@ -221,17 +221,20 @@ public abstract class InputComponent<V> : FocusableComponent() {
     public var valueRequired: Boolean by mutableStateOf(false)
 
     /**
-     * An external validation error that should be displayed by the component,
-     * if the value within this [MutableState] is not `null`.
+     * This property is dedicated to be set by the form automatically for
+     * providing an external validation error that should be displayed by
+     * the component, if the value within this [MutableState] is not `null`.
      *
      * The value in this [State] is identified by the environment where this
      * input component is used (e.g., by a form that it's a part of), and thus
      * such an external validation state is identified independently in addition
      * to the component's internal validation.
      *
-     * // TODO:2024-10-21:dmitry.pikhulya: Make it clear in the documentation
-     *      that it shouldn't be customized by the user when component instance
-     *      declaration is made.
+     * NOTE: this property would typically never need to be configured by
+     * the application's code when declaring a component in some composable
+     * function. Instead, it should be used by the actual component's
+     * implementation to ensure that the value specified in this property is
+     * displayed as needed.
      */
     public open var externalValidationMessage: State<String?>? = null
 

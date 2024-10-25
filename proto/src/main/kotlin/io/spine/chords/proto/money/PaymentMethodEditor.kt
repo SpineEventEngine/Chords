@@ -33,7 +33,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.Top
 import androidx.compose.ui.unit.dp
 import com.google.protobuf.Message
-import io.spine.chords.core.ValidationErrorText
 import io.spine.chords.core.layout.InputRow
 import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.MessageForm
@@ -88,6 +87,5 @@ public fun <M : Message> FormFieldsScope<M>.PaymentMethodEditor(
                 }
             }
         }
-        ValidationErrorText()
     }
 }
