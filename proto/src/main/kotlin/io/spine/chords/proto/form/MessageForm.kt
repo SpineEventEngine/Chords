@@ -363,8 +363,21 @@ public enum class ValidationDisplayMode {
  *   (show or hide) form validation errors programmatically. This makes sense
  *   only when using the form's display mode is effectively manual.
  *
- * @param M
- *         a type of the message being edited with the form.
+ * ### Implementing custom form components
+ *
+ * It is possible to implement custom form components for editing specific
+ * message types with respective built-in editors that are defined as part of
+ * such form components.
+ *
+ * For example, if it is needed to create a custom form component for editing
+ * a `PersonName` message value, this can be done like this:
+ * - Create a subclass of `MessageForm` (`PersonNameForm` in this case).
+ * - Override either [customContent] (for rendering ordinary singlepart forms),
+ *   or [customMultipartContent] (if a multipart form is needed), which should
+ *   contain field editors in the same way as you would fill the respective
+ *   `MessageForm` (e.g. see the "Specifying form's content" section above).
+ *
+ * @param M A type of the message being edited with the form.
  */
 // Seems all class's functions are better to have in this class.
 @Suppress("TooManyFunctions")
@@ -1186,9 +1199,74 @@ public open class MessageForm<M : Message> :
         Content()
     }
 
+    /**
+     * A method that can be overridden in custom form implementations
+     * (`MessageForm` subclasses), which need to define their own
+     * form's content.
+     *
+     * This method can be overridden for defining custom singlepart form
+     * content only, and if a multipart form content needs to be defined by
+     * a subclass, the [customMultipartContent] method
+     * has to be overridden instead.
+     *
+     * @see customMultipartContent
+     */
+    @Composable
+    protected open fun FormPartScope<M>.customContent() {
+    }
+
+    /**
+     * Renders a multipart form's content for this form.
+     *
+     * This method can be overridden for defining multipart form content in
+     * custom `MessageForm` implementations (subclasses). If the subclass just
+     * needs to render a singlepart form content, you can alternatively override
+     * the [customContent] function instead of this one for a more
+     * compact solution.
+     *
+     * @see customContent
+     */
+    @Composable
+    protected open fun MultipartFormScope<M>.customMultipartContent() {
+        content?.let {
+            formScope.FormPart(it)
+            formScope.FormPart {
+                customContent()
+            }
+        }
+        multipartContent?.invoke(formScope)
+    }
+
+    /**
+     * Renders the form's instance, which was created using
+     * the [create] function.
+     *
+     * In most cases forms (like class-based
+     * [Component][io.spine.chords.core.Component]s in general) would be
+     * declared using either of [invoke] functions, and thus won't need this
+     * function to be invoked explicitly though.
+     *
+     * If you're implementing a custom `MessageForm` subclass that needs its own
+     * built-in content to be specified, override the [customContent] or
+     * [customMultipartContent] method instead.
+     */
+    @Composable
+    final override fun Content() {
+        super.Content()
+    }
+
+    /**
+     * The `MessageForm`'s rendering implementation.
+     *
+     * When defining custom `MessageForm` implementations (subclasses) that need
+     * to define their own content, this method should be left intact, and
+     * custom form's content should instead be implemented by overriding either
+     * [customContent] or [customMultipartContent] for single- and multipart
+     * forms respectively.
+     */
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
-    override fun content() {
+    final override fun content() {
         if (lastEmittedMessageValue != null && value.value == null) {
             if (enteringNonNullValue.value) {
                 enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
@@ -1202,10 +1280,7 @@ public open class MessageForm<M : Message> :
         }
         lastObservedEnteringNonNullValue = enteringNonNullValue
 
-        content?.let {
-            formScope.FormPart(it)
-        }
-        multipartContent?.invoke(formScope)
+        formScope.customMultipartContent()
 
         updateMessage(effectivelyLiveValidation, false)
         lastEmittedMessageValue = value.value
@@ -1293,11 +1368,9 @@ public open class MessageForm<M : Message> :
      * Invoked internally by [Field][FormFieldsScope.Field] and not expected to
      * be invoked explicitly.
      *
-     * @param field
-     *         the message's field that is being registered.
-     * @param createFormField
-     *         a callback that creates a [FormField] instance that should
-     *         be registered
+     * @param field The message's field that is being registered.
+     * @param createFormField A callback that creates a [FormField] instance
+     *   that should be registered.
      */
     internal fun registerField(
         field: MessageField<M, out MessageFieldValue>,
@@ -1368,12 +1441,11 @@ public open class MessageForm<M : Message> :
      * whose entered data has caused the validation failure, and displaying
      * respective validation errors.
      *
-     * @param updateValidationErrors
-     *         specifies whether a failure to create a message should be
-     *         accompanied by displaying the respective validation errors.
-     * @param focusInvalidField
-     *         specifies whether the first field that has caused a validation
-     *         failure (if any) should receive a focus.
+     * @param updateValidationErrors Specifies whether a failure to create
+     *   a message should be accompanied by displaying the respective
+     *   validation errors.
+     * @param focusInvalidField Specifies whether the first field that has
+     *   caused a validation failure (if any) should receive a focus.
      */
     private fun updateMessage(
         updateValidationErrors: Boolean = true,
@@ -1443,11 +1515,10 @@ public open class MessageForm<M : Message> :
      * ensures that the displayed messages are up-to-date as well, which makes
      * sense only when the form's [validationDisplayMode] is effectively manual.
      *
-     * @param focusInvalidPart
-     *         `true` instructs the method to focus the editor for the first
-     *         form's field that has a validation error. If `false` is passed,
-     *         or the form doesn't have invalid fields currently, the focus is
-     *         not affected.
+     * @param focusInvalidPart `true` instructs the method to focus the editor
+     *   for the first form's field that has a validation error. If `false` is
+     *   passed, or the form doesn't have invalid fields currently, the focus is
+     *   not affected.
      */
     override fun updateValidationDisplay(focusInvalidPart: Boolean) {
         if (!enteringNonNullValue.value) {

@@ -43,8 +43,7 @@ import io.spine.chords.runtime.MessageOneof
  * defines the types of declarations available on this level
  * (see [FormPart] functions).
  *
- * @param M
- *         a type of message that is edited in the form.
+ * @param M A type of message that is edited in the form.
  */
 public interface MultipartFormScope<M : Message> {
 
@@ -60,20 +59,17 @@ public interface MultipartFormScope<M : Message> {
      * See the description of the [MessageForm] class for the instructions of
      * how to use this function.
      *
-     * @param showPart
-     *         a function that ensures that the respective part is revealed in
-     *         the form's UI.
-     *         For example, command message's fields can be split between
-     *         multiple form parts that can be displayed on different wizard's
-     *         pages. In this case, this parameter has to be passed a function
-     *         that would display the respective part of the UI.
-     * @param content
-     *         a composable content that defines how the respective message's
-     *         part is edited.
-     *         It can contain an arbitrary UI, but ensure that each field editor
-     *         component is wrapped using the [Field][FormFieldsScope.Field]
-     *         function that is available via the nested [FormPartScope] that
-     *         is provided as the receiver for this [content] function.
+     * @param showPart A function that ensures that the respective part is
+     *   revealed in the form's UI. For example, command message's fields can be
+     *   split between multiple form parts that can be displayed on different
+     *   wizard's pages. In this case, this parameter has to be passed
+     *   a function that would display the respective part of the UI.
+     * @param content A composable content that defines how the respective
+     *   message's part is edited. It can contain an arbitrary UI, but ensure
+     *   that each field editor component is wrapped using the
+     *   [Field][FormFieldsScope.Field] function that is available via the
+     *   nested [FormPartScope] that is provided as the receiver for this
+     *   [content] function.
      */
     @Composable
     public fun FormPart(
@@ -85,9 +81,8 @@ public interface MultipartFormScope<M : Message> {
      * The same as the other `FormPart` function, which doesn't require the
      * `showPart` parameter (implies its value to be `null`).
      *
-     * @param content
-     *         a composable content that defines how this message's part
-     *         is edited.
+     * @param content a composable content that defines how this message's part
+     *     is edited.
      */
     @Composable
     public fun FormPart(
@@ -125,8 +120,7 @@ internal class MultipartFormScopeImpl<M : Message>(
  * different contexts where fields can be declared (see [FormPartScope]
  * and [OneOfFieldsScope]).
  *
- * @param M
- *         a type of the message edited in the form.
+ * @param M A type of the message edited in the form.
  */
 public sealed interface FormFieldsScope<M : Message> {
 
@@ -178,8 +172,7 @@ public sealed interface FormFieldsScope<M : Message> {
  * represents a context in which message's field and oneof editors can
  * be declared.
  *
- * @param M
- *         a type of message that is edited in the form.
+ * @param M A type of message that is edited in the form.
  */
 public sealed interface FormPartScope<M : Message> : FormFieldsScope<M> {
 
@@ -211,11 +204,9 @@ public sealed interface FormPartScope<M : Message> : FormFieldsScope<M> {
      * [content] function using the [Field] function, which has to be called
      * for declaring each oneof's field editor.
      *
-     * @param oneof
-     *         name of the message's oneof being edited in the form.
-     * @param content
-     *         composable content that specifies [Field] declarations that
-     *         constitute this oneof.
+     * @param oneof Name of the message's oneof being edited in the form.
+     * @param content Composable content that specifies [Field] declarations
+     *   that constitute this oneof.
      */
     @Composable
     public fun OneOfFields(
@@ -236,8 +227,7 @@ public sealed interface FormPartScope<M : Message> : FormFieldsScope<M> {
  * A scope introduced by [FormPartScope.OneOfFields], which defines
  * the declarations available for declaring oneof field editors.
  *
- * @param M
- *         a type of message that is edited in the form.
+ * @param M A type of message that is edited in the form.
  */
 public sealed interface OneOfFieldsScope<M : Message> : FormFieldsScope<M> {
 
@@ -262,8 +252,7 @@ public sealed interface OneOfFieldsScope<M : Message> : FormFieldsScope<M> {
  * A scope introduced by the [Field][FormFieldsScope.Field] function in order to
  * facilitate editing the respective field value.
  *
- * @param V
- *         a type of field's value.
+ * @param V A type of field's value.
  */
 public sealed interface FormFieldScope<V : MessageFieldValue> {
 
@@ -491,13 +480,12 @@ private class OneOfFieldsScopeImpl<M : Message>(
  *
  * Not intended to be used for any application development directly.
  *
- * @param M
- *         a type of message that is edited in the form.
- * @param formScope
- *         a [MultipartFormScope], which contains this form part declaration.
- * @param showPart
- *         a function that ensures that the respective part is revealed in
- *         the form's UI.
+ * @param M A type of message that is edited in the form.
+ *
+ * @param formScope A [MultipartFormScope], which contains this form
+ *   part declaration.
+ * @param showPart A function that ensures that the respective part is revealed
+ *   in the form's UI.
  */
 internal class FormPartScopeImpl<M : Message>(
     formScope: MultipartFormScope<M>,
@@ -549,14 +537,11 @@ internal class FormPartScopeImpl<M : Message>(
  *
  * Not intended to be used for any application development directly.
  *
- * @param M
- *        a type of message that this field belongs to.
- * @param V
- *        a type of field's value.
- * @param formField
- *         a field represented by this scope object.
- * @param form
- *         a form to which this field belongs.
+ * @param M A type of message that this field belongs to.
+ * @param V A type of field's value.
+ *
+ * @param formField A field represented by this scope object.
+ * @param form A form to which this field belongs.
  */
 internal class FormFieldScopeImpl<M : Message, V : MessageFieldValue>(
     private val formField: MessageForm<M>.FormField,
