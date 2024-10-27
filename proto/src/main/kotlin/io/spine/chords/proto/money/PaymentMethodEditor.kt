@@ -45,10 +45,6 @@ import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
 
 /**
  * A component that edits a [PaymentMethod].
- *
- * It is intended to be used with [MessageForm][io.spine.chords.proto.form.MessageForm]
- * and is automatically bound to edit one of the respective fields of the
- * message that is edited in the containing form.
  */
 public class PaymentMethodEditor : MessageForm<PaymentMethod>() {
     init {
