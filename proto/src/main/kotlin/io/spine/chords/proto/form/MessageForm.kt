@@ -418,7 +418,7 @@ public open class MessageForm<M : Message> :
             value: MutableState<M?>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
-            onBeforeBuild: ((B) -> B) = { it },
+            onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = Multipart(value, builder, props, onBeforeBuild) {
             FormPart(content)
@@ -463,7 +463,7 @@ public open class MessageForm<M : Message> :
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             defaultValue: M? = null,
-            onBeforeBuild: ((B) -> B) = { it },
+            onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = Multipart(field, builder, props, defaultValue, onBeforeBuild) {
             FormPart(content)
@@ -498,7 +498,7 @@ public open class MessageForm<M : Message> :
             value: MutableState<M?>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
-            onBeforeBuild: ((B) -> B) = { it },
+            onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = createAndRender({
             this.value = value
@@ -508,8 +508,7 @@ public open class MessageForm<M : Message> :
             this.builder = builder as () -> ValidatingBuilder<M>
             // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
             @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild =
-                onBeforeBuild as (ValidatingBuilder<out M>) -> ValidatingBuilder<out M>
+            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
             multipartContent = content
             props.run { configure() }
         }) {
@@ -556,7 +555,7 @@ public open class MessageForm<M : Message> :
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             defaultValue: M? = null,
-            onBeforeBuild: ((B) -> B) = { it },
+            onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = createAndRender({
 
@@ -565,8 +564,7 @@ public open class MessageForm<M : Message> :
             this.builder = builder as () -> ValidatingBuilder<M>
             // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
             @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild =
-                onBeforeBuild as (ValidatingBuilder<out M>) -> ValidatingBuilder<out M>
+            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
             multipartContent = content
             props.run { configure() }
         }) {
@@ -1003,29 +1001,27 @@ public open class MessageForm<M : Message> :
     public var validationDisplayMode: ValidationDisplayMode by mutableStateOf(DEFAULT)
 
     /**
-     * Allows to programmatically amend the message builder before the message is built.
+     * Allows to programmatically amend the message builder before the message
+     * is built.
      *
-     * This callback is invoked upon every attempt to build the message edited in the form,
-     * which happens when any message's field is edited by the user. When this callback is invoked,
-     * the message builder's fields have already been set from all form's field editors,
-     * which currently have valid values. Note that there is no guarantee that the message
-     * that is about to be built is going to be valid.
+     * This callback is invoked upon every attempt to build the message edited
+     * in the form, which happens when any message's field is edited by the
+     * user. When this callback is invoked, the message builder's fields have
+     * already been set from all form's field editors, which currently have
+     * valid values. Note that there is no guarantee that the message that is
+     * about to be built is going to be valid.
      *
-     * The altered builder should be returned as a result of this method.
-     * For example, if we wanted to set message's `field1` and `field2` explicitly,
-     * this could be done like this:
+     * For example, if we wanted to set message's `field1` and `field2`
+     * explicitly, this could be done like this:
      *
      * ```
-     *     MessageForm(..., onBeforeBuild = {
-     *         with(it) {
-     *             field1 = field1Value
-     *             field2 = field2Value
-     *         }
-     *         it
+     *     MessageForm(..., onBeforeBuild = { builder ->
+     *         builder.field1 = field1Value
+     *         builder.field2 = field2Value
      *     },  ...) ...
      * ```
      */
-    protected var onBeforeBuild: ((ValidatingBuilder<out M>) -> ValidatingBuilder<out M>) = { it }
+    protected var onBeforeBuild: (ValidatingBuilder<out M>) -> Unit = {}
 
     init {
         valueRequired = true
@@ -1486,9 +1482,8 @@ public open class MessageForm<M : Message> :
         }
 
         val validatedMessage = try {
-            var builder = builderWithCurrentFields()
-            val beforeBuildCallback = onBeforeBuild
-            builder = beforeBuildCallback(builder)
+            val builder = builderWithCurrentFields()
+            onBeforeBuild(builder)
             builder.vBuild()
         } catch (e: ValidationException) {
             if (updateValidationErrors) {
