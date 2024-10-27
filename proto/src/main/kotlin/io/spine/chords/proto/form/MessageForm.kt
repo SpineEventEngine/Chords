@@ -1209,6 +1209,12 @@ public open class MessageForm<M : Message> :
      * a subclass, the [customMultipartContent] method
      * has to be overridden instead.
      *
+     * The content for the implementation of this method can be specified in
+     * the same way as you specify the content for a usual in-place `MessageForm`
+     * component (e.g. a combination of arbitrary layout/"regular" Compose
+     * components along with actual field editor components for all form's
+     * fields, which need to be edited).
+     *
      * @see customMultipartContent
      */
     @Composable
@@ -1223,6 +1229,17 @@ public open class MessageForm<M : Message> :
      * needs to render a singlepart form content, you can alternatively override
      * the [customContent] function instead of this one for a more
      * compact solution.
+     *
+     * The content for the implementation of this method can be specified in
+     * the same way as you specify the content for a usual in-place
+     * `MessageForm.Multipart` component.
+     *
+     * The content for the implementation of this method can be specified in
+     * the same way as you specify the content for a usual in-place
+     * [MessageForm.Multipart][Multipart] component (e.g. a set of
+     * [FormPart][MultipartFormScope.FormPart] declarations, which would in turn
+     * contain field editors and other components for each form
+     * part respectively).
      *
      * @see customContent
      */
