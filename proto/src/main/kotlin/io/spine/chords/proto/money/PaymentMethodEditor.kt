@@ -32,9 +32,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.Top
 import androidx.compose.ui.unit.dp
-import com.google.protobuf.Message
 import io.spine.chords.core.layout.InputRow
-import io.spine.chords.proto.form.FormFieldsScope
+import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.OneofRadioButton
 import io.spine.chords.proto.form.OptionalMessageCheckbox
@@ -43,31 +42,23 @@ import io.spine.chords.proto.value.money.PaymentMethod
 import io.spine.chords.proto.value.money.PaymentMethodDef.bankAccount
 import io.spine.chords.proto.value.money.PaymentMethodDef.method
 import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
-import io.spine.chords.runtime.MessageField
 
 /**
  * A component that edits a [PaymentMethod].
- *
- * It is intended to be used with [MessageForm][io.spine.chords.proto.form.MessageForm]
- * and is automatically bound to edit one of the respective fields of the
- * message that is edited in the containing form.
- *
- * @receiver A context introduced by the parent form, whose field is to
- *   be edited.
- * @param M a type of message to which the edited `PaymentMethod` field belongs.
- *
- * @param field the form message's field, whose value should be edited with
- *   this component.
  */
-@Composable
-public fun <M : Message> FormFieldsScope<M>.PaymentMethodEditor(
-    field: MessageField<M, PaymentMethod>
-) {
-    MessageForm(field, { PaymentMethod.newBuilder() }) {
-        InputRow(
-            padding = PaddingValues()
-        ) {
-            OptionalMessageCheckbox("Specify payment method")
+public class PaymentMethodEditor : MessageForm<PaymentMethod>() {
+    init {
+        builder = { PaymentMethod.newBuilder() }
+    }
+
+    @Composable
+    override fun FormPartScope<PaymentMethod>.customContent() {
+        if (!valueRequired) {
+            InputRow(
+                padding = PaddingValues()
+            ) {
+                OptionalMessageCheckbox("Specify payment method")
+            }
         }
         InputRow(
             padding = PaddingValues()

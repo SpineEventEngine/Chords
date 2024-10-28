@@ -118,8 +118,8 @@ import kotlinx.coroutines.TimeoutCancellationException
  * ) {
  *
  *     Column {
- *          UserNameField(AuthorizedUser.userName)
- *          PasswordField(AuthorizedUser.password)
+ *          UserNameField(AuthorizeUserDef.userName)
+ *          PasswordField(AuthorizeUserDef.password)
  *
  *          // We're invoking the form's `updateValidationDisplay()` method in
  *          // this way just as an example, and in practice it can be invoked
