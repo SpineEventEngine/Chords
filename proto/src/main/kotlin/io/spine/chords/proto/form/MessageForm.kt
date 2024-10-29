@@ -104,6 +104,50 @@ public enum class ValidationDisplayMode {
 }
 
 /**
+ * An object, which allows to control various aspects of editing a message
+ * of type [M] on different stages of the editing lifecycle.
+ *
+ * It concerns only data-related aspects of message's editing only, such as an
+ * initial message's value that an editor should contain, or revising the data
+ * that is being edited. This doesn't include any UI-related aspects that might
+ * be related to how the values are presented visually, or other aspects of the
+ * editors themselves, which are typically configured via
+ * the editors themselves.
+ *
+ * @param M A type of message being edited.
+ * @param B A builder for a message of type [M].
+ */
+public interface MessageEditingController<M: Message, B: ValidatingBuilder<out M>> {
+
+    /**
+     * A value that an editor would need to use as an initial one when editing
+     * of the message starts.
+     *
+     * If this property has a non-`null` value, then the respective editor
+     * (e.g. [MessageForm]) would have to use this value as the starting one. If
+     * it has a `null` value, then the editor's initial value won't be affected,
+     * which would usually mean that it would just display whatever value is
+     * stored in the [MutableState] that is provided to its
+     * [value][InputComponent.value] property.
+     */
+    public val initialValue: M? get() = null
+
+    /**
+     * Provides an opportunity to amend the contents of a message [M] each time
+     * when it is about to be built.
+     *
+     * It is expected that by the time when this method is invoked, [builder]
+     * is already configured to contain all the information that is needed to
+     * build a message of type [M] based on the current editor's state. It can
+     * be useful for cases like when some of the message's field(s) are not
+     * edited directly, but still should be set based on values of some edited
+     * fields, or when it is needed to normalize the values entered by the user
+     * (e.g. bring a telephone number field to some canonical form).
+     */
+    public fun reviseMessageBuilder(builder: B) {}
+}
+
+/**
  * A kind of input component, which allows creating a field-wise editor UI
  * (form) for creating and editing a Protobuf message's value.
  *
@@ -404,23 +448,26 @@ public open class MessageForm<M : Message> :
          * @param B A type of the message builder.
          *
          * @param value The message value to be edited within the form.
-         * @param builder A lambda that should create and return a new builder for
-         *   a message of type [M].
+         * @param builder A lambda that should create and return a new builder
+         *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
-         * @param onBeforeBuild A lambda that allows to amend the message
-         *   after any valid field is entered to it.
-         * @param content A form's content, which can contain an arbitrary layout along
-         *   with field editor declarations.
-         * @return A form's instance that has been created for this declaration site.
+         * @param editingController Allows to control different aspects of
+         *   editing the message's data on different editing lifecycle, such as
+         *   an initial editor value, or an ability to amend message's builder
+         *   before the edited message is built.
+         * @param content A form's content, which can contain an arbitrary
+         *   layout along with field editor declarations.
+         * @return A form's instance that has been created for this
+         *   declaration site.
          */
         @Composable
         public operator fun <M : Message, B : ValidatingBuilder<out M>> invoke(
             value: MutableState<M?>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
-            onBeforeBuild: (B) -> Unit = {},
+            editingController: MessageEditingController<M, B>? = null,
             content: @Composable FormPartScope<M>.() -> Unit
-        ): MessageForm<M> = Multipart(value, builder, props, onBeforeBuild) {
+        ): MessageForm<M> = Multipart(value, builder, props, editingController) {
             FormPart(content)
         }
 
@@ -444,8 +491,10 @@ public open class MessageForm<M : Message> :
          * @param props A lambda that can set any additional props on the form.
          * @param defaultValue A value that should be displayed in the form
          *   by default.
-         * @param onBeforeBuild A lambda that allows to amend the message
-         *   after any valid field is entered to it.
+         * @param editingController Allows to control different aspects of
+         *   editing the message's data on different editing lifecycle, such as
+         *   an initial editor value, or an ability to amend message's builder
+         *   before the edited message is built.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
          * @return A form's instance that has been created for this
@@ -463,9 +512,9 @@ public open class MessageForm<M : Message> :
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             defaultValue: M? = null,
-            onBeforeBuild: (B) -> Unit = {},
+            editingController: MessageEditingController<M, B>? = null,
             content: @Composable FormPartScope<M>.() -> Unit
-        ): MessageForm<M> = Multipart(field, builder, props, defaultValue, onBeforeBuild) {
+        ): MessageForm<M> = Multipart(field, builder, props, defaultValue, editingController) {
             FormPart(content)
         }
 
@@ -486,8 +535,10 @@ public open class MessageForm<M : Message> :
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
-         * @param onBeforeBuild A lambda that allows to amend the message
-         *   after any valid field is entered to it.
+         * @param editingController Allows to control different aspects of
+         *   editing the message's data on different editing lifecycle, such as
+         *   an initial editor value, or an ability to amend message's builder
+         *   before the edited message is built.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
          * @return A form's instance that has been created for this
@@ -498,7 +549,7 @@ public open class MessageForm<M : Message> :
             value: MutableState<M?>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
-            onBeforeBuild: (B) -> Unit = {},
+            editingController: MessageEditingController<M, B>? = null,
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = createAndRender({
             this.value = value
@@ -506,9 +557,11 @@ public open class MessageForm<M : Message> :
             // Storing the builder as ValidatingBuilder internally.
             @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<M>
-            // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
+            // Storing editingController using a more general
+            // ValidatingBuilder<out M> type internally instead of B.
             @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
+            this.editingController =
+                editingController as MessageEditingController<M, ValidatingBuilder<out M>>
             multipartContent = content
             props.run { configure() }
         }) {
@@ -536,7 +589,7 @@ public open class MessageForm<M : Message> :
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
          * @param defaultValue A value that should be displayed in the form by default.
-         * @param onBeforeBuild A lambda that allows to amend the message
+         * @param editingController A lambda that allows to amend the message
          *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
@@ -555,16 +608,18 @@ public open class MessageForm<M : Message> :
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             defaultValue: M? = null,
-            onBeforeBuild: (B) -> Unit = {},
+            editingController: MessageEditingController<M, B>? = null,
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = createAndRender({
 
             // Storing the builder as ValidatingBuilder internally.
             @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<M>
-            // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
+            // Storing editingController using a more general
+            // ValidatingBuilder<out M> type internally instead of B.
             @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
+            this.editingController =
+                editingController as MessageEditingController<M, ValidatingBuilder<out M>>
             multipartContent = content
             props.run { configure() }
         }) {
@@ -1015,13 +1070,13 @@ public open class MessageForm<M : Message> :
      * explicitly, this could be done like this:
      *
      * ```
-     *     MessageForm(..., onBeforeBuild = { builder ->
+     *     MessageForm(..., editingController = { builder ->
      *         builder.field1 = field1Value
      *         builder.field2 = field2Value
      *     },  ...) ...
      * ```
      */
-    protected var onBeforeBuild: (ValidatingBuilder<out M>) -> Unit = {}
+    protected var editingController: MessageEditingController<M, ValidatingBuilder<out M>>? = null
 
     init {
         valueRequired = true
@@ -1147,6 +1202,9 @@ public open class MessageForm<M : Message> :
             "MessageForm's `builder` property must be specified."
         }
 
+        if (editingController != null) {
+            value.value = editingController!!.initialValue
+        }
         lastEmittedMessageValue = value.value
         _dirty = identifyInitialDirtyState(value.value)
         enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
@@ -1363,7 +1421,6 @@ public open class MessageForm<M : Message> :
             false
     }
 
-
     /**
      * Clears the data entered in the form.
      */
@@ -1483,7 +1540,7 @@ public open class MessageForm<M : Message> :
 
         val validatedMessage = try {
             val builder = builderWithCurrentFields()
-            onBeforeBuild(builder)
+            editingController?.reviseMessageBuilder(builder)
             builder.vBuild()
         } catch (e: ValidationException) {
             if (updateValidationErrors) {

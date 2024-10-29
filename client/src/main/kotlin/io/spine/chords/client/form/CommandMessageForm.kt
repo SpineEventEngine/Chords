@@ -37,6 +37,7 @@ import io.spine.chords.core.ComponentProps
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.appshell.client
 import io.spine.chords.proto.form.FormPartScope
+import io.spine.chords.proto.form.MessageEditingController
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
@@ -172,8 +173,10 @@ public class CommandMessageForm<C : CommandMessage> :
          * @param builder A lambda that should create and return a new builder
          *   for a command of type [C].
          * @param value The command message value to be edited within the form.
-         * @param onBeforeBuild A lambda that allows to amend the command message
-         *   after any valid field is entered to it.
+         * @param editingController Allows to control different aspects of
+         *   editing the message's data on different editing lifecycle, such as
+         *   an initial editor value, or an ability to amend message's builder
+         *   before the edited message is built.
          * @param props A lambda that can set any additional props on the form.
          * @param content A form's content, which can contain an arbitrary layout along
          *   with field editor declarations.
@@ -184,10 +187,10 @@ public class CommandMessageForm<C : CommandMessage> :
         public operator fun <C : CommandMessage, B: ValidatingBuilder<out C>> invoke(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
-            onBeforeBuild: (B) -> Unit = {},
+            editingController: MessageEditingController<C, B>? = null,
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable FormPartScope<C>.() -> Unit
-        ): CommandMessageForm<C> = Multipart(builder, value, onBeforeBuild, props) {
+        ): CommandMessageForm<C> = Multipart(builder, value, editingController, props) {
             FormPart(content)
         }
 
@@ -207,8 +210,10 @@ public class CommandMessageForm<C : CommandMessage> :
          * @param value The command message value to be edited within the form.
          * @param builder A lambda that should create and return a new builder
          *   for a command message of type [C].
-         * @param onBeforeBuild A lambda that allows to amend the command
-         *   message after any valid field is entered to it.
+         * @param editingController Allows to control different aspects of
+         *   editing the message's data on different editing lifecycle, such as
+         *   an initial editor value, or an ability to amend message's builder
+         *   before the edited message is built.
          * @param props A lambda that can set any additional props on the form.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
@@ -219,7 +224,7 @@ public class CommandMessageForm<C : CommandMessage> :
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> Multipart(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
-            onBeforeBuild: (B) -> Unit = {},
+            editingController: MessageEditingController<C, B>? = null,
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable MultipartFormScope<C>.() -> Unit
         ): CommandMessageForm<C> = createAndRender({
@@ -229,7 +234,8 @@ public class CommandMessageForm<C : CommandMessage> :
             @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<C>
             @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out C>) -> Unit
+            this.editingController =
+                editingController as MessageEditingController<C, ValidatingBuilder<out C>>
             multipartContent = content
             props.run { configure() }
         }) {
@@ -260,8 +266,10 @@ public class CommandMessageForm<C : CommandMessage> :
          * @param builder A lambda that should create and return a new builder
          *   for a command of type [C].
          * @param value The command message value to be edited within the form.
-         * @param onBeforeBuild A lambda that allows to amend the command
-         *   message after any valid field is entered to it.
+         * @param editingController Allows to control different aspects of
+         *   editing the message's data on different editing lifecycle, such as
+         *   an initial editor value, or an ability to amend message's builder
+         *   before the edited message is built.
          * @param props A lambda that can set any additional props on the form.
          * @return A form's instance that has been created for this
          *   declaration site.
@@ -269,7 +277,7 @@ public class CommandMessageForm<C : CommandMessage> :
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> create(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
-            onBeforeBuild: (B) -> Unit = {},
+            editingController: MessageEditingController<C, B>? = null,
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {}
         ): CommandMessageForm<C> =
             super.create(null) {
@@ -281,7 +289,8 @@ public class CommandMessageForm<C : CommandMessage> :
 
                 // Storing the builder as ValidatingBuilder internally.
                 @Suppress("UNCHECKED_CAST")
-                this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out C>) -> Unit
+                this.editingController =
+                    editingController as MessageEditingController<C, ValidatingBuilder<out C>>
                 props.run { configure() }
             }
     }

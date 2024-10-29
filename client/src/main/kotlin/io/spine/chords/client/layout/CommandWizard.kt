@@ -39,6 +39,7 @@ import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.AbstractWizardPage
 import io.spine.chords.core.layout.Wizard
+import io.spine.chords.proto.form.MessageEditingController
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.ValidatingBuilder
 
@@ -62,18 +63,24 @@ import io.spine.protobuf.ValidatingBuilder
  * - This means that you can place respective [Field][FormFieldsScope.Field]
  *   declarations right in the [content][CommandWizardPage.content] method.
  *
- * @param C
- *         a type of the command message constructed in the wizard.
- * @param B
- *         a type of the command message builder.
+ * @param C A type of the command message constructed in the wizard.
+ * @param B A type of the command message builder.
+ *
+ * @param editingController Can optionally be specified to control different
+ *   aspects of command message's data editing, such as an initial command
+ *   value, or an ability to amend the command builder before the edited command
+ *   is created.
+ *
  */
 @Stable
-public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<out C>> : Wizard() {
+public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<out C>>(
+    editingController: MessageEditingController<C, B>? = null
+) : Wizard() {
 
     internal val commandMessageForm: CommandMessageForm<C> =
         CommandMessageForm.create(
             { createCommandBuilder() },
-            onBeforeBuild = { beforeBuild(it) }
+            editingController = editingController
         )
         {
             validationDisplayMode = MANUAL
