@@ -70,7 +70,6 @@ import io.spine.protobuf.ValidatingBuilder
  *   aspects of command message's data editing, such as an initial command
  *   value, or an ability to amend the command builder before the edited command
  *   is created.
- *
  */
 @Stable
 public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<out C>>(
@@ -117,38 +116,11 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * should subscribe to a respective event that is expected to arrive in
      * response to handling that command.
      *
-     * @param command
-     *         a command, which is going to be posted.
-     * @return a subscription to the event that is expected to arrive in response
-     *         to handling [command]
+     * @param command A command, which is going to be posted.
+     * @return A subscription to the event that is expected to arrive in
+     *   response to handling [command]
      */
     protected abstract fun subscribeToEvent(command: C): EventSubscription<out EventMessage>
-
-    /**
-     * Allows to programmatically amend the command message builder before
-     * the command is built.
-     *
-     * This function is invoked upon every attempt to build the command edited
-     * in the wizard, which happens when any command's field is edited by the
-     * user. When this function is invoked, the command builder's fields have
-     * already been set from all form's field editors, which currently have
-     * valid values. Note that there is no guarantee that the command message
-     * that is about to be built is going to be valid.
-     *
-     * For example, if we wanted to set command's `field1` and
-     * `field2` explicitly when the form builds a `MyMessage` value, this could
-     * be done like this:
-     * ```
-     *     class WizardImpl: CommandWizard(...) {
-     *
-     *         override fun beforeBuild(builder: MyMessage.Builder) {
-     *             builder.field1 = field1Value
-     *             builder.field2 = field2Value
-     *         }
-     *     }
-     * ```
-     */
-    protected open fun beforeBuild(builder: B) {}
 
     override suspend fun submit(): Boolean {
         return commandMessageForm.postCommand()
