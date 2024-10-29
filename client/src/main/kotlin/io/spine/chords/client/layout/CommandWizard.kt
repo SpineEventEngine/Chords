@@ -39,6 +39,7 @@ import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.AbstractWizardPage
 import io.spine.chords.core.layout.Wizard
+import io.spine.chords.proto.form.MessageEditingController
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.ValidatingBuilder
 
@@ -62,18 +63,23 @@ import io.spine.protobuf.ValidatingBuilder
  * - This means that you can place respective [Field][FormFieldsScope.Field]
  *   declarations right in the [content][CommandWizardPage.content] method.
  *
- * @param C
- *         a type of the command message constructed in the wizard.
- * @param B
- *         a type of the command message builder.
+ * @param C A type of the command message constructed in the wizard.
+ * @param B A type of the command message builder.
+ *
+ * @param editingController Can optionally be specified to control different
+ *   aspects of command message's data editing, such as an initial command
+ *   value, or an ability to amend the command builder before the edited command
+ *   is created.
  */
 @Stable
-public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<out C>> : Wizard() {
+public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<out C>>(
+    editingController: MessageEditingController<C, B>? = null
+) : Wizard() {
 
     internal val commandMessageForm: CommandMessageForm<C> =
         CommandMessageForm.create(
             { createCommandBuilder() },
-            onBeforeBuild = { beforeBuild(it) }
+            editingController = editingController
         )
         {
             validationDisplayMode = MANUAL
@@ -110,42 +116,11 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * should subscribe to a respective event that is expected to arrive in
      * response to handling that command.
      *
-     * @param command
-     *         a command, which is going to be posted.
-     * @return a subscription to the event that is expected to arrive in response
-     *         to handling [command]
+     * @param command A command, which is going to be posted.
+     * @return A subscription to the event that is expected to arrive in
+     *   response to handling [command]
      */
     protected abstract fun subscribeToEvent(command: C): EventSubscription<out EventMessage>
-
-    /**
-     * Allows to programmatically amend the command message builder before
-     * the command is built.
-     *
-     * This function is invoked upon every attempt to build the command edited
-     * in the wizard, which happens when any command's field is edited by the
-     * user. When this function is invoked, the command builder's fields have
-     * already been set from all form's field editors, which currently have
-     * valid values. Note that there is no guarantee that the command message
-     * that is about to be built is going to be valid.
-     *
-     * The altered builder should be returned as a result of this method.
-     * For example, if we wanted to set command's `field1` and
-     * `field2` explicitly, this could be done like this:
-     *
-     * ```
-     *     class WizardImpl: CommandWizard(...) {
-     *
-     *         override fun beforeBuild(builder: Message.Builder): Message.Builder {
-     *             with(builder) {
-     *                 field1 = field1Value
-     *                 field2 = field2Value
-     *             }
-     *             return builder
-     *         }
-     *     }
-     * ```
-     */
-    protected open fun beforeBuild(builder: B): B { return builder }
 
     override suspend fun submit(): Boolean {
         return commandMessageForm.postCommand()
@@ -182,9 +157,15 @@ public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M
 
     @Composable
     override fun content() {
+        // CommandMessageForm's type param is in+out, and it's logically just
+        // out in CommandWizard.
+        @Suppress("UNCHECKED_CAST")
         val commandMessageForm = wizard.commandMessageForm as CommandMessageForm<CommandMessage>
         commandMessageForm.MultipartContent {
             FormPart(showPart = { show() }) {
+                // The message type param is in+out, and it's just out
+                // for commandField.
+                @Suppress("UNCHECKED_CAST")
                 Field(commandField as MessageField<CommandMessage, M>) {
                     if (pageForm == null) {
                         pageForm = MessageForm.create(fieldValue, this@CommandWizardPage.builder) {
