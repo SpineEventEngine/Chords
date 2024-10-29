@@ -174,9 +174,9 @@ public class CommandMessageForm<C : CommandMessage> :
          *   for a command of type [C].
          * @param value The command message value to be edited within the form.
          * @param editingController Allows to control different aspects of
-         *   editing the message's data on different editing lifecycle, such as
-         *   an initial editor value, or an ability to amend message's builder
-         *   before the edited message is built.
+         *   editing the message's data on different stages of editing
+         *   lifecycle, such as an initial editor value, or an ability to amend
+         *   message's builder before the edited message is built.
          * @param props A lambda that can set any additional props on the form.
          * @param content A form's content, which can contain an arbitrary layout along
          *   with field editor declarations.
@@ -211,9 +211,9 @@ public class CommandMessageForm<C : CommandMessage> :
          * @param builder A lambda that should create and return a new builder
          *   for a command message of type [C].
          * @param editingController Allows to control different aspects of
-         *   editing the message's data on different editing lifecycle, such as
-         *   an initial editor value, or an ability to amend message's builder
-         *   before the edited message is built.
+         *   editing the message's data on different stages of editing
+         *   lifecycle, such as an initial editor value, or an ability to amend
+         *   message's builder before the edited message is built.
          * @param props A lambda that can set any additional props on the form.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
@@ -267,9 +267,9 @@ public class CommandMessageForm<C : CommandMessage> :
          *   for a command of type [C].
          * @param value The command message value to be edited within the form.
          * @param editingController Allows to control different aspects of
-         *   editing the message's data on different editing lifecycle, such as
-         *   an initial editor value, or an ability to amend message's builder
-         *   before the edited message is built.
+         *   editing the message's data on different stages of editing
+         *   lifecycle, such as an initial editor value, or an ability to amend
+         *   message's builder before the edited message is built.
          * @param props A lambda that can set any additional props on the form.
          * @return A form's instance that has been created for this
          *   declaration site.

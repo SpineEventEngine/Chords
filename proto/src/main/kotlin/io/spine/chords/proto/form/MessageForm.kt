@@ -107,7 +107,7 @@ public enum class ValidationDisplayMode {
  * An object, which allows to control various aspects of editing a message
  * of type [M] on different stages of the editing lifecycle.
  *
- * It concerns only data-related aspects of message's editing only, such as an
+ * It concerns the data-related aspects of message's editing only, such as an
  * initial message's value that an editor should contain, or revising the data
  * that is being edited. This doesn't include any UI-related aspects that might
  * be related to how the values are presented visually, or other aspects of the
@@ -147,6 +147,7 @@ public interface MessageEditingController<M: Message, B: ValidatingBuilder<out M
     public fun reviseMessageBuilder(builder: B) {}
 }
 
+// Seems all class's functions are better to have in this class.
 /**
  * A kind of input component, which allows creating a field-wise editor UI
  * (form) for creating and editing a Protobuf message's value.
@@ -407,6 +408,49 @@ public interface MessageEditingController<M: Message, B: ValidatingBuilder<out M
  *   (show or hide) form validation errors programmatically. This makes sense
  *   only when using the form's display mode is effectively manual.
  *
+ * ### Controlling the data entry using [MessageEditingController]
+ *
+ * It is possible to customize the way how the edited data is handled by
+ * specifying an instance of [MessageEditingController] via the
+ * `editingController` parameter of form declaration/instantiation (see the
+ * [invoke] and [create] functions).
+ *
+ * Specifying the `editingController` parameter is optional, and if specified,
+ * it allows to customize different aspects of the data entry, depending on
+ * which functionality of the provided the [MessageEditingController] instance
+ * is implemented. You're free to implement only those properties/methods, which
+ * are required for your specific needs, while leaving the default
+ * implementations for the rest of them.
+ *
+ * - If the [initialValue][MessageEditingController.initialValue] property of
+ *   `MessageEditingController` has a non-`null` value, then this value will be
+ *   set as the initial form's value when the form enters the composition
+ *   context — when it is rendered for the first time in general, or when it is
+ *   rendered for the first time after previously being "hidden" (removed from
+ *   the composable context and brought to it again, e.g. via
+ *   conditional rendering).
+ *
+ *   Note that in the absence of `MessageEditingController` or when its
+ *   `initialValue` property is `null`, the form would always display whatever
+ *   value was initially passed via its [value] [MutableState]. If the
+ *   `MessageEditingController`'s `initialValue` property has a non-null value
+ *   though, this value would technically be used to modify the `MutableState`
+ *   in the form's `value` property, which will happen a single time when the
+ *   form enters into the composition context, and would overwrite any value
+ *   that might have been in that `MutableState` before that moment.
+ *
+ * - The [reviseMessageBuilder][MessageEditingController.reviseMessageBuilder]
+ *   method can be implemented when it is required to amend a message before it
+ *   is built by the form. When this method is invoked, the provided builder is
+ *   already configured to have all field values according to the current form's
+ *   field editors.
+ *
+ *   Implementing this method can be useful for cases like when some of the
+ *   message's field(s) are not edited directly, but still should be set based
+ *   on values of some edited fields, or when it is needed to normalize the
+ *   values entered by the user (e.g. bring a telephone number field to some
+ *   canonical form).
+ *
  * ### Implementing custom form components
  *
  * It is possible to implement custom form components for editing specific
@@ -423,7 +467,6 @@ public interface MessageEditingController<M: Message, B: ValidatingBuilder<out M
  *
  * @param M A type of the message being edited with the form.
  */
-// Seems all class's functions are better to have in this class.
 @Suppress("TooManyFunctions")
 public open class MessageForm<M : Message> :
     InputComponent<M>(), InputContext {
@@ -452,9 +495,9 @@ public open class MessageForm<M : Message> :
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
          * @param editingController Allows to control different aspects of
-         *   editing the message's data on different editing lifecycle, such as
-         *   an initial editor value, or an ability to amend message's builder
-         *   before the edited message is built.
+         *   editing the message's data on different stages of editing
+         *   lifecycle, such as an initial editor value, or an ability to amend
+         *   message's builder before the edited message is built.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
          * @return A form's instance that has been created for this
@@ -492,9 +535,9 @@ public open class MessageForm<M : Message> :
          * @param defaultValue A value that should be displayed in the form
          *   by default.
          * @param editingController Allows to control different aspects of
-         *   editing the message's data on different editing lifecycle, such as
-         *   an initial editor value, or an ability to amend message's builder
-         *   before the edited message is built.
+         *   editing the message's data on different stages of editing
+         *   lifecycle, such as an initial editor value, or an ability to amend
+         *   message's builder before the edited message is built.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
          * @return A form's instance that has been created for this
@@ -536,9 +579,9 @@ public open class MessageForm<M : Message> :
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
          * @param editingController Allows to control different aspects of
-         *   editing the message's data on different editing lifecycle, such as
-         *   an initial editor value, or an ability to amend message's builder
-         *   before the edited message is built.
+         *   editing the message's data on different stages of editing
+         *   lifecycle, such as an initial editor value, or an ability to amend
+         *   message's builder before the edited message is built.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
          * @return A form's instance that has been created for this
