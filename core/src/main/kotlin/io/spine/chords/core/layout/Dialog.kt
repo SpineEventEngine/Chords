@@ -72,14 +72,14 @@ public abstract class Dialog : Component() {
      *
      * The default value is `OK`.
      */
-    public open var confirmButtonText: String = "OK"
+    public var confirmButtonText: String = "OK"
 
     /**
      * The label for the dialog's cancel button.
      *
      * The default value is `Cancel`.
      */
-    public open var cancelButtonText: String = "Cancel"
+    public var cancelButtonText: String = "Cancel"
 
     /**
      * A callback that should be handled to close the dialog (exclude it from
@@ -88,7 +88,7 @@ public abstract class Dialog : Component() {
      * This callback is triggered when the user closes the dialog or after
      * successful submission.
      */
-    public open var onCloseRequest: (() -> Unit)? = null
+    public var onCloseRequest: (() -> Unit)? = null
 
     /**
      * A callback used to confirm that the user wants to cancel the dialog.
@@ -96,21 +96,21 @@ public abstract class Dialog : Component() {
      * This callback is triggered when the user closes the dialog
      * by pressing the cancel button.
      */
-    public open var onCancelConfirmation: (() -> Unit)? = null
+    public var onCancelConfirmation: (() -> Unit)? = null
 
     /**
      * The width of the dialog.
      *
      * The default value is `700.dp`.
      */
-    public open var dialogWidth: Dp = 700.dp
+    public var dialogWidth: Dp = 700.dp
 
     /**
      * The height of the dialog.
      *
      * The default value is `450.dp`.
      */
-    public open var dialogHeight: Dp = 450.dp
+    public var dialogHeight: Dp = 450.dp
 
     /**
      * Creates the form content the dialog consists.
@@ -133,8 +133,7 @@ public abstract class Dialog : Component() {
      * Creates the dialog content composition.
      */
     @Composable
-    override fun content() {
-        val coroutineScope = rememberCoroutineScope()
+    protected override fun content() {
         Column(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.large)
@@ -148,47 +147,35 @@ public abstract class Dialog : Component() {
                     .padding(all = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                val coroutineScope = rememberCoroutineScope()
                 DialogTitle(title)
                 Column(
-                    Modifier
-                        .weight(1F)
+                    Modifier.weight(1F)
                         .on(Ctrl(Enter.key).up) {
                             submit(coroutineScope)
                         }
                 ) {
                     formContent()
                 }
-                Buttons(coroutineScope)
+                DialogButtons(
+                    confirmButtonText, { submit(coroutineScope) },
+                    cancelButtonText, { cancel() }
+                )
             }
         }
     }
 
     /**
-     * The panel with control buttons of the dialog.
+     * Cancels the dialog.
+     *
+     * Invokes [onCancelConfirmation] if specified for the dialog,
+     * or [onCloseRequest] otherwise.
      */
-    @Composable
-    private fun Buttons(coroutineScope: CoroutineScope) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Row(
-                modifier = Modifier.padding(top = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                DialogButton(cancelButtonText) {
-                    if (onCancelConfirmation != null) {
-                        onCancelConfirmation?.invoke()
-                    } else {
-                        onCloseRequest?.invoke()
-                    }
-                }
-                DialogButton(confirmButtonText)
-                {
-                    submit(coroutineScope)
-                }
-            }
+    private fun cancel() {
+        if (onCancelConfirmation != null) {
+            onCancelConfirmation?.invoke()
+        } else {
+            onCloseRequest?.invoke()
         }
     }
 
@@ -221,6 +208,36 @@ private fun DialogTitle(
 }
 
 /**
+ * The panel with control buttons of the dialog.
+ */
+@Composable
+private fun DialogButtons(
+    confirmButtonText: String,
+    onConfirm: () -> Unit,
+    cancelButtonText: String,
+    onCancel: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .padding(top = 24.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            DialogButton(cancelButtonText) {
+                onCancel.invoke()
+            }
+            DialogButton(confirmButtonText)
+            {
+                onConfirm.invoke()
+            }
+        }
+    }
+}
+
+/**
  * The action button of the dialog.
  *
  * @param label The label of the button.
@@ -235,7 +252,6 @@ private fun DialogButton(
         onClick = onClick
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(label)
