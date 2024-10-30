@@ -128,24 +128,20 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * valid values. Note that there is no guarantee that the command message
      * that is about to be built is going to be valid.
      *
-     * The altered builder should be returned as a result of this method.
      * For example, if we wanted to set command's `field1` and
-     * `field2` explicitly, this could be done like this:
-     *
+     * `field2` explicitly when the form builds a `MyMessage` value, this could
+     * be done like this:
      * ```
      *     class WizardImpl: CommandWizard(...) {
      *
-     *         override fun beforeBuild(builder: Message.Builder): Message.Builder {
-     *             with(builder) {
-     *                 field1 = field1Value
-     *                 field2 = field2Value
-     *             }
-     *             return builder
+     *         override fun beforeBuild(builder: MyMessage.Builder) {
+     *             builder.field1 = field1Value
+     *             builder.field2 = field2Value
      *         }
      *     }
      * ```
      */
-    protected open fun beforeBuild(builder: B): B { return builder }
+    protected open fun beforeBuild(builder: B) {}
 
     override suspend fun submit(): Boolean {
         return commandMessageForm.postCommand()
@@ -182,9 +178,15 @@ public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M
 
     @Composable
     override fun content() {
+        // CommandMessageForm's type param is in+out, and it's logically just
+        // out in CommandWizard.
+        @Suppress("UNCHECKED_CAST")
         val commandMessageForm = wizard.commandMessageForm as CommandMessageForm<CommandMessage>
         commandMessageForm.MultipartContent {
             FormPart(showPart = { show() }) {
+                // The message type param is in+out, and it's just out
+                // for commandField.
+                @Suppress("UNCHECKED_CAST")
                 Field(commandField as MessageField<CommandMessage, M>) {
                     if (pageForm == null) {
                         pageForm = MessageForm.create(fieldValue, this@CommandWizardPage.builder) {

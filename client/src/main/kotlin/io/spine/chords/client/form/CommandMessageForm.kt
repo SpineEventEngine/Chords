@@ -184,7 +184,7 @@ public class CommandMessageForm<C : CommandMessage> :
         public operator fun <C : CommandMessage, B: ValidatingBuilder<out C>> invoke(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
-            onBeforeBuild: ((B) -> B) = { it },
+            onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable FormPartScope<C>.() -> Unit
         ): CommandMessageForm<C> = Multipart(builder, value, onBeforeBuild, props) {
@@ -219,7 +219,7 @@ public class CommandMessageForm<C : CommandMessage> :
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> Multipart(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
-            onBeforeBuild: ((B) -> B) = { it },
+            onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable MultipartFormScope<C>.() -> Unit
         ): CommandMessageForm<C> = createAndRender({
@@ -229,8 +229,7 @@ public class CommandMessageForm<C : CommandMessage> :
             @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<C>
             @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild
-                    as (ValidatingBuilder<out C>) -> ValidatingBuilder<out C>
+            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out C>) -> Unit
             multipartContent = content
             props.run { configure() }
         }) {
@@ -262,7 +261,10 @@ public class CommandMessageForm<C : CommandMessage> :
          *   for a command of type [C].
          * @param value The command message value to be edited within the form.
          * @param onBeforeBuild A lambda that allows to amend the command
-         *   message after any valid field is entered to it.
+         *   message after any valid field is entered to it. Note that this
+         *   callback is invoked repeatedly as the user edits the form and its
+         *   implementation should avoid long or performance-intensive
+         *   operations to preserve a smooth user's experience.
          * @param props A lambda that can set any additional props on the form.
          * @return A form's instance that has been created for this
          *   declaration site.
@@ -270,7 +272,7 @@ public class CommandMessageForm<C : CommandMessage> :
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> create(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
-            onBeforeBuild: ((B) -> B) = { it },
+            onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {}
         ): CommandMessageForm<C> =
             super.create(null) {
@@ -282,8 +284,7 @@ public class CommandMessageForm<C : CommandMessage> :
 
                 // Storing the builder as ValidatingBuilder internally.
                 @Suppress("UNCHECKED_CAST")
-                this.onBeforeBuild = onBeforeBuild
-                        as (ValidatingBuilder<out C>) -> ValidatingBuilder<out C>
+                this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out C>) -> Unit
                 props.run { configure() }
             }
     }
