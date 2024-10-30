@@ -377,6 +377,41 @@ public enum class ValidationDisplayMode {
  *   contain field editors in the same way as you would fill the respective
  *   `MessageForm` (e.g. see the "Specifying form's content" section above).
  *
+ *
+ * ### The `onBeforeBuild` callback
+ *
+ * In some cases it might be needed to amend the contents of the builder, which
+ * were set based on the current user's entry before the message is built. For
+ * example, this might be needed in cases when some required fields are not
+ * edited in the form directly, but instead depend on the values edited in
+ * the form.
+ *
+ * Such scenarios can be addressed by specifying the `onBeforeBuild` parameter
+ * in any of the [invoke] functions, or the [create] function. It allows to
+ * programmatically amend the message builder before the message is built.
+ *
+ * This callback is invoked upon every attempt to build the message edited
+ * in the form, which happens when any message's field is edited by the
+ * user. When this callback is invoked, the message builder's fields have
+ * already been set from all form's field editors, which currently have
+ * valid values. Note that there is no guarantee that the message that is
+ * about to be built is going to be valid.
+ *
+ * NOTE: since the message is built upon each field's modification during the
+ * form's editing, make sure that an implementation of `onBeforeBuild` doesn't
+ * perform any long or performance-intensive operations to prevent impairing
+ * the form editing experience.
+ *
+ * For example, if we wanted to set message's `field1` based on what is entered
+ * in `field2`
+ * explicitly, this could be done like this:
+ *
+ * ```
+ *     MessageForm(..., onBeforeBuild = { builder ->
+ *         builder.field1 = field2ToField1(builder.field2Value)
+ *     },  ...) ...
+ * ```
+ *
  * @param M A type of the message being edited with the form.
  */
 // Seems all class's functions are better to have in this class.
@@ -409,9 +444,10 @@ public open class MessageForm<M : Message> :
          * @param props A lambda that can set any additional props on the form.
          * @param onBeforeBuild A lambda that allows to amend the message
          *   after any valid field is entered to it.
-         * @param content A form's content, which can contain an arbitrary layout along
-         *   with field editor declarations.
-         * @return A form's instance that has been created for this declaration site.
+         * @param content A form's content, which can contain an arbitrary
+         *   layout along with field editor declarations.
+         * @return A form's instance that has been created for this
+         *   declaration site.
          */
         @Composable
         public operator fun <M : Message, B : ValidatingBuilder<out M>> invoke(
@@ -1004,22 +1040,8 @@ public open class MessageForm<M : Message> :
      * Allows to programmatically amend the message builder before the message
      * is built.
      *
-     * This callback is invoked upon every attempt to build the message edited
-     * in the form, which happens when any message's field is edited by the
-     * user. When this callback is invoked, the message builder's fields have
-     * already been set from all form's field editors, which currently have
-     * valid values. Note that there is no guarantee that the message that is
-     * about to be built is going to be valid.
-     *
-     * For example, if we wanted to set message's `field1` and `field2`
-     * explicitly, this could be done like this:
-     *
-     * ```
-     *     MessageForm(..., onBeforeBuild = { builder ->
-     *         builder.field1 = field1Value
-     *         builder.field2 = field2Value
-     *     },  ...) ...
-     * ```
+     * See the "The `onBeforeBuild` callback" section in the
+     * [MessageForm]'s documentation for details.
      */
     protected var onBeforeBuild: (ValidatingBuilder<out M>) -> Unit = {}
 

@@ -261,7 +261,10 @@ public class CommandMessageForm<C : CommandMessage> :
          *   for a command of type [C].
          * @param value The command message value to be edited within the form.
          * @param onBeforeBuild A lambda that allows to amend the command
-         *   message after any valid field is entered to it.
+         *   message after any valid field is entered to it. Note that this
+         *   callback is invoked repeatedly as the user edits the form and its
+         *   implementation should avoid long or performance-intensive
+         *   operations to preserve a smooth user's experience.
          * @param props A lambda that can set any additional props on the form.
          * @return A form's instance that has been created for this
          *   declaration site.
