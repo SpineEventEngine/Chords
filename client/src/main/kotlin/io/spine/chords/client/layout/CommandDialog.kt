@@ -44,11 +44,8 @@ import io.spine.chords.proto.form.ValidationDisplayMode
 import io.spine.protobuf.ValidatingBuilder
 
 /**
- * A kind of [Dialog], which allows creating a command message and sending
- * the respective command.
- *
- * To create a concrete dialog you need to extend the class and override
- * all abstract methods that configure the data needed for the dialog.
+ * A [Dialog] designed to create or modify command messages,
+ * and send the respective commands upon finish.
  *
  * @param M A type of the command message constructed in the dialog.
  * @param B A type of the command message builder.
@@ -100,12 +97,11 @@ public abstract class CommandDialog<M : CommandMessage, B : ValidatingBuilder<M>
     protected abstract fun FormPartScope<M>.content()
 
     /**
-     * A function that should be implemented to create and return a new builder
-     * for the command message of type [M].
+     * Creates a builder for the command message of type [M].
      *
-     * This function should in particular assign command ID field, and any
-     * fields that are not edited in the dialog, but need to be specified in
-     * a properly built command.
+     * May pre-fill the builder with the default values,
+     * or those required in terms of the domain language,
+     * but not available for modification within the dialog UI.
      */
     protected abstract fun createCommandBuilder(): B
 
@@ -137,7 +133,7 @@ public abstract class CommandDialog<M : CommandMessage, B : ValidatingBuilder<M>
     /**
      * Sends the command message [M] created in the dialog.
      */
-    override suspend fun submitForm(): Boolean {
+    protected override suspend fun submitForm(): Boolean {
         return commandMessageForm.postCommand()
     }
 }

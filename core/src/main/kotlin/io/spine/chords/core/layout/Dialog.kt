@@ -55,9 +55,6 @@ import kotlinx.coroutines.launch
 /**
  * The base class for creating a dialog box for editing and submitting data.
  *
- * To create a concrete dialog you need to extend the class and override
- * all abstract methods that configure the data needed for the dialog.
- *
  * Note that an [onCloseRequest] callback is triggered when the user has
  * finished using the dialog, and it needs to be closed. The container where
  * the dialog is placed is responsible for hiding the dialog (excluding it from
@@ -148,7 +145,7 @@ public abstract class Dialog : Component() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(all = 36.dp),
+                    .padding(all = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 DialogTitle(title)
