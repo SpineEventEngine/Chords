@@ -47,16 +47,16 @@ import io.spine.protobuf.ValidatingBuilder
  * A [Dialog] designed to create or modify command messages,
  * and send the respective commands upon finish.
  *
- * @param M A type of the command message constructed in the dialog.
+ * @param C A type of the command message constructed in the dialog.
  * @param B A type of the command message builder.
  */
-public abstract class CommandDialog<M : CommandMessage, B : ValidatingBuilder<M>>
+public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>>
     : Dialog() {
 
     /**
      * The [CommandMessageForm] used as a container for the message field editors.
      */
-    private lateinit var commandMessageForm: CommandMessageForm<M>
+    private lateinit var commandMessageForm: CommandMessageForm<C>
 
     /**
      * Creates the [commandMessageForm] in which the command field editors
@@ -90,14 +90,14 @@ public abstract class CommandDialog<M : CommandMessage, B : ValidatingBuilder<M>
 
     /**
      * The composable content that should include the fields
-     * ([Field][FormFieldsScope.Field] declarations) for a part of command's
-     * message that corresponds to this dialog.
+     * ([Field][FormFieldsScope.Field] declarations) for editing
+     * the command message of type [C].
      */
     @Composable
-    protected abstract fun FormPartScope<M>.content()
+    protected abstract fun FormPartScope<C>.content()
 
     /**
-     * Creates a builder for the command message of type [M].
+     * Creates a builder for the command message of type [C].
      *
      * May pre-fill the builder with the default values,
      * or those required in terms of the domain language,
@@ -114,7 +114,7 @@ public abstract class CommandDialog<M : CommandMessage, B : ValidatingBuilder<M>
      * @return A subscription to the event that is expected to arrive in response
      *         to handling [command]
      */
-    protected abstract fun subscribeToEvent(command: M):
+    protected abstract fun subscribeToEvent(command: C):
             EventSubscription<out EventMessage>
 
     /**
@@ -131,7 +131,7 @@ public abstract class CommandDialog<M : CommandMessage, B : ValidatingBuilder<M>
     }
 
     /**
-     * Sends the command message [M] created in the dialog.
+     * Sends the command message [C] created in this dialog.
      */
     protected override suspend fun submitForm(): Boolean {
         return commandMessageForm.postCommand()
