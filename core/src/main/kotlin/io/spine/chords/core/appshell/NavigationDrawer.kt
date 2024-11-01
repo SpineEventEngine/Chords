@@ -31,7 +31,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
@@ -64,7 +66,10 @@ public fun NavigationDrawer(
     PermanentNavigationDrawer(
         modifier = Modifier.padding(top = topPadding),
         drawerContent = {
-            PermanentDrawerSheet(modifier = modifier.width(240.dp)) {
+            PermanentDrawerSheet(
+                modifier = modifier.width(240.dp),
+                drawerContainerColor = MaterialTheme.colorScheme.background
+            ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 appViews.forEach { item ->
                     NavigationDrawerItem(
@@ -77,6 +82,9 @@ public fun NavigationDrawer(
                         modifier = Modifier.padding(
                             horizontal = 12.dp,
                             vertical = 4.dp
+                        ),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            unselectedContainerColor = MaterialTheme.colorScheme.background
                         )
                     )
                 }
