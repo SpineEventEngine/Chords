@@ -26,9 +26,13 @@
 
 package io.spine.chords.core.appshell
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import io.spine.chords.core.modal.ModalWindow
 import io.spine.chords.core.modal.ModalWindowConfig
@@ -93,7 +97,11 @@ public class AppWindow(
                 // restore the same window size on every recomposition call.
                 window.minimumSize = minWindowSize
             }
-            currentScreen.value()
+            Box(
+                modifier = Modifier.background(MaterialTheme.colorScheme.background)
+            ) {
+                currentScreen.value()
+            }
             if (modalWindow.value != null) {
                 ModalWindow(
                     onCancel = { modalWindow.value = null },
