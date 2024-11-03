@@ -30,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import io.spine.chords.core.appshell.app
-import io.spine.chords.core.AbstractComponentCompanion
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.chords.core.ComponentProps
@@ -38,6 +37,7 @@ import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.appshell.client
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
+import io.spine.chords.proto.form.MessageFormCompanionBase
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
 import kotlinx.coroutines.TimeoutCancellationException
@@ -153,9 +153,12 @@ public class CommandMessageForm<C : CommandMessage> :
     /**
      * Form instance declaration and creation API.
      */
-    public companion object : AbstractComponentCompanion({
-        CommandMessageForm<CommandMessage>()
-    }) {
+    public companion object :
+        MessageFormCompanionBase<CommandMessage, CommandMessageForm<CommandMessage>>(
+            {
+                CommandMessageForm()
+            }
+        ) {
 
         /**
          * Declares a `CommandMessageForm` instance, which is not bound to
@@ -216,25 +219,20 @@ public class CommandMessageForm<C : CommandMessage> :
          * declaration site.
          */
         @Composable
+        @Suppress("UNCHECKED_CAST")
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> Multipart(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable MultipartFormScope<C>.() -> Unit
-        ): CommandMessageForm<C> = createAndRender({
-            this.value = value
-
-            // Storing the builder as ValidatingBuilder internally.
-            @Suppress("UNCHECKED_CAST")
-            this.builder = builder as () -> ValidatingBuilder<C>
-            @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out C>) -> Unit
-            multipartContent = content
-            props.run { configure() }
-        }) {
-            Content()
-        }
+        ): CommandMessageForm<C> = super.Multipart(
+            value as MutableState<CommandMessage?>,
+            builder,
+            props as ComponentProps<CommandMessageForm<CommandMessage>>,
+            onBeforeBuild,
+            content as @Composable MultipartFormScope<CommandMessage>.() -> Unit
+        ) as CommandMessageForm<C>
 
         /**
          * Creates a [CommandMessageForm] instance without rendering it in
@@ -269,24 +267,18 @@ public class CommandMessageForm<C : CommandMessage> :
          * @return A form's instance that has been created for this
          *   declaration site.
          */
+        @Suppress("UNCHECKED_CAST")
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> create(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {}
-        ): CommandMessageForm<C> =
-            super.create(null) {
-                this.value = value
-
-                // Storing the builder as ValidatingBuilder internally.
-                @Suppress("UNCHECKED_CAST")
-                this.builder = builder as () -> ValidatingBuilder<C>
-
-                // Storing the builder as ValidatingBuilder internally.
-                @Suppress("UNCHECKED_CAST")
-                this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out C>) -> Unit
-                props.run { configure() }
-            }
+        ): CommandMessageForm<C> = super.create(
+            value as MutableState<CommandMessage?>,
+            builder,
+            onBeforeBuild,
+            props as ComponentProps<CommandMessageForm<CommandMessage>>
+        ) as CommandMessageForm<C>
     }
 
     /**
