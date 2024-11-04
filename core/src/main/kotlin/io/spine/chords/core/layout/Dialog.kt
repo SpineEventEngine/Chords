@@ -29,6 +29,7 @@ package io.spine.chords.core.layout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -113,6 +114,12 @@ public abstract class Dialog : Component() {
     public var dialogHeight: Dp = 450.dp
 
     /**
+     * The [DialogConfig] property that allows adjustments
+     * to visual appearance settings.
+     */
+    public var config: DialogConfig = DialogConfig()
+
+    /**
      * Creates the form content the dialog consists.
      */
     @Composable
@@ -144,11 +151,11 @@ public abstract class Dialog : Component() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(all = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(config.padding),
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
                 val coroutineScope = rememberCoroutineScope()
-                DialogTitle(title)
+                DialogTitle(title, config.titlePadding)
                 Column(
                     Modifier.weight(1F)
                         .on(Ctrl(Enter.key).up) {
@@ -159,7 +166,9 @@ public abstract class Dialog : Component() {
                 }
                 DialogButtons(
                     confirmButtonText, { submit(coroutineScope) },
-                    cancelButtonText, { cancel() }
+                    cancelButtonText, { cancel() },
+                    config.buttonsPanelPadding,
+                    config.buttonsSpacedBy
                 )
             }
         }
@@ -193,15 +202,33 @@ public abstract class Dialog : Component() {
 }
 
 /**
+ * Configuration of the dialog, allowing adjustments
+ * to visual appearance settings.
+ *
+ * @param padding The padding applied to the entire content of the dialog.
+ * @param titlePadding The padding applied to the title of the dialog.
+ * @param buttonsPanelPadding The padding applied to the buttons panel of the dialog.
+ * @param buttonsSpacedBy The space between the buttons of the dialog.
+ */
+public data class DialogConfig(
+    public var padding: PaddingValues = PaddingValues(24.dp),
+    public var titlePadding: PaddingValues = PaddingValues(bottom = 16.dp),
+    public var buttonsPanelPadding: PaddingValues = PaddingValues(top = 24.dp),
+    public var buttonsSpacedBy: Dp = 12.dp
+)
+
+/**
  * The title of the dialog.
  *
  * @param text The text to be title.
  */
 @Composable
 private fun DialogTitle(
-    text: String
+    text: String,
+    padding: PaddingValues
 ) {
     Text(
+        modifier = Modifier.padding(padding),
         text = text,
         style = MaterialTheme.typography.headlineLarge
     )
@@ -211,20 +238,23 @@ private fun DialogTitle(
  * The panel with control buttons of the dialog.
  */
 @Composable
+@Suppress("LongParameterList")
 private fun DialogButtons(
     confirmButtonText: String,
     onConfirm: () -> Unit,
     cancelButtonText: String,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    padding: PaddingValues,
+    buttonsSpacedBy: Dp
 ) {
     Row(
         modifier = Modifier.fillMaxWidth()
-            .padding(top = 24.dp),
+            .padding(padding),
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.Bottom
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(buttonsSpacedBy)
         ) {
             DialogButton(cancelButtonText) {
                 onCancel.invoke()
