@@ -462,7 +462,7 @@ public open class MessageForm<M : Message> :
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
-        ): MessageForm<M> = super.declareInstance(
+        ): MessageForm<M> = declareInstance(
             value as MutableState<Message?>,
             builder,
             props as ComponentProps<MessageForm<Message>>,
@@ -615,7 +615,7 @@ public open class MessageForm<M : Message> :
             defaultValue: M? = null,
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
-        ): MessageForm<M> = super.declareMultipartInstance(
+        ): MessageForm<M> = declareMultipartInstance(
             field as MessageField<PM, Message>,
             builder,
             props as ComponentProps<MessageForm<Message>>,
