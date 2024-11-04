@@ -226,7 +226,7 @@ public class CommandMessageForm<C : CommandMessage> :
             onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable MultipartFormScope<C>.() -> Unit
-        ): CommandMessageForm<C> = super.Multipart(
+        ): CommandMessageForm<C> = declareMultipartInstance(
             value as MutableState<CommandMessage?>,
             builder,
             props as ComponentProps<CommandMessageForm<CommandMessage>>,
@@ -273,7 +273,7 @@ public class CommandMessageForm<C : CommandMessage> :
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {}
-        ): CommandMessageForm<C> = super.create(
+        ): CommandMessageForm<C> = createInstance(
             value as MutableState<CommandMessage?>,
             builder,
             onBeforeBuild,

@@ -464,7 +464,7 @@ public open class MessageForm<M : Message> :
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
-        ): MessageForm<M> = super.invoke(
+        ): MessageForm<M> = super.declareInstance(
             value as MutableState<Message?>,
             builder,
             props as ComponentProps<MessageForm<Message>>,
@@ -514,7 +514,7 @@ public open class MessageForm<M : Message> :
             defaultValue: M? = null,
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
-        ): MessageForm<M> = super.invoke(
+        ): MessageForm<M> = declareInstance(
             field as MessageField<PM, Message>,
             builder,
             props as ComponentProps<MessageForm<Message>>,
@@ -555,7 +555,7 @@ public open class MessageForm<M : Message> :
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
-        ): MessageForm<M> = super.Multipart(
+        ): MessageForm<M> = declareMultipartInstance(
             value as MutableState<Message?>,
             builder,
             props as ComponentProps<MessageForm<Message>>,
@@ -606,7 +606,7 @@ public open class MessageForm<M : Message> :
             defaultValue: M? = null,
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
-        ): MessageForm<M> = super.Multipart(
+        ): MessageForm<M> = super.declareMultipartInstance(
             field as MessageField<PM, Message>,
             builder,
             props as ComponentProps<MessageForm<Message>>,
@@ -652,7 +652,7 @@ public open class MessageForm<M : Message> :
             builder: () -> B,
             onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<MessageForm<M>> = ComponentProps {}
-        ): MessageForm<M> = super.create(
+        ): MessageForm<M> = createInstance(
             value as MutableState<Message?>,
             builder,
             onBeforeBuild,
