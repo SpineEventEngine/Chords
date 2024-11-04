@@ -173,11 +173,11 @@ public class CommandMessageForm<C : CommandMessage> :
          * @param builder A lambda that should create and return a new builder
          *   for a command of type [C].
          * @param value The command message value to be edited within the form.
-         * @param onBeforeBuild A lambda that allows to amend the command message
-         *   after any valid field is entered to it.
+         * @param onBeforeBuild A lambda that allows to amend the command
+         *   message after any valid field is entered to it.
          * @param props A lambda that can set any additional props on the form.
-         * @param content A form's content, which can contain an arbitrary layout along
-         *   with field editor declarations.
+         * @param content A form's content, which can contain an arbitrary
+         *   layout along with field editor declarations.
          * @return A form's instance that has been created for this
          *   declaration site.
          */
@@ -217,7 +217,11 @@ public class CommandMessageForm<C : CommandMessage> :
          * declaration site.
          */
         @Composable
-        @Suppress("UNCHECKED_CAST")
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `C` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> Multipart(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
@@ -234,7 +238,7 @@ public class CommandMessageForm<C : CommandMessage> :
 
         /**
          * Creates a [CommandMessageForm] instance without rendering it in
-         * the composable content with the same call.
+         * the composable content right away.
          *
          * This method can be used to create a form's instance outside
          * a composable context, and render it separately. A form's instance
@@ -265,7 +269,11 @@ public class CommandMessageForm<C : CommandMessage> :
          * @return A form's instance that has been created for this
          *   declaration site.
          */
-        @Suppress("UNCHECKED_CAST")
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `C` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> create(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),

@@ -429,9 +429,8 @@ public open class MessageForm<M : Message> :
     ) {
 
         /**
-         * Declares a `MessageForm` instance, which is not bound to a parent
-         * form automatically, and can be bound to the respective data field
-         * manually as needed.
+         * Declares a `MessageForm` instance, which edits a value stored
+         * in the [value] `MutableState`.
          *
          * The form's content that is specified with the [content] parameter is
          * expected to include field editors for all message's fields, which
@@ -453,9 +452,8 @@ public open class MessageForm<M : Message> :
          */
         @Composable
         @Suppress(
-            // explicit casts are needed due to the fact that the `M` parameter
-            // in this companion object implementation cannot be declared on
-            // the companion object itself, and cannot be "inferred" from the class.
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
             "UNCHECKED_CAST"
         )
         public operator fun <M : Message, B : ValidatingBuilder<out M>> invoke(
@@ -501,7 +499,11 @@ public open class MessageForm<M : Message> :
          */
         context(FormFieldsScope<PM>)
         @Composable
-        @Suppress("UNCHECKED_CAST")
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public operator fun <
                 PM : Message,
                 M : Message,
@@ -524,9 +526,8 @@ public open class MessageForm<M : Message> :
         ) as MessageForm<M>
 
         /**
-         * Declares a multipart `MessageForm` instance, which is not bound to
-         * a parent form automatically, and can be bound to the respective data
-         * field manually as needed.
+         * Declares a multipart `MessageForm` instance, which edits a value
+         * stored in the [value] `MutableState`.
          *
          * The form's content that is specified with the [content] parameter
          * should specify each form's part with using
@@ -548,7 +549,11 @@ public open class MessageForm<M : Message> :
          *   declaration site.
          */
         @Composable
-        @Suppress("UNCHECKED_CAST")
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <M : Message, B: ValidatingBuilder<out M>> Multipart(
             value: MutableState<M?>,
             builder: () -> B,
@@ -593,7 +598,11 @@ public open class MessageForm<M : Message> :
          */
         context(FormFieldsScope<PM>)
         @Composable
-        @Suppress("UNCHECKED_CAST")
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <
                 PM : Message,
                 M : Message,
@@ -617,7 +626,7 @@ public open class MessageForm<M : Message> :
 
         /**
          * Creates a [MessageForm] instance without rendering it in
-         * the composable content with the same call.
+         * the composable content right away.
          *
          * This method can be used to create a form's instance outside
          * a composable context, and render it separately. A form's instance
@@ -646,7 +655,11 @@ public open class MessageForm<M : Message> :
          * @return A form's instance that has been created for this
          *   declaration site.
          */
-        @Suppress("UNCHECKED_CAST")
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <M : Message, B: ValidatingBuilder<out M>> create(
             value: MutableState<M?>,
             builder: () -> B,
@@ -729,11 +742,16 @@ public open class MessageForm<M : Message> :
          * @param fieldSelector A field selector component
          *   (such as [OneofRadioButton]).
          */
-        internal fun registerFieldSelector(
-            field: MessageField<M, MessageFieldValue>,
+        internal fun <F: MessageFieldValue> registerFieldSelector(
+            field: MessageField<M, F>,
             fieldSelector: FocusableComponent
         ) {
-            check(oneof.fields.contains(field)) {
+            @Suppress(
+                // MessageOneof.fields uses an in/out MessageFieldValue as
+                // a common parent for field types.
+                "UNCHECKED_CAST"
+            )
+            check(oneof.fields.contains(field as MessageField<M, MessageFieldValue>)) {
                 "The oneof field (${field.name}) being registered doesn't " +
                 "belong to this oneof (${oneof.name})"
             }
