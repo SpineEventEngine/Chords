@@ -155,9 +155,7 @@ public class CommandMessageForm<C : CommandMessage> :
      */
     public companion object :
         MessageFormCompanionBase<CommandMessage, CommandMessageForm<CommandMessage>>(
-            {
-                CommandMessageForm()
-            }
+            { CommandMessageForm() }
         ) {
 
         /**

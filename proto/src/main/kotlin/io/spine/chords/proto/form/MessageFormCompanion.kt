@@ -208,7 +208,6 @@ public open class MessageFormCompanionBase<M: Message, F: MessageForm<M>>(
         onBeforeBuild: (B) -> Unit = {},
         content: @Composable MultipartFormScope<M>.() -> Unit
     ): F = createAndRender({
-
         // Storing the builder as ValidatingBuilder internally.
         @Suppress("UNCHECKED_CAST")
         this.builder = builder as () -> ValidatingBuilder<M>
