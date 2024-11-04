@@ -146,13 +146,11 @@ public abstract class Dialog : Component() {
                 .clip(MaterialTheme.shapes.large)
                 .size(dialogWidth, dialogHeight)
                 .background(MaterialTheme.colorScheme.background),
-            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(config.padding),
-                verticalArrangement = Arrangement.SpaceBetween
             ) {
                 val coroutineScope = rememberCoroutineScope()
                 DialogTitle(title, config.titlePadding)

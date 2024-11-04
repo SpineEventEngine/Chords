@@ -26,13 +26,11 @@
 
 package io.spine.chords.client.layout
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.chords.client.EventSubscription
@@ -80,7 +78,6 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 content()
