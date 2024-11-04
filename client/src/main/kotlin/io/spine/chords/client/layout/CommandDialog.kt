@@ -43,7 +43,7 @@ import io.spine.protobuf.ValidatingBuilder
 
 /**
  * A [Dialog] designed to create or modify command messages,
- * and send the respective commands upon finish.
+ * and post the respective commands upon finish.
  *
  * @param C A type of the command message constructed in the dialog.
  * @param B A type of the command message builder.
@@ -128,7 +128,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     }
 
     /**
-     * Sends the command message [C] created in this dialog.
+     * Posts the command message [C] created in this dialog.
      */
     protected override suspend fun submitForm(): Boolean {
         return commandMessageForm.postCommand()
