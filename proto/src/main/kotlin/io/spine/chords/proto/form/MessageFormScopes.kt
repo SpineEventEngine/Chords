@@ -242,6 +242,13 @@ public sealed interface OneOfFieldsScope<M : Message> : FormFieldsScope<M> {
      */
     public val validationMessage: State<String?>
 
+    /**
+     * Informs the form component about the component, which is used as
+     * a selection toggle (e.g. radio button) for the specified oneof [field].
+     *
+     * This knowledge is required by the form component to be able to focus
+     * respective field selectors when needed.
+     */
     public fun <F: MessageFieldValue> registerFieldSelector(
         field: MessageField<M, F>,
         fieldSelector: FocusableComponent
