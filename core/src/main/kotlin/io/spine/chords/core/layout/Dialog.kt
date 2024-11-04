@@ -166,7 +166,7 @@ public abstract class Dialog : Component() {
                     confirmButtonText, { submit(coroutineScope) },
                     cancelButtonText, { cancel() },
                     config.buttonsPanelPadding,
-                    config.buttonsSpacedBy
+                    config.buttonsSpacing
                 )
             }
         }
@@ -206,13 +206,13 @@ public abstract class Dialog : Component() {
  * @param padding The padding applied to the entire content of the dialog.
  * @param titlePadding The padding applied to the title of the dialog.
  * @param buttonsPanelPadding The padding applied to the buttons panel of the dialog.
- * @param buttonsSpacedBy The space between the buttons of the dialog.
+ * @param buttonsSpacing The space between the buttons of the dialog.
  */
 public data class DialogConfig(
     public var padding: PaddingValues = PaddingValues(24.dp),
     public var titlePadding: PaddingValues = PaddingValues(bottom = 16.dp),
     public var buttonsPanelPadding: PaddingValues = PaddingValues(top = 24.dp),
-    public var buttonsSpacedBy: Dp = 12.dp
+    public var buttonsSpacing: Dp = 12.dp
 )
 
 /**
@@ -243,7 +243,7 @@ private fun DialogButtons(
     cancelButtonText: String,
     onCancel: () -> Unit,
     padding: PaddingValues,
-    buttonsSpacedBy: Dp
+    buttonsSpacing: Dp
 ) {
     Row(
         modifier = Modifier.fillMaxWidth()
@@ -252,7 +252,7 @@ private fun DialogButtons(
         verticalAlignment = Alignment.Bottom
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(buttonsSpacedBy)
+            horizontalArrangement = Arrangement.spacedBy(buttonsSpacing)
         ) {
             DialogButton(cancelButtonText) {
                 onCancel.invoke()
