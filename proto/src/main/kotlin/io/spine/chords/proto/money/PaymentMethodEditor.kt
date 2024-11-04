@@ -50,7 +50,7 @@ import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
 public class PaymentMethodEditor : MessageForm<PaymentMethod>() {
 
     /**
-     *
+     * A component instance declaration API.
      */
     public companion object : MessageFormCompanionBase<PaymentMethod, PaymentMethodEditor>(
         { PaymentMethodEditor() }
