@@ -76,13 +76,15 @@ public class OneofRadioButton : FocusableComponent() {
             field: MessageField<M, F>,
             text: String
         ): OneofRadioButton = createAndRender({
-            @Suppress("UNCHECKED_CAST")
-            registerFieldSelector(field as MessageField<M, MessageFieldValue>, this)
+            registerFieldSelector(field, this)
         }) {
             RadioButtonWithText(
                 selected = selectedField.value == field,
                 onClick = {
-                    @Suppress("UNCHECKED_CAST")
+                    @Suppress(
+                        // selectedField treats all fields as MessageFieldValue
+                        "UNCHECKED_CAST"
+                    )
                     selectedField.value = field as MessageField<M, MessageFieldValue>
                 },
                 text = text,

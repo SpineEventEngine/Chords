@@ -242,8 +242,8 @@ public sealed interface OneOfFieldsScope<M : Message> : FormFieldsScope<M> {
      */
     public val validationMessage: State<String?>
 
-    public fun registerFieldSelector(
-        field: MessageField<M, MessageFieldValue>,
+    public fun <F: MessageFieldValue> registerFieldSelector(
+        field: MessageField<M, F>,
         fieldSelector: FocusableComponent
     )
 }
@@ -467,8 +467,8 @@ private class OneOfFieldsScopeImpl<M : Message>(
     ): MessageForm<M>.FormField =
         form.FormField(this, field, initialValue, formOneof)
 
-    override fun registerFieldSelector(
-        field: MessageField<M, MessageFieldValue>,
+    override fun <F: MessageFieldValue> registerFieldSelector(
+        field: MessageField<M, F>,
         fieldSelector: FocusableComponent
     ) {
         formOneof.registerFieldSelector(field, fieldSelector)

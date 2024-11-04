@@ -269,12 +269,12 @@ public open class MessageFormCompanionBase<M: Message, F: MessageForm<M>>(
 }
 
 /**
- * A class, which should be used for declaring companion objects of any custom
+ * A class, which should be used for a declaring companion object of any custom
  * [MessageForm] subclass [F], which is designed to edit some concrete message
  * type [M].
  *
- * Adding such a companion object to custom form subclasses is needed to ensure
- * that they can be declared or created in various usage scenarios, similarly
+ * Adding such a companion object to a custom form subclass is needed to ensure
+ * that it can be declared or created in various usage scenarios, similarly
  * to how any other [Component][io.spine.chords.core.Component] implementation
  * can be declared. See the "Implementing custom form components" section in
  * the [MessageForm]'s documentation.
@@ -284,9 +284,8 @@ public class MessageFormCompanion<M: Message, F: MessageForm<M>>(
 ) : MessageFormCompanionBase<M, F>(createInstance) {
 
     /**
-     * Declares a `MessageForm` instance, which is not bound to a parent
-     * form automatically, and can be bound to the respective data field
-     * manually as needed.
+     * Declares a form instance, which edits a value stored in
+     * the [value] `MutableState`.
      *
      * The form's content that is specified with the [content] parameter is
      * expected to include field editors for all message's fields, which
@@ -315,8 +314,8 @@ public class MessageFormCompanion<M: Message, F: MessageForm<M>>(
     ): F = declareInstance(value, builder, props, onBeforeBuild, content)
 
     /**
-     * Declares a `MessageForm` instance, which is automatically bound to
-     * edit a parent form's field identified by [field].
+     * Declares a form instance, which is automatically bound to edit a parent
+     * form's field identified by [field].
      *
      * The form's content that is specified with the [content] parameter is
      * expected to include field editors for all message's fields, which
@@ -352,9 +351,8 @@ public class MessageFormCompanion<M: Message, F: MessageForm<M>>(
     ): F = declareInstance(field, builder, props, defaultValue, onBeforeBuild, content)
 
     /**
-     * Declares a multipart `MessageForm` instance, which is not bound to
-     * a parent form automatically, and can be bound to the respective data
-     * field manually as needed.
+     * Declares a multipart `MessageForm` instance, which edits a value stored
+     * in the [value] `MutableState`.
      *
      * The form's content that is specified with the [content] parameter
      * should specify each form's part with using
@@ -384,9 +382,8 @@ public class MessageFormCompanion<M: Message, F: MessageForm<M>>(
     ): F = declareMultipartInstance(value, builder, props, onBeforeBuild, content)
 
     /**
-     * Declares a multipart `MessageForm` instance, which is automatically
-     * bound to edit a message in a parent form's field identified
-     * by [field].
+     * Declares a multipart form instance, which is automatically bound to edit
+     * a message in a parent form's field identified by [field].
      *
      * The form's content that is specified with the [content] parameter
      * should specify each form's part with using
@@ -422,8 +419,8 @@ public class MessageFormCompanion<M: Message, F: MessageForm<M>>(
     ): F = declareMultipartInstance(field, builder, props, defaultValue, onBeforeBuild, content)
 
     /**
-     * Creates a [MessageForm] instance without rendering it in
-     * the composable content with the same call.
+     * Creates a form instance without rendering it in the composable content
+     * right away.
      *
      * This method can be used to create a form's instance outside
      * a composable context, and render it separately. A form's instance
