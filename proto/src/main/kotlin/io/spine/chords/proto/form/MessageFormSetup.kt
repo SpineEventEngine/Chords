@@ -41,6 +41,9 @@ import io.spine.protobuf.ValidatingBuilder
  * This class introduces only a set of protected methods, which may or may not
  * be made public or used explicitly in a subclasses, depending on the needs of
  * actual implementation.
+ *
+ * @see io.spine.chords.core.Component
+ * @see io.spine.chords.core.ComponentSetup
  */
 public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
     createInstance: () -> F
@@ -284,6 +287,9 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
  * to how any other [Component][io.spine.chords.core.Component] implementation
  * can be declared. See the "Implementing custom form components" section in
  * the [MessageForm]'s documentation.
+ *
+ * @see io.spine.chords.core.Component
+ * @see io.spine.chords.core.ComponentSetup
  */
 public open class MessageFormSetup<M: Message, F: MessageForm<M>>(
     createInstance: () -> F
