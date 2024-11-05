@@ -37,7 +37,7 @@ import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.appshell.client
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
-import io.spine.chords.proto.form.MessageFormDeclarationApiBase
+import io.spine.chords.proto.form.MessageFormSetupBase
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
 import kotlinx.coroutines.TimeoutCancellationException
@@ -149,7 +149,7 @@ import kotlinx.coroutines.TimeoutCancellationException
  */
 public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     public companion object :
-        MessageFormDeclarationApiBase<CommandMessage, CommandMessageForm<CommandMessage>>(
+        MessageFormSetupBase<CommandMessage, CommandMessageForm<CommandMessage>>(
             { CommandMessageForm() }
         ) {
 

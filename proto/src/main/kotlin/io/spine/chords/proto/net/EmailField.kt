@@ -26,7 +26,7 @@
 
 package io.spine.chords.proto.net
 
-import io.spine.chords.core.ComponentDeclarationApi
+import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputField
 import io.spine.chords.core.ValueParseException
 import io.spine.net.EmailAddress
@@ -40,7 +40,7 @@ private const val EmailRegex = """^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}${'$'}"""
  * An input field that allows editing a [EmailAddress] field.
  */
 public class EmailField : InputField<EmailAddress>() {
-    public companion object : ComponentDeclarationApi<EmailField>({ EmailField() })
+    public companion object : ComponentSetup<EmailField>({ EmailField() })
 
     init {
         label = "Email"

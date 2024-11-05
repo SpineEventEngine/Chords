@@ -373,7 +373,7 @@ public enum class ValidationDisplayMode {
  * For example, if it is needed to create a custom form component for editing
  * a `PersonName` message value, this can be done like this:
  * - Create a subclass of `MessageForm` (`PersonNameForm` in this case).
- * - Add a companion object of type [MessageFormDeclarationApi] to ensure that the
+ * - Add a companion object of type [MessageFormSetup] to ensure that the
  *   component has an instance declaration API.
  * - Override either [customContent] (for rendering ordinary singlepart forms),
  *   or [customMultipartContent] (if a multipart form is needed), which should
@@ -419,7 +419,7 @@ public enum class ValidationDisplayMode {
 // Seems all class's functions are better to have in this class.
 @Suppress("TooManyFunctions")
 public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
-    public companion object : MessageFormDeclarationApiBase<Message, MessageForm<Message>>(
+    public companion object : MessageFormSetupBase<Message, MessageForm<Message>>(
         { MessageForm() }
     ) {
 

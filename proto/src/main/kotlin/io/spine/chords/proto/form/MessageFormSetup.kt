@@ -29,7 +29,7 @@ package io.spine.chords.proto.form
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import com.google.protobuf.Message
-import io.spine.chords.core.AbstractComponentDeclarationApi
+import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.ValidatingBuilder
@@ -42,9 +42,9 @@ import io.spine.protobuf.ValidatingBuilder
  * be made public or used explicitly in a subclasses, depending on the needs of
  * actual implementation.
  */
-public open class MessageFormDeclarationApiBase<M: Message, F: MessageForm<M>>(
+public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
     createInstance: () -> F
-) : AbstractComponentDeclarationApi({ createInstance() }) {
+) : AbstractComponentSetup({ createInstance() }) {
 
     /**
      * Declares a `MessageForm` instance, which is not bound to a parent
@@ -285,9 +285,9 @@ public open class MessageFormDeclarationApiBase<M: Message, F: MessageForm<M>>(
  * can be declared. See the "Implementing custom form components" section in
  * the [MessageForm]'s documentation.
  */
-public open class MessageFormDeclarationApi<M: Message, F: MessageForm<M>>(
+public open class MessageFormSetup<M: Message, F: MessageForm<M>>(
     createInstance: () -> F
-) : MessageFormDeclarationApiBase<M, F>(createInstance) {
+) : MessageFormSetupBase<M, F>(createInstance) {
 
     /**
      * Declares a form instance, which edits a value stored in

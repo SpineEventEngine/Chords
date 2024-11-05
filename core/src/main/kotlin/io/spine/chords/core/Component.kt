@@ -90,18 +90,54 @@ import androidx.compose.runtime.remember
  *
  * A component's constructor would actually not need to be used directly in most
  * cases! Instead of using the constructor, such expressions work thanks to
- * the [invoke][ComponentDeclarationApi.invoke] operator function being declared
+ * the [invoke][ComponentSetup.invoke] operator function being declared
  * on the component's companion object, which is in particular required to
  * prevent creating a new component's instance upon each composition, and use
  * a cached instance instead.
  *
- * See below how to implement such components.
+ * #### Preferred instance declarations style
+ *
+ * Note that the component instance declaration examples above are technically
+ * a shorthand notation for using the `invoke` function on the component's
+ * companion object explicitly. So, theoretically, the same examples could be
+ * written like this:
+ *
+ * ```kotlin
+ *     SomeComponent.Companion.invoke({
+ *         property1 = value1
+ *         property2 = value2
+ *         ...
+ *     })
+ * ```
+ *
+ * ...or like this:
+ *
+ * ```kotlin
+ *     SomeComponent.invoke {
+ *         property1 = value1
+ *         property2 = value2
+ *         ...
+ *     }
+ * ```
+ *
+ * Nevertheless, such explicit usage of `Companion` or `invoke` is not
+ * recommended, and a shorthand form is recommended instead:
+ *
+ * ```kotlin
+ *     SomeComponent {
+ *         property1 = value1
+ *         property2 = value2
+ *         ...
+ *     }
+ * ```
+ *
+ * See also below how to implement such components.
  *
  * ### Implementing class-based components
  *
  * - Create a subclass of [Component].
  *
- * - Add a companion object of type [ComponentDeclarationApi], which introduces
+ * - Add a companion object of type [ComponentSetup], which introduces
  *   the instance declaration API (which is technically being an invocation).
  *
  *   You can consider the presence of this companion object as a kind of
@@ -310,9 +346,9 @@ import androidx.compose.runtime.remember
  *
  * @constructor A constructor, which is used internally by the component's
  *   implementation (its companion object). As an application developer, use
- *   [companion object][ComponentDeclarationApi]'s
- *   [invoke][ComponentDeclarationApi.invoke] operator for instantiating
- *   and rendering any specific component's implementation.
+ *   [companion object][ComponentSetup]'s [invoke][ComponentSetup.invoke]
+ *   operator for instantiating and rendering any specific
+ *   component's implementation.
  */
 @Stable
 public abstract class Component {
@@ -323,7 +359,7 @@ public abstract class Component {
      *
      * In most cases this property would not need to be used by the
      * application's code directly, since it would be set automatically by
-     * [ComponentDeclarationApi.invoke] or an analogous component
+     * [ComponentSetup.invoke] or an analogous component
      * declaration function.
      */
     public var props: ComponentProps<Component>? = null
@@ -365,7 +401,7 @@ public abstract class Component {
      *   lifecycle, including instance creation, property updates, and
      *   rendering, which removes the need to perform any of those steps
      *   explicitly. See the "Using class-based components" section in
-     *   [Component] class description, and the [ComponentDeclarationApi.invoke]
+     *   [Component] class description, and the [ComponentSetup.invoke]
      *   operator functions for details.
      *
      * - The component's composable content has to be specified by overriding
@@ -419,12 +455,12 @@ public abstract class Component {
  *
  * It generally doesn't need to be used directly when using the components,
  * since it would be implicitly created by a lambda that is passed to the
- * [ComponentDeclarationApi.invoke] function.
+ * [ComponentSetup.invoke] function.
  * It is a part of an internal implementation of [Component], and, in case of
  * some advanced components, can also be used when creating new components.
  *
  * @See Component
- * @see ComponentDeclarationApi.invoke
+ * @see ComponentSetup.invoke
  * @see Component.props
  */
 public fun interface ComponentProps <C: Component> {
@@ -447,16 +483,16 @@ public fun interface ComponentProps <C: Component> {
  * components" sections of the [Component] class for general information about
  * how class-based components are used in an application.
  *
- * In most cases custom class-based components would use [ComponentDeclarationApi]
+ * In most cases custom class-based components would use [ComponentSetup]
  * for to introduce the component's _instance declaration API_. However, in some
  * rare case a component might require different instance declaration API. In
  * such cases those companion objects would use this class as a base class for
  * a companion object instead.
  *
  * @param createInstance A lambda that should create a component's instance.
- * @see ComponentDeclarationApi
+ * @see ComponentSetup
  */
-public abstract class AbstractComponentDeclarationApi(
+public abstract class AbstractComponentSetup(
     protected val createInstance: (() -> Component)? = null
 ) {
 
@@ -567,11 +603,11 @@ public abstract class AbstractComponentDeclarationApi(
  * @constructor Creates a companion object for a component of type [C].
  * @param createInstance A lambda that should create a component's instance of
  *   type [C] with the given properties configuration callback.
- * @see AbstractComponentDeclarationApi
+ * @see AbstractComponentSetup
  */
-public open class ComponentDeclarationApi<C: Component>(
+public open class ComponentSetup<C: Component>(
     createInstance: () -> C
-) : AbstractComponentDeclarationApi(createInstance) {
+) : AbstractComponentSetup(createInstance) {
 
     /**
      * Declares an instance of component of type [C] with the respective

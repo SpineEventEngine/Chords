@@ -26,7 +26,7 @@
 
 package io.spine.chords.proto.net
 
-import io.spine.chords.core.ComponentDeclarationApi
+import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputField
 import io.spine.chords.core.exceptionBasedParser
 import io.spine.net.InternetDomain
@@ -36,7 +36,7 @@ import io.spine.net.InternetDomains
  * A field that allows entering an [InternetDomain] value.
  */
 public class InternetDomainField : InputField<InternetDomain>() {
-    public companion object : ComponentDeclarationApi<InternetDomainField>(
+    public companion object : ComponentSetup<InternetDomainField>(
         { InternetDomainField() }
     )
 

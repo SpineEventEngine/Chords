@@ -26,7 +26,7 @@
 
 package io.spine.chords.proto.money
 
-import io.spine.chords.core.ComponentDeclarationApi
+import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputField
 import io.spine.chords.core.InputReviser.Companion.DigitsOnly
 import io.spine.chords.core.InputReviser.Companion.maxLength
@@ -65,7 +65,7 @@ private val PaymentCardNumberKt.maxValueLength get() = 19
  * A field that allows entering a payment card number.
  */
 public class PaymentCardNumberField : InputField<PaymentCardNumber>() {
-    public companion object : ComponentDeclarationApi<PaymentCardNumberField>({
+    public companion object : ComponentSetup<PaymentCardNumberField>({
         PaymentCardNumberField()
     })
 
