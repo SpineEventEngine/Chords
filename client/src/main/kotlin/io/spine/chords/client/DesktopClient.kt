@@ -37,6 +37,7 @@ import io.spine.client.ClientRequest
 import io.spine.client.EventFilter.eq
 import io.spine.core.UserId
 import java.util.concurrent.CompletableFuture
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withTimeout
@@ -182,12 +183,11 @@ public class DesktopClient(
         val eventReceival = CompletableFuture<E>()
         observeEvent(
             event = event,
-            onEmit = { evt ->
-                eventReceival.complete(evt)
-            },
             field = field,
             fieldValue = fieldValue
-        )
+        ) { evt ->
+            eventReceival.complete(evt)
+        }
         return FutureEventSubscription(eventReceival)
     }
 
@@ -201,17 +201,17 @@ public class DesktopClient(
      */
     override fun <E : EventMessage> observeEvent(
         event: Class<E>,
-        onEmit: (E) -> Unit,
         field: EventMessageField,
-        fieldValue: Message
+        fieldValue: Message,
+        onEmit: (E) -> Unit
     ) {
         clientRequest()
             .subscribeToEvent(event)
-            ?.where(eq(field, fieldValue))
-            ?.observe { evt ->
+            .where(eq(field, fieldValue))
+            .observe { evt ->
                 onEmit(evt)
             }
-            ?.post()
+            .post()
     }
 
     /**
@@ -274,6 +274,10 @@ private class FutureEventSubscription<E: EventMessage>(
 ) : EventSubscription<E> {
 
     override suspend fun awaitEvent(): E {
-        return withTimeout(ReactionTimeoutMillis) { future.await() }
+        try {
+            return withTimeout(ReactionTimeoutMillis) { future.await() }
+        } catch (e: TimeoutCancellationException) {
+            throw EventSubscriptionTimeoutException()
+        }
     }
 }

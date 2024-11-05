@@ -328,7 +328,7 @@ public class CommandMessageForm<C : CommandMessage> :
      *         if the event doesn't arrive within a reasonable timeout defined
      *         by the implementation.
      */
-    public suspend fun postCommand(): Boolean {
+    public suspend fun postCommand(): EventMessage {
         updateValidationDisplay(true)
         if (!valueValid.value) {
             return false
@@ -341,8 +341,10 @@ public class CommandMessageForm<C : CommandMessage> :
         return try {
             val subscription = eventSubscription(command)
             app.client.command(command)
-            subscription.awaitEvent()
-            true
+            val event = subscription.awaitEvent()
+            event
+        } catch (e: TimeoutCancellationException) {
+            throw CommandProcessingTimeoutException(command, )
         } catch (
             @Suppress(
                 // Using a defensive wide-scope catch to cover any message
@@ -357,4 +359,17 @@ public class CommandMessageForm<C : CommandMessage> :
             false
         }
     }
+}
+
+/**
+ * An exception, which signifies that no reaction signifying of command
+ * processing success or failure has been received in a predefined
+ * timeout period.
+ */
+public class CommandReactionTimeoutException(
+    command: CommandMessage,
+    message: String?,
+    cause: Throwable? = null
+) : RuntimeException(message, cause) {
+
 }

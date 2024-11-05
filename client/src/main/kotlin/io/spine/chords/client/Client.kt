@@ -132,9 +132,9 @@ import java.util.concurrent.CompletableFuture
      */
     public fun <E : EventMessage> observeEvent(
         event: Class<E>,
-        onEmit: (E) -> Unit,
         field: EventMessageField,
-        fieldValue: Message
+        fieldValue: Message,
+        onEmit: (E) -> Unit
     )
 }
 
@@ -157,4 +157,17 @@ public interface EventSubscription<E: EventMessage> {
      *   by the implementation.
      */
     public suspend fun awaitEvent(): E
+}
+
+/**
+ * An exception, which signifies that no reaction signifying of command
+ * processing success or failure has been received in a predefined
+ * timeout period.
+ */
+public class EventSubscriptionTimeoutException(
+    event: EventMessage,
+    message: String?,
+    cause: Throwable? = null
+) : RuntimeException(message, cause) {
+
 }
