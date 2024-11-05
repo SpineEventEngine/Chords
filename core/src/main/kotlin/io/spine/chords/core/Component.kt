@@ -86,7 +86,7 @@ import androidx.compose.runtime.remember
  *
  * It should be noted that such _component instance declarations_ as shown above
  * are a main way of using class-based components, but they are technically not
- * the same as just instantiating components using their  constructor.
+ * the same as just instantiating components using their constructor.
  *
  * A component's constructor would actually not need to be used directly in most
  * cases! Instead of using the constructor, such expressions work thanks to
@@ -159,7 +159,7 @@ import androidx.compose.runtime.remember
  *
  * ```kotlin
  *     public class HelloComponent : Component() {
- *         public companion object : ComponentCompanion<HelloComponent>({
+ *         public companion object : ComponentSetup<HelloComponent>({
  *             HelloComponent()
  *         })
  *
@@ -176,6 +176,17 @@ import androidx.compose.runtime.remember
  * ```kotlin
  *     HelloComponent { name = "User" }
  * ```
+ *
+ * A note on code style: despite Kotlin's
+ * [code conventions](https://kotlinlang.org/docs/coding-conventions.html#class-layout)
+ * guide, which recommends having companion objects at the very end of class
+ * declarations, Chords libraries adopt and recommend a rule of having
+ * `ComponentSetup` based companion objects in component classes as the very
+ * first declaration in the class instead.
+ *
+ * Such placement is considered acceptable *just as an exception for component
+ * classes* though, since companion objects here serve the purpose that is
+ * similar to a class's constructor.
  *
  * ### When to write class-based and function-based components?
  *
