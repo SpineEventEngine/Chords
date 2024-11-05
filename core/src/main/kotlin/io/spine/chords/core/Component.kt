@@ -82,17 +82,24 @@ import androidx.compose.runtime.remember
  *     val someComponent = SomeComponent { ... }
  * ```
  *
- * It should be noted that such a declaration is technically not the same as
- * just instantiating the component with its constructor. A component's
- * constructor is typically held private or protected and not used directly.
- * Instead of using the constructor, such expressions work due to
- * the [invoke][ComponentCompanion.invoke] operator declared on the component's
- * companion object. See below how to implement such components.
+ * #### Component instance declarations vs constructors
+ *
+ * It should be noted that such _component instance declarations_ as shown above
+ * are a main way of using class-based components, but they are technically not
+ * the same as just instantiating components using their  constructor.
+ *
+ * A component's constructor would actually not need to be used directly in most
+ * cases! Instead of using the constructor, such expressions work thanks to
+ * the [invoke][ComponentCompanion.invoke] operator function being declared on
+ * the component's companion object, which is in particular required to prevent
+ * creating a new component's instance upon each composition, and use a cached
+ * instance instead.
+ *
+ * See below how to implement such components.
  *
  * ### Implementing class-based components
  *
- * - Create a subclass of [Component] (make sure to make its constructor to
- *   be private or protected though).
+ * - Create a subclass of [Component].
  *
  * - Add a companion object of type [ComponentCompanion], which introduces
  *   the instance declaration API (which is technically being an invocation).
@@ -301,11 +308,11 @@ import androidx.compose.runtime.remember
  * See the [Stability in Compose](https://developer.android.com/develop/ui/compose/performance/stability#types)
  * documentation for details.
  *
- * @constructor a constructor, which is used internally by the component's
- *         implementation (its companion object). As an application developer,
- *         use [companion object's][ComponentCompanion]
- *         [invoke][ComponentCompanion.invoke] operator for instantiating
- *         and rendering any specific component's implementation.
+ * @constructor A constructor, which is used internally by the component's
+ *   implementation (its companion object). As an application developer, use
+ *   [companion object][ComponentCompanion]'s
+ *   [invoke][ComponentCompanion.invoke] operator for instantiating
+ *   and rendering any specific component's implementation.
  */
 @Stable
 public abstract class Component {
@@ -436,9 +443,18 @@ public fun interface ComponentProps <C: Component> {
  * A base abstract class for components companion objects, which provides
  * the basic functionality behind declaring component instances.
  *
- * @param createInstance
- *         a lambda that should create a component's instance of type [C] with
- *         the given properties configuration callback.
+ * See the "Using class-based components" and "Implementing class-based
+ * components" sections of the [Component] class for general information about
+ * how class-based components are used in an application.
+ *
+ * In most cases custom class-based components would use [ComponentCompanion]
+ * for to introduce the component's _instance declaration API_. However, in some
+ * rare case a component might require different instance declaration API. In
+ * such cases those companion objects would use this class as a base class for
+ * a companion object instead.
+ *
+ * @param createInstance A lambda that should create a component's instance.
+ * @see ComponentCompanion
  */
 public abstract class AbstractComponentCompanion(
     protected val createInstance: (() -> Component)? = null
@@ -449,14 +465,12 @@ public abstract class AbstractComponentCompanion(
      * [remember] for this invocation site, and renders its content using
      * the [content] callback.
      *
-     * @props props
-     *         a lambda, which, given a component's instance, configures its
-     *         properties according to client's requirements.
-     * @props content
-     *         a lambda, which, given a component's instance, renders
-     *         the composable content for that component.
-     * @return a component's instance that was created and cached for this
-     *         invocation site.
+     * @props props A lambda, which, given a component's instance, configures
+     *   its properties according to client's requirements.
+     * @props content A lambda, which, given a component's instance, renders
+     *   the composable content for that component.
+     * @return A component's instance that was created and cached for this
+     *   declaration site.
      */
     @Composable
     public fun <C : Component> createAndRender(
@@ -504,6 +518,14 @@ public abstract class AbstractComponentCompanion(
  * A companion object type that introduces a component's instance
  * declaration API.
  *
+ * See the "Using class-based components" and "Implementing class-based
+ * components" sections of the [Component] class for general information about
+ * how class-based components are used in an application. An important point
+ * here is that to make an experience of using class-based components to be
+ * similar to that of function-based components, components are typically never
+ * instantiated via their constructor directly, and are instead used "declared"
+ * in a familiar invocation style. A companion object like this is what
+ *
  * This is a base class that should normally be used for a companion object of
  * any non-abstract class-based component (a direct or indirect descendant of
  * [Component]), to provide a top-level API for component instance
@@ -539,14 +561,13 @@ public abstract class AbstractComponentCompanion(
  * this companion object is typically fine to declare as the first class's
  * member, since it's conceptually similar to the class's constructor.
  *
- * @param C
- *         a type of the component that owns this companion object (and which
- *         should be instantiated and rendered via this companion object).
- * @constructor
- *         creates a companion object for a component of type [C].
- * @param createInstance
- *         a lambda that should create a component's instance of type [C] with
- *         the given properties configuration callback.
+ * @param C A type of the component that owns this companion object (and which
+ *   should be instantiated and rendered via this companion object).
+ *
+ * @constructor Creates a companion object for a component of type [C].
+ * @param createInstance A lambda that should create a component's instance of
+ *   type [C] with the given properties configuration callback.
+ * @see AbstractComponentCompanion
  */
 public open class ComponentCompanion<C: Component>(
     createInstance: () -> C
@@ -563,13 +584,12 @@ public open class ComponentCompanion<C: Component>(
      * Once an instance is created, it is saved using [remember] and is reused
      * for subsequent recompositions.
      *
-     * @param props
-     *         a lambda that receives a component's instance, and should
-     *         configure its properties in a way that is needed for this
-     *         component's instance. It is invoked before each recomposition
-     *         of the component.
-     * @return a component's instance that has been created for this
-     *         declaration site.
+     * @param props A lambda that is invoked in context of the component's
+     *   instance, which should configure its properties in a way that is needed
+     *   for this component's instance. It is invoked before each recomposition
+     *   of the component.
+     * @return A component's instance that has been created or cached for this
+     *   declaration site.
      */
     @Composable
     public operator fun invoke(
