@@ -155,11 +155,14 @@ public open class MessageFormCompanionBase<M: Message, F: MessageForm<M>>(
     ): F = createAndRender({
         this.value = value
 
-        // Storing the builder as ValidatingBuilder internally.
+        // Storing the builder as `ValidatingBuilder` internally.
         @Suppress("UNCHECKED_CAST")
         this.builder = builder as () -> ValidatingBuilder<M>
-        // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
-        @Suppress("UNCHECKED_CAST")
+        @Suppress(
+            // Storing `onBeforeBuild` using a more general
+            // `ValidatingBuilder<out M>` type internally.
+            "UNCHECKED_CAST"
+        )
         this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
         multipartContent = content
         props.run { configure() }
@@ -208,11 +211,14 @@ public open class MessageFormCompanionBase<M: Message, F: MessageForm<M>>(
         onBeforeBuild: (B) -> Unit = {},
         content: @Composable MultipartFormScope<M>.() -> Unit
     ): F = createAndRender({
-        // Storing the builder as ValidatingBuilder internally.
+        // Storing the builder as `ValidatingBuilder` internally.
         @Suppress("UNCHECKED_CAST")
         this.builder = builder as () -> ValidatingBuilder<M>
-        // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
-        @Suppress("UNCHECKED_CAST")
+        @Suppress(
+            // Storing `onBeforeBuild` using a more general
+            // `ValidatingBuilder<out M>` type internally.
+            "UNCHECKED_CAST"
+        )
         this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
         multipartContent = content
         props.run { configure() }
@@ -259,7 +265,7 @@ public open class MessageFormCompanionBase<M: Message, F: MessageForm<M>>(
         super.create(null) {
             this.value = value
 
-            // Storing the builder as ValidatingBuilder internally.
+            // Storing the builder as `ValidatingBuilder` internally.
             @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<M>
             @Suppress("UNCHECKED_CAST")

@@ -401,9 +401,9 @@ internal abstract class FormFieldsScopeImpl<M : Message>(
         defaultValue: V?,
         content: @Composable FormFieldScope<V>.() -> Unit
     ) {
-        // We have to store fields by their common base type MessageFieldValue
+        // We have to store fields by their common base type `MessageFieldValue`
         // in the form, and we cannot use neither `in` nor `out` for the type
-        // parameter since the respective field in MessageField is mutable.
+        // parameter since the respective field in `MessageField` is mutable.
         @Suppress("UNCHECKED_CAST")
         val baseTypedField = field as MessageField<M, MessageFieldValue>
         val formField = registerField(baseTypedField, defaultValue)

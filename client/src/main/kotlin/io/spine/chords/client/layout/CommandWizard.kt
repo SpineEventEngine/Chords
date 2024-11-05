@@ -178,8 +178,8 @@ public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M
 
     @Composable
     override fun content() {
-        // CommandMessageForm's type param is in+out, and it's logically just
-        // out in CommandWizard.
+        // `CommandMessageForm`'s type param is in+out, and it's logically just
+        // out in `CommandWizard`.
         @Suppress("UNCHECKED_CAST")
         val commandMessageForm = wizard.commandMessageForm as CommandMessageForm<CommandMessage>
         commandMessageForm.MultipartContent {

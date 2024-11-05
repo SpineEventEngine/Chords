@@ -747,7 +747,7 @@ public open class MessageForm<M : Message> :
             fieldSelector: FocusableComponent
         ) {
             @Suppress(
-                // MessageOneof.fields uses an in/out MessageFieldValue as
+                // `MessageOneof.fields` uses an in/out `MessageFieldValue` as
                 // a common parent for field types.
                 "UNCHECKED_CAST"
             )

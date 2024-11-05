@@ -82,7 +82,8 @@ public class OneofRadioButton : FocusableComponent() {
                 selected = selectedField.value == field,
                 onClick = {
                     @Suppress(
-                        // selectedField treats all fields as MessageFieldValue
+                        // `selectedField` treats all fields
+                        // as `MessageFieldValue`.
                         "UNCHECKED_CAST"
                     )
                     selectedField.value = field as MessageField<M, MessageFieldValue>
