@@ -27,7 +27,7 @@
 package io.spine.chords.proto.net
 
 import androidx.compose.ui.input.key.KeyEvent
-import io.spine.chords.core.ComponentCompanion
+import io.spine.chords.core.ComponentDeclarationApi
 import io.spine.chords.core.InputField
 import io.spine.chords.core.InputReviser
 import io.spine.chords.core.RawTextContent
@@ -44,11 +44,7 @@ import io.spine.chords.proto.value.net.parse
  * A field for entering an IP address.
  */
 public class IpAddressField : InputField<IpAddress>() {
-
-    /**
-     * An instance declaration API.
-     */
-    public companion object : ComponentCompanion<IpAddressField>({ IpAddressField() })
+    public companion object : ComponentDeclarationApi<IpAddressField>({ IpAddressField() })
 
     init {
         label = "IP address"

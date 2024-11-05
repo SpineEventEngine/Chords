@@ -28,7 +28,7 @@ package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
-import io.spine.chords.core.AbstractComponentCompanion
+import io.spine.chords.core.AbstractComponentDeclarationApi
 import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.primitive.RadioButtonWithText
@@ -42,11 +42,7 @@ import io.spine.protobuf.ValidatingBuilder
  * switch between oneof fields.
  */
 public class OneofRadioButton : FocusableComponent() {
-
-    /**
-     * An instance declaration API.
-     */
-    public companion object : AbstractComponentCompanion({ OneofRadioButton() }) {
+    public companion object : AbstractComponentDeclarationApi({ OneofRadioButton() }) {
 
         /**
          * The version of `OneofFields`, which expects the editor for

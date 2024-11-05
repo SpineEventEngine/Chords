@@ -26,7 +26,7 @@
 
 package io.spine.chords.proto.net
 
-import io.spine.chords.core.ComponentCompanion
+import io.spine.chords.core.ComponentDeclarationApi
 import io.spine.chords.core.InputField
 import io.spine.chords.core.exceptionBasedParser
 import io.spine.net.InternetDomain
@@ -36,11 +36,9 @@ import io.spine.net.InternetDomains
  * A field that allows entering an [InternetDomain] value.
  */
 public class InternetDomainField : InputField<InternetDomain>() {
-
-    /**
-     * A component instance declaration API.
-     */
-    public companion object : ComponentCompanion<InternetDomainField>({ InternetDomainField() })
+    public companion object : ComponentDeclarationApi<InternetDomainField>(
+        { InternetDomainField() }
+    )
 
     override fun parseValue(rawText: String): InternetDomain = exceptionBasedParser(
         IllegalArgumentException::class,

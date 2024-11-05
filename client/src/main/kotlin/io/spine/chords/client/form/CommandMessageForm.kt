@@ -37,7 +37,7 @@ import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.appshell.client
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
-import io.spine.chords.proto.form.MessageFormCompanionBase
+import io.spine.chords.proto.form.MessageFormDeclarationApiBase
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
 import kotlinx.coroutines.TimeoutCancellationException
@@ -147,14 +147,9 @@ import kotlinx.coroutines.TimeoutCancellationException
  * @param C
  *         a type of the command message being edited with the form.
  */
-public class CommandMessageForm<C : CommandMessage> :
-    MessageForm<C>() {
-
-    /**
-     * Form instance declaration and creation API.
-     */
+public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     public companion object :
-        MessageFormCompanionBase<CommandMessage, CommandMessageForm<CommandMessage>>(
+        MessageFormDeclarationApiBase<CommandMessage, CommandMessageForm<CommandMessage>>(
             { CommandMessageForm() }
         ) {
 

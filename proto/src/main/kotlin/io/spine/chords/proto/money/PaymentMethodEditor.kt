@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import io.spine.chords.core.layout.InputRow
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
-import io.spine.chords.proto.form.MessageFormCompanionBase
+import io.spine.chords.proto.form.MessageFormDeclarationApi
 import io.spine.chords.proto.form.OneofRadioButton
 import io.spine.chords.proto.form.OptionalMessageCheckbox
 import io.spine.chords.proto.form.invoke
@@ -48,13 +48,7 @@ import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
  * A component that edits a [PaymentMethod].
  */
 public class PaymentMethodEditor : MessageForm<PaymentMethod>() {
-
-    /**
-     * A component instance declaration API, as described in the "Implementing
-     * class-based components" documentation section of the base
-     * [Component][io.spine.chords.core.Component] class.
-     */
-    public companion object : MessageFormCompanionBase<PaymentMethod, PaymentMethodEditor>(
+    public companion object : MessageFormDeclarationApi<PaymentMethod, PaymentMethodEditor>(
         { PaymentMethodEditor() }
     )
 
