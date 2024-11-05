@@ -45,7 +45,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.getSelectedText
 import com.google.protobuf.Timestamp
 import com.google.protobuf.util.Timestamps
-import io.spine.chords.core.ComponentCompanion
+import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.keyboard.KeyRange
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.InputField
@@ -75,11 +75,7 @@ public typealias DateTimePattern = String
  * A field that allows specifying date and time.
  */
 public class DateTimeField : InputField<Timestamp>() {
-
-    /**
-     * Instance declaration API.
-     */
-    public companion object : ComponentCompanion<DateTimeField>({ DateTimeField() })
+    public companion object : ComponentSetup<DateTimeField>({ DateTimeField() })
 
     /**
      * A pattern for parsing and formatting a date component (as used with

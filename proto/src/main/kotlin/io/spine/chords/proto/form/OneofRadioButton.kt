@@ -28,7 +28,7 @@ package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
-import io.spine.chords.core.AbstractComponentCompanion
+import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.primitive.RadioButtonWithText
@@ -42,11 +42,7 @@ import io.spine.protobuf.ValidatingBuilder
  * switch between oneof fields.
  */
 public class OneofRadioButton : FocusableComponent() {
-
-    /**
-     * An instance declaration API.
-     */
-    public companion object : AbstractComponentCompanion({ OneofRadioButton() }) {
+    public companion object : AbstractComponentSetup({ OneofRadioButton() }) {
 
         /**
          * The version of `OneofFields`, which expects the editor for
@@ -76,11 +72,16 @@ public class OneofRadioButton : FocusableComponent() {
             field: MessageField<M, F>,
             text: String
         ): OneofRadioButton = createAndRender({
-            registerFieldSelector(field as MessageField<M, MessageFieldValue>, this)
+            registerFieldSelector(field, this)
         }) {
             RadioButtonWithText(
                 selected = selectedField.value == field,
                 onClick = {
+                    @Suppress(
+                        // `selectedField` treats all fields
+                        // as `MessageFieldValue`.
+                        "UNCHECKED_CAST"
+                    )
                     selectedField.value = field as MessageField<M, MessageFieldValue>
                 },
                 text = text,

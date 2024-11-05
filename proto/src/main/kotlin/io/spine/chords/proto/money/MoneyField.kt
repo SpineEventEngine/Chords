@@ -55,7 +55,7 @@ import androidx.compose.ui.text.font.FontFamily.Companion.Monospace
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.input.getSelectedText
 import androidx.compose.ui.unit.dp
-import io.spine.chords.core.ComponentCompanion
+import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.DropdownListBox
 import io.spine.chords.core.DropdownListBoxScope
 import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
@@ -85,11 +85,7 @@ private val defaultCurrency = USD
  * A field that allows entering [Money] values.
  */
 public class MoneyField : InputField<Money>() {
-
-    /**
-     * Instance declaration API.
-     */
-    public companion object : ComponentCompanion<MoneyField>({ MoneyField() })
+    public companion object : ComponentSetup<MoneyField>({ MoneyField() })
 
     /**
      * A list of item values to choose from.

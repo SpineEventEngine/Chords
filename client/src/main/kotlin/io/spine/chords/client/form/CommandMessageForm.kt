@@ -30,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import io.spine.chords.core.appshell.app
-import io.spine.chords.core.AbstractComponentCompanion
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.chords.core.ComponentProps
@@ -38,6 +37,7 @@ import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.appshell.client
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
+import io.spine.chords.proto.form.MessageFormSetupBase
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
 import kotlinx.coroutines.TimeoutCancellationException
@@ -147,15 +147,11 @@ import kotlinx.coroutines.TimeoutCancellationException
  * @param C
  *         a type of the command message being edited with the form.
  */
-public class CommandMessageForm<C : CommandMessage> :
-    MessageForm<C>() {
-
-    /**
-     * Form instance declaration and creation API.
-     */
-    public companion object : AbstractComponentCompanion({
-        CommandMessageForm<CommandMessage>()
-    }) {
+public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
+    public companion object :
+        MessageFormSetupBase<CommandMessage, CommandMessageForm<CommandMessage>>(
+            { CommandMessageForm() }
+        ) {
 
         /**
          * Declares a `CommandMessageForm` instance, which is not bound to
@@ -172,11 +168,11 @@ public class CommandMessageForm<C : CommandMessage> :
          * @param builder A lambda that should create and return a new builder
          *   for a command of type [C].
          * @param value The command message value to be edited within the form.
-         * @param onBeforeBuild A lambda that allows to amend the command message
-         *   after any valid field is entered to it.
+         * @param onBeforeBuild A lambda that allows to amend the command
+         *   message after any valid field is entered to it.
          * @param props A lambda that can set any additional props on the form.
-         * @param content A form's content, which can contain an arbitrary layout along
-         *   with field editor declarations.
+         * @param content A form's content, which can contain an arbitrary
+         *   layout along with field editor declarations.
          * @return A form's instance that has been created for this
          *   declaration site.
          */
@@ -216,29 +212,28 @@ public class CommandMessageForm<C : CommandMessage> :
          * declaration site.
          */
         @Composable
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `C` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> Multipart(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable MultipartFormScope<C>.() -> Unit
-        ): CommandMessageForm<C> = createAndRender({
-            this.value = value
-
-            // Storing the builder as ValidatingBuilder internally.
-            @Suppress("UNCHECKED_CAST")
-            this.builder = builder as () -> ValidatingBuilder<C>
-            @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out C>) -> Unit
-            multipartContent = content
-            props.run { configure() }
-        }) {
-            Content()
-        }
+        ): CommandMessageForm<C> = declareMultipartInstance(
+            value as MutableState<CommandMessage?>,
+            builder,
+            props as ComponentProps<CommandMessageForm<CommandMessage>>,
+            onBeforeBuild,
+            content as @Composable MultipartFormScope<CommandMessage>.() -> Unit
+        ) as CommandMessageForm<C>
 
         /**
          * Creates a [CommandMessageForm] instance without rendering it in
-         * the composable content with the same call.
+         * the composable content right away.
          *
          * This method can be used to create a form's instance outside
          * a composable context, and render it separately. A form's instance
@@ -269,24 +264,22 @@ public class CommandMessageForm<C : CommandMessage> :
          * @return A form's instance that has been created for this
          *   declaration site.
          */
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `C` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <C : CommandMessage, B: ValidatingBuilder<out C>> create(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {}
-        ): CommandMessageForm<C> =
-            super.create(null) {
-                this.value = value
-
-                // Storing the builder as ValidatingBuilder internally.
-                @Suppress("UNCHECKED_CAST")
-                this.builder = builder as () -> ValidatingBuilder<C>
-
-                // Storing the builder as ValidatingBuilder internally.
-                @Suppress("UNCHECKED_CAST")
-                this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out C>) -> Unit
-                props.run { configure() }
-            }
+        ): CommandMessageForm<C> = createInstance(
+            value as MutableState<CommandMessage?>,
+            builder,
+            onBeforeBuild,
+            props as ComponentProps<CommandMessageForm<CommandMessage>>
+        ) as CommandMessageForm<C>
     }
 
     /**

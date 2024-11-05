@@ -37,29 +37,30 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.platform.LocalInputModeManager
 import com.google.protobuf.Message
-import io.spine.chords.core.AbstractComponentCompanion
+import io.spine.base.FieldPath
+import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputContext
+import io.spine.chords.proto.form.MessageForm.Companion.Multipart
+import io.spine.chords.proto.form.MessageForm.Companion.create
 import io.spine.chords.proto.form.MessageForm.Companion.invoke
 import io.spine.chords.proto.form.ValidationDisplayMode.DEFAULT
 import io.spine.chords.proto.form.ValidationDisplayMode.LIVE
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
-import io.spine.chords.proto.net.UrlField
 import io.spine.chords.proto.money.MoneyField
+import io.spine.chords.proto.net.UrlField
 import io.spine.chords.proto.time.DateTimeField
-import io.spine.chords.core.FocusRequestDispatcher
-import io.spine.base.FieldPath
-import io.spine.chords.core.ComponentProps
+import io.spine.chords.proto.value.protobuf.isDefault
+import io.spine.chords.proto.value.validate.formattedMessage
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
+import io.spine.chords.runtime.messageDef
 import io.spine.protobuf.ValidatingBuilder
-import io.spine.chords.proto.value.protobuf.isDefault
 import io.spine.validate.ConstraintViolation
 import io.spine.validate.ValidationException
-import io.spine.chords.proto.value.validate.formattedMessage
-import io.spine.chords.runtime.messageDef
 
 /**
  * Different modes of when form's validation errors should be displayed.
@@ -372,11 +373,12 @@ public enum class ValidationDisplayMode {
  * For example, if it is needed to create a custom form component for editing
  * a `PersonName` message value, this can be done like this:
  * - Create a subclass of `MessageForm` (`PersonNameForm` in this case).
+ * - Add a companion object of type [MessageFormSetup] to ensure that the
+ *   component has an instance declaration API.
  * - Override either [customContent] (for rendering ordinary singlepart forms),
  *   or [customMultipartContent] (if a multipart form is needed), which should
  *   contain field editors in the same way as you would fill the respective
  *   `MessageForm` (e.g. see the "Specifying form's content" section above).
- *
  *
  * ### The `onBeforeBuild` callback
  *
@@ -416,20 +418,14 @@ public enum class ValidationDisplayMode {
  */
 // Seems all class's functions are better to have in this class.
 @Suppress("TooManyFunctions")
-public open class MessageForm<M : Message> :
-    InputComponent<M>(), InputContext {
-
-    /**
-     * Form instance declaration and creation API.
-     */
-    public companion object : AbstractComponentCompanion(
-        { MessageForm<Message>() }
+public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
+    public companion object : MessageFormSetupBase<Message, MessageForm<Message>>(
+        { MessageForm() }
     ) {
 
         /**
-         * Declares a `MessageForm` instance, which is not bound to a parent
-         * form automatically, and can be bound to the respective data field
-         * manually as needed.
+         * Declares a `MessageForm` instance, which edits a value stored
+         * in the [value] `MutableState`.
          *
          * The form's content that is specified with the [content] parameter is
          * expected to include field editors for all message's fields, which
@@ -450,15 +446,24 @@ public open class MessageForm<M : Message> :
          *   declaration site.
          */
         @Composable
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public operator fun <M : Message, B : ValidatingBuilder<out M>> invoke(
             value: MutableState<M?>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
-        ): MessageForm<M> = Multipart(value, builder, props, onBeforeBuild) {
-            FormPart(content)
-        }
+        ): MessageForm<M> = declareInstance(
+            value as MutableState<Message?>,
+            builder,
+            props as ComponentProps<MessageForm<Message>>,
+            onBeforeBuild,
+            content as @Composable FormPartScope<Message>.() -> Unit
+        ) as MessageForm<M>
 
         /**
          * Declares a `MessageForm` instance, which is automatically bound to
@@ -489,6 +494,11 @@ public open class MessageForm<M : Message> :
          */
         context(FormFieldsScope<PM>)
         @Composable
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public operator fun <
                 PM : Message,
                 M : Message,
@@ -501,14 +511,18 @@ public open class MessageForm<M : Message> :
             defaultValue: M? = null,
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
-        ): MessageForm<M> = Multipart(field, builder, props, defaultValue, onBeforeBuild) {
-            FormPart(content)
-        }
+        ): MessageForm<M> = declareInstance(
+            field as MessageField<PM, Message>,
+            builder,
+            props as ComponentProps<MessageForm<Message>>,
+            defaultValue,
+            onBeforeBuild,
+            content as @Composable FormPartScope<Message>.() -> Unit
+        ) as MessageForm<M>
 
         /**
-         * Declares a multipart `MessageForm` instance, which is not bound to
-         * a parent form automatically, and can be bound to the respective data
-         * field manually as needed.
+         * Declares a multipart `MessageForm` instance, which edits a value
+         * stored in the [value] `MutableState`.
          *
          * The form's content that is specified with the [content] parameter
          * should specify each form's part with using
@@ -530,26 +544,24 @@ public open class MessageForm<M : Message> :
          *   declaration site.
          */
         @Composable
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <M : Message, B: ValidatingBuilder<out M>> Multipart(
             value: MutableState<M?>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
-        ): MessageForm<M> = createAndRender({
-            this.value = value
-
-            // Storing the builder as ValidatingBuilder internally.
-            @Suppress("UNCHECKED_CAST")
-            this.builder = builder as () -> ValidatingBuilder<M>
-            // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
-            @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
-            multipartContent = content
-            props.run { configure() }
-        }) {
-            Content()
-        }
+        ): MessageForm<M> = declareMultipartInstance(
+            value as MutableState<Message?>,
+            builder,
+            props as ComponentProps<MessageForm<Message>>,
+            onBeforeBuild,
+            content as @Composable MultipartFormScope<Message>.() -> Unit
+        ) as MessageForm<M>
 
         /**
          * Declares a multipart `MessageForm` instance, which is automatically
@@ -581,6 +593,11 @@ public open class MessageForm<M : Message> :
          */
         context(FormFieldsScope<PM>)
         @Composable
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <
                 PM : Message,
                 M : Message,
@@ -593,23 +610,18 @@ public open class MessageForm<M : Message> :
             defaultValue: M? = null,
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
-        ): MessageForm<M> = createAndRender({
-
-            // Storing the builder as ValidatingBuilder internally.
-            @Suppress("UNCHECKED_CAST")
-            this.builder = builder as () -> ValidatingBuilder<M>
-            // Storing onBeforeBuild using a more general ValidatingBuilder<out M> type internally.
-            @Suppress("UNCHECKED_CAST")
-            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
-            multipartContent = content
-            props.run { configure() }
-        }) {
-            ContentWithinField(field, defaultValue)
-        }
+        ): MessageForm<M> = declareMultipartInstance(
+            field as MessageField<PM, Message>,
+            builder,
+            props as ComponentProps<MessageForm<Message>>,
+            defaultValue,
+            onBeforeBuild,
+            content as @Composable MultipartFormScope<Message>.() -> Unit
+        ) as MessageForm<M>
 
         /**
          * Creates a [MessageForm] instance without rendering it in
-         * the composable content with the same call.
+         * the composable content right away.
          *
          * This method can be used to create a form's instance outside
          * a composable context, and render it separately. A form's instance
@@ -632,23 +644,28 @@ public open class MessageForm<M : Message> :
          * @param value The message value to be edited within the form.
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
+         * @param onBeforeBuild A lambda that allows to amend the message
+         *   after any valid field is entered to it.
          * @param props A lambda that can set any additional props on the form.
          * @return A form's instance that has been created for this
          *   declaration site.
          */
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <M : Message, B: ValidatingBuilder<out M>> create(
             value: MutableState<M?>,
             builder: () -> B,
+            onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<MessageForm<M>> = ComponentProps {}
-        ): MessageForm<M> =
-            super.create(null) {
-                this.value = value
-
-                // Storing the builder as ValidatingBuilder internally.
-                @Suppress("UNCHECKED_CAST")
-                this.builder = builder as () -> ValidatingBuilder<M>
-                props.run { configure() }
-            }
+        ): MessageForm<M> = createInstance(
+            value as MutableState<Message?>,
+            builder,
+            onBeforeBuild,
+            props as ComponentProps<MessageForm<Message>>
+        ) as MessageForm<M>
     }
 
     /**
@@ -720,11 +737,16 @@ public open class MessageForm<M : Message> :
          * @param fieldSelector A field selector component
          *   (such as [OneofRadioButton]).
          */
-        internal fun registerFieldSelector(
-            field: MessageField<M, MessageFieldValue>,
+        internal fun <F: MessageFieldValue> registerFieldSelector(
+            field: MessageField<M, F>,
             fieldSelector: FocusableComponent
         ) {
-            check(oneof.fields.contains(field)) {
+            @Suppress(
+                // `MessageOneof.fields` uses an in/out `MessageFieldValue` as
+                // a common parent for field types.
+                "UNCHECKED_CAST"
+            )
+            check(oneof.fields.contains(field as MessageField<M, MessageFieldValue>)) {
                 "The oneof field (${field.name}) being registered doesn't " +
                 "belong to this oneof (${oneof.name})"
             }
@@ -1015,7 +1037,7 @@ public open class MessageForm<M : Message> :
     /**
      * A multipart form's content to be rendered within the form.
      */
-    protected var multipartContent: (@Composable MultipartFormScope<M>.() -> Unit)? = null
+    internal var multipartContent: (@Composable MultipartFormScope<M>.() -> Unit)? = null
 
 
     /**
@@ -1023,13 +1045,13 @@ public open class MessageForm<M : Message> :
      * of type [M].
      *
      * Note that we're storing the builder by a generic `ValidatingBuilder<M>`
-     * interface internally to prevent having to expose an additional
+     * interface here to prevent having to expose an additional
      * builder's type parameter via the `MessageForm`'s public API, which would
      * "contaminates" other types with this type parameter, make the usage of
      * `MessageField` more complex, and didn't add much value to
      * the user anyway.
      */
-    protected lateinit var builder: () -> ValidatingBuilder<M>
+    internal lateinit var builder: () -> ValidatingBuilder<M>
 
     /**
      * Specifies when form's validation errors should be updated.
@@ -1043,7 +1065,7 @@ public open class MessageForm<M : Message> :
      * See the "The `onBeforeBuild` callback" section in the
      * [MessageForm]'s documentation for details.
      */
-    protected var onBeforeBuild: (ValidatingBuilder<out M>) -> Unit = {}
+    internal var onBeforeBuild: (ValidatingBuilder<out M>) -> Unit = {}
 
     init {
         valueRequired = true

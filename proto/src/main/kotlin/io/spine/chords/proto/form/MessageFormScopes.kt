@@ -242,8 +242,15 @@ public sealed interface OneOfFieldsScope<M : Message> : FormFieldsScope<M> {
      */
     public val validationMessage: State<String?>
 
-    public fun registerFieldSelector(
-        field: MessageField<M, MessageFieldValue>,
+    /**
+     * Informs the form component about the component, which is used as
+     * a selection toggle (e.g. radio button) for the specified oneof [field].
+     *
+     * This knowledge is required by the form component to be able to focus
+     * respective field selectors when needed.
+     */
+    public fun <F: MessageFieldValue> registerFieldSelector(
+        field: MessageField<M, F>,
         fieldSelector: FocusableComponent
     )
 }
@@ -394,9 +401,9 @@ internal abstract class FormFieldsScopeImpl<M : Message>(
         defaultValue: V?,
         content: @Composable FormFieldScope<V>.() -> Unit
     ) {
-        // We have to store fields by their common base type MessageFieldValue
+        // We have to store fields by their common base type `MessageFieldValue`
         // in the form, and we cannot use neither `in` nor `out` for the type
-        // parameter since the respective field in MessageField is mutable.
+        // parameter since the respective field in `MessageField` is mutable.
         @Suppress("UNCHECKED_CAST")
         val baseTypedField = field as MessageField<M, MessageFieldValue>
         val formField = registerField(baseTypedField, defaultValue)
@@ -467,8 +474,8 @@ private class OneOfFieldsScopeImpl<M : Message>(
     ): MessageForm<M>.FormField =
         form.FormField(this, field, initialValue, formOneof)
 
-    override fun registerFieldSelector(
-        field: MessageField<M, MessageFieldValue>,
+    override fun <F: MessageFieldValue> registerFieldSelector(
+        field: MessageField<M, F>,
         fieldSelector: FocusableComponent
     ) {
         formOneof.registerFieldSelector(field, fieldSelector)

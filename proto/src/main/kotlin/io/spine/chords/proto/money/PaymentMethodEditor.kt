@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import io.spine.chords.core.layout.InputRow
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
+import io.spine.chords.proto.form.MessageFormSetup
 import io.spine.chords.proto.form.OneofRadioButton
 import io.spine.chords.proto.form.OptionalMessageCheckbox
 import io.spine.chords.proto.form.invoke
@@ -47,6 +48,10 @@ import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
  * A component that edits a [PaymentMethod].
  */
 public class PaymentMethodEditor : MessageForm<PaymentMethod>() {
+    public companion object : MessageFormSetup<PaymentMethod, PaymentMethodEditor>(
+        { PaymentMethodEditor() }
+    )
+
     init {
         builder = { PaymentMethod.newBuilder() }
     }
