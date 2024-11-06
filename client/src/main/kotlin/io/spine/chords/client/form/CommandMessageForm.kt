@@ -188,13 +188,14 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable FormPartScope<C>.() -> Unit
-        ): CommandMessageForm<C> = declareMultipartInstance(
+        ): CommandMessageForm<C> = declareInstance(
             value as MutableState<CommandMessage?>,
             builder,
             props as ComponentProps<CommandMessageForm<CommandMessage>>,
-            onBeforeBuild,
-            content as @Composable MultipartFormScope<CommandMessage>.() -> Unit
-        ) as CommandMessageForm<C>
+            onBeforeBuild
+        ) {
+            content(this as FormPartScope<C>)
+        } as CommandMessageForm<C>
 
         /**
          * Declares a multipart `CommandMessageForm` instance, which is not
@@ -236,9 +237,10 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             value as MutableState<CommandMessage?>,
             builder,
             props as ComponentProps<CommandMessageForm<CommandMessage>>,
-            onBeforeBuild,
-            content as @Composable MultipartFormScope<CommandMessage>.() -> Unit
-        ) as CommandMessageForm<C>
+            onBeforeBuild
+        ) {
+            content(this as MultipartFormScope<C>)
+        } as CommandMessageForm<C>
 
         /**
          * Creates a [CommandMessageForm] instance without rendering it in

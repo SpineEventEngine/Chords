@@ -462,8 +462,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             builder,
             props as ComponentProps<MessageForm<Message>>,
             onBeforeBuild,
-            content as @Composable FormPartScope<Message>.() -> Unit
-        ) as MessageForm<M>
+
+        ) {
+            content(this as FormPartScope<M>)
+        } as MessageForm<M>
 
         /**
          * Declares a `MessageForm` instance, which is automatically bound to
@@ -516,9 +518,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             builder,
             props as ComponentProps<MessageForm<Message>>,
             defaultValue,
-            onBeforeBuild,
-            content as @Composable FormPartScope<Message>.() -> Unit
-        ) as MessageForm<M>
+            onBeforeBuild
+        ) {
+            content(this as FormPartScope<M>)
+        } as MessageForm<M>
 
         /**
          * Declares a multipart `MessageForm` instance, which edits a value
@@ -559,9 +562,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             value as MutableState<Message?>,
             builder,
             props as ComponentProps<MessageForm<Message>>,
-            onBeforeBuild,
-            content as @Composable MultipartFormScope<Message>.() -> Unit
-        ) as MessageForm<M>
+            onBeforeBuild
+        ) {
+            content(this as MultipartFormScope<M>)
+        } as MessageForm<M>
 
         /**
          * Declares a multipart `MessageForm` instance, which is automatically
@@ -615,9 +619,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             builder,
             props as ComponentProps<MessageForm<Message>>,
             defaultValue,
-            onBeforeBuild,
-            content as @Composable MultipartFormScope<Message>.() -> Unit
-        ) as MessageForm<M>
+            onBeforeBuild
+        ) {
+            content(this as MultipartFormScope<M>)
+        } as MessageForm<M>
 
         /**
          * Creates a [MessageForm] instance without rendering it in
@@ -667,7 +672,6 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             props as ComponentProps<MessageForm<Message>>
         ) as MessageForm<M>
     }
-
     /**
      * An internal form's representation of a message's oneof.
      *
