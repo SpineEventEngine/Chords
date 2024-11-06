@@ -177,15 +177,24 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
          *   declaration site.
          */
         @Composable
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `C` type parameter.
+            "UNCHECKED_CAST"
+        )
         public operator fun <C : CommandMessage, B: ValidatingBuilder<out C>> invoke(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable FormPartScope<C>.() -> Unit
-        ): CommandMessageForm<C> = Multipart(builder, value, onBeforeBuild, props) {
-            FormPart(content)
-        }
+        ): CommandMessageForm<C> = declareMultipartInstance(
+            value as MutableState<CommandMessage?>,
+            builder,
+            props as ComponentProps<CommandMessageForm<CommandMessage>>,
+            onBeforeBuild,
+            content as @Composable MultipartFormScope<CommandMessage>.() -> Unit
+        ) as CommandMessageForm<C>
 
         /**
          * Declares a multipart `CommandMessageForm` instance, which is not
