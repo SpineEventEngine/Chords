@@ -373,7 +373,8 @@ public enum class ValidationDisplayMode {
  * For example, if it is needed to create a custom form component for editing
  * a `PersonName` message value, this can be done like this:
  * - Create a subclass of `MessageForm` (`PersonNameForm` in this case).
- * - Add a companion object of type [MessageFormSetup] to ensure that the
+ * - Add a companion object of type
+ *   [ComponentSetup][io.spine.chords.core.ComponentSetup] to ensure that the
  *   component has an instance declaration API.
  * - Set the `builder` property in the component class's `init` block.
  * - Override either [customContent] (for rendering ordinary singlepart forms),
@@ -384,9 +385,7 @@ public enum class ValidationDisplayMode {
  * Here's an example:
  * ```
  *     public class PersonNameForm : MessageForm<PersonName>() {
- *         public companion object : MessageFormSetup<PersonName, PersonNameForm>(
- *             { PersonNameForm() }
- *         )
+ *         public companion object : ComponentSetup<PersonNameForm>({ PersonNameForm() })
  *
  *         init {
  *             builder = { PaymentMethod.newBuilder() }
@@ -1311,9 +1310,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     protected open fun MultipartFormScope<M>.customMultipartContent() {
         content?.let {
             formScope.FormPart(it)
-            formScope.FormPart {
-                customContent()
-            }
+        }
+        formScope.FormPart {
+            customContent()
         }
         multipartContent?.invoke(formScope)
     }
