@@ -27,29 +27,27 @@
 package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import com.google.protobuf.Message
-import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputComponent
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 
 /**
- * Lazily creates an instance of an input component of type [C], and renders
- * this component as an editor of field [field] within the
- * parent [MessageForm][io.spine.chords.proto.form.MessageForm].
- *
- * Once an instance is created, it is saved using [remember] and is reused
- * for subsequent recompositions.
+ * This extension adds one more way to declare any [InputComponent] [C] as an
+ * editor of field [field] within the parent
+ * [MessageForm][io.spine.chords.proto.form.MessageForm].
  *
  * For example in case of a component [C] being `SomeInputComponent`, it can be
- * used as an editor for `SOME_FIELD_NUMBER` inside a [MessageForm] like this:
+ * placed inside a [MessageForm] to be used as an editor for some respective
+ * field (e.g. `parentField1` below) of the message type edited in the parent
+ * form (`ParentMessage` in the example below):
  *
  * ```kotlin
  *     <MessageForm ...>
  *         ...
- *         SomeInputComponent(SOME_FIELD_NUMBER) {
+ *         SomeInputComponent(ParentMessageDef.parentField1) {
  *             property1 = value1
  *             property2 = value2
  *             ...
@@ -65,9 +63,41 @@ import io.spine.chords.runtime.MessageFieldValue
  * ```kotlin
  *     <MessageForm ...>
  *         ...
- *         SomeInputComponent(SOME_FIELD_NUMBER)
+ *         SomeInputComponent(ParentMessageDef.parentField1)
  *     </MessageForm>
  * ```
+ *
+ * ### A practical tip for importing this function
+ *
+ * The shorthand syntax above (e.g. `SomeInputComponent(ParentMessageDef.parentField1)`)
+ * is using this `invoke` operator function implicitly, and the "full" syntax
+ * for the same expression would be like this:
+ * `SomeInputComponent.Companion.invoke(ParentMessageDef.parentField1)`.
+ * Nevertheless, for readability and conciseness it's not recommended to use
+ * this "full" form, and a shorthand implicit syntax is recommended.
+ *
+ * Like any extension, the use of this function requires importing it though!
+ * Unfortunately IntelliJ IDEA doesn't automatically offer to import this
+ * `invoke` operator function when writing the shorthand notation, and importing
+ * this function explicitly can be tedious.
+ *
+ * As a simple practical solution, IntelliJ IDEA can be "asked" to import it
+ * automatically if you temporarily write the `.invoke` call explicitly,
+ * like this:
+ *
+ * ```
+ *     SomeInputComponent.invoke(ParentMessageDef.parentField1)`
+ * ```
+ *
+ * This will make the IDEA to offer the respective import, after which you can
+ * just remove the explicit `.invoke` call:
+ *
+ * ```
+ *     SomeInputComponent(ParentMessageDef.parentField1)`
+ * ```
+ *
+ * This needs to be done only once per file, while using the shortened notation
+ * throughout the file after this.
  *
  * @receiver A context introduced by the parent form whose fields need to
  *   be edited.

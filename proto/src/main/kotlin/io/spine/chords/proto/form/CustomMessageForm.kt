@@ -30,8 +30,8 @@ import com.google.protobuf.Message
 import io.spine.protobuf.ValidatingBuilder
 
 /**
- * A base class, which can be used for implementing a custom form component
- * for editing values of type [M].
+ * A base class, which should be used for implementing custom form components
+ * that edit values of some specific type [M].
  *
  * Custom components which extend this class can have the same capabilities as
  * [MessageForm], but they would typically not require the user (developer) to
@@ -65,8 +65,36 @@ import io.spine.protobuf.ValidatingBuilder
  *         }
  *     }
  * ```
+ *
+ * Custom form components declared in this way can be used like other regular
+ * [InputComponent][io.spine.chords.core.InputComponent]. Here's an example
+ * of how the custom `PersonNameForm` component defined above can be used inside
+ * some composable function:
+ *
+ * ```
+ *     val personName: MutableState<PersonName> = getPersonName()
+ *     PersonNameForm { value = personName }
+ * ```
+ *
+ * Besides, similar to other [InputComponent][io.spine.chords.core.InputComponent]s,
+ * such a custom form component can be placed as an editor of some field within
+ * [MessageForm]. Say a parent form edits a message of type `ParentMessage`, and
+ * it has a field `parentField1` of type `PersonName`. Then a custom
+ * `PersonNameForm` component can be placed into the form to edit this field
+ * like this:
+ *
+ * ```kotlin
+ *     <MessageForm ...>
+ *         PersonNameForm(ParentMessageDef.parentField1)
+ *         ...
+ *     </MessageForm>
+ * ```
+ *
+ * See the respective [invoke][io.spine.chords.proto.form.invoke] extension
+ * for the details.
+ *
  * @param builder A lambda, which should create a builder for a message of
- *                type [M].
+ *   type [M].
  */
 public open class CustomMessageForm<M : Message>
 protected constructor(builder: () -> ValidatingBuilder<M>) : MessageForm<M>() {
