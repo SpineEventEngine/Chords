@@ -284,9 +284,11 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
  *
  * Adding such a companion object to a custom form subclass is needed to ensure
  * that it can be declared or created in various usage scenarios, similarly
- * to how any other [Component][io.spine.chords.core.Component] implementation
- * can be declared. See the "Implementing custom form components" section in
- * the [MessageForm]'s documentation.
+` * to how other [Component][io.spine.chords.core.Component] implementations
+ * can be declared. Note that the `invoke` functions here do not include
+ * `builder` and `content` parameters, and it is expected that those aspects are
+ * included in the actual custom form implementation [F]. See the "Implementing
+ * custom form components" section in the [MessageForm]'s documentation.
  *
  * @see io.spine.chords.core.Component
  * @see io.spine.chords.core.ComponentSetup
@@ -299,136 +301,74 @@ public open class MessageFormSetup<M: Message, F: MessageForm<M>>(
      * Declares a form instance, which edits a value stored in
      * the [value] `MutableState`.
      *
-     * The form's content that is specified with the [content] parameter is
-     * expected to include field editors for all message's fields, which
-     * are required to create a valid value of type [M].
-     *
-     * @param B A type of the message builder.
-     *
      * @param value The message value to be edited within the form.
-     * @param builder A lambda that should create and return a new builder for
-     *   a message of type [M].
      * @param props A lambda that can set any additional props on the form.
-     * @param onBeforeBuild A lambda that allows to amend the message
-     *   after any valid field is entered to it.
-     * @param content A form's content, which can contain an arbitrary
-     *   layout along with field editor declarations.
      * @return A form's instance that has been created for this
      *   declaration site.
      */
     @Composable
-    public fun <B : ValidatingBuilder<out M>> invoke(
+    public operator fun invoke(
         value: MutableState<M?>,
-        builder: () -> B,
-        props: ComponentProps<F>,
-        onBeforeBuild: (B) -> Unit,
-        content: @Composable FormPartScope<M>.() -> Unit
-    ): F = declareInstance(value, builder, props, onBeforeBuild, content)
+        props: ComponentProps<F> = ComponentProps {}
+    ): F = declareInstance(value, builderRequired(), props, {}, {})
 
     /**
      * Declares a form instance, which is automatically bound to edit a parent
      * form's field identified by [field].
      *
-     * The form's content that is specified with the [content] parameter is
-     * expected to include field editors for all message's fields, which
-     * are required to create a valid value of type [M].
-     *
      * @receiver The context introduced by the parent form.
      * @param PM Parent message type.
-     * @param B A type of the message builder.
      *
      * @param field The parent message's field whose message is to be edited
      *   within this form.
-     * @param builder A lambda that should create and return a new builder
-     *   for a message of type [M].
      * @param props A lambda that can set any additional props on the form.
      * @param defaultValue A value that should be displayed in the form
      *   by default.
-     * @param onBeforeBuild A lambda that allows to amend the message
-     *   after any valid field is entered to it.
-     * @param content A form's content, which can contain an arbitrary
-     *   layout along with field editor declarations.
      * @return A form's instance that has been created for this
      *   declaration site.
      */
     context(FormFieldsScope<PM>)
     @Composable
-    public fun <PM : Message, B : ValidatingBuilder<out M>> invoke(
+    public operator fun <PM : Message> invoke(
         field: MessageField<PM, M>,
-        builder: () -> B,
-        props: ComponentProps<F>,
-        defaultValue: M?,
-        onBeforeBuild: (B) -> Unit,
-        content: @Composable FormPartScope<M>.() -> Unit
-    ): F = declareInstance(field, builder, props, defaultValue, onBeforeBuild, content)
+        props: ComponentProps<F> = ComponentProps {},
+        defaultValue: M?
+    ): F = declareInstance(field, builderRequired(), props, defaultValue, {}, {})
 
     /**
      * Declares a multipart `MessageForm` instance, which edits a value stored
      * in the [value] `MutableState`.
      *
-     * The form's content that is specified with the [content] parameter
-     * should specify each form's part with using
-     * [FormPart][MultipartFormScope.FormPart] declarations, which, in turn,
-     * should contain the respective field editors.
-     *
-     * @param B A type of the message builder.
-     *
      * @param value The message value to be edited within the form.
-     * @param builder A lambda that should create and return a new builder
-     *   for a message of type [M].
      * @param props A lambda that can set any additional props on the form.
-     * @param onBeforeBuild A lambda that allows to amend the message
-     *   after any valid field is entered to it.
-     * @param content A form's content, which can contain an arbitrary
-     *   layout along with field editor declarations.
      * @return A form's instance that has been created for this
      *   declaration site.
      */
     @Composable
-    public fun <B : ValidatingBuilder<out M>> Multipart(
+    public fun Multipart(
         value: MutableState<M?>,
-        builder: () -> B,
-        props: ComponentProps<F>,
-        onBeforeBuild: (B) -> Unit,
-        content: @Composable MultipartFormScope<M>.() -> Unit
-    ): F = declareMultipartInstance(value, builder, props, onBeforeBuild, content)
+        props: ComponentProps<F> = ComponentProps {}
+    ): F = declareMultipartInstance(value, builderRequired(), props, {}, {})
 
     /**
      * Declares a multipart form instance, which is automatically bound to edit
      * a message in a parent form's field identified by [field].
      *
-     * The form's content that is specified with the [content] parameter
-     * should specify each form's part with using
-     * [FormPart][MultipartFormScope.FormPart] declarations, which, in turn,
-     * should contain the respective field editors.
-     *
      * @receiver The context introduced by the parent form.
      * @param PM Parent message type.
-     * @param B A type of the message builder.
      *
      * @param field The parent message's field whose message is to be edited
      *   within this form.
-     * @param builder A lambda that should create and return a new builder
-     *   for a message of type [M].
      * @param props A lambda that can set any additional props on the form.
-     * @param defaultValue A value that should be displayed in the form by default.
-     * @param onBeforeBuild A lambda that allows to amend the message
-     *   after any valid field is entered to it.
-     * @param content A form's content, which can contain an arbitrary
-     *   layout along with field editor declarations.
      * @return a form's instance that has been created for this
      *         declaration site.
      */
     context(FormFieldsScope<PM>)
     @Composable
-    public fun <PM : Message, B : ValidatingBuilder<out M>> Multipart(
+    public fun <PM : Message> Multipart(
         field: MessageField<PM, M>,
-        builder: () -> B,
-        props: ComponentProps<F>,
-        defaultValue: M?,
-        onBeforeBuild: (B) -> Unit,
-        content: @Composable MultipartFormScope<M>.() -> Unit
-    ): F = declareMultipartInstance(field, builder, props, defaultValue, onBeforeBuild, content)
+        props: ComponentProps<F>
+    ): F = declareMultipartInstance(field, builderRequired(), props, null, {}, {})
 
     /**
      * Creates a form instance without rendering it in the composable content
@@ -449,21 +389,23 @@ public open class MessageFormSetup<M: Message, F: MessageForm<M>>(
      * and the regular `@Composable` declarations (using one of the [invoke]
      * functions) would need to be used in the majority of cases.
      *
-     * @param B A type of the message builder.
-     *
      * @param value The message value to be edited within the form.
-     * @param builder A lambda that should create and return a new builder
-     *   for a message of type [M].
-     * @param onBeforeBuild A lambda that allows to amend the message
-     *   after any valid field is entered to it.
      * @param props A lambda that can set any additional props on the form.
      * @return A form's instance that has been created for this
      *   declaration site.
      */
-    public fun <B : ValidatingBuilder<out M>> create(
+    public fun create(
         value: MutableState<M?>,
-        builder: () -> B,
-        onBeforeBuild: (B) -> Unit,
-        props: ComponentProps<F>
-    ): F = super.createInstance(value, builder, onBeforeBuild, props)
+        props: ComponentProps<F> = ComponentProps {}
+    ): F = super.createInstance(value, builderRequired(), {}, props)
+
+    /**
+     * A default builder creation function that reminds custom from
+     * implementations to set the `builder` property if it's missing.
+     */
+    private fun <B : ValidatingBuilder<out M>> builderRequired(): () -> B =
+        error("The `builder` property must be set. \n" +
+              "NOTE: make sure to assign this property in the component class's `init` block. \n" +
+              "      see the \"Implementing custom form components\" section \n" +
+              "      in `MessageForm`'s documentation. \n")
 }

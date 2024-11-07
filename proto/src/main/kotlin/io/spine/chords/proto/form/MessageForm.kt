@@ -375,10 +375,29 @@ public enum class ValidationDisplayMode {
  * - Create a subclass of `MessageForm` (`PersonNameForm` in this case).
  * - Add a companion object of type [MessageFormSetup] to ensure that the
  *   component has an instance declaration API.
+ * - Set the `builder` property in the component class's `init` block.
  * - Override either [customContent] (for rendering ordinary singlepart forms),
  *   or [customMultipartContent] (if a multipart form is needed), which should
  *   contain field editors in the same way as you would fill the respective
  *   `MessageForm` (e.g. see the "Specifying form's content" section above).
+ *
+ * Here's an example:
+ * ```
+ *     public class PersonNameForm : MessageForm<PersonName>() {
+ *         public companion object : MessageFormSetup<PersonName, PersonNameForm>(
+ *             { PersonNameForm() }
+ *         )
+ *
+ *         init {
+ *             builder = { PaymentMethod.newBuilder() }
+ *         }
+ *
+ *         @Composable
+ *         override fun FormPartScope<PaymentMethod>.customContent() {
+ *           // Form's contents: field editors, layout, etc.
+ *         }
+ *     }
+ * ```
  *
  * ### The `onBeforeBuild` callback
  *
@@ -672,6 +691,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             props as ComponentProps<MessageForm<Message>>
         ) as MessageForm<M>
     }
+
     /**
      * An internal form's representation of a message's oneof.
      *
