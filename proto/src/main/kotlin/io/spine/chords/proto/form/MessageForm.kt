@@ -364,40 +364,6 @@ public enum class ValidationDisplayMode {
  *   (show or hide) form validation errors programmatically. This makes sense
  *   only when using the form's display mode is effectively manual.
  *
- * ### Implementing custom form components
- *
- * It is possible to implement custom form components for editing specific
- * message types with respective built-in editors that are defined as part of
- * such form components.
- *
- * For example, if it is needed to create a custom form component for editing
- * a `PersonName` message value, this can be done like this:
- * - Create a subclass of `MessageForm` (`PersonNameForm` in this case).
- * - Add a companion object of type
- *   [ComponentSetup][io.spine.chords.core.ComponentSetup] to ensure that the
- *   component has an instance declaration API.
- * - Set the `builder` property in the component class's `init` block.
- * - Override either [customContent] (for rendering ordinary singlepart forms),
- *   or [customMultipartContent] (if a multipart form is needed), which should
- *   contain field editors in the same way as you would fill the respective
- *   `MessageForm` (e.g. see the "Specifying form's content" section above).
- *
- * Here's an example:
- * ```
- *     public class PersonNameForm : MessageForm<PersonName>() {
- *         public companion object : ComponentSetup<PersonNameForm>({ PersonNameForm() })
- *
- *         init {
- *             builder = { PaymentMethod.newBuilder() }
- *         }
- *
- *         @Composable
- *         override fun FormPartScope<PaymentMethod>.customContent() {
- *           // Form's contents: field editors, layout, etc.
- *         }
- *     }
- * ```
- *
  * ### The `onBeforeBuild` callback
  *
  * In some cases it might be needed to amend the contents of the builder, which
@@ -1073,6 +1039,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * "contaminates" other types with this type parameter, make the usage of
      * `MessageField` more complex, and didn't add much value to
      * the user anyway.
+     *
+     * Consequently, this property is `internal` in favor of having a properly
+     * typed parameter in the component declaration API (see the [invoke]
+     * methods of the companion object).
      */
     internal lateinit var builder: () -> ValidatingBuilder<M>
 
@@ -1086,7 +1056,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * is built.
      *
      * See the "The `onBeforeBuild` callback" section in the
-     * [MessageForm]'s documentation for details.
+     * [MessageForm]'s documentation for details. Note that like the [builder]
+     * property, this property refers to the builder as
+     * `ValidatingBuilder<out M>`, see the reasoning in the [builder] property's
+     * documentation).
+     *
+     * Consequently, this property is `internal` in favor of having a properly
+     * typed parameter in the component declaration API (see the [invoke]
+     * methods of the companion object).
      */
     internal var onBeforeBuild: (ValidatingBuilder<out M>) -> Unit = {}
 
@@ -1550,7 +1527,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
 
         val validatedMessage = try {
             val builder = builderWithCurrentFields()
-            onBeforeBuild(builder)
+            beforeBuild(builder)
             builder.vBuild()
         } catch (e: ValidationException) {
             if (updateValidationErrors) {
@@ -1582,6 +1559,18 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         } else {
             validatedMessage
         }
+    }
+
+    /**
+     * A function, which can be overridden in custom `MessageForm` subclasses if
+     * they need to revise the builder's content builder's content before the
+     * message is built.
+     *
+     * This method is an analog of the `onBeforeBuild` callback for subclasses
+     * (since [onBeforeBuild] is by design an `internal` property).
+     */
+    protected open fun beforeBuild(builder: ValidatingBuilder<out M>) {
+        onBeforeBuild(builder)
     }
 
     /**

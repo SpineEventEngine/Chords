@@ -1,0 +1,76 @@
+/*
+ * Copyright 2024, TeamDev. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Redistribution and use in source and/or binary forms, with or without
+ * modification, must retain the above copyright notice and the following
+ * disclaimer.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package io.spine.chords.proto.form
+
+import com.google.protobuf.Message
+import io.spine.protobuf.ValidatingBuilder
+
+/**
+ * A base class, which can be used for implementing a custom form component
+ * for editing values of type [M].
+ *
+ * Custom components which extend this class can have the same capabilities as
+ * [MessageForm], but they would typically not require the user (developer) to
+ * provide a message's builder and the content (message field editors) of the
+ * form, since they would be a part of the custom form implementation itself.
+ *
+ * For example, if it is needed to create a custom form component for editing
+ * a `PersonName` message value, this can be done like this:
+ *
+ * - Create a subclass of `CustomMessageForm` (`PersonNameForm` in this case),
+ *   while providing the respective message builder as the `MessageForm`
+ *   constructor's parameter.
+ *
+ * - Add a companion object of type
+ *   [ComponentSetup][io.spine.chords.core.ComponentSetup] to ensure that the
+ *   component has an instance declaration API.
+ *
+ * - Override either [customContent] (for rendering ordinary singlepart forms),
+ *   or [customMultipartContent] (if a multipart form is needed), which should
+ *   contain field editors in the same way as you would fill the respective
+ *   `MessageForm` (e.g. see the "Specifying form's content" section above).
+ *
+ * Here's an example:
+ * ```
+ *     public class PersonNameForm : MessageForm<PersonName>({ PersonName.newBuilder() }) {
+ *         public companion object : ComponentSetup<PersonNameForm>({ PersonNameForm() })
+ *
+ *         @Composable
+ *         override fun FormPartScope<PaymentMethod>.customContent() {
+ *           // Form's contents: field editors, layout, etc.
+ *         }
+ *     }
+ * ```
+ * @param builder A lambda, which should create a builder for a message of
+ *                type [M].
+ */
+public open class CustomMessageForm<M : Message>
+protected constructor(builder: () -> ValidatingBuilder<M>) : MessageForm<M>() {
+    init {
+        this.builder = builder
+    }
+}
