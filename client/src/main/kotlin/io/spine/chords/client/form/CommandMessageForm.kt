@@ -72,8 +72,8 @@ import kotlinx.coroutines.TimeoutCancellationException
  *          // with some of the command message's fields, by passing the
  *          // respective command's field as
  *          // an `io.spine.chords.runtime.MessageField` instance.
- *          UserNameField(AuthorizedUserDef.userName)
- *          PasswordField(AuthorizedUserDef.password)
+ *          UserNameField(AuthorizeUserDef.userName)
+ *          PasswordField(AuthorizeUserDef.password)
  *
  *          // You can implement the UI for posting the form with any component
  *          // that appears appropriate as long as the form's `postCommand`

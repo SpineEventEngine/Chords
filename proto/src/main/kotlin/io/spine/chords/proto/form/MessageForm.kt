@@ -174,8 +174,8 @@ import io.spine.validate.ValidationException
  *
  * Being a kind of input component, similar to other input components (such as
  * [DateTimeField] or [UrlField]), [MessageForm] can also be nested as a field
- * editor component inside [content] of some other [MessageForm], where
- * a form-like editor is needed for some of its fields.
+ * editor inside some other [MessageForm], which needs some of its message-typed
+ * fields to be edited as a form.
  *
  * This way it's possible to declare arbitrarily deep nested forms whenever
  * needed for editing respective nested message structures.
@@ -319,6 +319,14 @@ import io.spine.validate.ValidationException
  * contains the current field value, which has to be displayed by the editor
  * component, and which should accept any value changes from
  * the editor component.
+ *
+ * See the documentation for [FormFieldScope] and its members for the
+ * description of all parts of the field editor embedding contract.
+ *
+ * It should be noted that standard input components mentioned in the beginning
+ * of `MessageForm`'s documentation also use this same low-level mechanism when
+ * using them as field editors (see the implementation of the internal
+ * [io.spine.chords.proto.form.ContentWithinField] function).
  *
  * ### Instance-based usage
  *
@@ -1550,8 +1558,8 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
 
     /**
      * A function, which can be overridden in custom `MessageForm` subclasses if
-     * they need to revise the builder's content builder's content before the
-     * message is built.
+     * they need to revise the builder's content right before the message
+     * is built.
      *
      * This method is an analog of the `onBeforeBuild` callback for subclasses
      * (since [onBeforeBuild] is by design an `internal` property).

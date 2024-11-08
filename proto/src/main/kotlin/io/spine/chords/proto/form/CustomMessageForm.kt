@@ -28,6 +28,7 @@ package io.spine.chords.proto.form
 
 import com.google.protobuf.Message
 import io.spine.protobuf.ValidatingBuilder
+import io.spine.chords.core.Component
 
 /**
  * A base class, which should be used for implementing custom form components
@@ -35,11 +36,11 @@ import io.spine.protobuf.ValidatingBuilder
  *
  * Custom components which extend this class can have the same capabilities as
  * [MessageForm], but they would typically not require the user (developer) to
- * provide a message's builder and the content (message field editors) of the
- * form, since they would be a part of the custom form implementation itself.
+ * provide a message's builder and the content (message field editors) for the
+ * form, since they would be a part of the custom form's implementation itself.
  *
- * For example, if it is needed to create a custom form component for editing
- * a `PersonName` message value, this can be done like this:
+ * If it is needed to create a custom form component for editing, e.g.
+ * `PersonName` message values, it can be done like this:
  *
  * - Create a subclass of `CustomMessageForm` (`PersonNameForm` in this case),
  *   while providing the respective message builder as the `MessageForm`
@@ -47,12 +48,13 @@ import io.spine.protobuf.ValidatingBuilder
  *
  * - Add a companion object of type
  *   [ComponentSetup][io.spine.chords.core.ComponentSetup] to ensure that the
- *   component has an instance declaration API.
+ *   component can actually be used (like any other class-based [Component]]).
  *
  * - Override either [customContent] (for rendering ordinary singlepart forms),
- *   or [customMultipartContent] (if a multipart form is needed), which should
+ *   or [customMultipartContent] (if a multipart form is required), which should
  *   contain field editors in the same way as you would fill the respective
- *   `MessageForm` (e.g. see the "Specifying form's content" section above).
+ *   `MessageForm` if it would be declared as a standalone form (see the
+ *   [MessageForm]'s documentation for details).
  *
  * Here's an example:
  * ```
