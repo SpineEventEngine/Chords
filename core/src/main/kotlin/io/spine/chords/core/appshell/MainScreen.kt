@@ -30,26 +30,34 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import io.spine.chords.core.Component
 
 /**
  * Represents the main screen in the application.
  */
-@Composable
-public fun MainScreen(appViews: List<AppView>, initialView: AppView?) {
-    val selectedItemHolder = remember {
-        mutableStateOf(
-            initialView ?: appViews[0]
-        )
-    }
+public class MainScreen(
+    private val appViews: List<AppView>,
+    private val initialView: AppView?
+) : Component() {
 
-    Scaffold(
-        topBar = {
-            TopBar()
+    public val topBar: TopBar = TopBar()
+
+    @Composable
+    override fun content() {
+        val selectedItemHolder = remember {
+            mutableStateOf(
+                initialView ?: appViews[0]
+            )
         }
-    ) {
-        val topPadding = it.calculateTopPadding()
-        NavigationDrawer(appViews, selectedItemHolder, topPadding) {
-            selectedItemHolder.value.Content()
+        Scaffold(
+            topBar = {
+                topBar.Content()
+            }
+        ) {
+            val topPadding = it.calculateTopPadding()
+            NavigationDrawer(appViews, selectedItemHolder, topPadding) {
+                selectedItemHolder.value.Content()
+            }
         }
     }
 }

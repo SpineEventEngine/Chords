@@ -42,8 +42,8 @@ import io.spine.chords.proto.form.ValidationDisplayMode
 import io.spine.protobuf.ValidatingBuilder
 
 /**
- * A [Dialog] designed to create or modify command messages,
- * and post the respective commands upon finish.
+ * A [Dialog] designed to create or modify command message,
+ * and post the respective command upon finish.
  *
  * @param C A type of the command message constructed in the dialog.
  * @param B A type of the command message builder.

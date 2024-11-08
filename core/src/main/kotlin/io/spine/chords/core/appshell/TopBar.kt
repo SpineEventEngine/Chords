@@ -26,10 +26,12 @@
 
 package io.spine.chords.core.appshell
 
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -37,30 +39,46 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.spine.chords.core.Component
 
 /**
  * Represents the TopBar, aka 'Header', of the main screen.
  *
- * @param modifier
- *         a [Modifier] for this component.
+ * @param modifier A [Modifier] for this component.
  */
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun TopBar(modifier: Modifier = Modifier) {
-    TopAppBar(
-        {
-            Text(
-                app.name,
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+public class TopBar(private val modifier: Modifier = Modifier) : Component() {
+
+    /**
+     * The right side content of the `TopBar` that typically contains
+     * actions like logout, notifications, etc.
+     *
+     * The [TopAppBar] component is used to render the `TopBar` so it is recommended
+     * to use [IconButton]s for [rightSideContent] as it is passed to the
+     * `actions` property of the [TopAppBar].
+     */
+    public var rightSideContent: @Composable RowScope.() -> Unit = {}
+
+    @Composable
+    protected override fun content() {
+        TopAppBar(
+            title = {
+                Text(
+                    app.name,
+                    style = MaterialTheme.typography.displayLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            actions = {
+                rightSideContent.invoke(this)
+            },
+            modifier = modifier
+                .padding(0.dp)
+                .fillMaxWidth(),
+            windowInsets = WindowInsets(8.dp, 8.dp, 8.dp, 8.dp),
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background
             )
-        },
-        modifier = modifier
-            .padding(0.dp)
-            .fillMaxWidth(),
-        windowInsets = WindowInsets(8.dp),
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background
         )
-    )
+    }
 }

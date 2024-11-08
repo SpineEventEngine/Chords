@@ -53,8 +53,8 @@ import java.awt.Dimension
  */
 public class AppWindow(
     private val signInScreenContent: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
-    views: List<AppView>,
-    initialView: AppView?,
+    private val views: List<AppView>,
+    private val initialView: AppView?,
     private val onCloseRequest: () -> Unit,
     private val minWindowSize: Dimension
 ) {
@@ -62,15 +62,17 @@ public class AppWindow(
     /**
      * The main screen of the application.
      */
-    private val mainScreen: @Composable () -> Unit = {
-        MainScreen(views, initialView)
+    public val mainScreen: MainScreen = MainScreen(views, initialView)
+
+    private val mainScreenContent: @Composable () -> Unit = {
+        mainScreen.Content()
     }
 
     /**
      * The sign-in screen of the application.
      */
     private val signInScreen: @Composable () -> Unit = {
-        signInScreenContent { currentScreen.value = mainScreen }
+        signInScreenContent { currentScreen.value = mainScreenContent }
     }
 
     /**
@@ -128,7 +130,7 @@ public class AppWindow(
      *          is already displayed.
      */
     public fun openModalScreen(screen: @Composable () -> Unit) {
-        check(currentScreen.value == mainScreen) {
+        check(currentScreen.value == mainScreenContent) {
             "Another modal screen is visible already."
         }
         check(modalWindow.value == null) {
@@ -144,7 +146,7 @@ public class AppWindow(
      *          to indicate the illegal state when no modal screen to close.
      */
     public fun closeCurrentModalScreen() {
-        currentScreen.value = mainScreen
+        currentScreen.value = mainScreenContent
     }
 
     /**

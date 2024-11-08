@@ -174,7 +174,7 @@ public open class Application(
  * @param appWindow
  *         main application's window.
  */
-public class ApplicationUI(private val appWindow: AppWindow) {
+public class ApplicationUI(public val appWindow: AppWindow) {
 
     /**
      * Displays a modal screen.
