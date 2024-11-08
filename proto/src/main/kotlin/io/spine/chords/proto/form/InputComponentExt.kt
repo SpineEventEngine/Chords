@@ -35,39 +35,43 @@ import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 
 /**
- * This extension adds one more way to declare any [InputComponent] [C] as an
- * editor of field [field] within the parent
+ * This extension adds a way to declare any [InputComponent] [C] as an editor of
+ * field [field] within the parent
  * [MessageForm][io.spine.chords.proto.form.MessageForm].
  *
- * For example in case of a component [C] being `SomeInputComponent`, it can be
- * placed inside a [MessageForm] to be used as an editor for some respective
- * field (e.g. `parentField1` below) of the message type edited in the parent
- * form (`ParentMessage` in the example below):
+ * Technically, this is an
+ * [operator function](https://kotlinlang.org/docs/operator-overloading.html#invoke-operator),
+ * which allows using component's classes like functions.
+ *
+ * For example in case of
+ * a component [C] being `SomeInputComponent`, it can be
+ * placed inside a [MessageForm] that edits a message of type `ParentMessage` to
+ * edit some of its fields (e.g. `ParentMessage.parentField1`) like this:
  *
  * ```kotlin
  *     <MessageForm ...>
- *         ...
  *         SomeInputComponent(ParentMessageDef.parentField1) {
  *             property1 = value1
  *             property2 = value2
  *             ...
  *         }
+ *         ...
  *     </MessageForm>
  * ```
  *
  * Where `property1`, `property2`, etc. are properties of `SomeInputComponent`,
- * which additionally need to be configured for this field editor declaration.
- * If no property configurations are required for such a component instance
- * declaration, it can be expressed like this:
+ * which might additionally need to be configured for this particular field
+ * editor declaration. If no property configurations are required for this
+ * `SomeInputComponent` declaration, it can be expressed like this:
  *
  * ```kotlin
  *     <MessageForm ...>
- *         ...
  *         SomeInputComponent(ParentMessageDef.parentField1)
+ *         ...
  *     </MessageForm>
  * ```
  *
- * ### A practical tip for importing this function
+ * ### A practical tip for importing this extension
  *
  * The shorthand syntax above (e.g. `SomeInputComponent(ParentMessageDef.parentField1)`)
  * is using this `invoke` operator function implicitly, and the "full" syntax

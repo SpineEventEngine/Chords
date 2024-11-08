@@ -93,6 +93,7 @@ import io.spine.protobuf.ValidatingBuilder
  * See the respective [invoke][io.spine.chords.proto.form.invoke] extension
  * for the details.
  *
+ * @constructor Initializes the custom message form instance.
  * @param builder A lambda, which should create a builder for a message of
  *   type [M].
  */
