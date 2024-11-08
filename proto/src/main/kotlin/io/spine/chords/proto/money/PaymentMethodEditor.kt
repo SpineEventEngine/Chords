@@ -32,10 +32,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.Top
 import androidx.compose.ui.unit.dp
+import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.layout.InputRow
+import io.spine.chords.proto.form.CustomMessageForm
 import io.spine.chords.proto.form.FormPartScope
-import io.spine.chords.proto.form.MessageForm
-import io.spine.chords.proto.form.MessageFormSetup
 import io.spine.chords.proto.form.OneofRadioButton
 import io.spine.chords.proto.form.OptionalMessageCheckbox
 import io.spine.chords.proto.form.invoke
@@ -47,14 +47,10 @@ import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
 /**
  * A component that edits a [PaymentMethod].
  */
-public class PaymentMethodEditor : MessageForm<PaymentMethod>() {
-    public companion object : MessageFormSetup<PaymentMethod, PaymentMethodEditor>(
-        { PaymentMethodEditor() }
-    )
-
-    init {
-        builder = { PaymentMethod.newBuilder() }
-    }
+public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
+    { PaymentMethod.newBuilder() }
+) {
+    public companion object : ComponentSetup<PaymentMethodEditor>({ PaymentMethodEditor() })
 
     @Composable
     override fun FormPartScope<PaymentMethod>.customContent() {

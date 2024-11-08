@@ -72,8 +72,8 @@ import kotlinx.coroutines.TimeoutCancellationException
  *          // with some of the command message's fields, by passing the
  *          // respective command's field as
  *          // an `io.spine.chords.runtime.MessageField` instance.
- *          UserNameField(AuthorizedUser.userName)
- *          PasswordField(AuthorizedUser.password)
+ *          UserNameField(AuthorizeUserDef.userName)
+ *          PasswordField(AuthorizeUserDef.password)
  *
  *          // You can implement the UI for posting the form with any component
  *          // that appears appropriate as long as the form's `postCommand`
@@ -144,8 +144,7 @@ import kotlinx.coroutines.TimeoutCancellationException
  * }
  * ```
  *
- * @param C
- *         a type of the command message being edited with the form.
+ * @param C A type of the command message being edited with the form.
  */
 public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     public companion object :
@@ -177,15 +176,25 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
          *   declaration site.
          */
         @Composable
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `C` type parameter.
+            "UNCHECKED_CAST"
+        )
         public operator fun <C : CommandMessage, B: ValidatingBuilder<out C>> invoke(
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
             props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
             content: @Composable FormPartScope<C>.() -> Unit
-        ): CommandMessageForm<C> = Multipart(builder, value, onBeforeBuild, props) {
-            FormPart(content)
-        }
+        ): CommandMessageForm<C> = declareInstance(
+            value as MutableState<CommandMessage?>,
+            builder,
+            props as ComponentProps<CommandMessageForm<CommandMessage>>,
+            onBeforeBuild
+        ) {
+            content(this as FormPartScope<C>)
+        } as CommandMessageForm<C>
 
         /**
          * Declares a multipart `CommandMessageForm` instance, which is not
@@ -227,9 +236,10 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             value as MutableState<CommandMessage?>,
             builder,
             props as ComponentProps<CommandMessageForm<CommandMessage>>,
-            onBeforeBuild,
-            content as @Composable MultipartFormScope<CommandMessage>.() -> Unit
-        ) as CommandMessageForm<C>
+            onBeforeBuild
+        ) {
+            content(this as MultipartFormScope<C>)
+        } as CommandMessageForm<C>
 
         /**
          * Creates a [CommandMessageForm] instance without rendering it in
