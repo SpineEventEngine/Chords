@@ -28,14 +28,14 @@ package io.spine.chords.proto.money
 
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.Top
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.ComponentSetup
-import io.spine.chords.core.layout.InputRow
 import io.spine.chords.proto.form.CustomMessageForm
 import io.spine.chords.proto.form.FormPartScope
+import io.spine.chords.proto.form.FormValidationError
 import io.spine.chords.proto.form.OneofRadioButton
 import io.spine.chords.proto.form.OptionalMessageCheckbox
 import io.spine.chords.proto.form.invoke
@@ -54,30 +54,29 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
 
     @Composable
     override fun FormPartScope<PaymentMethod>.customContent() {
-        if (!valueRequired) {
-            InputRow(
-                padding = PaddingValues()
-            ) {
-                OptionalMessageCheckbox("Specify payment method")
-            }
-        }
-        InputRow(
-            padding = PaddingValues()
-        ) {
-            OneOfFields(method) {
-                Column(
-                    verticalArrangement = spacedBy(4.dp, Top)
-                ) {
-                    OneofRadioButton(paymentCard, "Payment card")
-                    PaymentCardNumberField(paymentCard)
-                }
-                Column(
-                    verticalArrangement = spacedBy(4.dp)
-                ) {
-                    OneofRadioButton(bankAccount, "Bank Account")
-                    BankAccountField(bankAccount)
+        Column {
+            if (!valueRequired) {
+                Row(horizontalArrangement = spacedBy(40.dp)) {
+                    OptionalMessageCheckbox("Specify payment method")
                 }
             }
+            Row(horizontalArrangement = spacedBy(40.dp)) {
+                OneOfFields(method) {
+                    Column(
+                        verticalArrangement = spacedBy(4.dp, Top)
+                    ) {
+                        OneofRadioButton(paymentCard, "Payment card")
+                        PaymentCardNumberField(paymentCard)
+                    }
+                    Column(
+                        verticalArrangement = spacedBy(4.dp)
+                    ) {
+                        OneofRadioButton(bankAccount, "Bank Account")
+                        BankAccountField(bankAccount)
+                    }
+                }
+            }
+            FormValidationError()
         }
     }
 }
