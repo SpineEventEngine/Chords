@@ -95,6 +95,8 @@ import io.spine.chords.core.Component
  * See the respective [invoke][io.spine.chords.proto.form.invoke] extension
  * for the details.
  *
+ * @param M A type of message edited by the form.
+ *
  * @constructor Initializes the custom message form instance.
  * @param builder A lambda, which should create a builder for a message of
  *   type [M].

@@ -144,8 +144,7 @@ import kotlinx.coroutines.TimeoutCancellationException
  * }
  * ```
  *
- * @param C
- *         a type of the command message being edited with the form.
+ * @param C A type of the command message being edited with the form.
  */
 public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     public companion object :
