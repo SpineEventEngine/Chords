@@ -94,7 +94,9 @@ spinePublishing {
     artifactPrefix = ChordsPublishing.artifactPrefix
 }
 
-tasks.register<BuildCodegenPlugins>("buildCodegenPlugins") {
+val publishCodegenPluginsToMavenLocal = tasks.register<BuildCodegenPlugins>(
+    "publishCodegenPluginsToMavenLocal"
+) {
     directory = "${rootDir}/codegen/plugins"
     task("publishToMavenLocal")
     dependsOn(
@@ -102,7 +104,9 @@ tasks.register<BuildCodegenPlugins>("buildCodegenPlugins") {
     )
 }
 
-tasks.register<BuildCodegenPlugins>("publishCodegenPlugins") {
+val publishCodegenPlugins = tasks.register<BuildCodegenPlugins>(
+    "publishCodegenPlugins"
+) {
     directory = "${rootDir}/codegen/plugins"
     task("publish")
     dependsOn(
@@ -122,9 +126,6 @@ subprojects {
     if (modulesWithChordsCodegen.contains(name)) {
         // Apply codegen Gradle plugin to modules that require code generation.
         applyGradleCodegenPlugin()
-        // Add dependencies on `codegen-plugins` publishing for `publish`
-        // and `publishToMavenLocal` tasks.
-        dependOnCodegenPluginsPublishing()
     }
 }
 
@@ -134,28 +135,21 @@ fun Project.applyGradleCodegenPlugin() {
     apply {
         plugin(Spine.Chords.GradlePlugin.id)
     }
-    // Build `codegen-plugins` project before it can be applied.
-    tasks.named("applyCodegenPlugins") {
-        dependsOn(
-            rootProject.tasks.named("buildCodegenPlugins")
-        )
+    // Publish `codegen-plugins` to `mavenLocal` repo before it can be applied.
+    tasks.named("createCodegenWorkspace") {
+        dependsOn(publishCodegenPluginsToMavenLocal)
     }
     // Configure the plugin with the current version of `codegen-plugins`.
     chordsGradlePlugin.codegenPluginsArtifact =
         Spine.Chords.CodegenPlugins.artifact(version.toString())
 }
 
-// Adds dependency on `codegen-plugins` publishing for `publish`
-// and `publishToMavenLocal` tasks.
-//
-fun Project.dependOnCodegenPluginsPublishing() {
-    // Some projects may be not configured for publishing, e.g. `codegen-tests`.
-    tasks.findByName("publishToMavenLocal")?.dependsOn(
-        rootProject.tasks.named("buildCodegenPlugins")
-    )
-    tasks.findByName("publish")?.dependsOn(
-        rootProject.tasks.named("publishCodegenPlugins")
-    )
+tasks.named("publishToMavenLocal") {
+    dependsOn(publishCodegenPluginsToMavenLocal)
+}
+
+tasks.named("publish") {
+    dependsOn(publishCodegenPlugins)
 }
 
 PomGenerator.applyTo(project)
