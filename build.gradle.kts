@@ -83,6 +83,33 @@ allprojects {
     }
 }
 
+spinePublishing {
+    modules = productionModules
+        .map { project -> project.name }.toSet()
+
+    destinations = setOf(
+        PublishingRepos.gitHub("Chords"),
+        PublishingRepos.cloudArtifactRegistry
+    )
+    artifactPrefix = ChordsPublishing.artifactPrefix
+}
+
+tasks.register<BuildCodegenPlugins>("buildCodegenPlugins") {
+    directory = "${rootDir}/codegen/plugins"
+    task("publishToMavenLocal")
+    dependsOn(
+        project(":runtime").tasks.named("publishToMavenLocal")
+    )
+}
+
+tasks.register<BuildCodegenPlugins>("publishCodegenPlugins") {
+    directory = "${rootDir}/codegen/plugins"
+    task("publish")
+    dependsOn(
+        project(":runtime").tasks.named("publishToMavenLocal")
+    )
+}
+
 // The set of modules that require Chords code generation.
 val modulesWithChordsCodegen = setOf("proto-values", "codegen-tests")
 
@@ -91,15 +118,18 @@ subprojects {
         plugin("jvm-module")
     }
     apply<JavaPlugin>()
-    // Apply codegen Gradle plugin to modules that require code generation.
+
     if (modulesWithChordsCodegen.contains(name)) {
+        // Apply codegen Gradle plugin to modules that require code generation.
         applyGradleCodegenPlugin()
+        // Add dependencies on `codegen-plugins` publishing for `publish`
+        // and `publishToMavenLocal` tasks.
+        dependOnCodegenPluginsPublishing()
     }
 }
 
-/**
- * Applies and configures `io.spine.chords` Gradle plugin.
- */
+// Applies and configures `io.spine.chords` Gradle plugin.
+//
 fun Project.applyGradleCodegenPlugin() {
     apply {
         plugin(Spine.Chords.GradlePlugin.id)
@@ -115,41 +145,18 @@ fun Project.applyGradleCodegenPlugin() {
         Spine.Chords.CodegenPlugins.artifact(version.toString())
 }
 
-spinePublishing {
-    modules = productionModules
-        .map { project -> project.name }.toSet()
-
-    destinations = setOf(
-        PublishingRepos.gitHub("Chords"),
-        PublishingRepos.cloudArtifactRegistry
+// Adds dependency on `codegen-plugins` publishing for `publish`
+// and `publishToMavenLocal` tasks.
+//
+fun Project.dependOnCodegenPluginsPublishing() {
+    // Some projects may be not configured for publishing, e.g. `codegen-tests`.
+    tasks.findByName("publishToMavenLocal")?.dependsOn(
+        rootProject.tasks.named("buildCodegenPlugins")
     )
-    artifactPrefix = ChordsPublishing.artifactPrefix
+    tasks.findByName("publish")?.dependsOn(
+        rootProject.tasks.named("publishCodegenPlugins")
+    )
 }
 
 PomGenerator.applyTo(project)
 LicenseReporter.mergeAllReports(project)
-
-val codegenPluginsPublishToMavenLocal = tasks
-    .register<BuildCodegenPlugins>("buildCodegenPlugins") {
-        directory = "${rootDir}/codegen/plugins"
-        task("publishToMavenLocal")
-        dependsOn(
-            project(":runtime").tasks.named("publishToMavenLocal")
-        )
-    }
-
-tasks.named("publishToMavenLocal") {
-    dependsOn(codegenPluginsPublishToMavenLocal)
-}
-
-val codegenPluginsPublish = tasks.register<BuildCodegenPlugins>("publishCodegenPlugins") {
-    directory = "${rootDir}/codegen/plugins"
-    task("publish")
-    dependsOn(
-        project(":runtime").tasks.named("publishToMavenLocal")
-    )
-}
-
-tasks.named("publish") {
-    dependsOn(codegenPluginsPublish)
-}
