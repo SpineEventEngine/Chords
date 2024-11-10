@@ -94,23 +94,21 @@ spinePublishing {
     artifactPrefix = ChordsPublishing.artifactPrefix
 }
 
-val codegenPluginsPublishToMavenLocal = tasks
-    .register<BuildCodegenPlugins>("buildCodegenPlugins") {
-        directory = "${rootDir}/codegen/plugins"
-        task("publishToMavenLocal")
-        dependsOn(
-            project(":runtime").tasks.named("publishToMavenLocal")
-        )
-    }
+tasks.register<BuildCodegenPlugins>("buildCodegenPlugins") {
+    directory = "${rootDir}/codegen/plugins"
+    task("publishToMavenLocal")
+    dependsOn(
+        project(":runtime").tasks.named("publishToMavenLocal")
+    )
+}
 
-val codegenPluginsPublish = tasks
-    .register<BuildCodegenPlugins>("publishCodegenPlugins") {
-        directory = "${rootDir}/codegen/plugins"
-        task("publish")
-        dependsOn(
-            project(":runtime").tasks.named("publishToMavenLocal")
-        )
-    }
+tasks.register<BuildCodegenPlugins>("publishCodegenPlugins") {
+    directory = "${rootDir}/codegen/plugins"
+    task("publish")
+    dependsOn(
+        project(":runtime").tasks.named("publishToMavenLocal")
+    )
+}
 
 // The set of modules that require Chords code generation.
 val modulesWithChordsCodegen = setOf("proto-values", "codegen-tests")
@@ -152,10 +150,12 @@ fun Project.applyGradleCodegenPlugin() {
 //
 fun Project.dependOnCodegenPluginsPublishing() {
     // Some projects may be not configured for publishing, e.g. `codegen-tests`.
-    tasks.findByName("publishToMavenLocal")
-        ?.dependsOn(codegenPluginsPublishToMavenLocal)
-    tasks.findByName("publish")
-        ?.dependsOn(codegenPluginsPublish)
+    tasks.findByName("publishToMavenLocal")?.dependsOn(
+        rootProject.tasks.named("buildCodegenPlugins")
+    )
+    tasks.findByName("publish")?.dependsOn(
+        rootProject.tasks.named("publishCodegenPlugins")
+    )
 }
 
 PomGenerator.applyTo(project)
