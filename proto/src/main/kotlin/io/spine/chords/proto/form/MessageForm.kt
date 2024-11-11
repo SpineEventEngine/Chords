@@ -1766,7 +1766,7 @@ public enum class ValidationDisplayMode {
  * @param color A text's color.
  */
 @Composable
-public fun <M : Message >FormPartScope<M>.FormValidationError(
+public fun <M : Message> FormPartScope<M>.FormValidationError(
     style: TextStyle = typography.bodySmall,
     color: Color = colorScheme.error
 ) {

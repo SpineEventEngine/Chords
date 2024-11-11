@@ -100,7 +100,6 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
                     }
                 }
             }
-
         }
     }
 }
