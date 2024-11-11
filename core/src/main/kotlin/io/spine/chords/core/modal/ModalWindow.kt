@@ -73,144 +73,73 @@ import java.awt.event.KeyEvent.VK_ESCAPE
  * @param onCancel The callback triggered when the user clicks outside the modal window.
  * @param config The configuration of the modal window.
  */
-@Composable
-public fun ModalWindow(
-    onCancel: () -> Unit,
-    config: ModalWindowConfig
-) {
-    val (content, cancelConfirmationDialog) = config
-    val cancelConfirmationShown = remember { mutableStateOf(false) }
-    Popup(
-        popupPositionProvider = centerWindowPositionProvider,
-        onDismissRequest = onCancel,
-        properties = PopupProperties(focusable = true),
-        onPreviewKeyEvent = { false },
-        onKeyEvent = cancelOnEscape {
-            if (cancelConfirmationDialog != null) {
-                cancelConfirmationShown.value = true
-            } else {
-                onCancel()
-            }
-        }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-                .pointerInput(onCancel) {
-                    detectTapGestures(onPress = {
-                        if (cancelConfirmationDialog == null) {
-                            onCancel()
-                        }
-                    })
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier.pointerInput(onCancel) {
-                    detectTapGestures(onPress = {})
-                }
-            ) {
-                content {
-                    cancelConfirmationShown.value = true
-                }
-            }
-        }
-        if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
-            CancelConfirmationDialogContainer(
-                onCancel = { cancelConfirmationShown.value = false },
-                onConfirm = { onCancel() },
-                content = cancelConfirmationDialog
-            )
-        }
-    }
-}
+//@Composable
+//public fun ModalWindow(
+//    onCancel: () -> Unit,
+//    config: ModalWindowConfig
+//) {
+//    val (content, cancelConfirmationDialog) = config
+//    val cancelConfirmationShown = remember { mutableStateOf(false) }
+//    Popup(
+//        popupPositionProvider = centerWindowPositionProvider,
+//        onDismissRequest = onCancel,
+//        properties = PopupProperties(focusable = true),
+//        onPreviewKeyEvent = { false },
+//        onKeyEvent = cancelOnEscape {
+//            if (cancelConfirmationDialog != null) {
+//                cancelConfirmationShown.value = true
+//            } else {
+//                onCancel()
+//            }
+//        }
+//    ) {
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .background(Color.Black.copy(alpha = 0.5f))
+//                .pointerInput(onCancel) {
+//                    detectTapGestures(onPress = {
+//                        if (cancelConfirmationDialog == null) {
+//                            onCancel()
+//                        }
+//                    })
+//                },
+//            contentAlignment = Alignment.Center
+//        ) {
+//            Box(
+//                modifier = Modifier.pointerInput(onCancel) {
+//                    detectTapGestures(onPress = {})
+//                }
+//            ) {
+//                content {
+//                    cancelConfirmationShown.value = true
+//                }
+//            }
+//        }
+//        if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
+//            CancelConfirmationDialogContainer(
+//                onCancel = { cancelConfirmationShown.value = false },
+//                onConfirm = { onCancel() },
+//                content = cancelConfirmationDialog
+//            )
+//        }
+//    }
+//}
 
-/**
- * Configuration of the modal window.
- *
- * This object allows to define the content that will be displayed as
- * the modal window, as well as an optional cancel confirmation dialog. If the
- * `cancelConfirmationDialog` property is set to `null`, the modal will close
- * immediately when the user clicks outside or presses `Escape`.
- * Otherwise, the cancel confirmation dialog will be displayed to confirm the closure.
- *
- * @param content The content to display as a modal window.
- * @param cancelConfirmationDialog The configuration of the cancel confirmation dialog.
- */
-public data class ModalWindowConfig(
-    val content: @Composable BoxScope.(onShowCancelConfirmation: () -> Unit) -> Unit,
-    val cancelConfirmationDialog: CancelConfirmationDialog? = null
-)
+///**
+// * Configuration of the modal window.
+// *
+// * This object allows to define the content that will be displayed as
+// * the modal window, as well as an optional cancel confirmation dialog. If the
+// * `cancelConfirmationDialog` property is set to `null`, the modal will close
+// * immediately when the user clicks outside or presses `Escape`.
+// * Otherwise, the cancel confirmation dialog will be displayed to confirm the closure.
+// *
+// * @param content The content to display as a modal window.
+// * @param cancelConfirmationDialog The configuration of the cancel confirmation dialog.
+// */
+//public data class ModalWindowConfig(
+//    val content: @Composable BoxScope.(onShowCancelConfirmation: () -> Unit) -> Unit,
+//    val cancelConfirmationDialog: CancelConfirmationDialog? = null
+//)
 
-/**
- * A type of the cancel confirmation dialog.
- *
- * The cancel confirmation dialog prompts the user to confirm whether they want to close
- * the modal. It receives two parameters:
- * - `onConfirm`: A callback triggered when the user confirms the cancellation.
- * - `onCancel`: A callback triggered when the user cancels the cancellation
- *   (i.e., decides not to close the modal).
- */
-public typealias CancelConfirmationDialog =
-        @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit
-
-/**
- * The container for the cancel confirmation dialog of the [ModalWindow] component.
- *
- * This dialog confirms or denies the intention of the user to close the main modal window.
- *
- * @param onCancel The callback triggered on the dialog cancellation.
- * @param onConfirm The callback triggered on the confirmation to cancel the main modal window.
- * @param content The content to display as a dialog.
- */
-@Composable
-private fun CancelConfirmationDialogContainer(
-    onCancel: () -> Unit,
-    onConfirm: () -> Unit,
-    content: CancelConfirmationDialog
-) {
-    Popup(
-        popupPositionProvider = centerWindowPositionProvider,
-        properties = PopupProperties(focusable = true),
-        onPreviewKeyEvent = { false }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Box {
-                content(onConfirm, onCancel)
-            }
-        }
-    }
-}
-
-/**
- * Provides a modal window setting that forces it
- * to appear at the center of the screen.
- */
-private val centerWindowPositionProvider = object : PopupPositionProvider {
-    override fun calculatePosition(
-        anchorBounds: IntRect,
-        windowSize: IntSize,
-        layoutDirection: LayoutDirection,
-        popupContentSize: IntSize
-    ): IntOffset = IntOffset.Zero
-}
-
-/**
- * Returns a function that executes a provided `onCancel` callback
- * whenever the `Escape` keyboard button is pressed.
- */
-private fun cancelOnEscape(onCancel: () -> Unit): ((KeyEvent) -> Boolean) =
-    {
-        if (it.type == KeyDown && it.awtEventOrNull?.keyCode == VK_ESCAPE) {
-            onCancel()
-            true
-        } else {
-            false
-        }
-    }

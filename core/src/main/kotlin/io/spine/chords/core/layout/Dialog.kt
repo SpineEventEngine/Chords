@@ -27,7 +27,10 @@
 package io.spine.chords.core.layout
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -39,17 +42,33 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.awtEventOrNull
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key.Companion.Enter
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType.Companion.KeyDown
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import io.spine.chords.core.Component
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.on
+import java.awt.event.KeyEvent.VK_ESCAPE
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -136,11 +155,64 @@ public abstract class Dialog : Component() {
      */
     protected abstract suspend fun submitForm(): Boolean
 
+    public var cancelConfirmationDialog: CancelConfirmationDialog? = null
+    public var onCancel: () -> Unit = {}
+
     /**
      * Creates the dialog content composition.
      */
     @Composable
     protected override fun content() {
+        val cancelConfirmationShown = remember { mutableStateOf(false) }
+        Popup(
+            popupPositionProvider = centerWindowPositionProvider,
+            onDismissRequest = onCancel,
+            properties = PopupProperties(focusable = true),
+            onPreviewKeyEvent = { false },
+            onKeyEvent = cancelOnEscape {
+                if (cancelConfirmationDialog != null) {
+                    cancelConfirmationShown.value = true
+                } else {
+                    onCancel()
+                }
+            }
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .pointerInput(onCancel) {
+                        detectTapGestures(onPress = {
+                            if (cancelConfirmationDialog == null) {
+                                onCancel()
+                            }
+                        })
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier.pointerInput(onCancel) {
+                        detectTapGestures(onPress = {})
+                    }
+                ) {
+                    onCancelConfirmation = {
+                        cancelConfirmationShown.value = true
+                    }
+                    dialogContent()
+                }
+            }
+            if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
+                CancelConfirmationDialogContainer(
+                    onCancel = { cancelConfirmationShown.value = false },
+                    onConfirm = { onCancel() },
+                    content = cancelConfirmationDialog!!
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun dialogContent() {
         Column(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.large)
@@ -286,3 +358,77 @@ private fun DialogButton(
         }
     }
 }
+
+
+/**
+ * Returns a function that executes a provided `onCancel` callback
+ * whenever the `Escape` keyboard button is pressed.
+ */
+private fun cancelOnEscape(onCancel: () -> Unit): ((KeyEvent) -> Boolean) =
+    {
+        if (it.type == KeyDown && it.awtEventOrNull?.keyCode == VK_ESCAPE) {
+            onCancel()
+            true
+        } else {
+            false
+        }
+    }
+
+
+/**
+ * Provides a modal window setting that forces it
+ * to appear at the center of the screen.
+ */
+private val centerWindowPositionProvider = object : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize
+    ): IntOffset = IntOffset.Zero
+}
+
+/**
+ * The container for the cancel confirmation dialog of the [ModalWindow] component.
+ *
+ * This dialog confirms or denies the intention of the user to close the main modal window.
+ *
+ * @param onCancel The callback triggered on the dialog cancellation.
+ * @param onConfirm The callback triggered on the confirmation to cancel the main modal window.
+ * @param content The content to display as a dialog.
+ */
+@Composable
+private fun CancelConfirmationDialogContainer(
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+    content: CancelConfirmationDialog
+) {
+    Popup(
+        popupPositionProvider = centerWindowPositionProvider,
+        properties = PopupProperties(focusable = true),
+        onPreviewKeyEvent = { false }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Box {
+                content(onConfirm, onCancel)
+            }
+        }
+    }
+}
+
+/**
+ * A type of the cancel confirmation dialog.
+ *
+ * The cancel confirmation dialog prompts the user to confirm whether they want
+ * to close the modal. It receives two parameters:
+ * - `onConfirm`: A callback triggered when the user confirms the cancellation.
+ * - `onCancel`: A callback triggered when the user cancels the cancellation
+ *   (i.e., decides not to close the modal).
+ */
+public typealias CancelConfirmationDialog =
+        @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit

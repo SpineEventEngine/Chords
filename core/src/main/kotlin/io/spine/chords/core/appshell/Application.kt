@@ -31,7 +31,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
-import io.spine.chords.core.modal.ModalWindowConfig
+import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.writeOnce
 import java.awt.Dimension
 
@@ -214,8 +214,8 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      *
      * @param config The configuration of the modal window.
      */
-    public fun openModalWindow(config: ModalWindowConfig) {
-        appWindow.openModalWindow(config)
+    public fun openModalWindow(dialog: Dialog) {
+        appWindow.openModalWindow(dialog)
     }
 
     /**
