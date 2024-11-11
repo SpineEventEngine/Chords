@@ -26,6 +26,8 @@
 
 package io.spine.chords.proto.form
 
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -34,8 +36,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.text.TextStyle
 import com.google.protobuf.Message
 import io.spine.base.FieldPath
 import io.spine.chords.core.ComponentProps
@@ -43,6 +47,7 @@ import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputContext
+import io.spine.chords.core.ValidationErrorText
 import io.spine.chords.proto.form.MessageForm.Companion.Multipart
 import io.spine.chords.proto.form.MessageForm.Companion.create
 import io.spine.chords.proto.form.MessageForm.Companion.invoke
@@ -258,53 +263,74 @@ import io.spine.validate.ValidationException
  *
  * ### A low-level (more flexible and complex) way of composing field editors
  *
- * The example with `PersonNameField` and `UrlField` above looks so simple
- * thanks to the fact that these components are class-based components that
- * extend [InputComponent]. You might not have such ready to use class-based
- * [InputComponent] implementations for all field types that you have to edit
- * within the form though. In this case you can either actually implement
- * a new [InputComponent] for the respective data type (which would be
- * a recommended, most flexible, and easy to use approach in most cases).
+ * The example with `PersonNameField` and `UrlField` in the beginning of this
+ * `MessageForm` documentation looks so simple thanks to the fact that these
+ * components are class-based components that extend [InputComponent]. You might
+ * not have such ready to use class-based [InputComponent] implementations for
+ * all field types that you have to edit within the form though. In this case
+ * you can actually implement a new [InputComponent] for the respective data
+ * type (and this is a recommended, most flexible, and easy to use approach in
+ * most cases).
+ *
  * Nevertheless, it's also possible to declare custom field editors using
  * a lower-level field editor declaration API. In this way you can use any
  * component or components (function-based and/or class-based ones) provided
  * that you fulfill the contract of how such field editor has to be defined.
  *
- * This requires wrapping actual field editor component(s) into the
- * [Field][FormFieldsScope.Field] function (see the sections below for
- * the details). Here's a basic example of using `MessageForm` with
- * function-based components. In this case a form edits a `Color` message, which
- * has three integer fields (`red`, `green`, `blue`), which are edited
- * as values in range 0 - 100 using
- * [TextField][androidx.compose.material3.TextField] components. It might
- * require respective refinement, but it shows the general approach:
+ * Creating a field editor in this way requires wrapping actual field editor
+ * component(s) into the [Field][FormFieldsScope.Field] function. Here's a basic
+ * example of using `MessageForm` with function-based components. In this case
+ * a form edits a `Color` message, which has three integer fields (`red`,
+ * `green`, and `blue`), which are edited as values in range 0 - 100 using
+ * [TextField][androidx.compose.material3.TextField] components. This example
+ * might require respective refinement, but it shows the general approach:
  *
  * ```
  *     val color = remember { mutableStateOf<Color?>(null) }
- *     Column {
- *         MessageForm(value = color, builder = { newBuilder() }) {
+
+ *     MessageForm(value = color, builder = { newBuilder() }) {
+ *         Column {
  *
+ *             // Each field editor is defined using such a `Field` declaration.
  *             Field(ColorDef.red) {
  *                 val valid = remember { mutableStateOf(true) }
+ *
+ *                 // The actual editor components have to be defined in a way
+ *                 // to display a value stored in the `fieldValue: MutableState`
+ *                 // property found in the context provided by
+ *                 // the `Field` function.
  *                 TextField(
  *                     value = round((fieldValue.value ?: 0.0f) * 100).toInt().toString(),
  *                     onValueChange = {
+ *
+ *                         // Any changes made by the editor component have to
+ *                         // be saved back into the `fieldValue` state.
  *                         fieldValue.value = try {
  *                             fieldValueValid.value = true
  *                             it.toInt() / 100.0f
  *                         } catch (e: NumberFormatException) {
+ *
+ *                             // If the editor component interprets its current
+ *                             // state of input as having an invalid value at
+ *                             // any given moment of time, it has to report
+ *                             // that fact live by changing the `fieldValueValid`
+ *                             // context property to contain a value of `false`.
  *                             fieldValueValid.value = false
  *                             null
  *                         }
  *                     },
- *                     isError = !valid.value,
+ *
+ *                     // The component is responsible for displaying its own
+ *                     // input validation errors itself in a way it
+ *                     // considers appropriate.
+ *                     isError = !fieldValueValid.value,
  *                     label = { Text("R [0 - 100]") }
  *                 )
  *             }
  *
- *             // Add the same for `ColorDef.green`, and `ColorDef.blue`...
+ *             // Add field editors for `ColorDef.green`, and `ColorDef.blue`
+ *             // similar to the `red` field editor above...
  *
- *             ValidationErrorText(formValidationError)
  *         }
  *     }
  *     println("color = [r=${color.value?.red}, g=${color.value?.green}, b=${color.value?.blue}]")
@@ -313,7 +339,7 @@ import io.spine.validate.ValidationException
  * In order to bind each field
  * editor component to its respective message's field, each field editor
  * component has to be wrapped into the [Field][FormFieldsScope.Field]
- * composable function, which provides the scope  that introduces the variables
+ * composable function, which provides the scope that introduces the variables
  * required for such a binding (see [FormFieldScope]). Most importantly,
  * [FormFieldScope] provides the `fieldValue` as [MutableState], which
  * contains the current field value, which has to be displayed by the editor
@@ -384,12 +410,11 @@ import io.spine.validate.ValidationException
  * the form editing experience.
  *
  * For example, if we wanted to set message's `field1` based on what is entered
- * in `field2`
- * explicitly, this could be done like this:
+ * in `field2` explicitly, this could be done like this:
  *
  * ```
  *     MessageForm(..., onBeforeBuild = { builder ->
- *         builder.field1 = field2ToField1(builder.field2Value)
+ *         builder.field1 = field2ToField1(builder.field2)
  *     },  ...) ...
  * ```
  *
@@ -1728,4 +1753,21 @@ public enum class ValidationDisplayMode {
      * the form.
      */
     DEFAULT
+}
+
+/**
+ * A component, which can be placed inside of [MessageForm] to display
+ * a form-wide validation error message (a validation error pertaining to
+ * the whole form rather than any of its fields or oneofs) — whenever there's
+ * such an error for the form.
+ *
+ * @param style A text's style.
+ * @param color A text's color.
+ */
+@Composable
+public fun <M : Message> FormPartScope<M>.FormValidationError(
+    style: TextStyle = typography.bodySmall,
+    color: Color = colorScheme.error
+) {
+    ValidationErrorText(formValidationError, style, color)
 }

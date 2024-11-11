@@ -26,27 +26,33 @@
 
 package io.spine.chords.core
 
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.MutableState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 
 /**
  * A validation error text.
  *
- * @param validationError
- *         a [MutableState] that holds the validation error text. If either
- *         the text or the [MutableState] reference itself is `null`, nothing
- *         is added to the composition.
+ * @param validationError A [MutableState] that holds the validation error text.
+ *   If the text is `null`, nothing is added to the composition.
+ * @param style A text's style.
+ * @param color A text's color.
  */
 @Composable
-public fun ValidationErrorText(validationError: State<String?>? = null) {
-    val validationErrorText = validationError?.value
+public fun ValidationErrorText(validationError: State<String?>,
+                               style: TextStyle = typography.bodySmall,
+                               color: Color = colorScheme.error) {
+    val validationErrorText = validationError.value
     if (validationErrorText != null) {
         Text(
             validationErrorText,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error
+            style = style,
+            color = color
         )
     }
 }
