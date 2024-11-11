@@ -291,7 +291,7 @@ import io.spine.validate.ValidationException
  *     MessageForm(value = color, builder = { newBuilder() }) {
  *         Column {
  *
- *             // Each field editor is defined using such `Field` declaration.
+ *             // Each field editor is defined using such a `Field` declaration.
  *             Field(ColorDef.red) {
  *                 val valid = remember { mutableStateOf(true) }
  *
@@ -328,10 +328,9 @@ import io.spine.validate.ValidationException
  *                 )
  *             }
  *
- *             // Field editors for `ColorDef.green`, and `ColorDef.blue` can
- *             // be declared in conceptually the same way as shown above...
+ *             // Add field editors for `ColorDef.green`, and `ColorDef.blue`
+ *             // similar to the `red` field editor above...
  *
- *             ValidationErrorText(formValidationError)
  *         }
  *     }
  *     println("color = [r=${color.value?.red}, g=${color.value?.green}, b=${color.value?.blue}]")
