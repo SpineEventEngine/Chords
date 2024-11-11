@@ -83,38 +83,6 @@ allprojects {
     }
 }
 
-// The set of modules that require Chords code generation.
-val modulesWithChordsCodegen = setOf("proto-values", "codegen-tests")
-
-subprojects {
-    apply {
-        plugin("jvm-module")
-    }
-    apply<JavaPlugin>()
-    // Apply codegen Gradle plugin to modules that require code generation.
-    if (modulesWithChordsCodegen.contains(name)) {
-        applyGradleCodegenPlugin()
-    }
-}
-
-/**
- * Applies and configures `io.spine.chords` Gradle plugin.
- */
-fun Project.applyGradleCodegenPlugin() {
-    apply {
-        plugin(Spine.Chords.GradlePlugin.id)
-    }
-    // Build `codegen-plugins` project before it can be applied.
-    tasks.named("applyCodegenPlugins") {
-        dependsOn(
-            rootProject.tasks.named("buildCodegenPlugins")
-        )
-    }
-    // Configure the plugin with the current version of `codegen-plugins`.
-    chordsGradlePlugin.codegenPluginsArtifact =
-        Spine.Chords.CodegenPlugins.artifact(version.toString())
-}
-
 spinePublishing {
     modules = productionModules
         .map { project -> project.name }.toSet()
@@ -126,23 +94,19 @@ spinePublishing {
     artifactPrefix = ChordsPublishing.artifactPrefix
 }
 
-PomGenerator.applyTo(project)
-LicenseReporter.mergeAllReports(project)
-
-val codegenPluginsPublishToMavenLocal = tasks
-    .register<BuildCodegenPlugins>("buildCodegenPlugins") {
-        directory = "${rootDir}/codegen/plugins"
-        task("publishToMavenLocal")
-        dependsOn(
-            project(":runtime").tasks.named("publishToMavenLocal")
-        )
-    }
-
-tasks.named("publishToMavenLocal") {
-    dependsOn(codegenPluginsPublishToMavenLocal)
+val publishCodegenPluginsToMavenLocal = tasks.register<BuildCodegenPlugins>(
+    "publishCodegenPluginsToMavenLocal"
+) {
+    directory = "${rootDir}/codegen/plugins"
+    task("publishToMavenLocal")
+    dependsOn(
+        project(":runtime").tasks.named("publishToMavenLocal")
+    )
 }
 
-val codegenPluginsPublish = tasks.register<BuildCodegenPlugins>("publishCodegenPlugins") {
+val publishCodegenPlugins = tasks.register<BuildCodegenPlugins>(
+    "publishCodegenPlugins"
+) {
     directory = "${rootDir}/codegen/plugins"
     task("publish")
     dependsOn(
@@ -150,6 +114,43 @@ val codegenPluginsPublish = tasks.register<BuildCodegenPlugins>("publishCodegenP
     )
 }
 
-tasks.named("publish") {
-    dependsOn(codegenPluginsPublish)
+// The set of modules that require Chords code generation.
+val modulesWithChordsCodegen = setOf("proto-values", "codegen-tests")
+
+subprojects {
+    apply {
+        plugin("jvm-module")
+    }
+    apply<JavaPlugin>()
+
+    if (modulesWithChordsCodegen.contains(name)) {
+        // Apply codegen Gradle plugin to modules that require code generation.
+        applyGradleCodegenPlugin()
+    }
 }
+
+// Applies and configures `io.spine.chords` Gradle plugin.
+//
+fun Project.applyGradleCodegenPlugin() {
+    apply {
+        plugin(Spine.Chords.GradlePlugin.id)
+    }
+    // Publish `codegen-plugins` to `mavenLocal` repo before it can be applied.
+    tasks.named("createCodegenWorkspace") {
+        dependsOn(publishCodegenPluginsToMavenLocal)
+    }
+    // Configure the plugin with the current version of `codegen-plugins`.
+    chordsGradlePlugin.codegenPluginsArtifact =
+        Spine.Chords.CodegenPlugins.artifact(version.toString())
+}
+
+tasks.named("publishToMavenLocal") {
+    dependsOn(publishCodegenPluginsToMavenLocal)
+}
+
+tasks.named("publish") {
+    dependsOn(publishCodegenPlugins)
+}
+
+PomGenerator.applyTo(project)
+LicenseReporter.mergeAllReports(project)
