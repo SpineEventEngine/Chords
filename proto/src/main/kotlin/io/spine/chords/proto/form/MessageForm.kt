@@ -1756,8 +1756,12 @@ public enum class ValidationDisplayMode {
     DEFAULT
 }
 
-
 /**
+ * A component, which can be placed inside of [MessageForm] to display
+ * a form-wide validation error message (a validation error pertaining to
+ * the whole form rather than any of its fields or oneofs) — whenever there's
+ * such an error for the form.
+ *
  * @param style A text's style.
  * @param color A text's color.
  */

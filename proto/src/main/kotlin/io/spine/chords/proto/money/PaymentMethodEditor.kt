@@ -30,12 +30,12 @@ import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment.Companion.Top
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.ComponentSetup
+import io.spine.chords.core.ValidationErrorText
 import io.spine.chords.proto.form.CustomMessageForm
 import io.spine.chords.proto.form.FormPartScope
-import io.spine.chords.proto.form.FormValidationError
 import io.spine.chords.proto.form.OneofRadioButton
 import io.spine.chords.proto.form.OptionalMessageCheckbox
 import io.spine.chords.proto.form.invoke
@@ -52,31 +52,55 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
 ) {
     public companion object : ComponentSetup<PaymentMethodEditor>({ PaymentMethodEditor() })
 
+    /**
+     * Identifies the component's appearance parameters.
+     */
+    public var look: Look = Look()
+
+    /**
+     * An object, which defines the component's appearance parameters.
+     */
+    public data class Look(
+
+        /**
+         * A horizontal distance between the payment card and bank
+         * account fields.
+         */
+        public var interFieldPadding: Dp = 40.dp,
+
+        /**
+         * A vertical distance between radio button selectors and their
+         * respective fields.
+         */
+        public var selectorsOffset: Dp = 8.dp
+    )
+
     @Composable
     override fun FormPartScope<PaymentMethod>.customContent() {
         Column {
             if (!valueRequired) {
-                Row(horizontalArrangement = spacedBy(40.dp)) {
+                Row {
                     OptionalMessageCheckbox("Specify payment method")
                 }
             }
-            Row(horizontalArrangement = spacedBy(40.dp)) {
-                OneOfFields(method) {
-                    Column(
-                        verticalArrangement = spacedBy(4.dp, Top)
-                    ) {
+            OneOfFields(method) {
+                Row(horizontalArrangement = spacedBy(look.interFieldPadding)) {
+                    Column(verticalArrangement = spacedBy(look.selectorsOffset)) {
                         OneofRadioButton(paymentCard, "Payment card")
                         PaymentCardNumberField(paymentCard)
                     }
-                    Column(
-                        verticalArrangement = spacedBy(4.dp)
-                    ) {
+                    Column(verticalArrangement = spacedBy(look.selectorsOffset)) {
                         OneofRadioButton(bankAccount, "Bank Account")
                         BankAccountField(bankAccount)
                     }
                 }
+                if (validationMessage.value != null) {
+                    Row {
+                        ValidationErrorText(validationMessage)
+                    }
+                }
             }
-            FormValidationError()
+
         }
     }
 }

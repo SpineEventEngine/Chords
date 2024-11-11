@@ -39,16 +39,15 @@ import androidx.compose.ui.text.TextStyle
  * A validation error text.
  *
  * @param validationError A [MutableState] that holds the validation error text.
- *   If either the text or the [MutableState] reference itself is `null`,
- *   nothing is added to the composition.
+ *   If the text is `null`, nothing is added to the composition.
  * @param style A text's style.
  * @param color A text's color.
  */
 @Composable
-public fun ValidationErrorText(validationError: State<String?>? = null,
+public fun ValidationErrorText(validationError: State<String?>,
                                style: TextStyle = typography.bodySmall,
                                color: Color = colorScheme.error) {
-    val validationErrorText = validationError?.value
+    val validationErrorText = validationError.value
     if (validationErrorText != null) {
         Text(
             validationErrorText,
