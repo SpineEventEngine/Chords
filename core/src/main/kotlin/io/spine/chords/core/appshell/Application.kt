@@ -213,12 +213,11 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * It is designed to be used as an internal low-level API it only in dialog
-     * implementation to be able to display themselves. In the regular
-     * application code though, it the [Dialog]'s API should be used instead.
-     * For example, if you need to display a specific dialog `SomeDialog`,
-     * the recommended syntax for doing this in an application would be
-     * like this:
+     * It is designed to be used only as an internal low-level API, for dialog
+     * implementation to be able to display themselves. In regular application
+     * code though, the [Dialog]'s API should be used instead. For example,
+     * when needed to display a specific dialog `SomeDialog` in the application,
+     * the proper way to do this is like this:
      *
      * ```
      *    SomeDialog.open()
@@ -249,7 +248,7 @@ public class ApplicationUI(private val appWindow: AppWindow) {
 
     /**
      * Closes the currently displayed dialog window while ignoring any data
-     * that might have been entered in the dialog.
+     * that might have been entered in it.
      *
      * On a par with [openDialog], this is a part of an internal API for
      * [Dialog]s to be able to control their display lifecycle.

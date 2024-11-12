@@ -80,7 +80,7 @@ import kotlinx.coroutines.launch
  * submitting data.
  *
  * Note that an implementation of this class has to add a companion object of
- * type [DialogSetup]. Here's an example:
+ * type [DialogSetup]. Here's an example of how a custom dialog can be created:
  *
  * ```
  * public class MyDialog : Dialog() {
@@ -304,9 +304,9 @@ public abstract class Dialog : Component() {
     }
 
     /**
-     * Renders the dialog's frame, which represents the main pieces that are
-     * common for all dialogs, including dialog's title and buttons, while
-     * delegating the rendering of the dialog's content to the actual dialog's
+     * Renders the dialog's frame, which makes up main elements that are common
+     * for all dialogs, including dialog's title and buttons, while delegating
+     * the rendering of the dialog's content to the actual dialog's
      * implementation (via the [formContent] method).
      */
     @Composable
@@ -380,6 +380,14 @@ public abstract class Dialog : Component() {
  * ```
  *    MyDialog.open()
  * ```
+ *
+ * See the [Dialog]'s documentation for usage example in context of
+ * a dialog implementation.
+ *
+ * @constructor Creates an object to serve as a companion object.
+ * @param createInstance A lambda that should create an instance of [D].
+ *
+ * @see Dialog
  */
 public open class DialogSetup<D: Dialog>(
     createInstance: () -> D

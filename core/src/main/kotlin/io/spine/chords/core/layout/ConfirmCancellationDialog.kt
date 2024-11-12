@@ -9,7 +9,7 @@ package io.spine.chords.core.layout
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import io.spine.chords.core.ComponentSetup
 
 /**
- * A confirmation dialog that prompts the user to confirm or not
+ * A confirmation dialog that prompts the user to confirm or deny
  * the cancellation of some window, typically used for modal ones.
  */
 public class ConfirmCancellationDialog : Dialog() {
@@ -45,7 +45,7 @@ public class ConfirmCancellationDialog : Dialog() {
      */
     @Composable
     protected override fun formContent() {
-        val textStyle = MaterialTheme.typography.bodyLarge
+        val textStyle = typography.bodyLarge
         Column {
             Row(
                 modifier = Modifier.padding(bottom = 6.dp)
