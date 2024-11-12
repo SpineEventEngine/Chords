@@ -162,7 +162,7 @@ public abstract class Dialog : Component() {
      * // TODO:2024-11-12:dmitry.pikhulya: Remove this property after
      *      introducing native dialogs instead of popup-based ones.
      */
-    internal var onCloseRequest: (() -> Unit)? = { app.ui.closeCurrentDialog() }
+    internal var onCloseRequest: (() -> Unit)? = { close() }
 
     /**
      * A callback used to confirm that the user wants to cancel the dialog.
@@ -199,8 +199,6 @@ public abstract class Dialog : Component() {
         }.Content()
     }
 
-    public var onCancel: () -> Unit = {}
-
     /**
      * Opens the dialog.
      *
@@ -217,6 +215,14 @@ public abstract class Dialog : Component() {
      */
     public fun open() {
         app.ui.openDialog(this)
+    }
+
+    /**
+     * Closes the dialog while ignoring any data that might have been
+     * possibly entered in the dialog currently.
+     */
+    private fun close() {
+        app.ui.closeCurrentDialog()
     }
 
     /**
@@ -240,7 +246,7 @@ public abstract class Dialog : Component() {
      * invalid data.
      *
      * @return `true` if the dialog should be closed after this method returns,
-     *   and `false` if it has to remain opened.
+     *   and `false` if it has to remain open.
      */
     protected abstract suspend fun submitForm(): Boolean
 
@@ -252,14 +258,14 @@ public abstract class Dialog : Component() {
         val cancelConfirmationShown = remember { mutableStateOf(false) }
         Popup(
             popupPositionProvider = centerWindowPositionProvider,
-            onDismissRequest = onCancel,
+            onDismissRequest = { close() },
             properties = PopupProperties(focusable = true),
             onPreviewKeyEvent = { false },
             onKeyEvent = escapePressHandler {
                 if (cancelConfirmationDialog != null) {
                     cancelConfirmationShown.value = true
                 } else {
-                    onCancel()
+                    close()
                 }
             }
         ) {
@@ -267,17 +273,17 @@ public abstract class Dialog : Component() {
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Black.copy(alpha = 0.5f))
-                    .pointerInput(onCancel) {
+                    .pointerInput(::close) {
                         detectTapGestures(onPress = {
                             if (cancelConfirmationDialog == null) {
-                                onCancel()
+                                close()
                             }
                         })
                     },
                 contentAlignment = Center
             ) {
                 Box(
-                    modifier = Modifier.pointerInput(onCancel) {
+                    modifier = Modifier.pointerInput(::close) {
                         detectTapGestures(onPress = {})
                     }
                 ) {
@@ -290,7 +296,7 @@ public abstract class Dialog : Component() {
             if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
                 CancelConfirmationDialogContainer(
                     onCancel = { cancelConfirmationShown.value = false },
-                    onConfirm = { onCancel() },
+                    onConfirm = { close() },
                     content = cancelConfirmationDialog!!
                 )
             }

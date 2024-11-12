@@ -100,11 +100,7 @@ public class AppWindow(
             ) {
                 currentScreen.value()
             }
-            val dialog = currentDialog.value
-            if (dialog != null) {
-                dialog.onCancel = { currentDialog.value = null }
-                dialog.Content()
-            }
+            currentDialog.value?.Content()
         }
     }
 
@@ -150,9 +146,9 @@ public class AppWindow(
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * @param config The configuration of the modal window.
+     * @param dialog An instance of the dialog that should be displayed.
      */
-    public fun openDialog(dialog: Dialog) {
+    internal fun openDialog(dialog: Dialog) {
         check(currentDialog.value == null) {
             "Another dialog has been opened already."
         }
@@ -160,9 +156,12 @@ public class AppWindow(
     }
 
     /**
-     * Closes the currently displayed modal window.
+     * Closes the currently displayed dialog window.
      */
-    public fun closeDialog() {
+    internal fun closeCurrentDialog() {
+        check(currentDialog.value != null) {
+            "No dialog is displayed currently."
+        }
         currentDialog.value = null
     }
 }

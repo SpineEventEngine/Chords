@@ -241,15 +241,22 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      *
      * @see Dialog
      * @see DialogSetup
+     * @see closeCurrentDialog
      */
-    public fun openDialog(dialog: Dialog) {
+    internal fun openDialog(dialog: Dialog) {
         appWindow.openDialog(dialog)
     }
 
     /**
-     * Closes the currently displayed dialog window.
+     * Closes the currently displayed dialog window while ignoring any data
+     * that might have been entered in the dialog.
+     *
+     * This is an internal API for dialog implementations to be able to control
+     * their lifecycle.
+     *
+     * @see openDialog
      */
-    public fun closeCurrentDialog() {
-        appWindow.closeDialog()
+    internal fun closeCurrentDialog() {
+        appWindow.closeCurrentDialog()
     }
 }
