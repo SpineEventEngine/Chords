@@ -40,20 +40,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.awt.awtEventOrNull
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.input.key.Key.Companion.Enter
+import androidx.compose.ui.input.key.Key.Companion.Escape
 import androidx.compose.ui.input.key.KeyEvent
-import androidx.compose.ui.input.key.KeyEventType.Companion.KeyDown
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -64,21 +64,72 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.Component
+import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.app
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
+import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.keyboard.on
-import java.awt.event.KeyEvent.VK_ESCAPE
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * The base class for creating a dialog box for editing and submitting data.
+ * The base class for creating a modal dialog box, e.g. for editing and
+ * submitting data.
  *
- * Note that an [onCloseRequest] callback is triggered when the user has
- * finished using the dialog, and it needs to be closed. The container where
- * the dialog is placed is responsible for hiding the dialog (excluding it from
- * the composition) upon this event.
+ * Note that an implementation of this class has to add a companion object of
+ * type [DialogSetup]. Here's an example:
+ *
+ * ```
+ * public class MyDialog : Dialog() {
+ *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
+ *
+ *     init {
+ *         // Set up own dialog's properties if/as needed.
+ *         dialogWidth = 650.dp
+ *         dialogHeight = 400.dp
+ *     }
+ *
+ *     override val title: String = "My Dialog"
+ *
+ *     @Composable
+ *     override fun dialogContent() {
+ *         // Arbitrary composable dialog's content can be included here.
+ *     }
+ *
+ *     override suspend fun submitForm(): Boolean {
+ *         // Invoked when the dialog is "submitted" by the user by pressing the
+ *         // OK button. Inspect any data entered in the dialog, and perform
+ *         // the respective dialog's action that it was designed for here.
+ *
+ *         // Return `true`, if the dialog has performed the action it was made
+ *         // for, and can be closed now.
+ *         return true
+ *     }
+ * }
+ * ```
+ *
+ * Once such class has been implemented, it is possible to display
+ * the respective dialog like this (if no dialog property customizations
+ * are needed):
+ *
+ * ```
+ *     MyDialog.open()
+ * ```
+ *
+ * Alternatively, if you need to specify any properties for the dialog that
+ * should be displayed with this call, it can be done like this:
+ * ```
+ *     MyDialog.open {
+ *        dialogProperty1 = value1
+ *        dialogProperty2 = value2
+ *     }
+ * ```
+ *
+ * The dialog will be closed automatically, when the "Cancel" button is pressed,
+ * or when the "OK" button is pressed (and [submitForm] returns `true`).
  */
 public abstract class Dialog : Component() {
 
@@ -107,8 +158,11 @@ public abstract class Dialog : Component() {
      *
      * This callback is triggered when the user closes the dialog or after
      * successful submission.
+     *
+     * // TODO:2024-11-12:dmitry.pikhulya: Remove this property after
+     *      introducing native dialogs instead of popup-based ones.
      */
-    public var onCloseRequest: (() -> Unit)? = null
+    internal var onCloseRequest: (() -> Unit)? = { app.ui.closeCurrentDialog() }
 
     /**
      * A callback used to confirm that the user wants to cancel the dialog.
@@ -116,7 +170,7 @@ public abstract class Dialog : Component() {
      * This callback is triggered when the user closes the dialog
      * by pressing the cancel button.
      */
-    public var onCancelConfirmation: (() -> Unit)? = null
+    private var onCancelConfirmation: (() -> Unit)? = null
 
     /**
      * The width of the dialog.
@@ -138,8 +192,35 @@ public abstract class Dialog : Component() {
      */
     public var config: DialogConfig = DialogConfig()
 
+    private var cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
+        ConfirmCancellationDialog {
+            onCloseRequest = onConfirm
+            onCancelConfirmation = onCancel
+        }.Content()
+    }
+
+    public var onCancel: () -> Unit = {}
+
     /**
-     * Creates the form content the dialog consists.
+     * Opens the dialog.
+     *
+     * NOTE: this method is mainly useful only in cases when you need to
+     * instantiate a dialog's instance separately from displaying it for
+     * some reason.
+     *
+     * In most cases the most convenient way to open a dialog would be using its
+     * companion object's [open][DialogSetup.open] method instead, like this:
+     *
+     * ```
+     *     MyDialog.open()
+     * ```
+     */
+    public fun open() {
+        app.ui.openDialog(this)
+    }
+
+    /**
+     * Renders the form content the dialog consists.
      */
     @Composable
     protected abstract fun formContent()
@@ -150,19 +231,18 @@ public abstract class Dialog : Component() {
      * This action is executed when the user submits the dialog
      * by pressing the confirmation button.
      *
-     * `onCloseRequest` is triggerred right after the `submitForm` action,
-     * so it is not needed to configure it manually.
+     * If this method returns `true` the dialog will be closed. As an example
+     * this would be a typical case when the method has identified that the data
+     * entered in the dialog is complete and valid, and the respective dialog's
+     * action that it was designed for was performed successfully. On the other
+     * hand, this method can return `false` to prevent closing the dialog, which
+     * can in particular be useful when the user has entered incomplete or
+     * invalid data.
+     *
+     * @return `true` if the dialog should be closed after this method returns,
+     *   and `false` if it has to remain opened.
      */
     protected abstract suspend fun submitForm(): Boolean
-
-    public var cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
-        ConfirmCancellationDialog {
-            onCloseRequest = onConfirm
-            onCancelConfirmation = onCancel
-        }.Content()
-    }
-
-    public var onCancel: () -> Unit = {}
 
     /**
      * Creates the dialog content composition.
@@ -175,7 +255,7 @@ public abstract class Dialog : Component() {
             onDismissRequest = onCancel,
             properties = PopupProperties(focusable = true),
             onPreviewKeyEvent = { false },
-            onKeyEvent = cancelOnEscape {
+            onKeyEvent = escapePressHandler {
                 if (cancelConfirmationDialog != null) {
                     cancelConfirmationShown.value = true
                 } else {
@@ -186,7 +266,7 @@ public abstract class Dialog : Component() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
+                    .background(Black.copy(alpha = 0.5f))
                     .pointerInput(onCancel) {
                         detectTapGestures(onPress = {
                             if (cancelConfirmationDialog == null) {
@@ -194,7 +274,7 @@ public abstract class Dialog : Component() {
                             }
                         })
                     },
-                contentAlignment = Alignment.Center
+                contentAlignment = Center
             ) {
                 Box(
                     modifier = Modifier.pointerInput(onCancel) {
@@ -204,7 +284,7 @@ public abstract class Dialog : Component() {
                     onCancelConfirmation = {
                         cancelConfirmationShown.value = true
                     }
-                    dialogContent()
+                    dialogFrame()
                 }
             }
             if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
@@ -217,13 +297,19 @@ public abstract class Dialog : Component() {
         }
     }
 
+    /**
+     * Renders the dialog's frame, which represents the main pieces that are
+     * common for all dialogs, including dialog's title and buttons, while
+     * delegating the rendering of the dialog's content to the actual dialog's
+     * implementation (via the [formContent] method).
+     */
     @Composable
-    private fun dialogContent() {
+    private fun dialogFrame() {
         Column(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.large)
                 .size(dialogWidth, dialogHeight)
-                .background(MaterialTheme.colorScheme.background),
+                .background(colorScheme.background),
         ) {
             Column(
                 modifier = Modifier
@@ -277,6 +363,60 @@ public abstract class Dialog : Component() {
     }
 }
 
+
+/**
+ * A class that should be used for creating companion objects of
+ * [Dialog] implementations.
+ *
+ * Adding a companion object of this class ensures that the respective custom
+ * dialog (say `MyDialog`) can be displayed with a simple call like this:
+ *
+ * ```
+ *    MyDialog.open()
+ * ```
+ */
+public open class DialogSetup<D: Dialog>(
+    createInstance: () -> D
+) : AbstractComponentSetup(createInstance) {
+
+    /**
+     * Displays the dialog [D].
+     *
+     * Here's an example:
+     * ```
+     *    MyDialog.open()
+     *
+     *    // or...
+     *
+     *    MyDialog.open {
+     *        dialogProp1 = value1
+     *        dialogProp2 = value2
+     *    }
+     * ```
+     *
+     * @param props A lambda, which configures (assigns)
+     *   the dialog's properties.
+     */
+    public fun open(props: ComponentProps<D>? = null): D {
+        val dialog = create(config = props)
+        dialog.open()
+        return dialog
+    }
+}
+
+
+/**
+ * A type of the cancel confirmation dialog.
+ *
+ * The cancel confirmation dialog prompts the user to confirm whether they want
+ * to close the modal. It receives two parameters:
+ * - `onConfirm`: A callback triggered when the user confirms the cancellation.
+ * - `onCancel`: A callback triggered when the user cancels the cancellation
+ *   (i.e., decides not to close the modal).
+ */
+private typealias CancelConfirmationDialog =
+        @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit
+
 /**
  * Configuration of the dialog, allowing adjustments
  * to visual appearance settings.
@@ -292,6 +432,7 @@ public data class DialogConfig(
     public var buttonsPanelPadding: PaddingValues = PaddingValues(top = 24.dp),
     public var buttonsSpacing: Dp = 12.dp
 )
+
 
 /**
  * The title of the dialog.
@@ -367,18 +508,17 @@ private fun DialogButton(
 
 
 /**
- * Returns a function that executes a provided `onCancel` callback
- * whenever the `Escape` keyboard button is pressed.
+ * Creates a key event handler a function that executes a provided [escHandler]
+ * callback whenever the `Escape` key is pressed.
  */
-private fun cancelOnEscape(onCancel: () -> Unit): ((KeyEvent) -> Boolean) =
-    {
-        if (it.type == KeyDown && it.awtEventOrNull?.keyCode == VK_ESCAPE) {
-            onCancel()
-            true
-        } else {
-            false
-        }
+private fun escapePressHandler(escHandler: () -> Unit): ((KeyEvent) -> Boolean) = { event ->
+    if (event matches Escape.key.down) {
+        escHandler()
+        true
+    } else {
+        false
     }
+}
 
 
 /**
@@ -395,7 +535,7 @@ private val centerWindowPositionProvider = object : PopupPositionProvider {
 }
 
 /**
- * The container for the cancel confirmation dialog of the [ModalWindow] component.
+ * The container for the cancel confirmation dialog of the [Dialog] component.
  *
  * This dialog confirms or denies the intention of the user to close the main modal window.
  *
@@ -417,8 +557,8 @@ private fun CancelConfirmationDialogContainer(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
+                .background(Black.copy(alpha = 0.5f)),
+            contentAlignment = Center
         ) {
             Box {
                 content(onConfirm, onCancel)
@@ -426,15 +566,3 @@ private fun CancelConfirmationDialogContainer(
         }
     }
 }
-
-/**
- * A type of the cancel confirmation dialog.
- *
- * The cancel confirmation dialog prompts the user to confirm whether they want
- * to close the modal. It receives two parameters:
- * - `onConfirm`: A callback triggered when the user confirms the cancellation.
- * - `onCancel`: A callback triggered when the user cancels the cancellation
- *   (i.e., decides not to close the modal).
- */
-public typealias CancelConfirmationDialog =
-        @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit

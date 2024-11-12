@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.ComponentSetup
-import io.spine.chords.core.layout.Dialog
 
 /**
  * A confirmation dialog that prompts the user to confirm or not
