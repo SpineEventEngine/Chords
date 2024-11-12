@@ -208,17 +208,17 @@ public class ApplicationUI(private val appWindow: AppWindow) {
     }
 
     /**
-     * A low-level method, which displays a given [Dialog] instance.
+     * Displays the given [Dialog] instance.
      *
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * This method represents a centralized application-wide API, which is used
-     * by dialog implementations to display themselves. It is recommended to use
-     * it only in dialog implementations themselves when required. In the
-     * regular application code though, it is recommended to use the respective
-     * dialog's API, e.g. if you need to display a specific dialog `SomeDialog`,
-     * the recommended syntax for doing this is like this:
+     * It is designed to be used as an internal low-level API it only in dialog
+     * implementation to be able to display themselves. In the regular
+     * application code though, it the [Dialog]'s API should be used instead.
+     * For example, if you need to display a specific dialog `SomeDialog`,
+     * the recommended syntax for doing this in an application would be
+     * like this:
      *
      * ```
      *    SomeDialog.open()
@@ -251,8 +251,8 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      * Closes the currently displayed dialog window while ignoring any data
      * that might have been entered in the dialog.
      *
-     * This is an internal API for dialog implementations to be able to control
-     * their lifecycle.
+     * On a par with [openDialog], this is a part of an internal API for
+     * [Dialog]s to be able to control their display lifecycle.
      *
      * @see openDialog
      */

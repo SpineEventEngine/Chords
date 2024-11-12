@@ -76,7 +76,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * The base class for creating a modal dialog box, e.g. for editing and
+ * The base class for creating a modal dialog window, e.g. for editing and
  * submitting data.
  *
  * Note that an implementation of this class has to add a companion object of
@@ -200,7 +200,7 @@ public abstract class Dialog : Component() {
     }
 
     /**
-     * Opens the dialog.
+     * Displays the modal dialog.
      *
      * NOTE: this method is mainly useful only in cases when you need to
      * instantiate a dialog's instance separately from displaying it for
@@ -386,7 +386,7 @@ public open class DialogSetup<D: Dialog>(
 ) : AbstractComponentSetup(createInstance) {
 
     /**
-     * Displays the dialog [D].
+     * Displays the modal dialog [D].
      *
      * Here's an example:
      * ```
