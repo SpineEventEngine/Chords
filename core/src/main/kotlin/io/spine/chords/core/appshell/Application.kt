@@ -215,13 +215,13 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      * @param config The configuration of the modal window.
      */
     public fun openModalWindow(dialog: Dialog) {
-        appWindow.openModalWindow(dialog)
+        appWindow.openDialog(dialog)
     }
 
     /**
      * Closes the currently displayed modal window.
      */
     public fun closeModalWindow() {
-        appWindow.closeModalWindow()
+        appWindow.closeDialog()
     }
 }

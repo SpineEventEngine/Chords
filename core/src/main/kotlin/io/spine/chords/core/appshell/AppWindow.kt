@@ -152,9 +152,9 @@ public class AppWindow(
      *
      * @param config The configuration of the modal window.
      */
-    public fun openModalWindow(dialog: Dialog) {
+    public fun openDialog(dialog: Dialog) {
         check(currentDialog.value == null) {
-            "Another modal window is visible already."
+            "Another dialog has been opened already."
         }
         currentDialog.value = dialog
     }
@@ -162,7 +162,7 @@ public class AppWindow(
     /**
      * Closes the currently displayed modal window.
      */
-    public fun closeModalWindow() {
+    public fun closeDialog() {
         currentDialog.value = null
     }
 }

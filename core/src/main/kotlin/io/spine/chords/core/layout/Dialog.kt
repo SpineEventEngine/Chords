@@ -155,7 +155,13 @@ public abstract class Dialog : Component() {
      */
     protected abstract suspend fun submitForm(): Boolean
 
-    public var cancelConfirmationDialog: CancelConfirmationDialog? = null
+    public var cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
+        ConfirmCancellationDialog {
+            onCloseRequest = onConfirm
+            onCancelConfirmation = onCancel
+        }.Content()
+    }
+
     public var onCancel: () -> Unit = {}
 
     /**
