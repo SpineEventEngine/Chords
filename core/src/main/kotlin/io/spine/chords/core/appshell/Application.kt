@@ -31,7 +31,8 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
-import io.spine.chords.core.modal.ModalWindowConfig
+import io.spine.chords.core.layout.Dialog
+import io.spine.chords.core.layout.DialogSetup
 import io.spine.chords.core.writeOnce
 import java.awt.Dimension
 
@@ -207,21 +208,54 @@ public class ApplicationUI(private val appWindow: AppWindow) {
     }
 
     /**
-     * Displays a modal window.
+     * Displays the given [Dialog] instance.
      *
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * @param config The configuration of the modal window.
+     * It is designed to be used only as an internal low-level API, for dialog
+     * implementation to be able to display themselves. In regular application
+     * code though, the [Dialog]'s API should be used instead. For example,
+     * when needed to display a specific dialog `SomeDialog` in the application,
+     * the proper way to do this is like this:
+     *
+     * ```
+     *    SomeDialog.open()
+     *
+     *    // or like this if dialog' properties need to be specified as well:
+     *
+     *    SomeDialog.open {
+     *        prop1 = prop1Value
+     *        prop2 = prop2Value
+     *      ...
+     *    }
+     *
+     *    // or if you already have a dialog instance and need to display it:
+     *
+     *    val dialog: SomeDialog = ...
+     *    dialog.open()
+     * ```
+     *
+     * @param dialog The [Dialog] instance, which needs to be displayed.
+     *
+     * @see Dialog
+     * @see DialogSetup
+     * @see closeCurrentDialog
      */
-    public fun openModalWindow(config: ModalWindowConfig) {
-        appWindow.openModalWindow(config)
+    internal fun openDialog(dialog: Dialog) {
+        appWindow.openDialog(dialog)
     }
 
     /**
-     * Closes the currently displayed modal window.
+     * Closes the currently displayed dialog window while ignoring any data
+     * that might have been entered in it.
+     *
+     * On a par with [openDialog], this is a part of an internal API for
+     * [Dialog]s to be able to control their display lifecycle.
+     *
+     * @see openDialog
      */
-    public fun closeModalWindow() {
-        appWindow.closeModalWindow()
+    internal fun closeCurrentDialog() {
+        appWindow.closeCurrentDialog()
     }
 }

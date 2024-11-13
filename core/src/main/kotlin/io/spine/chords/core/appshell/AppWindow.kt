@@ -34,8 +34,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
-import io.spine.chords.core.modal.ModalWindow
-import io.spine.chords.core.modal.ModalWindowConfig
+import io.spine.chords.core.layout.Dialog
 import java.awt.Dimension
 
 /**
@@ -79,8 +78,7 @@ public class AppWindow(
     private val currentScreen: MutableState<@Composable () -> Unit> =
         mutableStateOf(signInScreen)
 
-    private val modalWindow: MutableState<(ModalWindowConfig)?> =
-        mutableStateOf(null)
+    private val currentDialog: MutableState<Dialog?> = mutableStateOf(null)
 
     /**
      * Renders the application window's content.
@@ -102,12 +100,7 @@ public class AppWindow(
             ) {
                 currentScreen.value()
             }
-            if (modalWindow.value != null) {
-                ModalWindow(
-                    onCancel = { modalWindow.value = null },
-                    config = modalWindow.value!!
-                )
-            }
+            currentDialog.value?.Content()
         }
     }
 
@@ -131,7 +124,7 @@ public class AppWindow(
         check(currentScreen.value == mainScreen) {
             "Another modal screen is visible already."
         }
-        check(modalWindow.value == null) {
+        check(currentDialog.value == null) {
             "Cannot display the modal screen above the modal window."
         }
         currentScreen.value = screen
@@ -153,19 +146,22 @@ public class AppWindow(
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * @param config The configuration of the modal window.
+     * @param dialog An instance of the dialog that should be displayed.
      */
-    public fun openModalWindow(config: ModalWindowConfig) {
-        check(modalWindow.value == null) {
-            "Another modal window is visible already."
+    internal fun openDialog(dialog: Dialog) {
+        check(currentDialog.value == null) {
+            "Another dialog has been opened already."
         }
-        modalWindow.value = config
+        currentDialog.value = dialog
     }
 
     /**
-     * Closes the currently displayed modal window.
+     * Closes the currently displayed dialog window.
      */
-    public fun closeModalWindow() {
-        modalWindow.value = null
+    internal fun closeCurrentDialog() {
+        check(currentDialog.value != null) {
+            "No dialog is displayed currently."
+        }
+        currentDialog.value = null
     }
 }
