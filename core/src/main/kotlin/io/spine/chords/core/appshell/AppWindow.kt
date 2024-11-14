@@ -31,11 +31,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import io.spine.chords.core.layout.Dialog
 import java.awt.Dimension
+import java.util.*
 
 /**
  * Represents the main application window and provides API to display
@@ -78,7 +81,17 @@ public class AppWindow(
     private val currentScreen: MutableState<@Composable () -> Unit> =
         mutableStateOf(signInScreen)
 
-    private val currentDialog: MutableState<Dialog?> = mutableStateOf(null)
+    /**
+     * A stack of dialogs currently displayed.
+     *
+     * This corresponds to a chain of nested modal dialogs that can be displayed
+     * at a time. The very first dialog (the "root" one), is the bottom of the
+     * stack (tail of deque), and the most recently opened one (the only one
+     * that the user can interact with currently) is on the top of the stack
+     * (the head of deque).
+     *
+     */
+    private var dialogStack: Deque<Dialog> by mutableStateOf(ArrayDeque())
 
     /**
      * Renders the application window's content.
@@ -100,7 +113,7 @@ public class AppWindow(
             ) {
                 currentScreen.value()
             }
-            currentDialog.value?.Content()
+            dialogStack.peekLast()?.Content()
         }
     }
 
@@ -124,8 +137,8 @@ public class AppWindow(
         check(currentScreen.value == mainScreen) {
             "Another modal screen is visible already."
         }
-        check(currentDialog.value == null) {
-            "Cannot display the modal screen above the modal window."
+        check(dialogStack.isEmpty()) {
+            "Cannot display the modal screen when a dialog is displayed."
         }
         currentScreen.value = screen
     }
@@ -149,19 +162,22 @@ public class AppWindow(
      * @param dialog An instance of the dialog that should be displayed.
      */
     internal fun openDialog(dialog: Dialog) {
-        check(currentDialog.value == null) {
+        check(dialogStack.isEmpty()) {
             "Another dialog has been opened already."
         }
-        currentDialog.value = dialog
+
+        val newDialogStack = dialogStack
+        newDialogStack.push(dialog)
+        dialogStack = newDialogStack
     }
 
     /**
      * Closes the currently displayed dialog window.
      */
     internal fun closeCurrentDialog() {
-        check(currentDialog.value != null) {
+        check(dialogStack.isNotEmpty()) {
             "No dialog is displayed currently."
         }
-        currentDialog.value = null
+        dialogStack = ArrayDeque()
     }
 }

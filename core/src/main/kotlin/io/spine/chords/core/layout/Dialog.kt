@@ -192,12 +192,11 @@ public abstract class Dialog : Component() {
      */
     public var config: DialogConfig = DialogConfig()
 
-    private var cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
-        ConfirmCancellationDialog {
-            onCloseRequest = onConfirm
-            onCancelConfirmation = onCancel
-        }.Content()
-    }
+//    private val cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
+//        onCloseRequest = onConfirm
+//        onCancelConfirmation = onCancel
+//        ConfirmCancellationDialog().Content()
+//    }
 
     /**
      * Displays the modal dialog.
@@ -255,53 +254,18 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected override fun content() {
-        val cancelConfirmationShown = remember { mutableStateOf(false) }
-        Popup(
-            popupPositionProvider = centerWindowPositionProvider,
-            onDismissRequest = { close() },
-            properties = PopupProperties(focusable = true),
-            onPreviewKeyEvent = { false },
-            onKeyEvent = escapePressHandler {
-                if (cancelConfirmationDialog != null) {
-                    cancelConfirmationShown.value = true
-                } else {
-                    close()
-                }
-            }
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Black.copy(alpha = 0.5f))
-                    .pointerInput(::close) {
-                        detectTapGestures(onPress = {
-                            if (cancelConfirmationDialog == null) {
-                                close()
-                            }
-                        })
-                    },
-                contentAlignment = Center
-            ) {
-                Box(
-                    modifier = Modifier.pointerInput(::close) {
-                        detectTapGestures(onPress = {})
-                    }
-                ) {
-                    onCancelConfirmation = {
-                        cancelConfirmationShown.value = true
-                    }
-                    dialogFrame()
-                }
-            }
-            if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
-                CancelConfirmationDialogContainer(
-                    onCancel = { cancelConfirmationShown.value = false },
-                    onConfirm = { close() },
-                    content = cancelConfirmationDialog!!
-                )
-            }
-        }
+        lightweightPlatform(::close, { dialogFrame() })
     }
+
+//    private val cancelConfirmationShown = remember { mutableStateOf(false) }
+//
+//    private fun showCancelConfirmation() {
+//        cancelConfirmationShown.value = true
+//    }
+//
+//    private fun hideCancelConfirmation() {
+//        cancelConfirmationShown.value = false
+//    }
 
     /**
      * Renders the dialog's frame, which makes up main elements that are common
@@ -369,6 +333,58 @@ public abstract class Dialog : Component() {
     }
 }
 
+@Composable
+private fun lightweightPlatform(
+    close: () -> Unit,
+    dialogContent: @Composable () -> Unit
+) {
+    Popup(
+        popupPositionProvider = centerWindowPositionProvider,
+        onDismissRequest = close,
+        properties = PopupProperties(focusable = true),
+        onPreviewKeyEvent = { false },
+        onKeyEvent = escapePressHandler {
+//                if (cancelConfirmationDialog != null) {
+//                    showCancelConfirmation()
+//                } else {
+            close()
+//                }
+        }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Black.copy(alpha = 0.5f))
+//                    .pointerInput(::close) {
+//                        detectTapGestures(onPress = {
+//                            if (cancelConfirmationDialog == null) {
+//                                close()
+//                            }
+//                        })
+//                    }
+            ,
+            contentAlignment = Center
+        ) {
+            Box(
+                modifier = Modifier.pointerInput(close) {
+                    detectTapGestures(onPress = {})
+                }
+            ) {
+//                    onCancelConfirmation = {
+//                        showCancelConfirmation()
+//                    }
+                dialogContent()
+            }
+        }
+//            if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
+//                CancelConfirmationDialogContainer(
+//                    onCancel = { hideCancelConfirmation() },
+//                    onConfirm = { close() },
+//                    content = cancelConfirmationDialog
+//                )
+//            }
+    }
+}
 
 /**
  * A class that should be used for creating companion objects of
@@ -378,10 +394,15 @@ public abstract class Dialog : Component() {
  * dialog (say `MyDialog`) can be displayed with a simple call like this:
  *
  * ```
- *    MyDialog.open()
+ *     MyDialog.open()
  * ```
  *
- * See the [Dialog]'s documentation for usage example in context of
+ * Under the hood, such an expression technically means creating an instance of
+ * dialog [D] (`MyDialog` in this case), and then invoking the
+ * [open][Dialog.open] method on that instance (note that it's a separate method
+ * from this one).
+ *
+ * See the [Dialog]'s documentation for a usage example in context of
  * a dialog implementation.
  *
  * @constructor Creates an object to serve as a companion object.
@@ -419,17 +440,17 @@ public open class DialogSetup<D: Dialog>(
 }
 
 
-/**
- * A type of the cancel confirmation dialog.
- *
- * The cancel confirmation dialog prompts the user to confirm whether they want
- * to close the modal. It receives two parameters:
- * - `onConfirm`: A callback triggered when the user confirms the cancellation.
- * - `onCancel`: A callback triggered when the user cancels the cancellation
- *   (i.e., decides not to close the modal).
- */
-private typealias CancelConfirmationDialog =
-        @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit
+///**
+// * A type of the cancel confirmation dialog.
+// *
+// * The cancel confirmation dialog prompts the user to confirm whether they want
+// * to close the modal. It receives two parameters:
+// * - `onConfirm`: A callback triggered when the user confirms the cancellation.
+// * - `onCancel`: A callback triggered when the user cancels the cancellation
+// *   (i.e., decides not to close the modal).
+// */
+//private typealias CancelConfirmationDialog =
+//        @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit
 
 /**
  * Configuration of the dialog, allowing adjustments
@@ -522,7 +543,7 @@ private fun DialogButton(
 
 
 /**
- * Creates a key event handler a function that executes a provided [escHandler]
+ * Creates a key event handler function that executes a provided [escHandler]
  * callback whenever the `Escape` key is pressed.
  */
 private fun escapePressHandler(escHandler: () -> Unit): ((KeyEvent) -> Boolean) = { event ->
@@ -548,35 +569,35 @@ private val centerWindowPositionProvider = object : PopupPositionProvider {
     ): IntOffset = IntOffset.Zero
 }
 
-/**
- * The container for the cancel confirmation dialog of the [Dialog] component.
- *
- * This dialog confirms or denies the intention of the user to close the main modal window.
- *
- * @param onCancel The callback triggered on the dialog cancellation.
- * @param onConfirm The callback triggered on the confirmation to cancel the main modal window.
- * @param content The content to display as a dialog.
- */
-@Composable
-private fun CancelConfirmationDialogContainer(
-    onCancel: () -> Unit,
-    onConfirm: () -> Unit,
-    content: CancelConfirmationDialog
-) {
-    Popup(
-        popupPositionProvider = centerWindowPositionProvider,
-        properties = PopupProperties(focusable = true),
-        onPreviewKeyEvent = { false }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Black.copy(alpha = 0.5f)),
-            contentAlignment = Center
-        ) {
-            Box {
-                content(onConfirm, onCancel)
-            }
-        }
-    }
-}
+///**
+// * The container for the cancel confirmation dialog of the [Dialog] component.
+// *
+// * This dialog confirms or denies the intention of the user to close the main modal window.
+// *
+// * @param onCancel The callback triggered on the dialog cancellation.
+// * @param onConfirm The callback triggered on the confirmation to cancel the main modal window.
+// * @param content The content to display as a dialog.
+// */
+//@Composable
+//private fun CancelConfirmationDialogContainer(
+//    onCancel: () -> Unit,
+//    onConfirm: () -> Unit,
+//    content: CancelConfirmationDialog
+//) {
+//    Popup(
+//        popupPositionProvider = centerWindowPositionProvider,
+//        properties = PopupProperties(focusable = true),
+//        onPreviewKeyEvent = { false }
+//    ) {
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .background(Black.copy(alpha = 0.5f)),
+//            contentAlignment = Center
+//        ) {
+//            Box {
+//                content(onConfirm, onCancel)
+//            }
+//        }
+//    }
+//}
