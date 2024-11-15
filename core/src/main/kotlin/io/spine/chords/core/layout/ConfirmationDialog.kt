@@ -14,16 +14,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import io.spine.chords.core.ComponentSetup
+import io.spine.chords.core.AbstractComponentSetup
+import io.spine.chords.core.ComponentProps
 
 /**
  * A confirmation dialog that prompts the user to confirm or deny
  * the cancellation of some window, typically used for modal ones.
  */
-public class ConfirmCancellationDialog : Dialog() {
-    public companion object : ComponentSetup<ConfirmCancellationDialog>(
-        { ConfirmCancellationDialog() }
-    )
+public class ConfirmationDialog : Dialog() {
+    public companion object : AbstractComponentSetup({ ConfirmationDialog() }) {
+        public suspend fun askAndAwait(props: ComponentProps<ConfirmationDialog>? = null) {
+            val dialog = create(config = props)
+            dialog.onConfirm = {}
+            dialog.onCancel = {}
+            dialog.open()
+        }
+    }
 
     /**
      * Initializes the `confirmButtonText` and the size of the dialog.
@@ -39,6 +45,9 @@ public class ConfirmCancellationDialog : Dialog() {
      * The title of the dialog.
      */
     public override val title: String = confirmButtonText
+
+    public var onConfirm: (() -> Unit)? = null
+    public var onCancel: (() -> Unit)? = null
 
     /**
      * Creates the content of the dialog.

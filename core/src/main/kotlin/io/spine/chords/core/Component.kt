@@ -39,7 +39,7 @@ import androidx.compose.runtime.remember
  * provides an alternative way for implementing components with utilizing
  * the features of the object-oriented paradigm.
  *
- * ### Using class-based components
+ * ## Using class-based components
  *
  * The syntax for using such components is similar to that of using the regular
  * function-based components. Considering a function-based component declaration
@@ -82,7 +82,7 @@ import androidx.compose.runtime.remember
  *     val someComponent = SomeComponent { ... }
  * ```
  *
- * #### Component instance declarations vs constructors
+ * ### Component instance declarations vs constructors
  *
  * It should be noted that such _component instance declarations_ as shown above
  * are a main way of using class-based components, but they are technically not
@@ -95,7 +95,7 @@ import androidx.compose.runtime.remember
  * prevent creating a new component's instance upon each composition, and use
  * a cached instance instead.
  *
- * #### Preferred instance declarations style
+ * ### Preferred instance declarations style
  *
  * Note that the component instance declaration examples above are technically
  * a shorthand notation for using the `invoke` function on the component's
@@ -131,9 +131,14 @@ import androidx.compose.runtime.remember
  *     }
  * ```
  *
+ * NOTE: It is strongly recommended to use the property configuration lambda
+ * in component declarations only for performing component property assignments,
+ * which is conceptually similar to how you would pass respective parameters to
+ * a function-based component.
+ *
  * See also below how to implement such components.
  *
- * ### Implementing class-based components
+ * ## Implementing class-based components
  *
  * - Create a subclass of [Component].
  *
@@ -188,7 +193,7 @@ import androidx.compose.runtime.remember
  * classes* though, since companion objects here serve the purpose that is
  * similar to a class's constructor.
  *
- * ### When to write class-based and function-based components?
+ * ## When to write class-based and function-based components?
  *
  * A class-based components writing style is only a convenience that can be used
  * if it provides some benefits relative to function-based ones. Function-based
@@ -198,7 +203,7 @@ import androidx.compose.runtime.remember
  * Both paradigms are mutually compatible: functional components can be used in
  * class-based ones, and class-based ones can be used in functional ones.
  *
- * ### Benefits of writing class-based components
+ * ## Benefits of writing class-based components
  *
  * A class-based component implementation provides the following benefits
  * in particular:
@@ -252,7 +257,7 @@ import androidx.compose.runtime.remember
  *   data (stored in its properties) to be implicitly available in each of such
  *   functions without explicitly passing them around with parameters.
  *
- * ### Converting function-based components into class-based ones
+ * ## Converting function-based components into class-based ones
  *
  * The points below can be used as a rule of thumb when converting existing
  * function-based components to class-based ones. This can also be helpful for
@@ -302,7 +307,7 @@ import androidx.compose.runtime.remember
  *   into class methods would make respective class's properties to be available
  *   to such methods implicitly.
  *
- * ### Optimizing performance
+ * ## Optimizing performance
  *
  * These recommendations are optional, but can be considered in cases when UI's
  * performance becomes an issue for some components or when you're creating

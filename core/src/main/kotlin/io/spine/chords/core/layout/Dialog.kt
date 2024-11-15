@@ -192,6 +192,10 @@ public abstract class Dialog : Component() {
      */
     public var config: DialogConfig = DialogConfig()
 
+    internal var isBottomDialog: Boolean = true
+
+    internal var nestedDialog: Dialog? = null
+
 //    private val cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
 //        onCloseRequest = onConfirm
 //        onCancelConfirmation = onCancel
@@ -221,7 +225,7 @@ public abstract class Dialog : Component() {
      * possibly entered in the dialog currently.
      */
     private fun close() {
-        app.ui.closeCurrentDialog()
+        app.ui.closeDialog(this)
     }
 
     /**
@@ -254,8 +258,33 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected override fun content() {
-        lightweightPlatform(::close, { dialogFrame() })
+        lightweightPlatform(::close, { dialogFrame() }, nestedDialog, isBottomDialog)
     }
+
+    internal fun openNestedDialog(dialog: Dialog) {
+        check(nestedDialog != dialog) {
+            "This dialog is already open."
+        }
+        if (nestedDialog == null) {
+            nestedDialog = dialog
+        } else {
+            nestedDialog!!.openNestedDialog(dialog)
+        }
+    }
+
+    internal fun hideNestedDialog(dialog: Dialog) {
+        checkNotNull(nestedDialog) {
+            "No such dialog is displayed currently."
+        }
+        if (dialog == nestedDialog) {
+            check(nestedDialog!!.nestedDialog == null) {
+                "Cannot close a dialog while it has nested dialog(s) displayed."
+            }
+            nestedDialog = null
+        }
+        nestedDialog!!.hideNestedDialog(dialog)
+    }
+
 
 //    private val cancelConfirmationShown = remember { mutableStateOf(false) }
 //
@@ -291,19 +320,27 @@ public abstract class Dialog : Component() {
                 Column(
                     Modifier.weight(1F)
                         .on(Ctrl(Enter.key).up) {
-                            submit(coroutineScope)
+                            handleConfirmClick(coroutineScope)
                         }
                 ) {
                     formContent()
                 }
                 DialogButtons(
-                    confirmButtonText, { submit(coroutineScope) },
-                    cancelButtonText, { cancel() },
+                    confirmButtonText, { handleConfirmClick(coroutineScope) },
+                    cancelButtonText, { handleCancelClick() },
                     config.buttonsPanelPadding,
                     config.buttonsSpacing
                 )
             }
         }
+    }
+
+    protected open fun handleConfirmClick(coroutineScope: CoroutineScope) {
+        submit(coroutineScope)
+    }
+
+    protected open fun handleCancelClick() {
+        cancel()
     }
 
     /**
@@ -336,46 +373,80 @@ public abstract class Dialog : Component() {
 @Composable
 private fun lightweightPlatform(
     close: () -> Unit,
-    dialogContent: @Composable () -> Unit
+    dialogContent: @Composable () -> Unit,
+    nestedDialog: Dialog?,
+    isBottomDialog: Boolean
 ) {
-    Popup(
-        popupPositionProvider = centerWindowPositionProvider,
-        onDismissRequest = close,
-        properties = PopupProperties(focusable = true),
-        onPreviewKeyEvent = { false },
-        onKeyEvent = escapePressHandler {
-//                if (cancelConfirmationDialog != null) {
-//                    showCancelConfirmation()
-//                } else {
-            close()
-//                }
-        }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Black.copy(alpha = 0.5f))
-//                    .pointerInput(::close) {
-//                        detectTapGestures(onPress = {
-//                            if (cancelConfirmationDialog == null) {
-//                                close()
-//                            }
-//                        })
-//                    }
-            ,
-            contentAlignment = Center
+    if (isBottomDialog) {
+        Popup(
+            popupPositionProvider = centerWindowPositionProvider,
+            onDismissRequest = close,
+            properties = PopupProperties(focusable = true),
+            onPreviewKeyEvent = { false },
+            onKeyEvent = escapePressHandler {
+                //                if (cancelConfirmationDialog != null) {
+                //                    showCancelConfirmation()
+                //                } else {
+                close()
+                //                }
+            }
         ) {
             Box(
-                modifier = Modifier.pointerInput(close) {
-                    detectTapGestures(onPress = {})
-                }
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Black.copy(alpha = 0.5f))
+                //                    .pointerInput(::close) {
+                //                        detectTapGestures(onPress = {
+                //                            if (cancelConfirmationDialog == null) {
+                //                                close()
+                //                            }
+                //                        })
+                //                    }
+                ,
+                contentAlignment = Center
             ) {
-//                    onCancelConfirmation = {
-//                        showCancelConfirmation()
-//                    }
-                dialogContent()
+                Box(
+                    modifier = Modifier.pointerInput(close) {
+                        detectTapGestures(onPress = {})
+                    }
+                ) {
+                    //                    onCancelConfirmation = {
+                    //                        showCancelConfirmation()
+                    //                    }
+                    dialogContent()
+                }
             }
         }
+    } else {
+        Popup(
+            popupPositionProvider = centerWindowPositionProvider,
+            properties = PopupProperties(focusable = true),
+            onPreviewKeyEvent = { false }
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Black.copy(alpha = 0.5f)),
+                contentAlignment = Center
+            ) {
+                Box {
+                    dialogContent()
+                }
+            }
+        }
+    }
+
+    nestedDialog ?.Content()
+
+//            if (nestedDialog != null) {
+//
+//                CancelConfirmationDialogContainer(
+//                    onCancel = { hideCancelConfirmation() },
+//                    onConfirm = { close() },
+//                    content = cancelConfirmationDialog
+//                )
+//            }
+
 //            if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
 //                CancelConfirmationDialogContainer(
 //                    onCancel = { hideCancelConfirmation() },
@@ -383,7 +454,6 @@ private fun lightweightPlatform(
 //                    content = cancelConfirmationDialog
 //                )
 //            }
-    }
 }
 
 /**
@@ -601,3 +671,28 @@ private val centerWindowPositionProvider = object : PopupPositionProvider {
 //        }
 //    }
 //}
+
+
+@Composable
+private fun NestedDialogContainer(
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+    dialog: Dialog
+) {
+    Popup(
+        popupPositionProvider = centerWindowPositionProvider,
+        properties = PopupProperties(focusable = true),
+        onPreviewKeyEvent = { false }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Black.copy(alpha = 0.5f)),
+            contentAlignment = Center
+        ) {
+            Box {
+                content(onConfirm, onCancel)
+            }
+        }
+    }
+}

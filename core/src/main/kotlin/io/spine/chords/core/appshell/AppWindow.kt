@@ -31,9 +31,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import io.spine.chords.core.layout.Dialog
@@ -48,8 +46,9 @@ import java.util.*
  *
  * @param signInScreenContent A content for the sign-in screen.
  * @param views The list of application's views.
- * @param initialView Allows to specify a view from the list of [views], if any view other
- *   than the first one has to be displayed when the application starts.
+ * @param initialView Allows to specify a view from the list of [views], if any
+ *   view other than the first one has to be displayed when
+ *   the application starts.
  * @param onCloseRequest An action that should be performed on window closing.
  * @param minWindowSize The minimal size of the application window.
  */
@@ -82,16 +81,23 @@ public class AppWindow(
         mutableStateOf(signInScreen)
 
     /**
-     * A stack of dialogs currently displayed.
+     * The bottom-most dialog in the current dialog display stack, or `null` if
+     * no dialogs are displayed currently.
      *
-     * This corresponds to a chain of nested modal dialogs that can be displayed
-     * at a time. The very first dialog (the "root" one), is the bottom of the
-     * stack (tail of deque), and the most recently opened one (the only one
-     * that the user can interact with currently) is on the top of the stack
-     * (the head of deque).
+     * Dialogs are modal windows, which means that there can be at most once
+     * dialog that the user can interact with at a time. It's possible to
+     * display nested dialogs. That is, a dialog can trigger displaying another
+     * dialog, which means that the first dialog still remains opened, but
+     * cannot be interacted with until the second one (which is displayed on top
+     * of it) is closed.
+     *
+     * This means that at any given moment in time there is essentially a stack
+     * of dialogs (zero or more nested dialogs). This property refers to the
+     * very first dialog that was displayed among all these dialogs (the bottom
+     * of the stack).
      *
      */
-    private var dialogStack: Deque<Dialog> by mutableStateOf(ArrayDeque())
+    private var bottomDialog: Dialog? = null
 
     /**
      * Renders the application window's content.
@@ -113,7 +119,7 @@ public class AppWindow(
             ) {
                 currentScreen.value()
             }
-            dialogStack.peekLast()?.Content()
+            bottomDialog?.Content()
         }
     }
 
@@ -137,7 +143,7 @@ public class AppWindow(
         check(currentScreen.value == mainScreen) {
             "Another modal screen is visible already."
         }
-        check(dialogStack.isEmpty()) {
+        check(bottomDialog == null) {
             "Cannot display the modal screen when a dialog is displayed."
         }
         currentScreen.value = screen
@@ -162,22 +168,29 @@ public class AppWindow(
      * @param dialog An instance of the dialog that should be displayed.
      */
     internal fun openDialog(dialog: Dialog) {
-        check(dialogStack.isEmpty()) {
-            "Another dialog has been opened already."
-        }
+        check(bottomDialog != dialog) { "This dialog is already open." }
 
-        val newDialogStack = dialogStack
-        newDialogStack.push(dialog)
-        dialogStack = newDialogStack
+        dialog.isBottomDialog = bottomDialog == null
+        if (dialog.isBottomDialog) {
+            bottomDialog = dialog
+        } else {
+            bottomDialog!!.openNestedDialog(dialog)
+        }
     }
 
     /**
      * Closes the currently displayed dialog window.
      */
-    internal fun closeCurrentDialog() {
-        check(dialogStack.isNotEmpty()) {
-            "No dialog is displayed currently."
+    internal fun closeDialog(dialog: Dialog) {
+        checkNotNull(bottomDialog) {
+            "No such dialog is displayed currently."
         }
-        dialogStack = ArrayDeque()
+        if (dialog == bottomDialog) {
+            check(bottomDialog!!.nestedDialog == null) {
+                "Cannot close a dialog while it has nested dialog(s) displayed."
+            }
+            bottomDialog = null
+        }
+        bottomDialog!!.hideNestedDialog(dialog)
     }
 }
