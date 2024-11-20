@@ -94,10 +94,9 @@ public class AppWindow(
      * This means that at any given moment in time there is essentially a stack
      * of dialogs (zero or more nested dialogs). This property refers to the
      * very first dialog that was displayed among all these dialogs (the bottom
-     * of the stack).
-     *
+     * of the dialogs stack).
      */
-    private var bottomDialog: Dialog? = null
+    private var bottomDialog: MutableState<Dialog?> = mutableStateOf(null)
 
     /**
      * Renders the application window's content.
@@ -119,7 +118,7 @@ public class AppWindow(
             ) {
                 currentScreen.value()
             }
-            bottomDialog?.Content()
+            bottomDialog?.value!!.Content()
         }
     }
 
@@ -143,7 +142,7 @@ public class AppWindow(
         check(currentScreen.value == mainScreen) {
             "Another modal screen is visible already."
         }
-        check(bottomDialog == null) {
+        check(bottomDialog.value == null) {
             "Cannot display the modal screen when a dialog is displayed."
         }
         currentScreen.value = screen
@@ -168,13 +167,13 @@ public class AppWindow(
      * @param dialog An instance of the dialog that should be displayed.
      */
     internal fun openDialog(dialog: Dialog) {
-        check(bottomDialog != dialog) { "This dialog is already open." }
+        check(bottomDialog.value != dialog) { "This dialog is already open." }
 
-        dialog.isBottomDialog = bottomDialog == null
+        dialog.isBottomDialog = bottomDialog.value == null
         if (dialog.isBottomDialog) {
-            bottomDialog = dialog
+            bottomDialog.value = dialog
         } else {
-            bottomDialog!!.openNestedDialog(dialog)
+            bottomDialog.value!!.openNestedDialog(dialog)
         }
     }
 
@@ -182,15 +181,15 @@ public class AppWindow(
      * Closes the currently displayed dialog window.
      */
     internal fun closeDialog(dialog: Dialog) {
-        checkNotNull(bottomDialog) {
+        checkNotNull(bottomDialog.value) {
             "No such dialog is displayed currently."
         }
-        if (dialog == bottomDialog) {
-            check(bottomDialog!!.nestedDialog == null) {
+        if (dialog == bottomDialog.value) {
+            check(bottomDialog.value!!.nestedDialog == null) {
                 "Cannot close a dialog while it has nested dialog(s) displayed."
             }
-            bottomDialog = null
+            bottomDialog.value = null
         }
-        bottomDialog!!.hideNestedDialog(dialog)
+        bottomDialog.value!!.hideNestedDialog(dialog)
     }
 }

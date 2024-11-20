@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.ComponentProps
+import java.util.concurrent.CompletableFuture
+import kotlinx.coroutines.future.await
 
 /**
  * A confirmation dialog that prompts the user to confirm or deny
@@ -23,11 +25,14 @@ import io.spine.chords.core.ComponentProps
  */
 public class ConfirmationDialog : Dialog() {
     public companion object : AbstractComponentSetup({ ConfirmationDialog() }) {
-        public suspend fun askAndAwait(props: ComponentProps<ConfirmationDialog>? = null) {
+
+        /**
+         * Displays the confirmation dialog, and waits until the user either
+         * accepts or rejects the confirmation.
+         */
+        public suspend fun askAndAwait(props: ComponentProps<ConfirmationDialog>? = null): Boolean {
             val dialog = create(config = props)
-            dialog.onConfirm = {}
-            dialog.onCancel = {}
-            dialog.open()
+            return dialog.askAndWait()
         }
     }
 
@@ -35,8 +40,8 @@ public class ConfirmationDialog : Dialog() {
      * Initializes the `confirmButtonText` and the size of the dialog.
      */
     init {
-        confirmButtonText = "Discard Changes"
-        cancelButtonText = "Continue Editing"
+        confirmButtonText = "Confirm"
+        cancelButtonText = "Reject"
         dialogWidth = 420.dp
         dialogHeight = 230.dp
     }
@@ -44,10 +49,13 @@ public class ConfirmationDialog : Dialog() {
     /**
      * The title of the dialog.
      */
-    public override val title: String = confirmButtonText
+    public override val title: String = "Confirm"
 
-    public var onConfirm: (() -> Unit)? = null
-    public var onCancel: (() -> Unit)? = null
+    public var message: String = "Are you sure?"
+    public var description: String = ""
+
+    internal var onConfirm: (() -> Unit)? = null
+    internal var onCancel: (() -> Unit)? = null
 
     /**
      * Creates the content of the dialog.
@@ -60,17 +68,27 @@ public class ConfirmationDialog : Dialog() {
                 modifier = Modifier.padding(bottom = 6.dp)
             ) {
                 Text(
-                    text = "Are you sure you want to close the dialog?",
+                    text = message,
                     style = textStyle
                 )
             }
             Row {
                 Text(
-                    text = "Any entered data will be lost in this case.",
+                    text = description,
                     style = textStyle
                 )
             }
         }
+    }
+
+    override suspend fun handleCancelClick() {
+        onCancel?.invoke()
+        super.handleCancelClick()
+    }
+
+    override suspend fun  handleConfirmClick() {
+        onConfirm?.invoke()
+        super.handleConfirmClick()
     }
 
     /**
@@ -78,5 +96,26 @@ public class ConfirmationDialog : Dialog() {
      */
     protected override suspend fun submitForm(): Boolean {
         return true
+    }
+
+    /**
+     * Displays the confirmation dialog, and waits until the user either
+     * accepts or rejects the confirmation.
+     */
+    public suspend fun askAndWait(): Boolean {
+        var confirmed = false
+        val dialogClosure = CompletableFuture<Unit>()
+        onConfirm = {
+            confirmed = true
+            dialogClosure.complete(Unit)
+        }
+        onCancel = {
+            dialogClosure.complete(Unit)
+        }
+
+        open()
+        dialogClosure.await()
+
+        return confirmed
     }
 }

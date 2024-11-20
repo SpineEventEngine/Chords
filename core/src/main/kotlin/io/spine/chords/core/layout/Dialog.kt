@@ -30,7 +30,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -43,8 +42,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
@@ -72,7 +69,6 @@ import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.keyboard.on
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -164,13 +160,13 @@ public abstract class Dialog : Component() {
      */
     internal var onCloseRequest: (() -> Unit)? = { close() }
 
-    /**
-     * A callback used to confirm that the user wants to cancel the dialog.
-     *
-     * This callback is triggered when the user closes the dialog
-     * by pressing the cancel button.
-     */
-    private var onCancelConfirmation: (() -> Unit)? = null
+//    /**
+//     * A callback used to confirm that the user wants to cancel the dialog.
+//     *
+//     * This callback is triggered when the user closes the dialog
+//     * by pressing the cancel button.
+//     */
+//    private var onCancelConfirmation: (() -> Unit)? = null
 
     /**
      * The width of the dialog.
@@ -320,14 +316,14 @@ public abstract class Dialog : Component() {
                 Column(
                     Modifier.weight(1F)
                         .on(Ctrl(Enter.key).up) {
-                            handleConfirmClick(coroutineScope)
+                            coroutineScope.launch { handleConfirmClick() }
                         }
                 ) {
                     formContent()
                 }
                 DialogButtons(
-                    confirmButtonText, { handleConfirmClick(coroutineScope) },
-                    cancelButtonText, { handleCancelClick() },
+                    confirmButtonText, { coroutineScope.launch { handleConfirmClick() } },
+                    cancelButtonText, { coroutineScope.launch { handleCancelClick() } },
                     config.buttonsPanelPadding,
                     config.buttonsSpacing
                 )
@@ -335,37 +331,21 @@ public abstract class Dialog : Component() {
         }
     }
 
-    protected open fun handleConfirmClick(coroutineScope: CoroutineScope) {
-        submit(coroutineScope)
-    }
-
-    protected open fun handleCancelClick() {
-        cancel()
-    }
-
-    /**
-     * Cancels the dialog.
-     *
-     * Invokes [onCancelConfirmation] if specified for the dialog,
-     * or [onCloseRequest] otherwise.
-     */
-    private fun cancel() {
-        if (onCancelConfirmation != null) {
-            onCancelConfirmation?.invoke()
-        } else {
-            onCloseRequest?.invoke()
+    protected open suspend fun handleConfirmClick() {
+        if (submitForm()) {
+            close()
         }
     }
 
-    /**
-     * Submits the dialog form and invokes [onCloseRequest]
-     * if the form was successfully submitted.
-     */
-    private fun submit(coroutineScope: CoroutineScope) {
-        coroutineScope.launch {
-            if (submitForm()) {
-                onCloseRequest?.invoke()
+    protected open suspend fun handleCancelClick() {
+        if (ConfirmationDialog.askAndAwait {
+                message = "Are you sure you want to close the dialog?"
+                description = "Any entered data will be lost in this case."
+                confirmButtonText = "Discard Changes"
+                cancelButtonText = "Continue Editing"
             }
+        ) {
+            close()
         }
     }
 }
@@ -672,27 +652,27 @@ private val centerWindowPositionProvider = object : PopupPositionProvider {
 //    }
 //}
 
-
-@Composable
-private fun NestedDialogContainer(
-    onCancel: () -> Unit,
-    onConfirm: () -> Unit,
-    dialog: Dialog
-) {
-    Popup(
-        popupPositionProvider = centerWindowPositionProvider,
-        properties = PopupProperties(focusable = true),
-        onPreviewKeyEvent = { false }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Black.copy(alpha = 0.5f)),
-            contentAlignment = Center
-        ) {
-            Box {
-                content(onConfirm, onCancel)
-            }
-        }
-    }
-}
+//
+//@Composable
+//private fun NestedDialogContainer(
+//    onCancel: () -> Unit,
+//    onConfirm: () -> Unit,
+//    dialog: Dialog
+//) {
+//    Popup(
+//        popupPositionProvider = centerWindowPositionProvider,
+//        properties = PopupProperties(focusable = true),
+//        onPreviewKeyEvent = { false }
+//    ) {
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .background(Black.copy(alpha = 0.5f)),
+//            contentAlignment = Center
+//        ) {
+//            Box {
+////                content(onConfirm, onCancel)
+//            }
+//        }
+//    }
+//}
