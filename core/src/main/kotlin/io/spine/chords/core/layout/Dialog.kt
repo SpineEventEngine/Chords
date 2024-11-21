@@ -195,6 +195,47 @@ public abstract class Dialog : Component() {
 
     internal var nestedDialog by mutableStateOf<Dialog?>(null)
 
+    /**
+     * A suspending callback, which is invoked upon the dialog's Cancel button
+     * click before the dialog is closed.
+     *
+     * The callback should return `true` in order for the dialog to proceed with
+     * closing, and `false` to prevent the dialog from being closed.
+     *
+     * The default implementation just returns `true`, and one of the typical
+     * usage scenarios would be to display the confirmation dialog.
+     *
+     * For example, in order for the custom `MyDialog` implementation to display
+     * a confirmation before the dialog is closed upon pressing Cancel, the
+     * following can be done:
+     * ```
+     * public class MyDialog : Dialog() {
+     *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
+     *
+     *     init {
+     *         confirmCancellation = ConfirmationDialog.askAndAwait {
+     *             message = "Are you sure you want to close the dialog?"
+     *             description = "Any entered data will be lost in this case."
+     *             confirmButtonText = "Discard changes"
+     *             cancelButtonText = "Continue editing"
+     *         }
+     *
+     *         // Other dialog's properties can be set if needed as well.
+     *         ...
+     *     }
+     * ```
+     */
+    public var confirmCancellation: suspend () -> Boolean = { true }
+
+    /**
+     * A suspending callback, which is invoked upon the dialog's Submit button
+     * click before the dialog is closed.
+     *
+     * The callback should return `true` in order for the dialog to proceed with
+     * submission, and `false` to prevent the submission.
+     */
+    public var confirmSubmission: suspend () -> Boolean = { true }
+
 //    private val cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
 //        onCloseRequest = onConfirm
 //        onCancelConfirmation = onCancel
@@ -316,13 +357,13 @@ public abstract class Dialog : Component() {
                 Column(
                     Modifier.weight(1F)
                         .on(Ctrl(Enter.key).up) {
-                            coroutineScope.launch { handleConfirmClick() }
+                            coroutineScope.launch { handleSubmitClick() }
                         }
                 ) {
                     formContent()
                 }
                 DialogButtons(
-                    confirmButtonText, { coroutineScope.launch { handleConfirmClick() } },
+                    confirmButtonText, { coroutineScope.launch { handleSubmitClick() } },
                     cancelButtonText, { coroutineScope.launch { handleCancelClick() } },
                     config.buttonsPanelPadding,
                     config.buttonsSpacing
@@ -331,21 +372,24 @@ public abstract class Dialog : Component() {
         }
     }
 
-    protected open suspend fun handleConfirmClick() {
+    protected open suspend fun handleSubmitClick() {
         if (submitForm()) {
             close()
         }
     }
 
     protected open suspend fun handleCancelClick() {
-        if (ConfirmationDialog.askAndAwait {
-                message = "Are you sure you want to close the dialog?"
-                description = "Any entered data will be lost in this case."
-                confirmButtonText = "Discard changes"
-                cancelButtonText = "Continue editing"
-            }
-        ) {
+        if (confirmCancellation()) {
             close()
+        }
+    }
+
+    private suspend fun confirmCancellation2(): Boolean {
+        return ConfirmationDialog.askAndAwait {
+            message = "Are you sure you want to close the dialog?"
+            description = "Any entered data will be lost in this case."
+            confirmButtonText = "Discard changes"
+            cancelButtonText = "Continue editing"
         }
     }
 }

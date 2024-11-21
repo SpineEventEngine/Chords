@@ -86,9 +86,9 @@ public class ConfirmationDialog : Dialog() {
         super.handleCancelClick()
     }
 
-    override suspend fun  handleConfirmClick() {
+    override suspend fun  handleSubmitClick() {
         onConfirm?.invoke()
-        super.handleConfirmClick()
+        super.handleSubmitClick()
     }
 
     /**

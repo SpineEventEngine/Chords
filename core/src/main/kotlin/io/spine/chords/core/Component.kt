@@ -159,6 +159,20 @@ import androidx.compose.runtime.remember
  *
  * - Declare a mutable property for each "parameter" of your component.
  *
+ *   NOTE: in order for dynamic changes of property values to be reflected by
+ *   the component's composition automatically, make sure that such properties
+ *   are backed by a [MutableState] value. In practice this means declaring
+ *   each component's configurable public property (except lambda-typed ones) in
+ *   the following style:
+ *   ```
+ *       public var someProp by mutableStateOf<String>("")
+ *   ```
+ *
+ *   Note the `String` type parameter of `mutableStateOf` above, which
+ *   practically means the type of the property. As a result, from the user's
+ *   perspective this would just be a `someProp` property that can be configured
+ *   with any `String` value.
+ *
  * Here's an example of creating an input component that allows entering
  * a string value:
  *
@@ -168,7 +182,7 @@ import androidx.compose.runtime.remember
  *             HelloComponent()
  *         })
  *
- *         public var name: String = ""
+ *         public var name by mutableStateOf: String = ""
  *
  *         @Composable
  *         override fun content() {
