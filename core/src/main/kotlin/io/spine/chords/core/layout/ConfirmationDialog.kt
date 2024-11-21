@@ -40,8 +40,8 @@ public class ConfirmationDialog : Dialog() {
      * Initializes the `confirmButtonText` and the size of the dialog.
      */
     init {
-        confirmButtonText = "Confirm"
-        cancelButtonText = "Reject"
+        confirmButtonText = "Yes"
+        cancelButtonText = "No"
         dialogWidth = 420.dp
         dialogHeight = 230.dp
     }
@@ -49,7 +49,7 @@ public class ConfirmationDialog : Dialog() {
     /**
      * The title of the dialog.
      */
-    public override val title: String = "Confirm"
+    public override var title: String = "Confirm"
 
     public var message: String = "Are you sure?"
     public var description: String = ""

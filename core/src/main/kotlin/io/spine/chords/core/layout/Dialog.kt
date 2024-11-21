@@ -341,8 +341,8 @@ public abstract class Dialog : Component() {
         if (ConfirmationDialog.askAndAwait {
                 message = "Are you sure you want to close the dialog?"
                 description = "Any entered data will be lost in this case."
-                confirmButtonText = "Discard Changes"
-                cancelButtonText = "Continue Editing"
+                confirmButtonText = "Discard changes"
+                cancelButtonText = "Continue editing"
             }
         ) {
             close()

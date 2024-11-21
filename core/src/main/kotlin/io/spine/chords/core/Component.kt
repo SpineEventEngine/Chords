@@ -39,7 +39,7 @@ import androidx.compose.runtime.remember
  * provides an alternative way for implementing components with utilizing
  * the features of the object-oriented paradigm.
  *
- * ## Using class-based components
+ * # Using class-based components
  *
  * The syntax for using such components is similar to that of using the regular
  * function-based components. Considering a function-based component declaration
@@ -138,7 +138,7 @@ import androidx.compose.runtime.remember
  *
  * See also below how to implement such components.
  *
- * ## Implementing class-based components
+ * # Implementing class-based components
  *
  * - Create a subclass of [Component].
  *
@@ -193,7 +193,51 @@ import androidx.compose.runtime.remember
  * classes* though, since companion objects here serve the purpose that is
  * similar to a class's constructor.
  *
- * ## When to write class-based and function-based components?
+ * ### Required properties
+ *
+ * In many cases you can just specify the default property value, however in
+ * cases when no default property value can be known by the component's
+ * implementation itself (or if it is needed to ensure that the developer who
+ * declares a component's instance specifies property value explicitly), one way
+ * to do it is like this:
+ *
+ * - Declare the respective property as a `lateinit` one without any
+ *   default value.
+ *
+ * - Override the [initialize] method, and invoke the [requireProperty] method
+ *   to ensure that a component throws an exception with a descriptive message
+ *   if the property value is not specified when the component is declared.
+ *
+ *   The `requireProperty` call must contain the `isInitialized` literal
+ *   expression for the respective property (see an example below), and the name
+ *   of this property. Note that currently it is technically not possible in
+ *   Kotlin to embed the `isInitialized` call into the `requireProperty`
+ *   implementation, and thus it has to be written literally like this.
+ *
+ *   This second point is technically optional but is recommended to make
+ *   the exception message descriptive, and make the actual component's usage
+ *   more clear.
+ *
+ *   Note: make sure to invoke `super.initialize()` when overriding
+ *   the `initialize` method.
+ *
+ * Here's an example:
+ * ```
+ *     public class HelloComponent : Component() {
+ *         public companion object : ComponentSetup<HelloComponent>({ HelloComponent() })
+ *
+ *         public lateinit var name: String = ""
+ *
+ *         protected override initialize() {
+ *             super.initialize()
+ *             requireProperty(::name.isInitialized, "name")
+ *         }
+ *
+ *         ...
+ *     }
+ * ```
+ *
+ * # When to write class-based and function-based components?
  *
  * A class-based components writing style is only a convenience that can be used
  * if it provides some benefits relative to function-based ones. Function-based
@@ -203,7 +247,7 @@ import androidx.compose.runtime.remember
  * Both paradigms are mutually compatible: functional components can be used in
  * class-based ones, and class-based ones can be used in functional ones.
  *
- * ## Benefits of writing class-based components
+ * # Benefits of writing class-based components
  *
  * A class-based component implementation provides the following benefits
  * in particular:
@@ -257,7 +301,7 @@ import androidx.compose.runtime.remember
  *   data (stored in its properties) to be implicitly available in each of such
  *   functions without explicitly passing them around with parameters.
  *
- * ## Converting function-based components into class-based ones
+ * # Converting function-based components into class-based ones
  *
  * The points below can be used as a rule of thumb when converting existing
  * function-based components to class-based ones. This can also be helpful for
@@ -307,7 +351,7 @@ import androidx.compose.runtime.remember
  *   into class methods would make respective class's properties to be available
  *   to such methods implicitly.
  *
- * ## Optimizing performance
+ * # Optimizing performance
  *
  * These recommendations are optional, but can be considered in cases when UI's
  * performance becomes an issue for some components or when you're creating
@@ -463,6 +507,15 @@ public abstract class Component {
      */
     @Composable
     protected abstract fun content()
+
+    /**
+     * Throws a descriptive [IllegalArgumentException] if a `lateinit` property
+     * hasn't been set.
+     *
+     */
+    protected fun requireProperty(propertyInitialized: Boolean, propertyName: String) {
+        require(propertyInitialized) { "${javaClass.simpleName}.$propertyName must be specified." }
+    }
 }
 
 /**
