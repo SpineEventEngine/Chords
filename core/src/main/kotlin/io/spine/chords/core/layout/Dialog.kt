@@ -42,7 +42,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
@@ -190,7 +193,7 @@ public abstract class Dialog : Component() {
 
     internal var isBottomDialog: Boolean = true
 
-    internal var nestedDialog: Dialog? = null
+    internal var nestedDialog by mutableStateOf<Dialog?>(null)
 
 //    private val cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
 //        onCloseRequest = onConfirm
@@ -258,9 +261,7 @@ public abstract class Dialog : Component() {
     }
 
     internal fun openNestedDialog(dialog: Dialog) {
-        check(nestedDialog != dialog) {
-            "This dialog is already open."
-        }
+        check(nestedDialog != dialog) { "This dialog is already open." }
         if (nestedDialog == null) {
             nestedDialog = dialog
         } else {
@@ -268,17 +269,16 @@ public abstract class Dialog : Component() {
         }
     }
 
-    internal fun hideNestedDialog(dialog: Dialog) {
-        checkNotNull(nestedDialog) {
-            "No such dialog is displayed currently."
-        }
+    internal fun closeNestedDialog(dialog: Dialog) {
+        checkNotNull(nestedDialog) { "This dialog is not displayed currently." }
         if (dialog == nestedDialog) {
-            check(nestedDialog!!.nestedDialog == null) {
-                "Cannot close a dialog while it has nested dialog(s) displayed."
+            check(dialog.nestedDialog == null) {
+                "Cannot close a dialog while it has a nested dialog open."
             }
             nestedDialog = null
+        } else {
+            nestedDialog!!.closeNestedDialog(dialog)
         }
-        nestedDialog!!.hideNestedDialog(dialog)
     }
 
 

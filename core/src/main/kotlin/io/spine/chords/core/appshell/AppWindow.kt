@@ -30,8 +30,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import io.spine.chords.core.layout.Dialog
@@ -71,14 +72,13 @@ public class AppWindow(
      * The sign-in screen of the application.
      */
     private val signInScreen: @Composable () -> Unit = {
-        signInScreenContent { currentScreen.value = mainScreen }
+        signInScreenContent { currentScreen = mainScreen }
     }
 
     /**
      * Holds the current visible screen.
      */
-    private val currentScreen: MutableState<@Composable () -> Unit> =
-        mutableStateOf(signInScreen)
+    private var currentScreen by mutableStateOf<@Composable () -> Unit>(signInScreen)
 
     /**
      * The bottom-most dialog in the current dialog display stack, or `null` if
@@ -96,7 +96,7 @@ public class AppWindow(
      * very first dialog that was displayed among all these dialogs (the bottom
      * of the dialogs stack).
      */
-    private var bottomDialog: MutableState<Dialog?> = mutableStateOf(null)
+    private var bottomDialog by mutableStateOf<Dialog?>(null)
 
     /**
      * Renders the application window's content.
@@ -116,9 +116,9 @@ public class AppWindow(
             Box(
                 modifier = Modifier.background(MaterialTheme.colorScheme.background)
             ) {
-                currentScreen.value()
+                currentScreen()
             }
-            bottomDialog?.value!!.Content()
+            bottomDialog?.Content()
         }
     }
 
@@ -139,13 +139,13 @@ public class AppWindow(
      *          is already displayed.
      */
     public fun openModalScreen(screen: @Composable () -> Unit) {
-        check(currentScreen.value == mainScreen) {
+        check(currentScreen == mainScreen) {
             "Another modal screen is visible already."
         }
-        check(bottomDialog.value == null) {
+        check(bottomDialog == null) {
             "Cannot display the modal screen when a dialog is displayed."
         }
-        currentScreen.value = screen
+        currentScreen = screen
     }
 
     /**
@@ -155,7 +155,7 @@ public class AppWindow(
      *          to indicate the illegal state when no modal screen to close.
      */
     public fun closeCurrentModalScreen() {
-        currentScreen.value = mainScreen
+        currentScreen = mainScreen
     }
 
     /**
@@ -167,13 +167,13 @@ public class AppWindow(
      * @param dialog An instance of the dialog that should be displayed.
      */
     internal fun openDialog(dialog: Dialog) {
-        check(bottomDialog.value != dialog) { "This dialog is already open." }
+        check(bottomDialog != dialog) { "This dialog is already open." }
 
-        dialog.isBottomDialog = bottomDialog.value == null
+        dialog.isBottomDialog = bottomDialog == null
         if (dialog.isBottomDialog) {
-            bottomDialog.value = dialog
+            bottomDialog = dialog
         } else {
-            bottomDialog.value!!.openNestedDialog(dialog)
+            bottomDialog!!.openNestedDialog(dialog)
         }
     }
 
@@ -181,15 +181,14 @@ public class AppWindow(
      * Closes the currently displayed dialog window.
      */
     internal fun closeDialog(dialog: Dialog) {
-        checkNotNull(bottomDialog.value) {
-            "No such dialog is displayed currently."
-        }
-        if (dialog == bottomDialog.value) {
-            check(bottomDialog.value!!.nestedDialog == null) {
-                "Cannot close a dialog while it has nested dialog(s) displayed."
+        checkNotNull(bottomDialog) { "No dialogs are displayed currently." }
+        if (dialog == bottomDialog) {
+            check(bottomDialog!!.nestedDialog == null) {
+                "Cannot close a dialog while it has a nested dialog open."
             }
-            bottomDialog.value = null
+            bottomDialog = null
+        } else {
+            bottomDialog!!.closeNestedDialog(dialog)
         }
-        bottomDialog.value!!.hideNestedDialog(dialog)
     }
 }
