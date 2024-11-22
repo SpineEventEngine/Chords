@@ -152,26 +152,6 @@ public abstract class Dialog : Component() {
     public var cancelButtonText: String = "Cancel"
 
     /**
-     * A callback that should be handled to close the dialog (exclude it from
-     * the composition).
-     *
-     * This callback is triggered when the user closes the dialog or after
-     * successful submission.
-     *
-     * // TODO:2024-11-12:dmitry.pikhulya: Remove this property after
-     *      introducing native dialogs instead of popup-based ones.
-     */
-//    internal var onCloseRequest: (() -> Unit)? = { close() }
-
-//    /**
-//     * A callback used to confirm that the user wants to cancel the dialog.
-//     *
-//     * This callback is triggered when the user closes the dialog
-//     * by pressing the cancel button.
-//     */
-//    private var onCancelConfirmation: (() -> Unit)? = null
-
-    /**
      * The width of the dialog.
      *
      * The default value is `700.dp`.
@@ -234,12 +214,6 @@ public abstract class Dialog : Component() {
      * of the dialog.
      */
     public var onBeforeSubmit: suspend () -> Boolean = { true }
-
-//    private val cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
-//        onCloseRequest = onConfirm
-//        onCancelConfirmation = onCancel
-//        ConfirmCancellationDialog().Content()
-//    }
 
     /**
      * Displays the modal dialog.
@@ -321,17 +295,6 @@ public abstract class Dialog : Component() {
         }
     }
 
-
-//    private val cancelConfirmationShown = remember { mutableStateOf(false) }
-//
-//    private fun showCancelConfirmation() {
-//        cancelConfirmationShown.value = true
-//    }
-//
-//    private fun hideCancelConfirmation() {
-//        cancelConfirmationShown.value = false
-//    }
-
     /**
      * Renders the dialog's frame, which makes up main elements that are common
      * for all dialogs, including dialog's title and buttons, while delegating
@@ -397,25 +360,12 @@ private fun lightweightPlatform(
             onDismissRequest = close,
             properties = PopupProperties(focusable = true),
             onPreviewKeyEvent = { false },
-            onKeyEvent = escapePressHandler {
-                //                if (cancelConfirmationDialog != null) {
-                //                    showCancelConfirmation()
-                //                } else {
-                close()
-                //                }
-            }
+            onKeyEvent = escapePressHandler { close() }
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Black.copy(alpha = 0.5f))
-                //                    .pointerInput(::close) {
-                //                        detectTapGestures(onPress = {
-                //                            if (cancelConfirmationDialog == null) {
-                //                                close()
-                //                            }
-                //                        })
-                //                    }
                 ,
                 contentAlignment = Center
             ) {
@@ -424,9 +374,6 @@ private fun lightweightPlatform(
                         detectTapGestures(onPress = {})
                     }
                 ) {
-                    //                    onCancelConfirmation = {
-                    //                        showCancelConfirmation()
-                    //                    }
                     dialogContent()
                 }
             }
@@ -451,23 +398,6 @@ private fun lightweightPlatform(
     }
 
     nestedDialog ?.Content()
-
-//            if (nestedDialog != null) {
-//
-//                CancelConfirmationDialogContainer(
-//                    onCancel = { hideCancelConfirmation() },
-//                    onConfirm = { close() },
-//                    content = cancelConfirmationDialog
-//                )
-//            }
-
-//            if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
-//                CancelConfirmationDialogContainer(
-//                    onCancel = { hideCancelConfirmation() },
-//                    onConfirm = { close() },
-//                    content = cancelConfirmationDialog
-//                )
-//            }
 }
 
 /**
@@ -522,19 +452,6 @@ public open class DialogSetup<D: Dialog>(
         return dialog
     }
 }
-
-
-///**
-// * A type of the cancel confirmation dialog.
-// *
-// * The cancel confirmation dialog prompts the user to confirm whether they want
-// * to close the modal. It receives two parameters:
-// * - `onConfirm`: A callback triggered when the user confirms the cancellation.
-// * - `onCancel`: A callback triggered when the user cancels the cancellation
-// *   (i.e., decides not to close the modal).
-// */
-//private typealias CancelConfirmationDialog =
-//        @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit
 
 /**
  * Configuration of the dialog, allowing adjustments
@@ -652,61 +569,3 @@ private val centerWindowPositionProvider = object : PopupPositionProvider {
         popupContentSize: IntSize
     ): IntOffset = IntOffset.Zero
 }
-
-///**
-// * The container for the cancel confirmation dialog of the [Dialog] component.
-// *
-// * This dialog confirms or denies the intention of the user to close the main modal window.
-// *
-// * @param onCancel The callback triggered on the dialog cancellation.
-// * @param onConfirm The callback triggered on the confirmation to cancel the main modal window.
-// * @param content The content to display as a dialog.
-// */
-//@Composable
-//private fun CancelConfirmationDialogContainer(
-//    onCancel: () -> Unit,
-//    onConfirm: () -> Unit,
-//    content: CancelConfirmationDialog
-//) {
-//    Popup(
-//        popupPositionProvider = centerWindowPositionProvider,
-//        properties = PopupProperties(focusable = true),
-//        onPreviewKeyEvent = { false }
-//    ) {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .background(Black.copy(alpha = 0.5f)),
-//            contentAlignment = Center
-//        ) {
-//            Box {
-//                content(onConfirm, onCancel)
-//            }
-//        }
-//    }
-//}
-
-//
-//@Composable
-//private fun NestedDialogContainer(
-//    onCancel: () -> Unit,
-//    onConfirm: () -> Unit,
-//    dialog: Dialog
-//) {
-//    Popup(
-//        popupPositionProvider = centerWindowPositionProvider,
-//        properties = PopupProperties(focusable = true),
-//        onPreviewKeyEvent = { false }
-//    ) {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .background(Black.copy(alpha = 0.5f)),
-//            contentAlignment = Center
-//        ) {
-//            Box {
-////                content(onConfirm, onCancel)
-//            }
-//        }
-//    }
-//}
