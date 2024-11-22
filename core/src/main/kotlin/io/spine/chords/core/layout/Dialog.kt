@@ -28,7 +28,8 @@ package io.spine.chords.core.layout
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Arrangement.End
+import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -46,8 +47,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Bottom
 import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Black
@@ -57,6 +59,7 @@ import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntOffset.Companion.Zero
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -171,8 +174,18 @@ public abstract class Dialog : Component() {
      */
     public var config: DialogConfig = DialogConfig()
 
+    /**
+     * This property is automatically set to `true` by the application, if
+     * this dialog is a bottom-most one (the first dialog that was invoked in
+     * the sequence of nested dialogs display). If it's a nested dialog of
+     * another dialog, this property is set to `false`.
+     */
     internal var isBottomDialog: Boolean = true
 
+    /**
+     * A dialog nested in this one (the one that was displayed while this one
+     * was open).
+     */
     internal var nestedDialog by mutableStateOf<Dialog?>(null)
 
     /**
@@ -210,8 +223,32 @@ public abstract class Dialog : Component() {
      * click before the [submitForm] function is called.
      *
      * The callback should return `true` in order for the dialog to proceed with
-     * submission. Returning `false` prevents submission and closing
-     * of the dialog.
+     * submission. Returning `false` prevents submission from happening and
+     * retains the dialog open in its current state.
+     *
+     * The default implementation just returns `true`, and one of the typical
+     * usage scenarios would be to display the confirmation dialog, which might
+     * be required when the dialog's submission leads to a critical
+     * irreversible modification.
+     *
+     * For example, here's an example of a custom `MyDialog` implementation
+     * displaying a confirmation upon pressing the Submit button, right before
+     * invoking the [submitForm] method:
+     *
+     * ```
+     * public class MyDialog : Dialog() {
+     *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
+     *
+     *     init {
+     *         onBeforeSubmit = ConfirmationDialog.askAndAwait {
+     *             message = "Are you sure you want to proceed?"
+     *             description = "This action is irreversible."
+     *             confirmButtonText = "Yes"
+     *             cancelButtonText = "No"
+     *         }
+     *         ...
+     *     }
+     * ```
      */
     public var onBeforeSubmit: suspend () -> Boolean = { true }
 
@@ -274,6 +311,17 @@ public abstract class Dialog : Component() {
         lightweightPlatform(::close, { dialogFrame() }, nestedDialog, isBottomDialog)
     }
 
+    /**
+     * A part of internal application's machinery for displaying nested dialogs.
+     *
+     * Technically, displays an inner dialog inside of this one. Should not be
+     * invoked directly as it's invoked automatically by
+     * [AppWindow.openDialog][io.spine.chords.core.appshell.AppWindow.openDialog],
+     * which in turn is invoked by the [open] method.
+     *
+     * @see closeNestedDialog
+     * @see open
+     */
     internal fun openNestedDialog(dialog: Dialog) {
         check(nestedDialog != dialog) { "This dialog is already open." }
         if (nestedDialog == null) {
@@ -283,7 +331,15 @@ public abstract class Dialog : Component() {
         }
     }
 
-    internal fun closeNestedDialog(dialog: Dialog) {
+/**
+ * A part of internal application's machinery for displaying nested dialogs.
+ *
+ * This method complements [openNestedDialog] for this purpose. See its
+ * description for details.
+ *
+ * @see openNestedDialog
+ */
+internal fun closeNestedDialog(dialog: Dialog) {
         checkNotNull(nestedDialog) { "This dialog is not displayed currently." }
         if (dialog == nestedDialog) {
             check(dialog.nestedDialog == null) {
@@ -334,19 +390,24 @@ public abstract class Dialog : Component() {
         }
     }
 
-    protected open suspend fun handleSubmitClick() {
+    private suspend fun handleSubmitClick() {
         if (onBeforeSubmit() && submitForm()) {
             close()
         }
     }
 
-    protected open suspend fun handleCancelClick() {
+    private suspend fun handleCancelClick() {
         if (onBeforeCancel()) {
             close()
         }
     }
 }
 
+/**
+ * A composable container, which ensures displaying a nested dialog in
+ * a "lightweight" way (with rendering it as an overlay in the current window
+ * without allocating a real OS window for the dialog).
+ */
 @Composable
 private fun lightweightPlatform(
     close: () -> Unit,
@@ -503,11 +564,11 @@ private fun DialogButtons(
     Row(
         modifier = Modifier.fillMaxWidth()
             .padding(padding),
-        horizontalArrangement = Arrangement.End,
-        verticalAlignment = Alignment.Bottom
+        horizontalArrangement = End,
+        verticalAlignment = Bottom
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(buttonsSpacing)
+            horizontalArrangement = spacedBy(buttonsSpacing)
         ) {
             DialogButton(cancelButtonText) {
                 onCancel.invoke()
@@ -531,11 +592,9 @@ private fun DialogButton(
     label: String,
     onClick: () -> Unit
 ) {
-    Button(
-        onClick = onClick
-    ) {
+    Button(onClick = onClick) {
         Row(
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = CenterVertically
         ) {
             Text(label)
         }
@@ -567,5 +626,5 @@ private val centerWindowPositionProvider = object : PopupPositionProvider {
         windowSize: IntSize,
         layoutDirection: LayoutDirection,
         popupContentSize: IntSize
-    ): IntOffset = IntOffset.Zero
+    ): IntOffset = Zero
 }

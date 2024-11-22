@@ -27,8 +27,12 @@ public class ConfirmationDialog : Dialog() {
     public companion object : AbstractComponentSetup({ ConfirmationDialog() }) {
 
         /**
-         * Displays the confirmation dialog, and waits until the user either
-         * accepts or rejects the confirmation.
+         * Displays the confirmation dialog, and waits until the user makes
+         * a choice.
+         *
+         * @return `true`, if the user makes a positive choice (presses the
+         *   Submit button), and `false`, if the user makes a negative choice
+         *   (presses the Cancel button).
          */
         public suspend fun askAndAwait(props: ComponentProps<ConfirmationDialog>? = null): Boolean {
             val dialog = create(config = props)
@@ -63,9 +67,6 @@ public class ConfirmationDialog : Dialog() {
      */
     public var description: String = ""
 
-    internal var onConfirm: (() -> Unit)? = null
-    internal var onCancel: (() -> Unit)? = null
-
     /**
      * Creates the content of the dialog.
      */
@@ -91,16 +92,6 @@ public class ConfirmationDialog : Dialog() {
         }
     }
 
-    override suspend fun handleCancelClick() {
-        onCancel?.invoke()
-        super.handleCancelClick()
-    }
-
-    override suspend fun  handleSubmitClick() {
-        onConfirm?.invoke()
-        super.handleSubmitClick()
-    }
-
     /**
      * Just returns `true` on form submission since there is no data to submit.
      */
@@ -110,16 +101,16 @@ public class ConfirmationDialog : Dialog() {
 
     /**
      * Displays the confirmation dialog, and waits until the user either
-     * accepts or rejects the confirmation.
+     * makes a choice.
      */
     public suspend fun askAndWait(): Boolean {
         var confirmed = false
         val dialogClosure = CompletableFuture<Unit>()
-        onConfirm = {
+        onBeforeSubmit = {
             confirmed = true
             dialogClosure.complete(Unit)
         }
-        onCancel = {
+        onBeforeCancel = {
             dialogClosure.complete(Unit)
         }
 
