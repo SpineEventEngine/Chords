@@ -20,15 +20,15 @@ import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.future.await
 
 /**
- * A confirmation dialog that prompts the user to confirm or deny
- * the cancellation of some window, typically used for modal ones.
+ * A dialog that prompts the user either to make a boolean decision
+ * (e.g. approve or deny some action).
  */
 public class ConfirmationDialog : Dialog() {
     public companion object : AbstractComponentSetup({ ConfirmationDialog() }) {
 
         /**
-         * Displays the confirmation dialog, and waits until the user makes
-         * a decision.
+         * Displays the confirmation dialog, and waits until the user
+         * makes a decision.
          *
          * @return `true`, if the user makes a positive decision (presses the
          *   Submit button), and `false`, if the user makes a negative decision
@@ -36,7 +36,7 @@ public class ConfirmationDialog : Dialog() {
          */
         public suspend fun ask(props: ComponentProps<ConfirmationDialog>? = null): Boolean {
             val dialog = create(config = props)
-            return dialog.askAndWait()
+            return dialog.ask()
         }
     }
 
@@ -100,10 +100,10 @@ public class ConfirmationDialog : Dialog() {
     }
 
     /**
-     * Displays the confirmation dialog, and waits until the user either
+     * Displays the confirmation dialog, and waits until the user
      * makes a decision.
      */
-    public suspend fun askAndWait(): Boolean {
+    public suspend fun ask(): Boolean {
         var confirmed = false
         val dialogClosure = CompletableFuture<Unit>()
         onBeforeSubmit = {
@@ -116,7 +116,6 @@ public class ConfirmationDialog : Dialog() {
 
         open()
         dialogClosure.await()
-
         return confirmed
     }
 }

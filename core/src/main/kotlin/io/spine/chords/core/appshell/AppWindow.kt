@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import io.spine.chords.core.layout.Dialog
 import java.awt.Dimension
-import java.util.*
 
 /**
  * Represents the main application window and provides API to display
@@ -47,7 +46,7 @@ import java.util.*
  *
  * @param signInScreenContent A content for the sign-in screen.
  * @param views The list of application's views.
- * @param initialView Allows to specify a view from the list of [views], if any
+ * @param initialView Allows to specify a view from the list of `views`, if any
  *   view other than the first one has to be displayed when
  *   the application starts.
  * @param onCloseRequest An action that should be performed on window closing.
@@ -179,7 +178,11 @@ public class AppWindow(
     }
 
     /**
-     * Closes the currently displayed dialog window.
+     * Closes the specified dialog.
+     *
+     * This is a part of an internal dialog management API.
+     *
+     * @param dialog The dialog that needs to be closed.
      */
     internal fun closeDialog(dialog: Dialog) {
         checkNotNull(bottomDialog) { "No dialogs are displayed currently." }

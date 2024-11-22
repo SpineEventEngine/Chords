@@ -600,7 +600,7 @@ public abstract class Component {
      *
      * @param propertyInitialized The [isInitialized] property access expression
      *   for the `lateinit` property being checked
-     *   (e.g. `::property.isInitialized`).
+     *   (e.g. `::property1.isInitialized`).
      * @param propertyName The name of the property being checked
      *   (e.g. "property1").
      * @throws IllegalArgumentException If the property referred to by the

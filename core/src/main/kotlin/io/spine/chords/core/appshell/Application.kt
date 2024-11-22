@@ -256,7 +256,7 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      * On a par with [openDialog], this is a part of an internal API for
      * [Dialog]s to be able to control their display lifecycle.
      *
-     * @para dialog The dialog that needs to be closed.
+     * @param dialog The dialog that needs to be closed.
      * @see openDialog
      */
     internal fun closeDialog(dialog: Dialog) {
