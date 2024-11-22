@@ -30,8 +30,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import io.spine.chords.core.layout.Dialog
@@ -45,8 +46,9 @@ import java.awt.Dimension
  *
  * @param signInScreenContent A content for the sign-in screen.
  * @param views The list of application's views.
- * @param initialView Allows to specify a view from the list of [views], if any view other
- *   than the first one has to be displayed when the application starts.
+ * @param initialView Allows to specify a view from the list of `views`, if any
+ *   view other than the first one has to be displayed when
+ *   the application starts.
  * @param onCloseRequest An action that should be performed on window closing.
  * @param minWindowSize The minimal size of the application window.
  */
@@ -69,16 +71,32 @@ public class AppWindow(
      * The sign-in screen of the application.
      */
     private val signInScreen: @Composable () -> Unit = {
-        signInScreenContent { currentScreen.value = mainScreen }
+        signInScreenContent { currentScreen = mainScreen }
     }
 
     /**
      * Holds the current visible screen.
      */
-    private val currentScreen: MutableState<@Composable () -> Unit> =
-        mutableStateOf(signInScreen)
+    private var currentScreen by mutableStateOf<@Composable () -> Unit>(signInScreen)
 
-    private val currentDialog: MutableState<Dialog?> = mutableStateOf(null)
+    /**
+     * The bottom-most dialog in the current dialog display stack, or `null` if
+     * no dialogs are displayed currently.
+     *
+     * Dialogs are modal windows, which means that there can be at most once
+     * dialog that the user can interact with at a time. It's possible to
+     * display nested dialogs though. That is, when some dialog is already
+     * displayed, another dialog can be open (see
+     * [DialogSetup][io.spine.chords.core.layout.DialogSetup.open]), which means
+     * that the first dialog still remains opened, but cannot be interacted with
+     * until the second one (which is displayed on top of it) is closed.
+     *
+     * This means that at any given moment in time there is essentially a stack
+     * of dialogs (zero or more nested dialogs). This property refers to the
+     * very first dialog that was displayed among all these dialogs (the bottom
+     * of the dialogs stack).
+     */
+    private var bottomDialog by mutableStateOf<Dialog?>(null)
 
     /**
      * Renders the application window's content.
@@ -98,9 +116,9 @@ public class AppWindow(
             Box(
                 modifier = Modifier.background(MaterialTheme.colorScheme.background)
             ) {
-                currentScreen.value()
+                currentScreen()
             }
-            currentDialog.value?.Content()
+            bottomDialog?.Content()
         }
     }
 
@@ -121,13 +139,13 @@ public class AppWindow(
      *          is already displayed.
      */
     public fun openModalScreen(screen: @Composable () -> Unit) {
-        check(currentScreen.value == mainScreen) {
+        check(currentScreen == mainScreen) {
             "Another modal screen is visible already."
         }
-        check(currentDialog.value == null) {
-            "Cannot display the modal screen above the modal window."
+        check(bottomDialog == null) {
+            "Cannot display the modal screen when a dialog is displayed."
         }
-        currentScreen.value = screen
+        currentScreen = screen
     }
 
     /**
@@ -137,7 +155,7 @@ public class AppWindow(
      *          to indicate the illegal state when no modal screen to close.
      */
     public fun closeCurrentModalScreen() {
-        currentScreen.value = mainScreen
+        currentScreen = mainScreen
     }
 
     /**
@@ -149,19 +167,32 @@ public class AppWindow(
      * @param dialog An instance of the dialog that should be displayed.
      */
     internal fun openDialog(dialog: Dialog) {
-        check(currentDialog.value == null) {
-            "Another dialog has been opened already."
+        check(bottomDialog != dialog) { "This dialog is already open." }
+
+        dialog.isBottomDialog = bottomDialog == null
+        if (dialog.isBottomDialog) {
+            bottomDialog = dialog
+        } else {
+            bottomDialog!!.openNestedDialog(dialog)
         }
-        currentDialog.value = dialog
     }
 
     /**
-     * Closes the currently displayed dialog window.
+     * Closes the specified dialog.
+     *
+     * This is a part of an internal dialog management API.
+     *
+     * @param dialog The dialog that needs to be closed.
      */
-    internal fun closeCurrentDialog() {
-        check(currentDialog.value != null) {
-            "No dialog is displayed currently."
+    internal fun closeDialog(dialog: Dialog) {
+        checkNotNull(bottomDialog) { "No dialogs are displayed currently." }
+        if (dialog == bottomDialog) {
+            check(bottomDialog!!.nestedDialog == null) {
+                "Cannot close a dialog while it has a nested dialog open."
+            }
+            bottomDialog = null
+        } else {
+            bottomDialog!!.closeNestedDialog(dialog)
         }
-        currentDialog.value = null
     }
 }

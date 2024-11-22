@@ -59,19 +59,14 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
 
     /**
      * An object, which defines the component's appearance parameters.
+     *
+     * @param interFieldPadding A horizontal distance between the payment card
+     *   and bank account fields.
+     * @paRAM selectorsOffset A vertical distance between radio button selectors
+     *   and their respective fields.
      */
     public data class Look(
-
-        /**
-         * A horizontal distance between the payment card and bank
-         * account fields.
-         */
         public var interFieldPadding: Dp = 40.dp,
-
-        /**
-         * A vertical distance between radio button selectors and their
-         * respective fields.
-         */
         public var selectorsOffset: Dp = 8.dp
     )
 

@@ -28,9 +28,9 @@ package io.spine.chords.core.layout
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Arrangement.End
+import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -43,11 +43,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment.Companion.Bottom
 import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Black
@@ -57,6 +59,7 @@ import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntOffset.Companion.Zero
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -72,7 +75,6 @@ import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.keyboard.on
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -139,38 +141,18 @@ public abstract class Dialog : Component() {
     public abstract val title: String
 
     /**
-     * The label for the dialog's confirmation button.
+     * The label for the dialog's Submit button.
      *
      * The default value is `OK`.
      */
-    public var confirmButtonText: String = "OK"
+    public var submitButtonText: String = "OK"
 
     /**
-     * The label for the dialog's cancel button.
+     * The label for the dialog's Cancel button.
      *
      * The default value is `Cancel`.
      */
     public var cancelButtonText: String = "Cancel"
-
-    /**
-     * A callback that should be handled to close the dialog (exclude it from
-     * the composition).
-     *
-     * This callback is triggered when the user closes the dialog or after
-     * successful submission.
-     *
-     * // TODO:2024-11-12:dmitry.pikhulya: Remove this property after
-     *      introducing native dialogs instead of popup-based ones.
-     */
-    internal var onCloseRequest: (() -> Unit)? = { close() }
-
-    /**
-     * A callback used to confirm that the user wants to cancel the dialog.
-     *
-     * This callback is triggered when the user closes the dialog
-     * by pressing the cancel button.
-     */
-    private var onCancelConfirmation: (() -> Unit)? = null
 
     /**
      * The width of the dialog.
@@ -187,17 +169,105 @@ public abstract class Dialog : Component() {
     public var dialogHeight: Dp = 450.dp
 
     /**
-     * The [DialogConfig] property that allows adjustments
-     * to visual appearance settings.
+     * Specifies appearance-related parameters.
      */
-    public var config: DialogConfig = DialogConfig()
+    public var look: Look = Look()
 
-    private var cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
-        ConfirmCancellationDialog {
-            onCloseRequest = onConfirm
-            onCancelConfirmation = onCancel
-        }.Content()
-    }
+    /**
+     * An object allowing adjustments of visual appearance parameters.
+     *
+     * @param padding The padding applied to the entire content of the dialog.
+     * @param titlePadding The padding applied to the title of the dialog.
+     * @param buttonsPanelPadding The padding applied to the buttons panel of
+     *   the dialog.
+     * @param buttonsSpacing The space between the buttons of the dialog.
+     */
+    public data class Look(
+        public var padding: PaddingValues = PaddingValues(24.dp),
+        public var titlePadding: PaddingValues = PaddingValues(bottom = 16.dp),
+        public var buttonsPanelPadding: PaddingValues = PaddingValues(top = 24.dp),
+        public var buttonsSpacing: Dp = 12.dp
+    )
+
+    /**
+     * This property is automatically set to `true` by the application, if
+     * this dialog is a bottom-most one (the first dialog that was invoked in
+     * the sequence of nested dialogs display).
+     *
+     * If it's a nested dialog of another dialog, this property is set
+     * to `false`.
+     */
+    internal var isBottomDialog: Boolean = true
+
+    /**
+     * A dialog nested in this one (the one that was displayed while this one
+     * was open).
+     */
+    internal var nestedDialog by mutableStateOf<Dialog?>(null)
+
+    /**
+     * A suspending callback, which is invoked upon the dialog's Cancel button
+     * click before the dialog is closed.
+     *
+     * The callback should return `true` in order for the dialog to proceed with
+     * closing, and `false` to prevent the dialog from being closed.
+     *
+     * The default implementation just returns `true`, and one of the typical
+     * usage scenarios would be to display the confirmation dialog.
+     *
+     * For example, in order for the custom `MyDialog` implementation to display
+     * a confirmation before the dialog is closed upon pressing Cancel, the
+     * following can be done:
+     * ```
+     * public class MyDialog : Dialog() {
+     *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
+     *
+     *     init {
+     *         onBeforeCancel = ConfirmationDialog.askAndAwait {
+     *             message = "Are you sure you want to close the dialog?"
+     *             description = "Any entered data will be lost in this case."
+     *             confirmButtonText = "Discard changes"
+     *             cancelButtonText = "Continue editing"
+     *         }
+     *         ...
+     *     }
+     * ```
+     */
+    public var onBeforeCancel: suspend () -> Boolean = { true }
+
+    /**
+     * A suspending callback, which is invoked upon the dialog's Submit button
+     * click before the [submitForm] function is called.
+     *
+     * The callback should return `true` in order for the dialog to proceed with
+     * submission. Returning `false` prevents submission from happening and
+     * retains the dialog open in its current state.
+     *
+     * The default implementation just returns `true`, and one of the typical
+     * usage scenarios would be to display the confirmation dialog, which might
+     * be required when the dialog's submission leads to a critical
+     * irreversible modification.
+     *
+     * For example, here's an example of a custom `MyDialog` implementation
+     * displaying a confirmation upon pressing the Submit button, right before
+     * invoking the [submitForm] method:
+     *
+     * ```
+     * public class MyDialog : Dialog() {
+     *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
+     *
+     *     init {
+     *         onBeforeSubmit = ConfirmationDialog.askAndAwait {
+     *             message = "Are you sure you want to proceed?"
+     *             description = "This action is irreversible."
+     *             confirmButtonText = "Yes"
+     *             cancelButtonText = "No"
+     *         }
+     *         ...
+     *     }
+     * ```
+     */
+    public var onBeforeSubmit: suspend () -> Boolean = { true }
 
     /**
      * Displays the modal dialog.
@@ -222,7 +292,7 @@ public abstract class Dialog : Component() {
      * possibly entered in the dialog currently.
      */
     private fun close() {
-        app.ui.closeCurrentDialog()
+        app.ui.closeDialog(this)
     }
 
     /**
@@ -255,51 +325,46 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected override fun content() {
-        val cancelConfirmationShown = remember { mutableStateOf(false) }
-        Popup(
-            popupPositionProvider = centerWindowPositionProvider,
-            onDismissRequest = { close() },
-            properties = PopupProperties(focusable = true),
-            onPreviewKeyEvent = { false },
-            onKeyEvent = escapePressHandler {
-                if (cancelConfirmationDialog != null) {
-                    cancelConfirmationShown.value = true
-                } else {
-                    close()
-                }
+        lightweightPlatform(::close, { dialogFrame() }, nestedDialog, isBottomDialog)
+    }
+
+    /**
+     * A part of internal application's machinery for displaying nested dialogs.
+     *
+     * Technically, displays an inner dialog inside of this one. Should not be
+     * invoked directly as it's invoked automatically by
+     * [AppWindow.openDialog][io.spine.chords.core.appshell.AppWindow.openDialog],
+     * which in turn is invoked by the [open] method.
+     *
+     * @see closeNestedDialog
+     * @see open
+     */
+    internal fun openNestedDialog(dialog: Dialog) {
+        check(nestedDialog != dialog) { "This dialog is already open." }
+        if (nestedDialog == null) {
+            nestedDialog = dialog
+        } else {
+            nestedDialog!!.openNestedDialog(dialog)
+        }
+    }
+
+/**
+ * A part of internal application's machinery for displaying nested dialogs.
+ *
+ * This method complements [openNestedDialog] for this purpose. See its
+ * description for details.
+ *
+ * @see openNestedDialog
+ */
+internal fun closeNestedDialog(dialog: Dialog) {
+        checkNotNull(nestedDialog) { "This dialog is not displayed currently." }
+        if (dialog == nestedDialog) {
+            check(dialog.nestedDialog == null) {
+                "Cannot close a dialog while it has a nested dialog open."
             }
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Black.copy(alpha = 0.5f))
-                    .pointerInput(::close) {
-                        detectTapGestures(onPress = {
-                            if (cancelConfirmationDialog == null) {
-                                close()
-                            }
-                        })
-                    },
-                contentAlignment = Center
-            ) {
-                Box(
-                    modifier = Modifier.pointerInput(::close) {
-                        detectTapGestures(onPress = {})
-                    }
-                ) {
-                    onCancelConfirmation = {
-                        cancelConfirmationShown.value = true
-                    }
-                    dialogFrame()
-                }
-            }
-            if (cancelConfirmationShown.value && cancelConfirmationDialog != null) {
-                CancelConfirmationDialogContainer(
-                    onCancel = { cancelConfirmationShown.value = false },
-                    onConfirm = { close() },
-                    content = cancelConfirmationDialog!!
-                )
-            }
+            nestedDialog = null
+        } else {
+            nestedDialog!!.closeNestedDialog(dialog)
         }
     }
 
@@ -320,55 +385,98 @@ public abstract class Dialog : Component() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(config.padding),
+                    .padding(look.padding),
             ) {
                 val coroutineScope = rememberCoroutineScope()
-                DialogTitle(title, config.titlePadding)
+                DialogTitle(title, look.titlePadding)
                 Column(
                     Modifier.weight(1F)
                         .on(Ctrl(Enter.key).up) {
-                            submit(coroutineScope)
+                            coroutineScope.launch { handleSubmitClick() }
                         }
                 ) {
                     formContent()
                 }
                 DialogButtons(
-                    confirmButtonText, { submit(coroutineScope) },
-                    cancelButtonText, { cancel() },
-                    config.buttonsPanelPadding,
-                    config.buttonsSpacing
+                    submitButtonText, { coroutineScope.launch { handleSubmitClick() } },
+                    cancelButtonText, { coroutineScope.launch { handleCancelClick() } },
+                    look.buttonsPanelPadding,
+                    look.buttonsSpacing
                 )
             }
         }
     }
 
-    /**
-     * Cancels the dialog.
-     *
-     * Invokes [onCancelConfirmation] if specified for the dialog,
-     * or [onCloseRequest] otherwise.
-     */
-    private fun cancel() {
-        if (onCancelConfirmation != null) {
-            onCancelConfirmation?.invoke()
-        } else {
-            onCloseRequest?.invoke()
+    private suspend fun handleSubmitClick() {
+        if (onBeforeSubmit() && submitForm()) {
+            close()
         }
     }
 
-    /**
-     * Submits the dialog form and invokes [onCloseRequest]
-     * if the form was successfully submitted.
-     */
-    private fun submit(coroutineScope: CoroutineScope) {
-        coroutineScope.launch {
-            if (submitForm()) {
-                onCloseRequest?.invoke()
-            }
+    private suspend fun handleCancelClick() {
+        if (onBeforeCancel()) {
+            close()
         }
     }
 }
 
+/**
+ * A composable container, which ensures displaying a nested dialog in
+ * a "lightweight" way (with rendering it as an overlay in the current window
+ * without allocating a real OS window for the dialog).
+ */
+@Composable
+private fun lightweightPlatform(
+    close: () -> Unit,
+    dialogContent: @Composable () -> Unit,
+    nestedDialog: Dialog?,
+    isBottomDialog: Boolean
+) {
+    if (isBottomDialog) {
+        Popup(
+            popupPositionProvider = centerWindowPositionProvider,
+            onDismissRequest = close,
+            properties = PopupProperties(focusable = true),
+            onPreviewKeyEvent = { false },
+            onKeyEvent = escapePressHandler { close() }
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Black.copy(alpha = 0.5f))
+                ,
+                contentAlignment = Center
+            ) {
+                Box(
+                    modifier = Modifier.pointerInput(close) {
+                        detectTapGestures(onPress = {})
+                    }
+                ) {
+                    dialogContent()
+                }
+            }
+        }
+    } else {
+        Popup(
+            popupPositionProvider = centerWindowPositionProvider,
+            properties = PopupProperties(focusable = true),
+            onPreviewKeyEvent = { false }
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Black.copy(alpha = 0.5f)),
+                contentAlignment = Center
+            ) {
+                Box {
+                    dialogContent()
+                }
+            }
+        }
+    }
+
+    nestedDialog ?.Content()
+}
 
 /**
  * A class that should be used for creating companion objects of
@@ -378,10 +486,15 @@ public abstract class Dialog : Component() {
  * dialog (say `MyDialog`) can be displayed with a simple call like this:
  *
  * ```
- *    MyDialog.open()
+ *     MyDialog.open()
  * ```
  *
- * See the [Dialog]'s documentation for usage example in context of
+ * Under the hood, such an expression technically means creating an instance of
+ * dialog [D] (`MyDialog` in this case), and then invoking the
+ * [open][Dialog.open] method on that instance (note that it's a separate method
+ * from this one).
+ *
+ * See the [Dialog]'s documentation for a usage example in context of
  * a dialog implementation.
  *
  * @constructor Creates an object to serve as a companion object.
@@ -420,35 +533,6 @@ public open class DialogSetup<D: Dialog>(
 
 
 /**
- * A type of the cancel confirmation dialog.
- *
- * The cancel confirmation dialog prompts the user to confirm whether they want
- * to close the modal. It receives two parameters:
- * - `onConfirm`: A callback triggered when the user confirms the cancellation.
- * - `onCancel`: A callback triggered when the user cancels the cancellation
- *   (i.e., decides not to close the modal).
- */
-private typealias CancelConfirmationDialog =
-        @Composable BoxScope.(onConfirm: () -> Unit, onCancel: () -> Unit) -> Unit
-
-/**
- * Configuration of the dialog, allowing adjustments
- * to visual appearance settings.
- *
- * @param padding The padding applied to the entire content of the dialog.
- * @param titlePadding The padding applied to the title of the dialog.
- * @param buttonsPanelPadding The padding applied to the buttons panel of the dialog.
- * @param buttonsSpacing The space between the buttons of the dialog.
- */
-public data class DialogConfig(
-    public var padding: PaddingValues = PaddingValues(24.dp),
-    public var titlePadding: PaddingValues = PaddingValues(bottom = 16.dp),
-    public var buttonsPanelPadding: PaddingValues = PaddingValues(top = 24.dp),
-    public var buttonsSpacing: Dp = 12.dp
-)
-
-
-/**
  * The title of the dialog.
  *
  * @param text The text to be title.
@@ -481,11 +565,11 @@ private fun DialogButtons(
     Row(
         modifier = Modifier.fillMaxWidth()
             .padding(padding),
-        horizontalArrangement = Arrangement.End,
-        verticalAlignment = Alignment.Bottom
+        horizontalArrangement = End,
+        verticalAlignment = Bottom
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(buttonsSpacing)
+            horizontalArrangement = spacedBy(buttonsSpacing)
         ) {
             DialogButton(cancelButtonText) {
                 onCancel.invoke()
@@ -509,11 +593,9 @@ private fun DialogButton(
     label: String,
     onClick: () -> Unit
 ) {
-    Button(
-        onClick = onClick
-    ) {
+    Button(onClick = onClick) {
         Row(
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = CenterVertically
         ) {
             Text(label)
         }
@@ -522,7 +604,7 @@ private fun DialogButton(
 
 
 /**
- * Creates a key event handler a function that executes a provided [escHandler]
+ * Creates a key event handler function that executes a provided [escHandler]
  * callback whenever the `Escape` key is pressed.
  */
 private fun escapePressHandler(escHandler: () -> Unit): ((KeyEvent) -> Boolean) = { event ->
@@ -545,38 +627,5 @@ private val centerWindowPositionProvider = object : PopupPositionProvider {
         windowSize: IntSize,
         layoutDirection: LayoutDirection,
         popupContentSize: IntSize
-    ): IntOffset = IntOffset.Zero
-}
-
-/**
- * The container for the cancel confirmation dialog of the [Dialog] component.
- *
- * This dialog confirms or denies the intention of the user to close the main modal window.
- *
- * @param onCancel The callback triggered on the dialog cancellation.
- * @param onConfirm The callback triggered on the confirmation to cancel the main modal window.
- * @param content The content to display as a dialog.
- */
-@Composable
-private fun CancelConfirmationDialogContainer(
-    onCancel: () -> Unit,
-    onConfirm: () -> Unit,
-    content: CancelConfirmationDialog
-) {
-    Popup(
-        popupPositionProvider = centerWindowPositionProvider,
-        properties = PopupProperties(focusable = true),
-        onPreviewKeyEvent = { false }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Black.copy(alpha = 0.5f)),
-            contentAlignment = Center
-        ) {
-            Box {
-                content(onConfirm, onCancel)
-            }
-        }
-    }
+    ): IntOffset = Zero
 }

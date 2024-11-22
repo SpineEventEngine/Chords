@@ -1206,10 +1206,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
 
     override fun initialize() {
         super.initialize()
-        // TODO:2024-03-15:dmitry.pikhulya: document specifying required properties
-        require(this::builder.isInitialized) {
-            "MessageForm's `builder` property must be specified."
-        }
+        requireProperty(::builder.isInitialized, "builder")
 
         lastEmittedMessageValue = value.value
         _dirty = identifyInitialDirtyState(value.value)
