@@ -86,10 +86,11 @@ public class AppWindow(
      *
      * Dialogs are modal windows, which means that there can be at most once
      * dialog that the user can interact with at a time. It's possible to
-     * display nested dialogs. That is, a dialog can trigger displaying another
-     * dialog, which means that the first dialog still remains opened, but
-     * cannot be interacted with until the second one (which is displayed on top
-     * of it) is closed.
+     * display nested dialogs though. That is, when some dialog is already
+     * displayed, another dialog can be open (see
+     * [DialogSetup][io.spine.chords.core.layout.DialogSetup.open]), which means
+     * that the first dialog still remains opened, but cannot be interacted with
+     * until the second one (which is displayed on top of it) is closed.
      *
      * This means that at any given moment in time there is essentially a stack
      * of dialogs (zero or more nested dialogs). This property refers to the

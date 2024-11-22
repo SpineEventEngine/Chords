@@ -271,7 +271,7 @@ import androidx.compose.runtime.MutableState
  * invoking `super.content()`!
  *
  * The example above just outlines the main aspects of creating an extended
- * component, the [content] method would in most cases in practice not be
+ * component, and the [content] method would in most cases in practice not be
  * overridden at all.
  *
  * Overriding [content] without calling `super.content()`
