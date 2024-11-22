@@ -169,10 +169,25 @@ public abstract class Dialog : Component() {
     public var dialogHeight: Dp = 450.dp
 
     /**
-     * The [DialogConfig] property that allows adjustments
-     * to visual appearance settings.
+     * Specifies appearance-related parameters.
      */
-    public var config: DialogConfig = DialogConfig()
+    public var look: Look = Look()
+
+    /**
+     * An object allowing adjustments of visual appearance parameters.
+     *
+     * @param padding The padding applied to the entire content of the dialog.
+     * @param titlePadding The padding applied to the title of the dialog.
+     * @param buttonsPanelPadding The padding applied to the buttons panel of
+     *   the dialog.
+     * @param buttonsSpacing The space between the buttons of the dialog.
+     */
+    public data class Look(
+        public var padding: PaddingValues = PaddingValues(24.dp),
+        public var titlePadding: PaddingValues = PaddingValues(bottom = 16.dp),
+        public var buttonsPanelPadding: PaddingValues = PaddingValues(top = 24.dp),
+        public var buttonsSpacing: Dp = 12.dp
+    )
 
     /**
      * This property is automatically set to `true` by the application, if
@@ -368,10 +383,10 @@ internal fun closeNestedDialog(dialog: Dialog) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(config.padding),
+                    .padding(look.padding),
             ) {
                 val coroutineScope = rememberCoroutineScope()
-                DialogTitle(title, config.titlePadding)
+                DialogTitle(title, look.titlePadding)
                 Column(
                     Modifier.weight(1F)
                         .on(Ctrl(Enter.key).up) {
@@ -383,8 +398,8 @@ internal fun closeNestedDialog(dialog: Dialog) {
                 DialogButtons(
                     submitButtonText, { coroutineScope.launch { handleSubmitClick() } },
                     cancelButtonText, { coroutineScope.launch { handleCancelClick() } },
-                    config.buttonsPanelPadding,
-                    config.buttonsSpacing
+                    look.buttonsPanelPadding,
+                    look.buttonsSpacing
                 )
             }
         }
@@ -513,22 +528,6 @@ public open class DialogSetup<D: Dialog>(
         return dialog
     }
 }
-
-/**
- * Configuration of the dialog, allowing adjustments
- * to visual appearance settings.
- *
- * @param padding The padding applied to the entire content of the dialog.
- * @param titlePadding The padding applied to the title of the dialog.
- * @param buttonsPanelPadding The padding applied to the buttons panel of the dialog.
- * @param buttonsSpacing The space between the buttons of the dialog.
- */
-public data class DialogConfig(
-    public var padding: PaddingValues = PaddingValues(24.dp),
-    public var titlePadding: PaddingValues = PaddingValues(bottom = 16.dp),
-    public var buttonsPanelPadding: PaddingValues = PaddingValues(top = 24.dp),
-    public var buttonsSpacing: Dp = 12.dp
-)
 
 
 /**
