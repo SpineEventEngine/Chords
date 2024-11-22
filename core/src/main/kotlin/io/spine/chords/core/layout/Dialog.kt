@@ -192,8 +192,10 @@ public abstract class Dialog : Component() {
     /**
      * This property is automatically set to `true` by the application, if
      * this dialog is a bottom-most one (the first dialog that was invoked in
-     * the sequence of nested dialogs display). If it's a nested dialog of
-     * another dialog, this property is set to `false`.
+     * the sequence of nested dialogs display).
+     *
+     * If it's a nested dialog of another dialog, this property is set
+     * to `false`.
      */
     internal var isBottomDialog: Boolean = true
 

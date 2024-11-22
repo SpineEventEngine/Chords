@@ -132,10 +132,10 @@ import androidx.compose.runtime.MutableState
  *     }
  * ```
  *
- * NOTE: It is strongly recommended to use the property configuration lambda
- * in component declarations only for performing component property assignments,
- * which is conceptually similar to how you would pass respective parameters to
- * a function-based component.
+ * NOTE: It is highly discouraged to put any other statements besides component
+ *       property assignments inside such component instance declarations.
+ *       This preserves conceptual clarity, and is similar to how you would pass
+ *       respective parameters to a function-based component.
  *
  * See also below how to implement such components.
  *
