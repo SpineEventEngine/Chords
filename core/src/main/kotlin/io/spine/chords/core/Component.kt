@@ -244,6 +244,8 @@ import androidx.compose.runtime.MutableState
  *
  *         @Composable
  *         override fun content() {
+ *             // CAUTION: In practice, `content` should not be overridden
+ *             //          in most cases. See the documentation below.
  *             Text(
  *                 text = "Hello, $name",
  *                 style = style,
@@ -284,7 +286,7 @@ import androidx.compose.runtime.MutableState
  * the parent `content` method, be sure to follow the spirit of OOP, and rework
  * the parent class to extract the parts that need to be overridden into
  * corresponding separate `protected open` methods (or use whatever other proper
- * means that are needed).
+ * means that are needed to properly customize the parent component's display).
  *
  * See also some of the other base component classes that extend the [Component]
  * class, such as [FocusableComponent], [InputComponent], [InputField],
