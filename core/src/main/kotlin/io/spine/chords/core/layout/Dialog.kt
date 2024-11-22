@@ -138,14 +138,14 @@ public abstract class Dialog : Component() {
     public abstract val title: String
 
     /**
-     * The label for the dialog's confirmation button.
+     * The label for the dialog's Submit button.
      *
      * The default value is `OK`.
      */
-    public var confirmButtonText: String = "OK"
+    public var submitButtonText: String = "OK"
 
     /**
-     * The label for the dialog's cancel button.
+     * The label for the dialog's Cancel button.
      *
      * The default value is `Cancel`.
      */
@@ -161,7 +161,7 @@ public abstract class Dialog : Component() {
      * // TODO:2024-11-12:dmitry.pikhulya: Remove this property after
      *      introducing native dialogs instead of popup-based ones.
      */
-    internal var onCloseRequest: (() -> Unit)? = { close() }
+//    internal var onCloseRequest: (() -> Unit)? = { close() }
 
 //    /**
 //     * A callback used to confirm that the user wants to cancel the dialog.
@@ -213,28 +213,27 @@ public abstract class Dialog : Component() {
      *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
      *
      *     init {
-     *         confirmCancellation = ConfirmationDialog.askAndAwait {
+     *         onBeforeCancel = ConfirmationDialog.askAndAwait {
      *             message = "Are you sure you want to close the dialog?"
      *             description = "Any entered data will be lost in this case."
      *             confirmButtonText = "Discard changes"
      *             cancelButtonText = "Continue editing"
      *         }
-     *
-     *         // Other dialog's properties can be set if needed as well.
      *         ...
      *     }
      * ```
      */
-    public var confirmCancellation: suspend () -> Boolean = { true }
+    public var onBeforeCancel: suspend () -> Boolean = { true }
 
     /**
      * A suspending callback, which is invoked upon the dialog's Submit button
-     * click before the dialog is closed.
+     * click before the [submitForm] function is called.
      *
      * The callback should return `true` in order for the dialog to proceed with
-     * submission, and `false` to prevent the submission.
+     * submission. Returning `false` prevents submission and closing
+     * of the dialog.
      */
-    public var confirmSubmission: suspend () -> Boolean = { true }
+    public var onBeforeSubmit: suspend () -> Boolean = { true }
 
 //    private val cancelConfirmationDialog: CancelConfirmationDialog? = { onConfirm, onCancel ->
 //        onCloseRequest = onConfirm
@@ -363,7 +362,7 @@ public abstract class Dialog : Component() {
                     formContent()
                 }
                 DialogButtons(
-                    confirmButtonText, { coroutineScope.launch { handleSubmitClick() } },
+                    submitButtonText, { coroutineScope.launch { handleSubmitClick() } },
                     cancelButtonText, { coroutineScope.launch { handleCancelClick() } },
                     config.buttonsPanelPadding,
                     config.buttonsSpacing
@@ -373,23 +372,14 @@ public abstract class Dialog : Component() {
     }
 
     protected open suspend fun handleSubmitClick() {
-        if (submitForm()) {
+        if (onBeforeSubmit() && submitForm()) {
             close()
         }
     }
 
     protected open suspend fun handleCancelClick() {
-        if (confirmCancellation()) {
+        if (onBeforeCancel()) {
             close()
-        }
-    }
-
-    private suspend fun confirmCancellation2(): Boolean {
-        return ConfirmationDialog.askAndAwait {
-            message = "Are you sure you want to close the dialog?"
-            description = "Any entered data will be lost in this case."
-            confirmButtonText = "Discard changes"
-            cancelButtonText = "Continue editing"
         }
     }
 }

@@ -40,7 +40,7 @@ public class ConfirmationDialog : Dialog() {
      * Initializes the `confirmButtonText` and the size of the dialog.
      */
     init {
-        confirmButtonText = "Yes"
+        submitButtonText = "Yes"
         cancelButtonText = "No"
         dialogWidth = 420.dp
         dialogHeight = 230.dp
@@ -51,7 +51,16 @@ public class ConfirmationDialog : Dialog() {
      */
     public override var title: String = "Confirm"
 
+    /**
+     * The main message of the confirmation dialog, which is usually expected
+     * to contain the question presented to the user.
+     */
     public var message: String = "Are you sure?"
+
+    /**
+     * An optional auxiliary text displayed below the message, which can provide
+     * an extra context about the question being asked.
+     */
     public var description: String = ""
 
     internal var onConfirm: (() -> Unit)? = null
@@ -63,6 +72,7 @@ public class ConfirmationDialog : Dialog() {
     @Composable
     protected override fun formContent() {
         val textStyle = typography.bodyLarge
+
         Column {
             Row(
                 modifier = Modifier.padding(bottom = 6.dp)
