@@ -28,13 +28,13 @@ public class ConfirmationDialog : Dialog() {
 
         /**
          * Displays the confirmation dialog, and waits until the user makes
-         * a choice.
+         * a decision.
          *
-         * @return `true`, if the user makes a positive choice (presses the
-         *   Submit button), and `false`, if the user makes a negative choice
+         * @return `true`, if the user makes a positive decision (presses the
+         *   Submit button), and `false`, if the user makes a negative decision
          *   (presses the Cancel button).
          */
-        public suspend fun askAndAwait(props: ComponentProps<ConfirmationDialog>? = null): Boolean {
+        public suspend fun ask(props: ComponentProps<ConfirmationDialog>? = null): Boolean {
             val dialog = create(config = props)
             return dialog.askAndWait()
         }
@@ -101,7 +101,7 @@ public class ConfirmationDialog : Dialog() {
 
     /**
      * Displays the confirmation dialog, and waits until the user either
-     * makes a choice.
+     * makes a decision.
      */
     public suspend fun askAndWait(): Boolean {
         var confirmed = false
