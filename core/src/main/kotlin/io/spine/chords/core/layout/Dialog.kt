@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
@@ -75,6 +76,7 @@ import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.keyboard.on
+import io.spine.chords.core.layout.DialogDisplayPlatform.Companion.Native
 import kotlinx.coroutines.launch
 
 /**
@@ -173,6 +175,8 @@ public abstract class Dialog : Component() {
      */
     public var look: Look = Look()
 
+    public var platform: DialogDisplayPlatform = Native
+
     /**
      * An object allowing adjustments of visual appearance parameters.
      *
@@ -223,11 +227,13 @@ public abstract class Dialog : Component() {
      *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
      *
      *     init {
-     *         onBeforeCancel = ConfirmationDialog.askAndAwait {
-     *             message = "Are you sure you want to close the dialog?"
-     *             description = "Any entered data will be lost in this case."
-     *             confirmButtonText = "Discard changes"
-     *             cancelButtonText = "Continue editing"
+     *         onBeforeCancel = {
+     *             ConfirmationDialog.askAndAwait {
+     *                 message = "Are you sure you want to close the dialog?"
+     *                 description = "Any entered data will be lost in this case."
+     *                 confirmButtonText = "Discard changes"
+     *                 cancelButtonText = "Continue editing"
+     *             }
      *         }
      *         ...
      *     }
@@ -257,11 +263,13 @@ public abstract class Dialog : Component() {
      *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
      *
      *     init {
-     *         onBeforeSubmit = ConfirmationDialog.askAndAwait {
-     *             message = "Are you sure you want to proceed?"
-     *             description = "This action is irreversible."
-     *             confirmButtonText = "Yes"
-     *             cancelButtonText = "No"
+     *         onBeforeSubmit = {
+     *             ConfirmationDialog.askAndAwait {
+     *                 message = "Are you sure you want to proceed?"
+     *                 description = "This action is irreversible."
+     *                 confirmButtonText = "Yes"
+     *                 cancelButtonText = "No"
+     *             }
      *         }
      *         ...
      *     }
@@ -325,7 +333,7 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected override fun content() {
-        lightweightPlatform(::close, { dialogFrame() }, nestedDialog, isBottomDialog)
+        platform.content(::close, { dialogFrame() }, nestedDialog, isBottomDialog)
     }
 
     /**
@@ -420,62 +428,134 @@ internal fun closeNestedDialog(dialog: Dialog) {
     }
 }
 
+public interface DialogDisplayPlatform {
+
+    @Composable
+    public fun content(
+        close: () -> Unit,
+        dialogContent: @Composable () -> Unit,
+        nestedDialog: Dialog?,
+        isBottomDialog: Boolean
+    )
+
+    public companion object {
+
+        /**
+         * A dialog display platform that makes the dialogs to be displayed
+         * in a "lightweight" way — without displaying a new desktop window,
+         * as a modal popup inside of the current window.
+         */
+        public val Lightweight: DialogDisplayPlatform = LightweightPlatform()
+
+        /**
+         * A dialog display platform, which makes each dialog to be displayed
+         * in its own desktop window.
+         */
+        public val Native: DialogDisplayPlatform = NativeOsPlatform()
+    }
+}
+
 /**
  * A composable container, which ensures displaying a nested dialog in
  * a "lightweight" way (with rendering it as an overlay in the current window
  * without allocating a real OS window for the dialog).
  */
-@Composable
-private fun lightweightPlatform(
-    close: () -> Unit,
-    dialogContent: @Composable () -> Unit,
-    nestedDialog: Dialog?,
-    isBottomDialog: Boolean
-) {
-    if (isBottomDialog) {
-        Popup(
-            popupPositionProvider = centerWindowPositionProvider,
-            onDismissRequest = close,
-            properties = PopupProperties(focusable = true),
-            onPreviewKeyEvent = { false },
-            onKeyEvent = escapePressHandler { close() }
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Black.copy(alpha = 0.5f))
-                ,
-                contentAlignment = Center
+internal class LightweightPlatform : DialogDisplayPlatform {
+    override fun content(
+        close: () -> Unit,
+        dialogContent: () -> Unit,
+        nestedDialog: Dialog?,
+        isBottomDialog: Boolean
+    ) {
+        if (isBottomDialog) {
+            Popup(
+                popupPositionProvider = centerWindowPositionProvider,
+                onDismissRequest = close,
+                properties = PopupProperties(focusable = true),
+                onPreviewKeyEvent = { false },
+                onKeyEvent = escapePressHandler { close() }
             ) {
                 Box(
-                    modifier = Modifier.pointerInput(close) {
-                        detectTapGestures(onPress = {})
-                    }
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Black.copy(alpha = 0.5f))
+                    ,
+                    contentAlignment = Center
                 ) {
-                    dialogContent()
+                    Box(
+                        modifier = Modifier.pointerInput(close) {
+                            detectTapGestures(onPress = {})
+                        }
+                    ) {
+                        dialogContent()
+                    }
+                }
+            }
+        } else {
+            Popup(
+                popupPositionProvider = centerWindowPositionProvider,
+                properties = PopupProperties(focusable = true),
+                onPreviewKeyEvent = { false }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Black.copy(alpha = 0.5f)),
+                    contentAlignment = Center
+                ) {
+                    Box {
+                        dialogContent()
+                    }
                 }
             }
         }
-    } else {
-        Popup(
-            popupPositionProvider = centerWindowPositionProvider,
-            properties = PopupProperties(focusable = true),
-            onPreviewKeyEvent = { false }
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Black.copy(alpha = 0.5f)),
-                contentAlignment = Center
-            ) {
-                Box {
-                    dialogContent()
-                }
-            }
+
+        nestedDialog ?.Content()
+    }
+
+
+    /**
+     * Creates a key event handler function that executes a provided [escHandler]
+     * callback whenever the `Escape` key is pressed.
+     */
+    private fun escapePressHandler(escHandler: () -> Unit): ((KeyEvent) -> Boolean) = { event ->
+        if (event matches Escape.key.down) {
+            escHandler()
+            true
+        } else {
+            false
         }
     }
 
-    nestedDialog ?.Content()
+
+    /**
+     * Provides a modal window setting that forces it
+     * to appear at the center of the screen.
+     */
+    private val centerWindowPositionProvider = object : PopupPositionProvider {
+        override fun calculatePosition(
+            anchorBounds: IntRect,
+            windowSize: IntSize,
+            layoutDirection: LayoutDirection,
+            popupContentSize: IntSize
+        ): IntOffset = Zero
+    }
+}
+
+public class NativeOsPlatform : DialogDisplayPlatform {
+    override fun content(
+        close: () -> Unit,
+        dialogContent: () -> Unit,
+        nestedDialog: Dialog?,
+        isBottomDialog: Boolean
+    ) {
+        DialogWindow(
+            onCloseRequest = { close() }
+        ) {
+            dialogContent()
+            nestedDialog?.Content()
+        }
+    }
 }
 
 /**
@@ -600,32 +680,4 @@ private fun DialogButton(
             Text(label)
         }
     }
-}
-
-
-/**
- * Creates a key event handler function that executes a provided [escHandler]
- * callback whenever the `Escape` key is pressed.
- */
-private fun escapePressHandler(escHandler: () -> Unit): ((KeyEvent) -> Boolean) = { event ->
-    if (event matches Escape.key.down) {
-        escHandler()
-        true
-    } else {
-        false
-    }
-}
-
-
-/**
- * Provides a modal window setting that forces it
- * to appear at the center of the screen.
- */
-private val centerWindowPositionProvider = object : PopupPositionProvider {
-    override fun calculatePosition(
-        anchorBounds: IntRect,
-        windowSize: IntSize,
-        layoutDirection: LayoutDirection,
-        popupContentSize: IntSize
-    ): IntOffset = Zero
 }
