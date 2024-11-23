@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -58,12 +59,14 @@ import androidx.compose.ui.input.key.Key.Companion.Escape
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntOffset.Companion.Zero
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogState
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
@@ -299,7 +302,7 @@ public abstract class Dialog : Component() {
      * Closes the dialog while ignoring any data that might have been
      * possibly entered in the dialog currently.
      */
-    private fun close() {
+    internal fun close() {
         app.ui.closeDialog(this)
     }
 
@@ -333,7 +336,7 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected override fun content() {
-        platform.content(::close, { dialogFrame() }, nestedDialog, isBottomDialog)
+        platform.content(this) { formContent() }
     }
 
     /**
@@ -376,6 +379,27 @@ internal fun closeNestedDialog(dialog: Dialog) {
         }
     }
 
+    internal suspend fun handleSubmitClick() {
+        if (onBeforeSubmit() && submitForm()) {
+            close()
+        }
+    }
+
+    internal suspend fun handleCancelClick() {
+        if (onBeforeCancel()) {
+            close()
+        }
+    }
+}
+
+public abstract class DialogDisplayPlatform {
+
+    @Composable
+    public abstract fun content(
+        dialog: Dialog,
+        formContent: @Composable () -> Unit
+    )
+
     /**
      * Renders the dialog's frame, which makes up main elements that are common
      * for all dialogs, including dialog's title and buttons, while delegating
@@ -383,60 +407,44 @@ internal fun closeNestedDialog(dialog: Dialog) {
      * implementation (via the [formContent] method).
      */
     @Composable
-    private fun dialogFrame() {
+    protected fun dialogFrame(
+        dialog: Dialog,
+        formContent: @Composable () -> Unit
+    ) {
         Column(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.large)
-                .size(dialogWidth, dialogHeight)
+                .size(dialog.dialogWidth, dialog.dialogHeight)
                 .background(colorScheme.background),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(look.padding),
+                    .padding(dialog.look.padding),
             ) {
                 val coroutineScope = rememberCoroutineScope()
-                DialogTitle(title, look.titlePadding)
+                DialogTitle(dialog.title, dialog.look.titlePadding)
                 Column(
                     Modifier.weight(1F)
                         .on(Ctrl(Enter.key).up) {
-                            coroutineScope.launch { handleSubmitClick() }
+                            coroutineScope.launch { dialog.handleSubmitClick() }
                         }
                 ) {
                     formContent()
                 }
                 DialogButtons(
-                    submitButtonText, { coroutineScope.launch { handleSubmitClick() } },
-                    cancelButtonText, { coroutineScope.launch { handleCancelClick() } },
-                    look.buttonsPanelPadding,
-                    look.buttonsSpacing
+                    dialog.submitButtonText, {
+                        coroutineScope.launch { dialog.handleSubmitClick() }
+                    },
+                    dialog.cancelButtonText, {
+                        coroutineScope.launch { dialog.handleCancelClick() }
+                    },
+                    dialog.look.buttonsPanelPadding,
+                    dialog.look.buttonsSpacing
                 )
             }
         }
     }
-
-    private suspend fun handleSubmitClick() {
-        if (onBeforeSubmit() && submitForm()) {
-            close()
-        }
-    }
-
-    private suspend fun handleCancelClick() {
-        if (onBeforeCancel()) {
-            close()
-        }
-    }
-}
-
-public interface DialogDisplayPlatform {
-
-    @Composable
-    public fun content(
-        close: () -> Unit,
-        dialogContent: @Composable () -> Unit,
-        nestedDialog: Dialog?,
-        isBottomDialog: Boolean
-    )
 
     public companion object {
 
@@ -460,20 +468,19 @@ public interface DialogDisplayPlatform {
  * a "lightweight" way (with rendering it as an overlay in the current window
  * without allocating a real OS window for the dialog).
  */
-internal class LightweightPlatform : DialogDisplayPlatform {
+internal class LightweightPlatform : DialogDisplayPlatform() {
+    @Composable
     override fun content(
-        close: () -> Unit,
-        dialogContent: () -> Unit,
-        nestedDialog: Dialog?,
-        isBottomDialog: Boolean
+        dialog: Dialog,
+        formContent: @Composable () -> Unit
     ) {
-        if (isBottomDialog) {
+        if (dialog.isBottomDialog) {
             Popup(
                 popupPositionProvider = centerWindowPositionProvider,
-                onDismissRequest = close,
+                onDismissRequest = { dialog.close() },
                 properties = PopupProperties(focusable = true),
                 onPreviewKeyEvent = { false },
-                onKeyEvent = escapePressHandler { close() }
+                onKeyEvent = escapePressHandler { dialog.close() }
             ) {
                 Box(
                     modifier = Modifier
@@ -483,11 +490,11 @@ internal class LightweightPlatform : DialogDisplayPlatform {
                     contentAlignment = Center
                 ) {
                     Box(
-                        modifier = Modifier.pointerInput(close) {
+                        modifier = Modifier.pointerInput(dialog) {
                             detectTapGestures(onPress = {})
                         }
                     ) {
-                        dialogContent()
+                        dialogFrame(dialog, formContent)
                     }
                 }
             }
@@ -504,13 +511,13 @@ internal class LightweightPlatform : DialogDisplayPlatform {
                     contentAlignment = Center
                 ) {
                     Box {
-                        dialogContent()
+                        dialogFrame(dialog, formContent)
                     }
                 }
             }
         }
 
-        nestedDialog ?.Content()
+        dialog.nestedDialog ?.Content()
     }
 
 
@@ -542,18 +549,21 @@ internal class LightweightPlatform : DialogDisplayPlatform {
     }
 }
 
-public class NativeOsPlatform : DialogDisplayPlatform {
+public class NativeOsPlatform : DialogDisplayPlatform() {
+    @Composable
     override fun content(
-        close: () -> Unit,
-        dialogContent: () -> Unit,
-        nestedDialog: Dialog?,
-        isBottomDialog: Boolean
+        dialog: Dialog,
+        formContent: @Composable  () -> Unit
     ) {
         DialogWindow(
-            onCloseRequest = { close() }
+            title = dialog.title,
+            state = DialogState(
+                size = DpSize(dialog.dialogWidth, dialog.dialogHeight)
+            ),
+            onCloseRequest = { dialog.close() },
         ) {
-            dialogContent()
-            nestedDialog?.Content()
+            dialogFrame(dialog, formContent)
+            dialog.nestedDialog?.Content()
         }
     }
 }
@@ -625,7 +635,7 @@ private fun DialogTitle(
     Text(
         modifier = Modifier.padding(padding),
         text = text,
-        style = MaterialTheme.typography.headlineLarge
+        style = typography.headlineLarge
     )
 }
 
@@ -651,13 +661,8 @@ private fun DialogButtons(
         Row(
             horizontalArrangement = spacedBy(buttonsSpacing)
         ) {
-            DialogButton(cancelButtonText) {
-                onCancel.invoke()
-            }
-            DialogButton(confirmButtonText)
-            {
-                onConfirm.invoke()
-            }
+            DialogButton(cancelButtonText) { onCancel() }
+            DialogButton(confirmButtonText) { onConfirm() }
         }
     }
 }
