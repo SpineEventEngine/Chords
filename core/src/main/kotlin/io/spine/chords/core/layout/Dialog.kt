@@ -79,9 +79,11 @@ import io.spine.chords.core.appshell.app
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
-import io.spine.chords.core.keyboard.on
 import io.spine.chords.core.layout.DialogDisplayMode.Companion.DesktopWindow
 import kotlinx.coroutines.launch
+
+private val cancelShortcutKey = Escape.key
+private val submitShortcutKey = Ctrl(Enter.key)
 
 /**
  * The base class for creating a modal dialog window, e.g. for editing and
@@ -241,7 +243,7 @@ public abstract class Dialog : Component() {
      *
      *     init {
      *         onBeforeCancel = {
-     *             ConfirmationDialog.askAndAwait {
+     *             ConfirmationDialog.ask {
      *                 message = "Are you sure you want to close the dialog?"
      *                 description = "Any entered data will be lost in this case."
      *                 confirmButtonText = "Discard changes"
@@ -277,7 +279,7 @@ public abstract class Dialog : Component() {
      *
      *     init {
      *         onBeforeSubmit = {
-     *             ConfirmationDialog.askAndAwait {
+     *             ConfirmationDialog.ask {
      *                 message = "Are you sure you want to proceed?"
      *                 description = "This action is irreversible."
      *                 confirmButtonText = "Yes"
@@ -429,19 +431,16 @@ public abstract class DialogDisplayMode {
         dialog: Dialog,
         formContent: @Composable () -> Unit
     ) {
+        val coroutineScope = rememberCoroutineScope()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(dialog.look.padding),
         ) {
-            val coroutineScope = rememberCoroutineScope()
+
             titleArea(dialog)
-            Column(
-                Modifier.weight(1F)
-                    .on(Ctrl(Enter.key).up) {
-                        coroutineScope.launch { dialog.handleSubmitClick() }
-                    }
-            ) {
+            Column(Modifier.weight(1F)) {
                 formContent()
             }
             DialogButtons(
@@ -495,6 +494,8 @@ internal class DesktopWindowDisplayMode(
         dialog: Dialog,
         formContent: @Composable  () -> Unit
     ) {
+        val coroutineScope = rememberCoroutineScope()
+
         DialogWindow(
             title = dialog.title,
             resizable = resizable,
@@ -502,6 +503,15 @@ internal class DesktopWindowDisplayMode(
                 size = DpSize(dialog.dialogWidth, dialog.dialogHeight)
             ),
             onCloseRequest = { dialog.close() },
+            onKeyEvent = { event ->
+                if (event matches cancelShortcutKey.down) {
+                    coroutineScope.launch { dialog.handleCancelClick() }
+                }
+                if (event matches submitShortcutKey.up) {
+                    coroutineScope.launch { dialog.handleSubmitClick() }
+                }
+                false
+            }
         ) {
             dialogFrame(dialog, formContent)
             dialog.nestedDialog?.Content()
@@ -527,6 +537,19 @@ internal class DesktopWindowDisplayMode(
 }
 
 /**
+ * A [PopupPositionProvider], which makes a lightweight popup to appear at
+ * the window's center.
+ */
+private val centerWindowPositionProvider = object : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize
+    ): IntOffset = Zero
+}
+
+/**
  * A [DialogDisplayMode] implementation, which ensures displaying a dialog
  * as a lightweight modal popup inside the current desktop window.
  *
@@ -543,13 +566,17 @@ internal class LightweightDisplayMode(
         dialog: Dialog,
         formContent: @Composable () -> Unit
     ) {
+        val coroutineScope = rememberCoroutineScope()
+
         if (dialog.isBottomDialog) {
             Popup(
                 popupPositionProvider = centerWindowPositionProvider,
                 onDismissRequest = { dialog.close() },
                 properties = PopupProperties(focusable = true),
                 onPreviewKeyEvent = { false },
-                onKeyEvent = escapePressHandler { dialog.close() }
+                onKeyEvent = cancelShortcutHandler {
+                    coroutineScope.launch { dialog.handleCancelClick() }
+                }
             ) {
                 Box(
                     modifier = Modifier
@@ -602,29 +629,16 @@ internal class LightweightDisplayMode(
     }
 
     /**
-     * Creates a key event handler function that executes a provided [escHandler]
+     * Creates a key event handler function that executes a provided [cancelHandler]
      * callback whenever the `Escape` key is pressed.
      */
-    private fun escapePressHandler(escHandler: () -> Unit): (KeyEvent) -> Boolean = { event ->
-        if (event matches Escape.key.down) {
-            escHandler()
+    private fun cancelShortcutHandler(cancelHandler: () -> Unit): (KeyEvent) -> Boolean = { event ->
+        if (event matches cancelShortcutKey.down) {
+            cancelHandler()
             true
         } else {
             false
         }
-    }
-
-    /**
-     * Provides a modal window setting that forces it
-     * to appear at the center of the screen.
-     */
-    private val centerWindowPositionProvider = object : PopupPositionProvider {
-        override fun calculatePosition(
-            anchorBounds: IntRect,
-            windowSize: IntSize,
-            layoutDirection: LayoutDirection,
-            popupContentSize: IntSize
-        ): IntOffset = Zero
     }
 }
 
