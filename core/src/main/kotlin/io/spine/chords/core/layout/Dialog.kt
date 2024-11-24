@@ -39,8 +39,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +53,7 @@ import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.input.key.Key.Companion.Enter
 import androidx.compose.ui.input.key.Key.Companion.Escape
@@ -79,7 +80,7 @@ import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.keyboard.on
-import io.spine.chords.core.layout.DialogDisplayPlatform.Companion.Native
+import io.spine.chords.core.layout.DialogDisplayMode.Companion.DesktopWindow
 import kotlinx.coroutines.launch
 
 /**
@@ -178,7 +179,16 @@ public abstract class Dialog : Component() {
      */
     public var look: Look = Look()
 
-    public var platform: DialogDisplayPlatform = Native
+    /**
+     * Specifies the way that the dialog is displayed.
+     *
+     * The following two display modes are supported:
+     * - [DesktopWindow][DialogDisplayMode.DesktopWindow] — a dialog is
+     *   displayed in a separate desktop window.
+     * - [Lightweight][DialogDisplayMode.Lightweight] — a dialog is displayed
+     *   as a lightweight modal popup within the current desktop window.
+     */
+    public var displayMode: DialogDisplayMode = DesktopWindow
 
     /**
      * An object allowing adjustments of visual appearance parameters.
@@ -336,7 +346,7 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected override fun content() {
-        platform.content(this) { formContent() }
+        displayMode.content(this) { formContent() }
     }
 
     /**
@@ -359,15 +369,15 @@ public abstract class Dialog : Component() {
         }
     }
 
-/**
- * A part of internal application's machinery for displaying nested dialogs.
- *
- * This method complements [openNestedDialog] for this purpose. See its
- * description for details.
- *
- * @see openNestedDialog
- */
-internal fun closeNestedDialog(dialog: Dialog) {
+    /**
+     * A part of internal application's machinery for displaying nested dialogs.
+     *
+     * This method complements [openNestedDialog] for this purpose. See its
+     * description for details.
+     *
+     * @see openNestedDialog
+     */
+    internal fun closeNestedDialog(dialog: Dialog) {
         checkNotNull(nestedDialog) { "This dialog is not displayed currently." }
         if (dialog == nestedDialog) {
             check(dialog.nestedDialog == null) {
@@ -392,8 +402,16 @@ internal fun closeNestedDialog(dialog: Dialog) {
     }
 }
 
-public abstract class DialogDisplayPlatform {
+/**
+ * Defines the way that a dialog is displayed on the screen (e.g. as a separate
+ * desktop window, or as a lightweight modal popup).
+ */
+public abstract class DialogDisplayMode {
 
+    /**
+     * Renders the dialog with its content according to the display mode
+     * defined by this object.
+     */
     @Composable
     public abstract fun content(
         dialog: Dialog,
@@ -407,68 +425,119 @@ public abstract class DialogDisplayPlatform {
      * implementation (via the [formContent] method).
      */
     @Composable
-    protected fun dialogFrame(
+    protected open fun dialogFrame(
         dialog: Dialog,
         formContent: @Composable () -> Unit
     ) {
         Column(
             modifier = Modifier
-                .clip(MaterialTheme.shapes.large)
-                .size(dialog.dialogWidth, dialog.dialogHeight)
-                .background(colorScheme.background),
+                .fillMaxSize()
+                .padding(dialog.look.padding),
         ) {
+            val coroutineScope = rememberCoroutineScope()
+            titleArea(dialog)
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(dialog.look.padding),
-            ) {
-                val coroutineScope = rememberCoroutineScope()
-                DialogTitle(dialog.title, dialog.look.titlePadding)
-                Column(
-                    Modifier.weight(1F)
-                        .on(Ctrl(Enter.key).up) {
-                            coroutineScope.launch { dialog.handleSubmitClick() }
-                        }
-                ) {
-                    formContent()
-                }
-                DialogButtons(
-                    dialog.submitButtonText, {
+                Modifier.weight(1F)
+                    .on(Ctrl(Enter.key).up) {
                         coroutineScope.launch { dialog.handleSubmitClick() }
-                    },
-                    dialog.cancelButtonText, {
-                        coroutineScope.launch { dialog.handleCancelClick() }
-                    },
-                    dialog.look.buttonsPanelPadding,
-                    dialog.look.buttonsSpacing
-                )
+                    }
+            ) {
+                formContent()
             }
+            DialogButtons(
+                dialog.submitButtonText, {
+                    coroutineScope.launch { dialog.handleSubmitClick() }
+                },
+                dialog.cancelButtonText, {
+                    coroutineScope.launch { dialog.handleCancelClick() }
+                },
+                dialog.look.buttonsPanelPadding,
+                dialog.look.buttonsSpacing
+            )
         }
+    }
+
+    /**
+     * Renders the content of the area where window's title can be placed.
+     */
+    @Composable
+    protected open fun titleArea(dialog: Dialog) {
+        DialogTitle(dialog.title, dialog.look.titlePadding)
     }
 
     public companion object {
 
         /**
-         * A dialog display platform that makes the dialogs to be displayed
-         * in a "lightweight" way — without displaying a new desktop window,
-         * as a modal popup inside of the current window.
-         */
-        public val Lightweight: DialogDisplayPlatform = LightweightPlatform()
-
-        /**
-         * A dialog display platform, which makes each dialog to be displayed
+         * A dialog display mode, which makes each dialog to be displayed
          * in its own desktop window.
          */
-        public val Native: DialogDisplayPlatform = NativeOsPlatform()
+        public val DesktopWindow: DialogDisplayMode = DesktopWindowDisplayMode()
+
+        /**
+         * A dialog display platform that makes the dialogs to be displayed
+         * in a "lightweight" way — without displaying a new desktop window,
+         * as a modal popup inside the current desktop window.
+         */
+        public val Lightweight: DialogDisplayMode = LightweightDisplayMode()
     }
 }
 
 /**
- * A composable container, which ensures displaying a nested dialog in
- * a "lightweight" way (with rendering it as an overlay in the current window
- * without allocating a real OS window for the dialog).
+ * A [DialogDisplayMode] implementation, which ensures displaying a dialog
+ * as a separate desktop window.
  */
-internal class LightweightPlatform : DialogDisplayPlatform() {
+internal class DesktopWindowDisplayMode(
+    private val resizable: Boolean = false
+) : DialogDisplayMode() {
+
+    @Composable
+    override fun content(
+        dialog: Dialog,
+        formContent: @Composable  () -> Unit
+    ) {
+        DialogWindow(
+            title = dialog.title,
+            resizable = resizable,
+            state = DialogState(
+                size = DpSize(dialog.dialogWidth, dialog.dialogHeight)
+            ),
+            onCloseRequest = { dialog.close() },
+        ) {
+            dialogFrame(dialog, formContent)
+            dialog.nestedDialog?.Content()
+        }
+    }
+
+    @Composable
+    override fun titleArea(dialog: Dialog) {
+        // No title need to be displayed "explicitly" because desktop dialog
+        // windows have their own titles displayed by the OS.
+    }
+
+    @Composable
+    override fun dialogFrame(dialog: Dialog, formContent: @Composable () -> Unit) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorScheme.background),
+        ) {
+            super.dialogFrame(dialog, formContent)
+        }
+    }
+}
+
+/**
+ * A [DialogDisplayMode] implementation, which ensures displaying a dialog
+ * as a lightweight modal popup inside the current desktop window.
+ *
+ * @param backdropColor The color of the surface that covers the entire content
+ *   of the current desktop window behind the dialog's modal popup displayed in
+ *   this window.
+ */
+internal class LightweightDisplayMode(
+    private val backdropColor: Color = Black.copy(alpha = 0.5f)
+) : DialogDisplayMode() {
+
     @Composable
     override fun content(
         dialog: Dialog,
@@ -485,7 +554,7 @@ internal class LightweightPlatform : DialogDisplayPlatform() {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Black.copy(alpha = 0.5f))
+                        .background(backdropColor)
                     ,
                     contentAlignment = Center
                 ) {
@@ -507,7 +576,7 @@ internal class LightweightPlatform : DialogDisplayPlatform() {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Black.copy(alpha = 0.5f)),
+                        .background(backdropColor),
                     contentAlignment = Center
                 ) {
                     Box {
@@ -520,12 +589,23 @@ internal class LightweightPlatform : DialogDisplayPlatform() {
         dialog.nestedDialog ?.Content()
     }
 
+    @Composable
+    override fun dialogFrame(dialog: Dialog, formContent: @Composable () -> Unit) {
+        Column(
+            modifier = Modifier
+                .clip(shapes.large)
+                .size(dialog.dialogWidth, dialog.dialogHeight)
+                .background(colorScheme.background),
+        ) {
+            super.dialogFrame(dialog, formContent)
+        }
+    }
 
     /**
      * Creates a key event handler function that executes a provided [escHandler]
      * callback whenever the `Escape` key is pressed.
      */
-    private fun escapePressHandler(escHandler: () -> Unit): ((KeyEvent) -> Boolean) = { event ->
+    private fun escapePressHandler(escHandler: () -> Unit): (KeyEvent) -> Boolean = { event ->
         if (event matches Escape.key.down) {
             escHandler()
             true
@@ -533,7 +613,6 @@ internal class LightweightPlatform : DialogDisplayPlatform() {
             false
         }
     }
-
 
     /**
      * Provides a modal window setting that forces it
@@ -546,25 +625,6 @@ internal class LightweightPlatform : DialogDisplayPlatform() {
             layoutDirection: LayoutDirection,
             popupContentSize: IntSize
         ): IntOffset = Zero
-    }
-}
-
-public class NativeOsPlatform : DialogDisplayPlatform() {
-    @Composable
-    override fun content(
-        dialog: Dialog,
-        formContent: @Composable  () -> Unit
-    ) {
-        DialogWindow(
-            title = dialog.title,
-            state = DialogState(
-                size = DpSize(dialog.dialogWidth, dialog.dialogHeight)
-            ),
-            onCloseRequest = { dialog.close() },
-        ) {
-            dialogFrame(dialog, formContent)
-            dialog.nestedDialog?.Content()
-        }
     }
 }
 
