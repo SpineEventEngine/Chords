@@ -413,6 +413,10 @@ public abstract class DialogDisplayMode {
     /**
      * Renders the dialog with its content according to the display mode
      * defined by this object.
+     *
+     * @param dialog The [Dialog] that is being displayed.
+     * @param formContent Composable dialog content as defined by the dialog's
+     *   [formContent][Dialog.formContent] method.
      */
     @Composable
     public abstract fun content(
@@ -425,6 +429,10 @@ public abstract class DialogDisplayMode {
      * for all dialogs, including dialog's title and buttons, while delegating
      * the rendering of the dialog's content to the actual dialog's
      * implementation (via the [formContent] method).
+     *
+     * @param dialog The [Dialog] that is being displayed.
+     * @param formContent Composable dialog content as defined by the dialog's
+     *   [formContent][Dialog.formContent] method.
      */
     @Composable
     protected open fun dialogFrame(
@@ -458,6 +466,8 @@ public abstract class DialogDisplayMode {
 
     /**
      * Renders the content of the area where window's title can be placed.
+     *
+     * @param dialog The dialog being rendered.
      */
     @Composable
     protected open fun titleArea(dialog: Dialog) {
@@ -520,7 +530,7 @@ internal class DesktopWindowDisplayMode(
 
     @Composable
     override fun titleArea(dialog: Dialog) {
-        // No title need to be displayed "explicitly" because desktop dialog
+        // No title need to be composed explicitly because desktop dialog
         // windows have their own titles displayed by the OS.
     }
 
