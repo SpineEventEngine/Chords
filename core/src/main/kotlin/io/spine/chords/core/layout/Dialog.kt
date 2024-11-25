@@ -39,8 +39,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.shapes
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,18 +53,22 @@ import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.input.key.Key.Companion.Enter
 import androidx.compose.ui.input.key.Key.Companion.Escape
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntOffset.Companion.Zero
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogState
+import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
@@ -74,8 +79,11 @@ import io.spine.chords.core.appshell.app
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
-import io.spine.chords.core.keyboard.on
+import io.spine.chords.core.layout.DialogDisplayMode.Companion.DesktopWindow
 import kotlinx.coroutines.launch
+
+private val cancelShortcutKey = Escape.key
+private val submitShortcutKey = Ctrl(Enter.key)
 
 /**
  * The base class for creating a modal dialog window, e.g. for editing and
@@ -174,6 +182,17 @@ public abstract class Dialog : Component() {
     public var look: Look = Look()
 
     /**
+     * Specifies the way that the dialog is displayed.
+     *
+     * The following two display modes are supported:
+     * - [DesktopWindow][DialogDisplayMode.DesktopWindow] — a dialog is
+     *   displayed in a separate desktop window.
+     * - [Lightweight][DialogDisplayMode.Lightweight] — a dialog is displayed
+     *   as a lightweight modal popup within the current desktop window.
+     */
+    public var displayMode: DialogDisplayMode = DesktopWindow
+
+    /**
      * An object allowing adjustments of visual appearance parameters.
      *
      * @param padding The padding applied to the entire content of the dialog.
@@ -223,11 +242,13 @@ public abstract class Dialog : Component() {
      *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
      *
      *     init {
-     *         onBeforeCancel = ConfirmationDialog.askAndAwait {
-     *             message = "Are you sure you want to close the dialog?"
-     *             description = "Any entered data will be lost in this case."
-     *             confirmButtonText = "Discard changes"
-     *             cancelButtonText = "Continue editing"
+     *         onBeforeCancel = {
+     *             ConfirmationDialog.ask {
+     *                 message = "Are you sure you want to close the dialog?"
+     *                 description = "Any entered data will be lost in this case."
+     *                 confirmButtonText = "Discard changes"
+     *                 cancelButtonText = "Continue editing"
+     *             }
      *         }
      *         ...
      *     }
@@ -257,11 +278,13 @@ public abstract class Dialog : Component() {
      *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
      *
      *     init {
-     *         onBeforeSubmit = ConfirmationDialog.askAndAwait {
-     *             message = "Are you sure you want to proceed?"
-     *             description = "This action is irreversible."
-     *             confirmButtonText = "Yes"
-     *             cancelButtonText = "No"
+     *         onBeforeSubmit = {
+     *             ConfirmationDialog.ask {
+     *                 message = "Are you sure you want to proceed?"
+     *                 description = "This action is irreversible."
+     *                 confirmButtonText = "Yes"
+     *                 cancelButtonText = "No"
+     *             }
      *         }
      *         ...
      *     }
@@ -291,7 +314,7 @@ public abstract class Dialog : Component() {
      * Closes the dialog while ignoring any data that might have been
      * possibly entered in the dialog currently.
      */
-    private fun close() {
+    internal fun close() {
         app.ui.closeDialog(this)
     }
 
@@ -325,7 +348,7 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected override fun content() {
-        lightweightPlatform(::close, { dialogFrame() }, nestedDialog, isBottomDialog)
+        displayMode.content(this) { formContent() }
     }
 
     /**
@@ -348,15 +371,15 @@ public abstract class Dialog : Component() {
         }
     }
 
-/**
- * A part of internal application's machinery for displaying nested dialogs.
- *
- * This method complements [openNestedDialog] for this purpose. See its
- * description for details.
- *
- * @see openNestedDialog
- */
-internal fun closeNestedDialog(dialog: Dialog) {
+    /**
+     * A part of internal application's machinery for displaying nested dialogs.
+     *
+     * This method complements [openNestedDialog] for this purpose. See its
+     * description for details.
+     *
+     * @see openNestedDialog
+     */
+    internal fun closeNestedDialog(dialog: Dialog) {
         checkNotNull(nestedDialog) { "This dialog is not displayed currently." }
         if (dialog == nestedDialog) {
             check(dialog.nestedDialog == null) {
@@ -368,52 +391,13 @@ internal fun closeNestedDialog(dialog: Dialog) {
         }
     }
 
-    /**
-     * Renders the dialog's frame, which makes up main elements that are common
-     * for all dialogs, including dialog's title and buttons, while delegating
-     * the rendering of the dialog's content to the actual dialog's
-     * implementation (via the [formContent] method).
-     */
-    @Composable
-    private fun dialogFrame() {
-        Column(
-            modifier = Modifier
-                .clip(MaterialTheme.shapes.large)
-                .size(dialogWidth, dialogHeight)
-                .background(colorScheme.background),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(look.padding),
-            ) {
-                val coroutineScope = rememberCoroutineScope()
-                DialogTitle(title, look.titlePadding)
-                Column(
-                    Modifier.weight(1F)
-                        .on(Ctrl(Enter.key).up) {
-                            coroutineScope.launch { handleSubmitClick() }
-                        }
-                ) {
-                    formContent()
-                }
-                DialogButtons(
-                    submitButtonText, { coroutineScope.launch { handleSubmitClick() } },
-                    cancelButtonText, { coroutineScope.launch { handleCancelClick() } },
-                    look.buttonsPanelPadding,
-                    look.buttonsSpacing
-                )
-            }
-        }
-    }
-
-    private suspend fun handleSubmitClick() {
+    internal suspend fun handleSubmitClick() {
         if (onBeforeSubmit() && submitForm()) {
             close()
         }
     }
 
-    private suspend fun handleCancelClick() {
+    internal suspend fun handleCancelClick() {
         if (onBeforeCancel()) {
             close()
         }
@@ -421,61 +405,251 @@ internal fun closeNestedDialog(dialog: Dialog) {
 }
 
 /**
- * A composable container, which ensures displaying a nested dialog in
- * a "lightweight" way (with rendering it as an overlay in the current window
- * without allocating a real OS window for the dialog).
+ * Defines the way that a dialog is displayed on the screen (e.g. as a separate
+ * desktop window, or as a lightweight modal popup).
  */
-@Composable
-private fun lightweightPlatform(
-    close: () -> Unit,
-    dialogContent: @Composable () -> Unit,
-    nestedDialog: Dialog?,
-    isBottomDialog: Boolean
-) {
-    if (isBottomDialog) {
-        Popup(
-            popupPositionProvider = centerWindowPositionProvider,
-            onDismissRequest = close,
-            properties = PopupProperties(focusable = true),
-            onPreviewKeyEvent = { false },
-            onKeyEvent = escapePressHandler { close() }
+public abstract class DialogDisplayMode {
+
+    /**
+     * Renders the dialog with its content according to the display mode
+     * defined by this object.
+     *
+     * @param dialog The [Dialog] that is being displayed.
+     * @param formContent Composable dialog content as defined by the dialog's
+     *   [formContent][Dialog.formContent] method.
+     */
+    @Composable
+    public abstract fun content(
+        dialog: Dialog,
+        formContent: @Composable () -> Unit
+    )
+
+    /**
+     * Renders the dialog's frame, which makes up main elements that are common
+     * for all dialogs, including dialog's title and buttons, while delegating
+     * the rendering of the dialog's content to the actual dialog's
+     * implementation (via the [formContent] method).
+     *
+     * @param dialog The [Dialog] that is being displayed.
+     * @param formContent Composable dialog content as defined by the dialog's
+     *   [formContent][Dialog.formContent] method.
+     */
+    @Composable
+    protected open fun dialogFrame(
+        dialog: Dialog,
+        formContent: @Composable () -> Unit
+    ) {
+        val coroutineScope = rememberCoroutineScope()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(dialog.look.padding),
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Black.copy(alpha = 0.5f))
-                ,
-                contentAlignment = Center
-            ) {
-                Box(
-                    modifier = Modifier.pointerInput(close) {
-                        detectTapGestures(onPress = {})
-                    }
-                ) {
-                    dialogContent()
-                }
+
+            titleArea(dialog)
+            Column(Modifier.weight(1F)) {
+                formContent()
             }
-        }
-    } else {
-        Popup(
-            popupPositionProvider = centerWindowPositionProvider,
-            properties = PopupProperties(focusable = true),
-            onPreviewKeyEvent = { false }
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Black.copy(alpha = 0.5f)),
-                contentAlignment = Center
-            ) {
-                Box {
-                    dialogContent()
-                }
-            }
+            DialogButtons(
+                dialog.submitButtonText, {
+                    coroutineScope.launch { dialog.handleSubmitClick() }
+                },
+                dialog.cancelButtonText, {
+                    coroutineScope.launch { dialog.handleCancelClick() }
+                },
+                dialog.look.buttonsPanelPadding,
+                dialog.look.buttonsSpacing
+            )
         }
     }
 
-    nestedDialog ?.Content()
+    /**
+     * Renders the content of the area where window's title can be placed.
+     *
+     * @param dialog The dialog being rendered.
+     */
+    @Composable
+    protected open fun titleArea(dialog: Dialog) {
+        DialogTitle(dialog.title, dialog.look.titlePadding)
+    }
+
+    public companion object {
+
+        /**
+         * A dialog display mode, which makes each dialog to be displayed
+         * in its own desktop window.
+         */
+        public val DesktopWindow: DialogDisplayMode = DesktopWindowDisplayMode()
+
+        /**
+         * A dialog display platform that makes the dialogs to be displayed
+         * in a "lightweight" way — without displaying a new desktop window,
+         * as a modal popup inside the current desktop window.
+         */
+        public val Lightweight: DialogDisplayMode = LightweightDisplayMode()
+    }
+}
+
+/**
+ * A [DialogDisplayMode] implementation, which ensures displaying a dialog
+ * as a separate desktop window.
+ */
+internal class DesktopWindowDisplayMode(
+    private val resizable: Boolean = false
+) : DialogDisplayMode() {
+
+    @Composable
+    override fun content(
+        dialog: Dialog,
+        formContent: @Composable  () -> Unit
+    ) {
+        val coroutineScope = rememberCoroutineScope()
+
+        DialogWindow(
+            title = dialog.title,
+            resizable = resizable,
+            state = DialogState(
+                size = DpSize(dialog.dialogWidth, dialog.dialogHeight)
+            ),
+            onCloseRequest = { dialog.close() },
+            onKeyEvent = { event ->
+                if (event matches cancelShortcutKey.down) {
+                    coroutineScope.launch { dialog.handleCancelClick() }
+                }
+                if (event matches submitShortcutKey.up) {
+                    coroutineScope.launch { dialog.handleSubmitClick() }
+                }
+                false
+            }
+        ) {
+            dialogFrame(dialog, formContent)
+            dialog.nestedDialog?.Content()
+        }
+    }
+
+    @Composable
+    override fun titleArea(dialog: Dialog) {
+        // No title need to be composed explicitly because desktop dialog
+        // windows have their own titles displayed by the OS.
+    }
+
+    @Composable
+    override fun dialogFrame(dialog: Dialog, formContent: @Composable () -> Unit) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorScheme.background),
+        ) {
+            super.dialogFrame(dialog, formContent)
+        }
+    }
+}
+
+/**
+ * A [PopupPositionProvider], which makes a lightweight popup to appear at
+ * the window's center.
+ */
+private val centerWindowPositionProvider = object : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize
+    ): IntOffset = Zero
+}
+
+/**
+ * A [DialogDisplayMode] implementation, which ensures displaying a dialog
+ * as a lightweight modal popup inside the current desktop window.
+ *
+ * @param backdropColor The color of the surface that covers the entire content
+ *   of the current desktop window behind the dialog's modal popup displayed in
+ *   this window.
+ */
+internal class LightweightDisplayMode(
+    private val backdropColor: Color = Black.copy(alpha = 0.5f)
+) : DialogDisplayMode() {
+
+    @Composable
+    override fun content(
+        dialog: Dialog,
+        formContent: @Composable () -> Unit
+    ) {
+        val coroutineScope = rememberCoroutineScope()
+
+        if (dialog.isBottomDialog) {
+            Popup(
+                popupPositionProvider = centerWindowPositionProvider,
+                onDismissRequest = { dialog.close() },
+                properties = PopupProperties(focusable = true),
+                onPreviewKeyEvent = { false },
+                onKeyEvent = cancelShortcutHandler {
+                    coroutineScope.launch { dialog.handleCancelClick() }
+                }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(backdropColor)
+                    ,
+                    contentAlignment = Center
+                ) {
+                    Box(
+                        modifier = Modifier.pointerInput(dialog) {
+                            detectTapGestures(onPress = {})
+                        }
+                    ) {
+                        dialogFrame(dialog, formContent)
+                    }
+                }
+            }
+        } else {
+            Popup(
+                popupPositionProvider = centerWindowPositionProvider,
+                properties = PopupProperties(focusable = true),
+                onPreviewKeyEvent = { false }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(backdropColor),
+                    contentAlignment = Center
+                ) {
+                    Box {
+                        dialogFrame(dialog, formContent)
+                    }
+                }
+            }
+        }
+
+        dialog.nestedDialog ?.Content()
+    }
+
+    @Composable
+    override fun dialogFrame(dialog: Dialog, formContent: @Composable () -> Unit) {
+        Column(
+            modifier = Modifier
+                .clip(shapes.large)
+                .size(dialog.dialogWidth, dialog.dialogHeight)
+                .background(colorScheme.background),
+        ) {
+            super.dialogFrame(dialog, formContent)
+        }
+    }
+
+    /**
+     * Creates a key event handler function that executes a provided [cancelHandler]
+     * callback whenever the `Escape` key is pressed.
+     */
+    private fun cancelShortcutHandler(cancelHandler: () -> Unit): (KeyEvent) -> Boolean = { event ->
+        if (event matches cancelShortcutKey.down) {
+            cancelHandler()
+            true
+        } else {
+            false
+        }
+    }
 }
 
 /**
@@ -545,7 +719,7 @@ private fun DialogTitle(
     Text(
         modifier = Modifier.padding(padding),
         text = text,
-        style = MaterialTheme.typography.headlineLarge
+        style = typography.headlineLarge
     )
 }
 
@@ -571,13 +745,8 @@ private fun DialogButtons(
         Row(
             horizontalArrangement = spacedBy(buttonsSpacing)
         ) {
-            DialogButton(cancelButtonText) {
-                onCancel.invoke()
-            }
-            DialogButton(confirmButtonText)
-            {
-                onConfirm.invoke()
-            }
+            DialogButton(cancelButtonText) { onCancel() }
+            DialogButton(confirmButtonText) { onConfirm() }
         }
     }
 }
@@ -600,32 +769,4 @@ private fun DialogButton(
             Text(label)
         }
     }
-}
-
-
-/**
- * Creates a key event handler function that executes a provided [escHandler]
- * callback whenever the `Escape` key is pressed.
- */
-private fun escapePressHandler(escHandler: () -> Unit): ((KeyEvent) -> Boolean) = { event ->
-    if (event matches Escape.key.down) {
-        escHandler()
-        true
-    } else {
-        false
-    }
-}
-
-
-/**
- * Provides a modal window setting that forces it
- * to appear at the center of the screen.
- */
-private val centerWindowPositionProvider = object : PopupPositionProvider {
-    override fun calculatePosition(
-        anchorBounds: IntRect,
-        windowSize: IntSize,
-        layoutDirection: LayoutDirection,
-        popupContentSize: IntSize
-    ): IntOffset = Zero
 }

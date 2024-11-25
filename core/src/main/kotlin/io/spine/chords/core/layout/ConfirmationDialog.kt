@@ -46,8 +46,8 @@ public class ConfirmationDialog : Dialog() {
     init {
         submitButtonText = "Yes"
         cancelButtonText = "No"
-        dialogWidth = 420.dp
-        dialogHeight = 230.dp
+        dialogWidth = 430.dp
+        dialogHeight = 210.dp
     }
 
     /**
