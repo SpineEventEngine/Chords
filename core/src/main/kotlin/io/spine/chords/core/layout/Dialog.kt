@@ -244,10 +244,7 @@ public abstract class Dialog : Component() {
      *     init {
      *         onBeforeCancel = {
      *             ConfirmationDialog.ask {
-     *                 message = "Are you sure you want to close the dialog?"
-     *                 description = "Any entered data will be lost in this case."
-     *                 confirmButtonText = "Discard changes"
-     *                 cancelButtonText = "Continue editing"
+     *                 message = "Are you sure you want to cancel the dialog?"
      *             }
      *         }
      *         ...
@@ -281,9 +278,7 @@ public abstract class Dialog : Component() {
      *         onBeforeSubmit = {
      *             ConfirmationDialog.ask {
      *                 message = "Are you sure you want to proceed?"
-     *                 description = "This action is irreversible."
-     *                 confirmButtonText = "Yes"
-     *                 cancelButtonText = "No"
+     *                 description = "This action is irreversible!"
      *             }
      *         }
      *         ...

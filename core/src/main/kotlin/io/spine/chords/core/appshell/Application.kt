@@ -103,6 +103,8 @@ public open class Application(
             return _ui!!
         }
 
+    internal val componentDefaults = ComponentDefaults()
+
     private var _ui: ApplicationUI? = null
 
     /**
@@ -123,6 +125,10 @@ public open class Application(
         }
         app = this
 
+        with(componentDefaults) {
+            componentDefaults()
+        }
+
         application(exitProcessOnExit = exitProcessOnClose) {
             val appWindow = remember {
                 val appWindow = createAppWindow(::exitApplication)
@@ -131,6 +137,29 @@ public open class Application(
             }
             appWindowContent(appWindow)
         }
+    }
+
+    /**
+     * An implementation of the application ([Application]'s subclass) can
+     * override this method to specify application-wide default property values
+     * for individual component types.
+     *
+     * Here's an example:
+     * ```
+     *     override fun ComponentDefaultsScope.componentDefaults() {
+     *         component(Dialog::class) {
+     *             onBeforeCancel = {
+     *                 message = "Are you sure you want to close the dialog?"
+     *                 description = "Any entered data will be lost in this case."
+     *             }
+     *         }
+     *         component(ConfirmationDialog::class) {
+     *             displayMode = Lightweight
+     *         }
+     *     }
+     * ```
+     */
+    protected open fun ComponentDefaultsScope.componentDefaults() {
     }
 
     private fun createAppWindow(onCloseRequest: () -> Unit): AppWindow {
