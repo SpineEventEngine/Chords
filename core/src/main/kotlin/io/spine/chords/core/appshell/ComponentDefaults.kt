@@ -56,13 +56,36 @@ public interface ComponentDefaultsScope {
 }
 
 /**
- * An implementation of [ComponentDefaultsScope], which stores component
- * defaults that were configured for the application, and provides an API
- * that allows to apply the default properties to components.
+ * An implementation of [ComponentDefaultsScope], which serves as a registry for
+ * component defaults that were configured to be applicable across the entire
+ * application, and provides an API that allows to apply the default properties
+ * to components.
  */
 internal class ComponentDefaults : ComponentDefaultsScope{
+
+    /**
+     * The raw data about which properties are registered for which types of
+     * components (without including properties registered for parent classes).
+     *
+     * This data structure serves as a source of truth about default properties,
+     * but it is not optimized for quick access per se.
+     *
+     * @see componentConfiguratorsPrepared
+     */
     private val componentConfiguratorsRaw:
             MutableMap<Class<*>, List<ComponentProps<*>>> = HashMap()
+
+    /**
+     * A cache of per-component-type property initialization lambdas that were
+     * derived from [componentConfiguratorsRaw] to represent a quickest possible
+     * way of setting all properties available for a certain component type.
+     *
+     * Unlike [componentConfiguratorsRaw], the per-component-type property
+     * assignment lambdas here contain property initializers that were
+     * registered for all parent classes as well.
+     *
+     * @see componentConfiguratorsRaw
+     */
     private val componentConfiguratorsPrepared:
             MutableMap<Class<*>, ((Component) -> Unit)?> = HashMap()
 
@@ -92,7 +115,7 @@ internal class ComponentDefaults : ComponentDefaultsScope{
      *
      * @param componentClass A class of component whose default properties
      *   initializer needs to be obtained.
-     * @return a lambda, which, given a component instance of type [C], assigns
+     * @return A lambda, which, given a component instance of type [C], assigns
      *   default property values to it and its parent classes, or `null` if no
      *   default property values are declared for the [componentClass] and any
      *   of its parent classes.

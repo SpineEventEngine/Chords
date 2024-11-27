@@ -167,6 +167,9 @@ public open class Application(
             return _ui!!
         }
 
+    /**
+     * The registry of default property values for different component types.
+     */
     internal val componentDefaults = ComponentDefaults()
 
     private var _ui: ApplicationUI? = null

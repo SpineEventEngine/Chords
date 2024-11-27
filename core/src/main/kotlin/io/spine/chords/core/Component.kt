@@ -657,10 +657,12 @@ public abstract class Component {
      * properties match any property declarations that are specified for
      * the dialog.
      *
-     * This includes both assigning the application-wide properties, and
-     * instance-specific properties. If there are conflicts in declarations,
-     * instance-specific property declarations override application-wide
-     * property declarations.
+     * This includes both assigning the default property values applicable
+     * to this component from application-wide component customizations (see
+     * [Application.componentDefaults][io.spine.chords.core.appshell.Application.componentDefaults]),
+     * and setting instance-specific properties. If there are conflicts between
+     * these two sources of property values, instance-specific property
+     * declarations override application-wide property declarations.
      */
     protected open fun updateProps() {
         if (componentInitializer == null) {
