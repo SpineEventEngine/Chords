@@ -32,7 +32,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
 import io.spine.chords.core.layout.Dialog
+import io.spine.chords.core.layout.ConfirmationDialog
 import io.spine.chords.core.layout.DialogSetup
+import io.spine.chords.core.layout.DialogDisplayMode
 import io.spine.chords.core.writeOnce
 import java.awt.Dimension
 
@@ -71,11 +73,73 @@ public var app: Application by writeOnce()
  * this, the [signInScreenContent] method has to be implemented to render
  * the respective composable content, and invoke the sign-in callback as needed.
  *
+ * ## Customizing default values for different component types
+ *
+ * It is possible to customize default values for properties for all instances
+ * of any given component type(s). To do this, override the [componentDefaults]
+ * function, and use a [defaultsTo][ComponentDefaultsScope.defaultsTo] infix
+ * call per each component type whose default property values you need
+ * to customize.
+ *
+ * Here's an example:
+ * ```
+ *     override fun ComponentDefaultsScope.componentDefaults() {
+ *         Dialog::class defaultsTo {
+ *             displayMode = DesktopWindow
+ *             look = Look(
+ *                 buttonsPanelPadding = 20.pt
+ *             }
+ *         }
+ *         ConfirmationDialog::class defaultsTo {
+ *             displayMode = Lightweight
+ *         }
+ *     }
+ * ```
+ *
+ * If you then have a usage of `MyCustomDialog` component that extends [Dialog]
+ * like this in your application:
+ * ```
+ *     MyCustomDialog.open {
+ *         dialogWidth = 600.dp
+ *         dialogHeight = 400.dp
+ *     }
+ * ```
+ *
+ * Then the dialog instance that will actually be created will implicitly have
+ * all of these property values:
+ * ```
+ * {
+ *     displayMode = DesktopWindow
+ *     look = Look(
+ *         buttonsPanelPadding = 20.pt
+ *     }
+ *     dialogWidth = 600.dp
+ *     dialogHeight = 400.dp
+ * }
+ * ```
+ *
+ * Property values specified for the actual component instance declaration
+ * always have a priority over respective default values, so this way you can
+ * override default property values whenever needed in their specific usages.
+ *
+ * Note that for any given component, all default property values specified in
+ * all of its base classes will be applied as well (if any such declarations
+ * for parent classes have been defined in the `componentDefaults` method).
+ *
+ * If there are any conflicts in property declarations across multiple
+ * component's base classes, the declarations specified in child classes will
+ * override those found in base classes. In the example above, since
+ * [ConfirmationDialog] extends [Dialog], all instances of `ConfirmationDialog`
+ * declared within the application will get a value of
+ * [displayMode][ConfirmationDialog.displayMode] equal to
+ * [Lightweight][DialogDisplayMode.Lightweight].
+ *
  * @param name An application's name, which is in particular displayed in
  *   the application window's title.
  * @param views The list of application's views.
- * @param initialView Allows to specify a view from the list of [views], if any view other
- *   than the first one has to be displayed when the application starts.
+ * @param initialView Allows to specify a view from the list of [views], if any
+ *   view other than the first one has to be displayed when
+ *   the application starts.
  * @param minWindowSize The minimal size of the application window.
  */
 public open class Application(
@@ -103,6 +167,11 @@ public open class Application(
             return _ui!!
         }
 
+    /**
+     * The registry of default property values for different component types.
+     */
+    internal val componentDefaults = ComponentDefaults()
+
     private var _ui: ApplicationUI? = null
 
     /**
@@ -123,6 +192,10 @@ public open class Application(
         }
         app = this
 
+        with(componentDefaults) {
+            componentDefaults()
+        }
+
         application(exitProcessOnExit = exitProcessOnClose) {
             val appWindow = remember {
                 val appWindow = createAppWindow(::exitApplication)
@@ -131,6 +204,29 @@ public open class Application(
             }
             appWindowContent(appWindow)
         }
+    }
+
+    /**
+     * An implementation of the application ([Application]'s subclass) can
+     * override this method to specify application-wide default property values
+     * for individual component types.
+     *
+     * Here's an example:
+     * ```
+     *     override fun ComponentDefaultsScope.componentDefaults() {
+     *         Dialog::class defaultsTo {
+     *             onBeforeCancel = {
+     *                 message = "Are you sure you want to close the dialog?"
+     *                 description = "Any entered data will be lost in this case."
+     *             }
+     *         }
+     *         ConfirmationDialog::class defaultsTo {
+     *             displayMode = Lightweight
+     *         }
+     *     }
+     * ```
+     */
+    protected open fun ComponentDefaultsScope.componentDefaults() {
     }
 
     private fun createAppWindow(onCloseRequest: () -> Unit): AppWindow {

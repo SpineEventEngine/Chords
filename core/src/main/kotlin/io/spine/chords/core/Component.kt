@@ -32,6 +32,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.MutableState
+import io.spine.chords.core.appshell.Application
+import io.spine.chords.core.appshell.app
 
 /**
  * A base class for class-based component implementations.
@@ -550,6 +552,16 @@ public abstract class Component {
     private val initialized = mutableStateOf(false)
 
     /**
+     * A lambda that assigns default property values that are applicable for
+     * this component according to the application-wide configuration.
+     *
+     * @see Application.componentDefaults
+     */
+    private val setDefaultProps: ((Component) -> Unit)? by lazy {
+        app.componentDefaults.componentDefaultsInitializer(javaClass)
+    }
+
+    /**
      * A component's lifecycle method, which is invoked right after the
      * [props] callback (which is passed along with component instance's
      * declaration) has been invoked for the first time, and before
@@ -639,7 +651,7 @@ public abstract class Component {
      */
     @Composable
     public open fun Content(): Unit = recompositionWorkaround {
-        props?.run { configure() }
+        updateProps()
         if (!initialized.value) {
             initialize()
             initialized.value = true
@@ -647,6 +659,23 @@ public abstract class Component {
 
         beforeComposeContent()
         content()
+    }
+
+    /**
+     * Invoked before each recomposition to make sure that component's
+     * properties match any property declarations that are specified for
+     * the dialog.
+     *
+     * This includes both assigning the default property values applicable
+     * to this component from application-wide component customizations (see
+     * [Application.componentDefaults][io.spine.chords.core.appshell.Application.componentDefaults]),
+     * and setting instance-specific properties. If there are conflicts between
+     * these two sources of property values, instance-specific property
+     * declarations override application-wide property declarations.
+     */
+    protected open fun updateProps() {
+        setDefaultProps?.invoke(this)
+        props?.run { configure() }
     }
 
     /**
