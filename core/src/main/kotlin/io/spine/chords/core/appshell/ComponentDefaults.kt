@@ -30,33 +30,84 @@ import io.spine.chords.core.Component
 import io.spine.chords.core.ComponentProps
 import kotlin.reflect.KClass
 
+/**
+ * Defines the type of declarations that can be used within
+ * [Application.componentDefaults] implementations.
+ */
 public interface ComponentDefaultsScope {
-    public fun <C : Component> component(componentClass: KClass<out C>, props: ComponentProps<C>)
+
+    /**
+     * Registers default property values that should be applied to all
+     * components of class [C] and its subclasses.
+     *
+     * For each component that is an instance of [C] or its
+     * subclass, the provided [props] lambda will be invoked.
+     *
+     * @receiver A class of a component whose default property
+     *   values need to be specified. Specifying a type `C` means that
+     *   the property values specified in this call will be set for all
+     *   components that are either of exact same class, or any of
+     *   its subclasses.
+     * @param props A lambda, which is invoked in context of each component of
+     *   class [C] (the component is referred by `this`), and which is expected
+     *   to assign default property values for such a component.
+     */
+    public infix fun <C : Component> KClass<out C>.defaultsTo(props: ComponentProps<C>)
 }
 
-public class ComponentDefaults : ComponentDefaultsScope{
+/**
+ * An implementation of [ComponentDefaultsScope], which stores component
+ * defaults that were configured for the application, and provides an API
+ * that allows to apply the default properties to components.
+ */
+internal class ComponentDefaults : ComponentDefaultsScope{
     private val componentConfiguratorsRaw:
             MutableMap<Class<*>, List<ComponentProps<*>>> = HashMap()
     private val componentConfiguratorsPrepared:
             MutableMap<Class<*>, ((Component) -> Unit)?> = HashMap()
 
-    override fun <C : Component> component(
-        componentClass: KClass<out C>,
+    override infix fun <C : Component> KClass<out C>.defaultsTo(
         props: ComponentProps<C>
     ) {
+        val componentClass: Class<out C> = this.java
+        @Suppress(
+            // Components are stored by the parent class internally.
+            "UNCHECKED_CAST"
+        )
         val initializerForClass = componentConfiguratorsRaw.getOrPut(
-            componentClass.java as Class<*>, { ArrayList<ComponentProps<C>>() }
+            componentClass as Class<*>, { ArrayList<ComponentProps<C>>() }
         ) as MutableList<ComponentProps<C>>
+
         initializerForClass += props
     }
 
-    public fun <C : Component> componentInitializer(componentClass: Class<C>): ((C) -> Unit)? {
+    /**
+     * Given a component class, returns a function that applies any defaults
+     * that are applicable to a component of that type.
+     *
+     * Implementation note: the lambda returned by this method should be
+     * constructed in a most performance-effective way (e.g. precache
+     * the results of any map lookups, and minimize any computationally costly
+     * operations within the returned lambda as much as possible in general).
+     *
+     * @param componentClass A class of component whose default properties
+     *   initializer needs to be obtained.
+     * @return a lambda, which, given a component instance of type [C], assigns
+     *   default property values to it and its parent classes, or `null` if no
+     *   default property values are declared for the [componentClass] and any
+     *   of its parent classes.
+     */
+    fun <C : Component> componentDefaultsInitializer(componentClass: Class<C>): ((C) -> Unit)? {
         val initializers: ((Component) -> Unit)? = componentConfiguratorsPrepared.getOrPut(
             componentClass
         ) {
             val initializers: java.util.ArrayList<ComponentProps<C>> = ArrayList()
             var cls: Class<*>? = componentClass
             while (cls != null) {
+                @Suppress(
+                    // Components are stored by the parent class internally.
+                    "UNCHECKED_CAST"
+                )
                 val props = componentConfiguratorsRaw[cls] as List<ComponentProps<C>>?
                 if (props != null) {
                     initializers.addAll(props)
@@ -64,10 +115,17 @@ public class ComponentDefaults : ComponentDefaultsScope{
                 cls = cls.superclass
             }
 
+            // Make sure parent classes are applied first.
+            initializers.reverse()
+
             if (initializers.isEmpty()) {
                 null
             } else {
                 val result: (Component) -> Unit = { component ->
+                    @Suppress(
+                        // Components are stored by the parent class internally.
+                        "UNCHECKED_CAST"
+                    )
                     with(component as C) {
                         for (initializer: ComponentProps<C> in initializers) {
                             initializer.run { configure() }

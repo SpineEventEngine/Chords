@@ -664,7 +664,8 @@ public abstract class Component {
      */
     protected open fun updateProps() {
         if (componentInitializer == null) {
-            componentInitializer = app.componentDefaults.componentInitializer(javaClass) ?: {}
+            componentInitializer =
+                app.componentDefaults.componentDefaultsInitializer(javaClass) ?: {}
         }
         componentInitializer!!.invoke(this)
         props?.run { configure() }
