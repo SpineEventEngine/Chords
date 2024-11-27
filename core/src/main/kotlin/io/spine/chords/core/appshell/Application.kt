@@ -118,9 +118,13 @@ public var app: Application by writeOnce()
  * }
  * ```
  *
+ * Property values specified for the actual component instance declaration
+ * always have a priority over respective default values, so this way you can
+ * override default property values whenever needed in their specific usages.
+ *
  * Note that for any given component, all default property values specified in
  * all of its base classes will be applied as well (if any such declarations
- * are present).
+ * for parent classes have been defined in the `componentDefaults` method).
  *
  * If there are any conflicts in property declarations across multiple
  * component's base classes, the declarations specified in child classes will
