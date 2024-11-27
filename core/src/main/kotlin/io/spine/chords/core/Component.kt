@@ -32,6 +32,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.MutableState
+import io.spine.chords.core.appshell.Application
 import io.spine.chords.core.appshell.app
 
 /**
@@ -550,7 +551,15 @@ public abstract class Component {
      */
     private val initialized = mutableStateOf(false)
 
-    private var componentInitializer: ((Component) -> Unit)? = null
+    /**
+     * A lambda that assigns default property values that are applicable for
+     * this component according to the application-wide configuration.
+     *
+     * @see Application.componentDefaults
+     */
+    private val setDefaultProps: ((Component) -> Unit)? by lazy {
+        app.componentDefaults.componentDefaultsInitializer(javaClass)
+    }
 
     /**
      * A component's lifecycle method, which is invoked right after the
@@ -665,11 +674,7 @@ public abstract class Component {
      * declarations override application-wide property declarations.
      */
     protected open fun updateProps() {
-        if (componentInitializer == null) {
-            componentInitializer =
-                app.componentDefaults.componentDefaultsInitializer(javaClass) ?: {}
-        }
-        componentInitializer!!.invoke(this)
+        setDefaultProps?.invoke(this)
         props?.run { configure() }
     }
 
