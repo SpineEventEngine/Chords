@@ -242,11 +242,6 @@ public open class InputField<V> : InputComponent<V>() {
         }
 
     /**
-     * Indicates whether the field is enabled for receiving the user input.
-     */
-    public var enabled: Boolean by mutableStateOf(true)
-
-    /**
      * A callback, which is triggered after the value in the [MutableState] in
      * [value] has been updated with a newly edited value.
      */

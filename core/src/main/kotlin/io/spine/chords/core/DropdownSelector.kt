@@ -122,11 +122,6 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     public var label: String by mutableStateOf("")
 
     /**
-     * Indicates whether the field is enabled for receiving the user input.
-     */
-    public var enabled: Boolean by mutableStateOf(true)
-
-    /**
      * A [Modifier] to be applied to the component.
      */
     public var modifier: Modifier by mutableStateOf(Modifier)

@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -465,8 +466,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             value as MutableState<Message?>,
             builder,
             props as ComponentProps<MessageForm<Message>>,
-            onBeforeBuild,
-
+            onBeforeBuild
         ) {
             content(this as FormPartScope<M>)
         } as MessageForm<M>
@@ -509,8 +509,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 PM : Message,
                 M : Message,
                 B : ValidatingBuilder<out M>
-                >
-                invoke(
+        > invoke(
             field: MessageField<PM, M>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
@@ -610,8 +609,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 PM : Message,
                 M : Message,
                 B : ValidatingBuilder<out M>
-                >
-                Multipart(
+        > Multipart(
             field: MessageField<PM, M>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
@@ -815,7 +813,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * @property formOneof A oneof to which this field belongs.
      */
     internal inner class FormField(
-        private val formFieldsScopeImpl: FormFieldsScopeImpl<M>,
+        internal val formFieldsScopeImpl: FormFieldsScopeImpl<M>,
         internal val field: MessageField<M, MessageFieldValue>,
         initialValue: MessageFieldValue? = null,
         val formOneof: FormOneof? = null
@@ -859,8 +857,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * A [FormFieldScope] instance for DSL declarations related to
          * this field.
          */
-        val scope: FormFieldScopeImpl<M, MessageFieldValue> =
-            FormFieldScopeImpl(this, this@MessageForm)
+        val scope: FormFieldScopeImpl<M, MessageFieldValue> = FormFieldScopeImpl(this)
 
         /**
          * The last field's value (in the [value] state) has been observed,
@@ -1116,6 +1113,21 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     private var lastEmittedMessageValue: M? = null
 
     /**
+     * Defines whether the form field editors should be enabled.
+     *
+     * By default, it reflects the value from the [enabled] state inherited from
+     * [InputComponent], but has a potential of additionally disabling form
+     * field editors even when [enabled] is true in certain form's states.
+     * This is primarily dedicated for child classes utilizing this capability,
+     * e.g. [CommandMessageForm][io.spine.chords.client.form.CommandMessageForm]
+     * can disable field editors even if [enabled] is `true` while the command
+     * that has been posted is being handled.
+     */
+    internal var editorsEnabled: MutableState<Boolean> = mutableStateOf(editorsEnabledSource)
+
+    protected val editorsEnabledSource: Boolean get() = enabled
+
+    /**
      * A current form-wide validation error (the one that is not related to any
      * particular field), if there's such an error.
      *
@@ -1341,18 +1353,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
     final override fun content() {
-        if (lastEmittedMessageValue != null && value.value == null) {
-            if (enteringNonNullValue.value) {
-                enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
-            }
-        }
-
-        val enteringNonNullValue = enteringNonNullValue.value
-        if (!enteringNonNullValue && lastObservedEnteringNonNullValue) {
-            clear()
-            lastObservedEnteringNonNullValue = false
-        }
-        lastObservedEnteringNonNullValue = enteringNonNullValue
+        updateBeforeRendering()
 
         formScope.customMultipartContent()
 
@@ -1381,6 +1382,29 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 focusRequest.value = null
             }
         }
+    }
+
+    /**
+     * Performs form state updates, which need to be performed before form's
+     * content is rendered, and which require a composable context
+     * (e.g. for observing [State]s and reacting appropriately).
+     */
+    @ReadOnlyComposable
+    private fun updateBeforeRendering() {
+        if (lastEmittedMessageValue != null && value.value == null) {
+            if (enteringNonNullValue.value) {
+                enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
+            }
+        }
+
+        val enteringNonNullValue = enteringNonNullValue.value
+        if (!enteringNonNullValue && lastObservedEnteringNonNullValue) {
+            clear()
+            lastObservedEnteringNonNullValue = false
+        }
+        lastObservedEnteringNonNullValue = enteringNonNullValue
+
+        editorsEnabled.value = editorsEnabledSource
     }
 
     private fun identifyInitialDirtyState(initialMessageValue: M?): Boolean = when {

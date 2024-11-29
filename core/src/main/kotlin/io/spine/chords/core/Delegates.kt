@@ -36,16 +36,16 @@ import kotlin.reflect.KProperty
  * ```
  *   var prop: String by writeOnce()
  *
- *   // print(prop) would throw IllegalStateException here, when
- *   // the property is read before it is set for the first time
+ *   // `print(prop)` would throw `IllegalStateException` here, when
+ *   // the property is read before it is set for the first time.
  *
  *   prop = "Hello"
- *   print(prop) // prints "Hello" as expected
+ *   print(prop) // Prints "Hello" as expected.
  *
- *   prop = "Something else" // throws IllegalStateException if set again
+ *   prop = "Something else" // Throws `IllegalStateException` if set again.
  *
  *   // ...
- *   print(prop) // still prints "Hello" despite additional set attempt(s)
+ *   print(prop) // Still prints "Hello" despite additional set attempt(s).
  * ```
  *
  * @param T

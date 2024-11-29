@@ -262,6 +262,11 @@ public abstract class InputComponent<V> : FocusableComponent() {
             }
         }
 
+    /**
+     * Specifies whether the field is enabled for receiving the user's input.
+     */
+    public var enabled: Boolean by mutableStateOf(true)
+
     override fun initialize() {
         super.initialize()
         if (!this::value.isInitialized) {
