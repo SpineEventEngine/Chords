@@ -125,8 +125,7 @@ public operator fun <
         C : InputComponent<V>,
         M : Message,
         V : MessageFieldValue
-        >
-        ComponentSetup<C>.invoke(
+> ComponentSetup<C>.invoke(
     field: MessageField<M, V>,
     props: ComponentProps<C>? = null
 ): C {
@@ -164,7 +163,7 @@ context(FormFieldsScope<M>)
 internal fun <
         M : Message,
         V : MessageFieldValue
-        > InputComponent<V>.ContentWithinField(
+> InputComponent<V>.ContentWithinField(
     field: MessageField<M, V>,
     defaultValue: V? = null
 ) {
@@ -174,6 +173,7 @@ internal fun <
         this@InputComponent.externalValidationMessage = this@Field.externalValidationMessage
         this@InputComponent.onDirtyStateChange = { this@Field.notifyDirtyStateChanged(it) }
         this@InputComponent.valueRequired = this@Field.fieldRequired
+        this@InputComponent.enabled = this@Field.fieldEnabled.value
         this@Field.focusRequestDispatcher.handleFocusRequest = { focus() }
         registerFieldValueEditor(this@InputComponent)
 

@@ -72,18 +72,24 @@ import io.spine.validate.ValidationException
  * A kind of input component, which allows creating a field-wise editor UI
  * (a form) for creating and editing Protobuf message values of type [M].
  *
- * Unlike other input components, `MessageForm` doesn't introduce any visual
- * output or layout capabilities by itself, and rather provides an API for
- * defining per-field editor components within the custom composable content
- * supplied to it. This composable content specifies what will actually be
- * displayed as a form, and can contain any components and layout inside.
+ * In order to configure `MessageForm`, it is needed to place one editor
+ * component per each of message's fields (which need to be specified in order
+ * to build a message of type [M]). The simplest way to specify field editors is
+ * to use respective suitable types of class-based input components (the ones,
+ * which extend [InputComponent]), and associate them with respective message's
+ * message's fields as shown below.
  *
- * The main requirement for composing the form's content is that it should
- * contain per-field editor components for all message's fields that need to be
- * specified in order to create a value of type [M].
+ * Note that unlike other input components, `MessageForm` doesn't introduce any
+ * visual output or layout capabilities by itself. Instead, it displays whatever
+ * content is placed into it along with field editor components, which can form
+ * an arbitrary layout required for the application.
  *
- * Here's an example of declaring a `MessageForm` that edits a message type
- * `UserContact`, which has two fields:
+ * `MessageForm` automatically collects any input made by the user in field
+ * editors, builds the respective message [M], and displays per-field validation
+ * errors if the message couldn't be built.
+ *
+ * Here's an example of declaring a `MessageForm` that edits a hypothetical
+ * message type `UserContact`, which has two fields:
  *  - `name: PersonName`
  *  - `websiteUrl: Url`
  *
@@ -105,11 +111,10 @@ import io.spine.validate.ValidationException
  *     }
  * ```
  *
- * The most convenient way to use forms is to place suitable [InputComponent]
- * implementations, which can edit respective data types for each of its fields.
- * In this case, the `PersonNameField` component (which extends
- * [InputComponent]) edits the `UserContact.name` field, and `UrlField`, which
- * is another input component, edits the `UserContact.websiteUrl` field.
+ * In this example, the `PersonNameField` component (which extends
+ * [InputComponent]) is configured to edit the `UserContact.name` field, and
+ * `UrlField`, which is another input component, is configured to edit
+ * the `UserContact.websiteUrl` field.
  *
  * Note that this example also contains the `Column` declaration that lays out
  * these editors, and it can actually contain arbitrary composable content
@@ -122,15 +127,16 @@ import io.spine.validate.ValidationException
  *
  * ### The current form's value
  *
- * In general, similar to other input components, the current form's value
- * (stored inside the [value] `MutableState`), always gets the most up-to-date
- * message value, according to the current form's editing state, if the inputs
- * are valid and sufficient to create a message of type [M].
+ * In general, similar to other class-based [input components][InputComponent],
+ * the current form's value (stored inside the [value] `MutableState`), always
+ * gets the most up-to-date message value, according to the current form's
+ * editing state, if the inputs are valid and sufficient to create a message of
+ * type [M].
  *
  * More precisely, by default, when the form is displayed for the first time,
- * the values that are propagated to field editor components are defined by
- * respective field values in the message stored in `MutableState` provided
- * within the [value] parameter.
+ * the values that are propagated to respective field editor components for
+ * initial display are defined by respective field values in the message stored
+ * in `MutableState` provided within the [value] property.
  *
  * Upon any change made in any declared field editor component, an attempt to
  * build a message [M] is made from all the currently entered field values. If
@@ -440,8 +446,8 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param B A type of the message builder.
          *
          * @param value The message value to be edited within the form.
-         * @param builder A lambda that should create and return a new builder for
-         *   a message of type [M].
+         * @param builder A lambda that should create and return a new builder
+         *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
          * @param onBeforeBuild A lambda that allows to amend the message
          *   after any valid field is entered to it.
@@ -590,13 +596,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
-         * @param defaultValue A value that should be displayed in the form by default.
+         * @param defaultValue A value that should be displayed in the form
+         *   by default.
          * @param onBeforeBuild A lambda that allows to amend the message
          *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
          * @return a form's instance that has been created for this
-         *         declaration site.
+         *   declaration site.
          */
         context(FormFieldsScope<PM>)
         @Composable
@@ -1123,9 +1130,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * can disable field editors even if [enabled] is `true` while the command
      * that has been posted is being handled.
      */
-    internal var editorsEnabled: MutableState<Boolean> = mutableStateOf(editorsEnabledSource)
+    public val editorsEnabled: State<Boolean> get() = editorsEnabledInternal
+    private lateinit var editorsEnabledInternal: MutableState<Boolean>
 
-    protected val editorsEnabledSource: Boolean get() = enabled
+    protected open val editorsEnabledSource: Boolean get() = enabled
 
     /**
      * A current form-wide validation error (the one that is not related to any
@@ -1224,6 +1232,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         _dirty = identifyInitialDirtyState(value.value)
         enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
         lastObservedEnteringNonNullValue = enteringNonNullValue.value
+        editorsEnabledInternal = mutableStateOf(editorsEnabledSource)
     }
 
     /**
@@ -1404,7 +1413,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         }
         lastObservedEnteringNonNullValue = enteringNonNullValue
 
-        editorsEnabled.value = editorsEnabledSource
+        editorsEnabledInternal.value = editorsEnabledSource
     }
 
     private fun identifyInitialDirtyState(initialMessageValue: M?): Boolean = when {

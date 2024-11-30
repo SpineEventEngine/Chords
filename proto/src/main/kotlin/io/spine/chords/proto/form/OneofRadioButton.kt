@@ -84,6 +84,7 @@ public class OneofRadioButton : FocusableComponent() {
                     )
                     selectedField.value = field as MessageField<M, MessageFieldValue>
                 },
+                enabled = formPartScope.formScope.form.editorsEnabled.value,
                 text = text,
                 focusRequestDispatcher = FocusRequestDispatcher(focusRequester)
             )
@@ -100,8 +101,8 @@ public class OneofRadioButton : FocusableComponent() {
          * field's message.
          *
          * @receiver A scope of type [OneOfFieldsScope], which is introduced
-         *         by the parent [OneOfFields][FormPartScope.OneOfFields]
-         *         declaration that corresponds to the oneof being edited.
+         *    by the parent [OneOfFields][FormPartScope.OneOfFields] declaration
+         *    that corresponds to the oneof being edited.
          * @param M A type of message to which the respective oneof
          *   field belongs.
          * @param F A type of message that is edited in the field associated

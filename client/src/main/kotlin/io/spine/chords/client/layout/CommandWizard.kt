@@ -166,15 +166,7 @@ public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M
     private val commandField: MessageField<out CommandMessage, M>,
     private val builder: () -> B
 ): AbstractWizardPage(wizard) {
-    private var pageForm: MessageForm<M>? = null
-        set(value) {
-            if (field == null) {
-                require(value != null)
-                field = value
-            } else {
-                require(value == field)
-            }
-        }
+    private lateinit var pageForm: MessageForm<M>
 
     @Composable
     override fun content() {
@@ -187,22 +179,19 @@ public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M
                 // The message type param is in+out, and it's just out
                 // for commandField.
                 @Suppress("UNCHECKED_CAST")
-                Field(commandField as MessageField<CommandMessage, M>) {
-                    if (pageForm == null) {
-                        pageForm = MessageForm.create(fieldValue, this@CommandWizardPage.builder) {
-                            validationDisplayMode = MANUAL
-                        }
-                    }
-                    pageForm!!.Content {
-                        content()
-                    }
+                pageForm = MessageForm(
+                    commandField as MessageField<CommandMessage, M>,
+                    this@CommandWizardPage.builder,
+                    props = { validationDisplayMode = MANUAL }
+                ) {
+                    content()
                 }
             }
         }
 
         if (wizard.lastFocusedPage != this) {
             wizard.lastFocusedPage = this
-            pageForm?.focus()
+            pageForm.focus()
         }
     }
 
@@ -215,8 +204,8 @@ public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M
     protected abstract fun FormPartScope<M>.content()
 
     override fun validate(): Boolean {
-        val form = pageForm!!
-        form.updateValidationDisplay(true)
-        return form.valueValid.value
+        checkNotNull(pageForm)
+        pageForm.updateValidationDisplay(true)
+        return pageForm.valueValid.value
     }
 }

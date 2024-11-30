@@ -113,8 +113,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
     protected open fun <
             PM : Message,
             B : ValidatingBuilder<out M>
-            >
-            declareInstance(
+    > declareInstance(
         field: MessageField<PM, M>,
         builder: () -> B,
         props: ComponentProps<F> = ComponentProps {},
@@ -205,8 +204,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
     protected fun <
             PM : Message,
             B : ValidatingBuilder<out M>
-            >
-            declareMultipartInstance(
+    > declareMultipartInstance(
         field: MessageField<PM, M>,
         builder: () -> B,
         props: ComponentProps<F> = ComponentProps {},

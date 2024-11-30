@@ -28,7 +28,9 @@ package io.spine.chords.client.form
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import io.spine.chords.core.appshell.app
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
@@ -307,6 +309,11 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
         }
     }
 
+    private var posting: Boolean by mutableStateOf(false)
+
+    override val editorsEnabledSource: Boolean
+        get() = super.editorsEnabledSource && !posting
+
     /**
      * Posts the command based on all currently entered data and awaits
      * the feedback upon processing the command.
@@ -343,8 +350,9 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "CommandMessageForm's value should be not null since it was just " +
             "checked to be valid within postCommand."
         }
+        val subscription = eventSubscription(command)
         return try {
-            val subscription = eventSubscription(command)
+            posting = true
             app.client.command(command)
             subscription.awaitEvent()
             true
@@ -360,6 +368,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             e: Exception
         ) {
             false
+        } finally {
+            posting = false
         }
     }
 }

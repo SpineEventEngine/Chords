@@ -66,7 +66,13 @@ public abstract class FocusableComponent : Component() {
      */
     public open fun focus() {
         if (lazyFocusRequester.isInitialized()) {
-            lazyFocusRequester.value.requestFocus()
+            try {
+                lazyFocusRequester.value.requestFocus()
+            } catch (e: IllegalStateException) {
+                throw IllegalStateException(
+                    "Couldn't request focus for component ${javaClass.simpleName}", e
+                )
+            }
         } else {
             throw IllegalStateException(
                 "Make sure to either assign `lazyFocusRequester` onto some composable, or " +
