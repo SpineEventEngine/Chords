@@ -29,16 +29,16 @@ package io.spine.chords.client.layout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import com.google.protobuf.Message
-import io.spine.chords.proto.form.FormFieldsScope
-import io.spine.chords.proto.form.MessageForm
-import io.spine.chords.proto.form.FormPartScope
-import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.AbstractWizardPage
 import io.spine.chords.core.layout.Wizard
+import io.spine.chords.proto.form.FormFieldsScope
+import io.spine.chords.proto.form.FormPartScope
+import io.spine.chords.proto.form.MessageForm
+import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.ValidatingBuilder
 
@@ -188,11 +188,6 @@ public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M
                 }
             }
         }
-
-        if (wizard.lastFocusedPage != this) {
-            wizard.lastFocusedPage = this
-            pageForm.focus()
-        }
     }
 
     /**
@@ -202,6 +197,11 @@ public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M
      */
     @Composable
     protected abstract fun FormPartScope<M>.content()
+
+    override fun show() {
+        super.show()
+        pageForm.focus()
+    }
 
     override fun validate(): Boolean {
         checkNotNull(pageForm)

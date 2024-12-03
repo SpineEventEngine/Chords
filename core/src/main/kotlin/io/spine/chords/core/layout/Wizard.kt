@@ -45,8 +45,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -169,7 +171,12 @@ public abstract class Wizard : Component() {
                             }
                         }
                 ) {
-                    PageContainer(currentPage)
+                    key(currentPage) {
+                        PageContainer(currentPage)
+                    }
+                    LaunchedEffect(currentPage) {
+                        currentPage.show()
+                    }
                 }
                 NavigationPanel(
                     onNextClick = { handleNextClick(currentPage) },
