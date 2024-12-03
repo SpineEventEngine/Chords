@@ -40,109 +40,134 @@ import io.spine.protobuf.ValidatingBuilder
  * A radio button, which can be placed into a
  * [OneOfFields][FormPartScope.OneOfFields] declaration to allow the user to
  * switch between oneof fields.
+ *
+ * @param M A type of message to which the respective oneof
+ *   field belongs.
+ * @param F A type of the oneof field.
  */
-public class OneofRadioButton : FocusableComponent() {
-    public companion object : AbstractComponentSetup({ OneofRadioButton() }) {
+public class OneofRadioButton<M : Message, F: MessageFieldValue> : FocusableComponent() {
+    public companion object : OneofRadioButtonSetup()
 
-        /**
-         * The version of `OneofFields`, which expects the editor for
-         * the respective oneof field to be declared independently.
-         *
-         * When using this version of declaring `OneofRadioButton`, just ensure
-         * to have a respective field editor in the same way that you would do
-         * for any other field.
-         *
-         * @receiver A scope of type [OneOfFieldsScope], which is introduced
-         *   by the parent [OneOfFields][FormPartScope.OneOfFields] declaration
-         *   that corresponds to the oneof being edited.
-         * @param M A type of message to which the respective oneof
-         *   field belongs.
-         * @param F A type of the oneof field.
-         *
-         * @param field The message's field that corresponds to this radio
-         *   button (should match the one specified for the corresponding
-         *   [Field][FormFieldsScope.Field] associated with this radio button).
-         * @param text A text displayed for this radio button.
-         * @return A [OneofRadioButton] instance that corresponds to
-         *   this declaration.
-         */
-        context(OneOfFieldsScope<M>)
-        @Composable
-        public operator fun <M : Message, F: MessageFieldValue> invoke(
-            field: MessageField<M, F>,
-            text: String
-        ): OneofRadioButton = createAndRender({
-            registerFieldSelector(field, this)
-        }) {
-            RadioButtonWithText(
-                selected = selectedField.value == field,
-                onClick = {
-                    @Suppress(
-                        // `selectedField` treats all fields
-                        // as `MessageFieldValue`.
-                        "UNCHECKED_CAST"
-                    )
-                    selectedField.value = field as MessageField<M, MessageFieldValue>
-                },
-                enabled = formPartScope.formScope.form.editorsEnabled.value,
-                text = text,
-                focusRequestDispatcher = FocusRequestDispatcher(focusRequester)
-            )
-        }
+    /**
+     * The scope where this `OneofRadioButton` is declared.
+     */
+    internal lateinit var oneOfFieldsScope: OneOfFieldsScope<M>
 
-        /**
-         * Similar to the other version of `OneofRadioButton`, but also
-         * implicitly adds a [MessageForm][io.onedam.elements.form.MessageForm()]
-         * component for editing the contents of the specified field.
-         *
-         * It is applicable only in cases when the field specified by
-         * [field] is a message-typed field, and is useful when you intend
-         * to create an in-place form for editing the contents of that
-         * field's message.
-         *
-         * @receiver A scope of type [OneOfFieldsScope], which is introduced
-         *    by the parent [OneOfFields][FormPartScope.OneOfFields] declaration
-         *    that corresponds to the oneof being edited.
-         * @param M A type of message to which the respective oneof
-         *   field belongs.
-         * @param F A type of message that is edited in the field associated
-         *   with this radio button.
-         *
-         * @param field The message's field that corresponds to this radio
-         *   button (should match the one specified for the corresponding
-         *   [Field][FormFieldsScope.Field] associated with this radio button).
-         * @param text A text displayed for this radio button.
-         * @param builder A function that should create and return a new builder
-         *   for a message of type [F].
-         * @param content A composable function that defines the content for the
-         *   nested form that edits the message in field [field]. Each field
-         *   editor in the nested form should be wrapped using the
-         *   [Field][FormFieldsScope.Field] function available in the
-         *   [FormPartScope] context provided for [content].
-         * @return A [OneofRadioButton] instance that corresponds to
-         *   this declaration.
-         */
-        context(OneOfFieldsScope<M>)
-        @Composable
-        public operator fun <M : Message, F : Message> invoke(
-            field: MessageField<M, F>,
-            text: String,
-            builder: () -> ValidatingBuilder<out F>,
-            content: (@Composable FormPartScope<F>.() -> Unit)? = null
-        ): OneofRadioButton {
-            val instance = OneofRadioButton(field, text)
-            MessageForm(
-                field,
-                builder,
-                content = content ?: {}
-            )
-            return instance
-        }
-    }
+    /**
+     * A field of message [M] that this `OneofRadioButton` corresponds to.
+     */
+    internal lateinit var field: MessageField<M, F>
+
+    /**
+     * A text to be displayed for this radio button.
+     */
+    internal lateinit var text: String
 
     @Composable
     override fun content() {
-        // No composable content in addition to the one declared in
-        // the component's invoker is needed.
+        RadioButtonWithText(
+            selected = oneOfFieldsScope.selectedField.value == field,
+            onClick = {
+                @Suppress(
+                    // `selectedField` treats all fields
+                    // as `MessageFieldValue`.
+                    "UNCHECKED_CAST"
+                )
+                oneOfFieldsScope.selectedField.value = field as MessageField<M, MessageFieldValue>
+            },
+            enabled = oneOfFieldsScope.formPartScope.formScope.form.editorsEnabled.value,
+            text = text,
+            focusRequestDispatcher = FocusRequestDispatcher(focusRequester)
+        )
+    }
+}
+
+public open class OneofRadioButtonSetup : AbstractComponentSetup(
+    { OneofRadioButton<Message, MessageFieldValue>() }
+) {
+
+    /**
+     * The version of `OneofFields`, which expects the editor for
+     * the respective oneof field to be declared independently.
+     *
+     * When using this version of declaring `OneofRadioButton`, just ensure
+     * to have a respective field editor in the same way that you would do
+     * for any other field.
+     *
+     * @receiver A scope of type [OneOfFieldsScope], which is introduced
+     *   by the parent [OneOfFields][FormPartScope.OneOfFields] declaration
+     *   that corresponds to the oneof being edited.
+     * @param M A type of message to which the respective oneof
+     *   field belongs.
+     * @param F A type of the oneof field.
+     *
+     * @param field The message's field that corresponds to this radio
+     *   button (should match the one specified for the corresponding
+     *   [Field][FormFieldsScope.Field] associated with this radio button).
+     * @param text A text displayed for this radio button.
+     * @return A [OneofRadioButton] instance that corresponds to
+     *   this declaration.
+     */
+    context(OneOfFieldsScope<M>)
+    @Composable
+    public operator fun <M : Message, F: MessageFieldValue> invoke(
+        field: MessageField<M, F>,
+        text: String
+    ): OneofRadioButton<M, F> = createAndRender({
+        this.oneOfFieldsScope = this@OneOfFieldsScope
+        this.field = field
+        this.text = text
+        registerFieldSelector(field, this)
+    }) {
+        Content()
+    }
+
+    /**
+     * Similar to the other version of `OneofRadioButton`, but also
+     * implicitly adds a [MessageForm][io.onedam.elements.form.MessageForm()]
+     * component for editing the contents of the specified field.
+     *
+     * It is applicable only in cases when the field specified by
+     * [field] is a message-typed field, and is useful when you intend
+     * to create an in-place form for editing the contents of that
+     * field's message.
+     *
+     * @receiver A scope of type [OneOfFieldsScope], which is introduced
+     *    by the parent [OneOfFields][FormPartScope.OneOfFields] declaration
+     *    that corresponds to the oneof being edited.
+     * @param M A type of message to which the respective oneof
+     *   field belongs.
+     * @param F A type of message that is edited in the field associated
+     *   with this radio button.
+     *
+     * @param field The message's field that corresponds to this radio
+     *   button (should match the one specified for the corresponding
+     *   [Field][FormFieldsScope.Field] associated with this radio button).
+     * @param text A text displayed for this radio button.
+     * @param builder A function that should create and return a new builder
+     *   for a message of type [F].
+     * @param content A composable function that defines the content for the
+     *   nested form that edits the message in field [field]. Each field
+     *   editor in the nested form should be wrapped using the
+     *   [Field][FormFieldsScope.Field] function available in the
+     *   [FormPartScope] context provided for [content].
+     * @return A [OneofRadioButton] instance that corresponds to
+     *   this declaration.
+     */
+    context(OneOfFieldsScope<M>)
+    @Composable
+    public operator fun <M : Message, F : Message> invoke(
+        field: MessageField<M, F>,
+        text: String,
+        builder: () -> ValidatingBuilder<out F>,
+        content: (@Composable FormPartScope<F>.() -> Unit)? = null
+    ): OneofRadioButton<M, F> {
+        val instance = OneofRadioButton(field, text)
+        MessageForm(
+            field,
+            builder,
+            content = content ?: {}
+        )
+        return instance
     }
 }
