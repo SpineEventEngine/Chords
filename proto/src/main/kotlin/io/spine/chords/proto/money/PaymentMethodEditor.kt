@@ -73,7 +73,7 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
     public data class Look(
         public var interFieldPadding: Dp = 40.dp,
         public var selectorsOffset: Dp = 8.dp,
-        public var optionalCheckboxOffset: Dp = 12.dp
+        public var optionalCheckboxOffset: Dp = 16.dp
     )
 
     @Composable
@@ -83,7 +83,7 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
                 Row {
                     OptionalMessageCheckbox("Specify payment method")
                 }
-                Row(modifier = Modifier.height(look.selectorsOffset)) {}
+                Row(modifier = Modifier.height(look.optionalCheckboxOffset)) {}
             }
             OneOfFields(method) {
                 Row(horizontalArrangement = spacedBy(look.interFieldPadding)) {

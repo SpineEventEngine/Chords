@@ -1133,6 +1133,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     public val editorsEnabled: State<Boolean> get() = editorsEnabledInternal
     private lateinit var editorsEnabledInternal: MutableState<Boolean>
 
+    /**
+     * A property that serves as the source of truth about whether form's
+     * editors should be enabled (if `true`) or disabled (if `false`).
+     *
+     * By default, it reflects the value of the [enabled] property, but can be
+     * overridden by subclasses if they have some logic on top of
+     * the [enabled] property's.
+     */
     protected open val editorsEnabledSource: Boolean get() = enabled
 
     /**

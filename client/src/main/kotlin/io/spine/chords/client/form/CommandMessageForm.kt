@@ -28,6 +28,7 @@ package io.spine.chords.client.form
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -301,6 +302,37 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      */
     public lateinit var eventSubscription: (C) -> EventSubscription<out EventMessage>
 
+    /**
+     * A state, which reports whether the form is currently in progress of
+     * posting the command.
+     *
+     * More precisely, it contains `true`, if the command has been posted using
+     * the [postCommand] method, but no response or error has been received yet,
+     * and `false` otherwise.
+     *
+     * This property is backed by a [State] object, so it can be used as part of
+     * a composition, which will be updated automatically when this property
+     * is changed. E.g. it can be used to disable the respective "Post" button
+     * to prevent making it possible to post command duplicates.
+     */
+    public var posting: Boolean by mutableStateOf(false)
+
+    /**
+     * Specifies whether field editors should be disabled when the command is
+     * being posted (when [posting] equals `true`).
+     */
+    public var disableOnPosting: Boolean = true
+
+    /**
+     * This overridden implementation ensures that the editors are disabled when
+     * the command is being posted (when [posting] is `true`).
+     *
+     * Note: if `disableOnPosting` is `false`, no automatic disabling is
+     * performed during posting the command.
+     */
+    override val editorsEnabledSource: Boolean
+        get() = super.editorsEnabledSource && (!posting || !disableOnPosting)
+
     override fun initialize() {
         super.initialize()
         check(this::eventSubscription.isInitialized) {
@@ -308,11 +340,6 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "be specified."
         }
     }
-
-    private var posting: Boolean by mutableStateOf(false)
-
-    override val editorsEnabledSource: Boolean
-        get() = super.editorsEnabledSource && !posting
 
     /**
      * Posts the command based on all currently entered data and awaits
@@ -336,11 +363,17 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *         validation errors, and `false` if the command message could not
      *         be successfully built from the currently entered data (validation
      *         errors are displayed to the user in this case).
-     * @throws TimeoutCancellationException
-     *         if the event doesn't arrive within a reasonable timeout defined
-     *         by the implementation.
+     * @throws TimeoutCancellationException If the event doesn't arrive within
+     *   a reasonable timeout defined by the implementation.
+     * @throws IllegalStateException If the method is invoked while still
+     *   the [postCommand] is still being handled (when [posting] is
+     *   still `true`).
      */
     public suspend fun postCommand(): Boolean {
+        if (posting) {
+            throw IllegalStateException("Cannot invoke `postCommand`, while" +
+                    "waiting for handling the previously posted command.")
+        }
         updateValidationDisplay(true)
         if (!valueValid.value) {
             return false
