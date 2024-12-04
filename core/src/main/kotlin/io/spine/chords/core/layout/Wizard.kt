@@ -120,8 +120,13 @@ public abstract class Wizard : Component() {
             currentPageIndex = pageIndex
         }
 
-    private var currentPageIndex by mutableStateOf(0)
+    /**
+     * Specifies whether the wizard is in the submission state, which means
+     * that an asynchronous form submission has started, but not completed yet.
+     */
+    private var submitting: Boolean by mutableStateOf(false)
 
+    private var currentPageIndex by mutableStateOf(0)
     private val pages by lazy { createPages() }
 
     /**
@@ -138,6 +143,11 @@ public abstract class Wizard : Component() {
      *
      * `onCloseRequest` is triggerred right after the `submit` action,
      * so it is not needed to configure it manually.
+     *
+     * @return `true`, if submission was performed successfully, and the wizard
+     *   can be closed now, and `false` if submission didn't succeed (e.g. if
+     *   some validation errors were identified), and the wizard still needs to
+     *   be kept open.
      */
     protected abstract suspend fun submit(): Boolean
 
@@ -188,7 +198,8 @@ public abstract class Wizard : Component() {
                     },
                     onCancelClick = { onCloseRequest?.invoke() },
                     isOnFirstPage = isOnFirstPage(),
-                    isOnLastPage = isOnLastPage()
+                    isOnLastPage = isOnLastPage(),
+                    submitting
                 )
             }
         }
@@ -209,7 +220,13 @@ public abstract class Wizard : Component() {
 
     private suspend fun Wizard.handleFinishClick(currentPage: WizardPage) {
         if (currentPage.validate()) {
-            if (submit()) {
+            submitting = true
+            val submittedSuccessfully = try {
+                submit()
+            } finally {
+                submitting = false
+            }
+            if (submittedSuccessfully) {
                 onCloseRequest?.invoke()
             }
         }
@@ -259,13 +276,10 @@ public abstract class Wizard : Component() {
 /**
  * The title of the wizard.
  *
- * @param text
- *         the text to be title.
+ * @param text The text to be title.
  */
 @Composable
-private fun Title(
-    text: String
-) {
+private fun Title(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.headlineLarge
@@ -296,7 +310,8 @@ private fun NavigationPanel(
     onFinishClick: () -> Unit,
     onCancelClick: () -> Unit,
     isOnFirstPage: Boolean,
-    isOnLastPage: Boolean
+    isOnLastPage: Boolean,
+    submitting: Boolean
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -310,12 +325,12 @@ private fun NavigationPanel(
         ) {
             TextButton(
                 onClick = onBackClick,
-                enabled = !isOnFirstPage
+                enabled = !isOnFirstPage && !submitting
             ) {
                 Text("Back")
             }
             if (isOnLastPage) {
-                Button(onClick = onFinishClick) {
+                Button(onClick = onFinishClick, enabled = !submitting) {
                     Text("Finish")
                 }
             } else {
@@ -332,13 +347,10 @@ private fun NavigationPanel(
  * respective UI as per the wizard's requirements (e.g. adding page scrolling
  * support, etc.).
  *
- * @param page
- *         a page that has to be displayed in the container.
+ * @param page A page that has to be displayed in the container.
  */
 @Composable
-private fun PageContainer(
-    page: WizardPage
-) {
+private fun PageContainer(page: WizardPage) {
     val stateVertical = rememberScrollState(0, page)
     val stateHorizontal = rememberScrollState(0, page)
     Box(

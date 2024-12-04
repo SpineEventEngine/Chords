@@ -197,14 +197,7 @@ public abstract class Dialog : Component() {
      * (an asynchronous process upon pressing the "Submit" button has been
      * initiated but not completed yet).
      */
-    protected open val submissionInProgress: Boolean = false
-
-    /**
-     * Exposes [submissionInProgress] to other parts of dialog's implementation,
-     * which are outside of this class, while still ensuring that this API is
-     * internal to the library.
-     */
-    internal val submissionInProgressInternal: Boolean get() = submissionInProgress
+    internal var submissionInProgress: Boolean by mutableStateOf(false)
 
     /**
      * An object allowing adjustments of visual appearance parameters.
@@ -401,8 +394,18 @@ public abstract class Dialog : Component() {
     }
 
     internal suspend fun handleSubmitClick() {
-        if (onBeforeSubmit() && submitForm()) {
-            close()
+        if (onBeforeSubmit()) {
+
+            submissionInProgress = true
+            val submittedSuccessfully = try {
+                submitForm()
+            } finally {
+                submissionInProgress = false
+            }
+
+            if (submittedSuccessfully) {
+                close()
+            }
         }
     }
 
@@ -478,7 +481,6 @@ public abstract class DialogDisplayMode {
     @Suppress("LongParameterList")
     private fun DialogButtons(dialog: Dialog) {
         val coroutineScope = rememberCoroutineScope()
-        val enabled = !dialog.submissionInProgressInternal
 
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -489,10 +491,10 @@ public abstract class DialogDisplayMode {
             Row(
                 horizontalArrangement = spacedBy(dialog.look.buttonsSpacing)
             ) {
-                DialogButton(dialog.cancelButtonText, enabled) {
+                DialogButton(dialog.cancelButtonText) {
                     coroutineScope.launch { dialog.handleCancelClick() }
                 }
-                DialogButton(dialog.submitButtonText, enabled) {
+                DialogButton(dialog.submitButtonText, !dialog.submissionInProgress) {
                     coroutineScope.launch { dialog.handleSubmitClick() }
                 }
             }

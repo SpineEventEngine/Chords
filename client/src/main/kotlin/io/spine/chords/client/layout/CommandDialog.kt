@@ -57,8 +57,6 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      */
     private lateinit var commandMessageForm: CommandMessageForm<C>
 
-    protected override val submissionInProgress: Boolean get() = commandMessageForm.posting
-
     /**
      * Creates the [commandMessageForm] in which the command field editors
      * are rendered.

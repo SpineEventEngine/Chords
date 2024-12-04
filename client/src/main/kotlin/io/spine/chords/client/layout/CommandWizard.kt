@@ -62,10 +62,8 @@ import io.spine.protobuf.ValidatingBuilder
  * - This means that you can place respective [Field][FormFieldsScope.Field]
  *   declarations right in the [content][CommandWizardPage.content] method.
  *
- * @param C
- *         a type of the command message constructed in the wizard.
- * @param B
- *         a type of the command message builder.
+ * @param C A type of the command message constructed in the wizard.
+ * @param B A type of the command message builder.
  */
 @Stable
 public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<out C>> : Wizard() {
@@ -74,8 +72,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
         CommandMessageForm.create(
             { createCommandBuilder() },
             onBeforeBuild = { beforeBuild(it) }
-        )
-        {
+        ) {
             validationDisplayMode = MANUAL
             eventSubscription = { subscribeToEvent(it) }
         }
@@ -89,11 +86,6 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
     protected abstract override fun createPages():
             List<CommandWizardPage<out Message, out ValidatingBuilder<out Message>>>
 
-    /**
-     * The page of this wizard on which the focus was the last time.
-     */
-    internal var lastFocusedPage:
-            CommandWizardPage<out Message, out ValidatingBuilder<out Message>>? = null
 
     /**
      * A function that should be implemented to create and return a new builder
