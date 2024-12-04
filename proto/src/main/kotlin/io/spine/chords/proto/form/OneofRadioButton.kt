@@ -28,7 +28,7 @@ package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
-import io.spine.chords.core.AbstractComponentSetup
+import io.spine.chords.core.AbstractComponentUsage
 import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.primitive.RadioButtonWithText
@@ -46,7 +46,7 @@ import io.spine.protobuf.ValidatingBuilder
  * @param F A type of the oneof field.
  */
 public class OneofRadioButton<M : Message, F: MessageFieldValue> : FocusableComponent() {
-    public companion object : OneofRadioButtonSetup()
+    public companion object : OneofRadioButtonUsage()
 
     /**
      * The scope where this `OneofRadioButton` is declared.
@@ -82,7 +82,7 @@ public class OneofRadioButton<M : Message, F: MessageFieldValue> : FocusableComp
     }
 }
 
-public open class OneofRadioButtonSetup : AbstractComponentSetup(
+public open class OneofRadioButtonUsage : AbstractComponentUsage(
     { OneofRadioButton<Message, MessageFieldValue>() }
 ) {
 

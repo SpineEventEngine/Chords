@@ -26,7 +26,7 @@
 
 package io.spine.chords.proto.net
 
-import io.spine.chords.core.ComponentSetup
+import io.spine.chords.core.ComponentUsage
 import io.spine.chords.core.InputField
 import io.spine.chords.core.InputReviser.Companion.NonWhitespaces
 import io.spine.chords.core.exceptionBasedParser
@@ -37,7 +37,7 @@ import io.spine.chords.proto.value.net.parse
  * A field that allows entering a URL.
  */
 public class UrlField : InputField<Url>() {
-    public companion object : ComponentSetup<UrlField>({ UrlField() })
+    public companion object : ComponentUsage<UrlField>({ UrlField() })
 
     init {
         label = "URL"

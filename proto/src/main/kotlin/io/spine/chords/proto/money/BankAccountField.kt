@@ -27,7 +27,7 @@
 package io.spine.chords.proto.money
 
 import io.spine.chords.proto.form.vBuildBasedParser
-import io.spine.chords.core.ComponentSetup
+import io.spine.chords.core.ComponentUsage
 import io.spine.chords.core.InputField
 import io.spine.chords.proto.value.money.BankAccount
 
@@ -35,7 +35,7 @@ import io.spine.chords.proto.value.money.BankAccount
  * A field that allows entering a bank account number.
  */
 public class BankAccountField : InputField<BankAccount>() {
-    public companion object : ComponentSetup<BankAccountField>({ BankAccountField() })
+    public companion object : ComponentUsage<BankAccountField>({ BankAccountField() })
 
     init {
         label = "Bank account"
