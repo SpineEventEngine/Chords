@@ -200,6 +200,13 @@ public abstract class Dialog : Component() {
     protected open val submissionInProgress: Boolean = false
 
     /**
+     * Exposes [submissionInProgress] to other parts of dialog's implementation,
+     * which are outside of this class, while still ensuring that this API is
+     * internal to the library.
+     */
+    internal val submissionInProgressInternal: Boolean get() = submissionInProgress
+
+    /**
      * An object allowing adjustments of visual appearance parameters.
      *
      * @param padding The padding applied to the entire content of the dialog.
@@ -471,6 +478,7 @@ public abstract class DialogDisplayMode {
     @Suppress("LongParameterList")
     private fun DialogButtons(dialog: Dialog) {
         val coroutineScope = rememberCoroutineScope()
+        val enabled = !dialog.submissionInProgressInternal
 
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -481,10 +489,10 @@ public abstract class DialogDisplayMode {
             Row(
                 horizontalArrangement = spacedBy(dialog.look.buttonsSpacing)
             ) {
-                DialogButton(dialog.cancelButtonText) {
+                DialogButton(dialog.cancelButtonText, enabled) {
                     coroutineScope.launch { dialog.handleCancelClick() }
                 }
-                DialogButton(dialog.submitButtonText) {
+                DialogButton(dialog.submitButtonText, enabled) {
                     coroutineScope.launch { dialog.handleSubmitClick() }
                 }
             }
