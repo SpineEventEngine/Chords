@@ -306,9 +306,9 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * A state, which reports whether the form is currently in progress of
      * posting the command.
      *
-     * More precisely, it contains `true`, if the command has been posted using
-     * the [postCommand] method, but no response or error has been received yet,
-     * and `false` otherwise.
+     * More precisely, it is set to `true`, if the command has been posted using
+     * the [postCommand] method, but no response or timeout error has been
+     * received yet, and `false` otherwise.
      *
      * This property is backed by a [State] object, so it can be used as part of
      * a composition, which will be updated automatically when this property
@@ -360,13 +360,13 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   throws [TimeoutCancellationException].
      *
      * @return `true` if the command was successfully built without any
-     *         validation errors, and `false` if the command message could not
-     *         be successfully built from the currently entered data (validation
-     *         errors are displayed to the user in this case).
+     *   validation errors, and `false` if the command message could not be
+     *   successfully built from the currently entered data (validation errors
+     *   are displayed to the user in this case).
      * @throws TimeoutCancellationException If the event doesn't arrive within
      *   a reasonable timeout defined by the implementation.
-     * @throws IllegalStateException If the method is invoked while still
-     *   the [postCommand] is still being handled (when [posting] is
+     * @throws IllegalStateException If the method is invoked while
+     *   the [postCommand] invocation is still being handled (when [posting] is
      *   still `true`).
      */
     public suspend fun postCommand(): Boolean {

@@ -196,7 +196,6 @@ public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M
     }
 
     override fun validate(): Boolean {
-        checkNotNull(pageForm)
         pageForm.updateValidationDisplay(true)
         return pageForm.valueValid.value
     }
