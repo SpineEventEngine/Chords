@@ -59,12 +59,13 @@ public fun <M : Message>FormFieldsScope<M>.CheckboxWithText(
     onChange: ((Boolean) -> Unit)? = null,
     enabled: Boolean = true
 ) {
+    val form = formPartScope.formScope.form
     Field(field, defaultValue) {
         io.spine.chords.core.primitive.CheckboxWithText(
             checked = fieldValue,
             onChange = onChange,
             text = text,
-            enabled = enabled,
+            enabled = enabled && form.editorsEnabled.value,
             focusRequestDispatcher = focusRequestDispatcher,
             externalValidationMessage = externalValidationMessage
         )
