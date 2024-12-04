@@ -451,7 +451,6 @@ public class DropdownListBox<I> : Component() {
             }
         }
 
-
         LaunchedEffect(noneItemEnabled) {
             if (!noneItemEnabled) {
                 noneItemHeight = 0
@@ -840,7 +839,7 @@ public class DropdownListBox<I> : Component() {
      * Handles user's key presses when drop-down list is not expanded.
      *
      * @param event A key event that was triggered in the invoker.
-     * @return `true` If further event's propagation should be prevented, and
+     * @return `true` if further event's propagation should be prevented, and
      *   `false` otherwise.
      */
     private fun handleKeyEventWhenDropdownNotExpanded(event: KeyEvent): Boolean = when {
