@@ -29,7 +29,9 @@ package io.spine.chords.proto.money
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.ComponentSetup
@@ -62,12 +64,16 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
      *
      * @param interFieldPadding A horizontal distance between the payment card
      *   and bank account fields.
-     * @paRAM selectorsOffset A vertical distance between radio button selectors
+     * @param selectorsOffset A vertical distance between radio button selectors
      *   and their respective fields.
+     * @param optionalCheckboxOffset A vertical distance between the checkbox,
+     *   which is displayed when [valueRequired] is `false`, and the rest of
+     *   the controls within the component.
      */
     public data class Look(
         public var interFieldPadding: Dp = 40.dp,
-        public var selectorsOffset: Dp = 8.dp
+        public var selectorsOffset: Dp = 8.dp,
+        public var optionalCheckboxOffset: Dp = 16.dp
     )
 
     @Composable
@@ -77,6 +83,7 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
                 Row {
                     OptionalMessageCheckbox("Specify payment method")
                 }
+                Row(modifier = Modifier.height(look.optionalCheckboxOffset)) {}
             }
             OneOfFields(method) {
                 Row(horizontalArrangement = spacedBy(look.interFieldPadding)) {

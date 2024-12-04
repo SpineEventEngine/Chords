@@ -348,6 +348,11 @@ public sealed interface FormFieldScope<V : MessageFieldValue> {
     public val externalValidationMessage: State<String?>
 
     /**
+     * A boolean state that indicates whether the field has to be enabled.
+     */
+    public val fieldEnabled: State<Boolean>
+
+    /**
      * A focus request dispatcher that has to be attached to the field editor
      * component to enable its focusing by the form validation functionality.
      */
@@ -548,12 +553,12 @@ internal class FormPartScopeImpl<M : Message>(
  * @param V A type of field's value.
  *
  * @param formField A field represented by this scope object.
- * @param form A form to which this field belongs.
  */
 internal class FormFieldScopeImpl<M : Message, V : MessageFieldValue>(
-    private val formField: MessageForm<M>.FormField,
-    val form: MessageForm<M>
+    private val formField: MessageForm<M>.FormField
 ) : FormFieldScope<V> {
+    private val form: MessageForm<M> = formField.formFieldsScopeImpl.formScope.form
+
     override val fieldRequired = formField.required
     override val fieldValue: MutableState<V?>
         // Fields are stored as a base `MessageFieldValue` type internally.
@@ -563,7 +568,8 @@ internal class FormFieldScopeImpl<M : Message, V : MessageFieldValue>(
         get() = formField.valueValid
     override val externalValidationMessage: MutableState<String?>
         get() = formField.externalValidationMessage
-
+    override val fieldEnabled: State<Boolean>
+        get() = form.editorsEnabled
     override val focusRequestDispatcher: FocusRequestDispatcher
         get() = formField.focusRequestDispatcher
 

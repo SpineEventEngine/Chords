@@ -28,7 +28,10 @@ package io.spine.chords.client.form
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import io.spine.chords.core.appshell.app
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
@@ -299,6 +302,37 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      */
     public lateinit var eventSubscription: (C) -> EventSubscription<out EventMessage>
 
+    /**
+     * A state, which reports whether the form is currently in progress of
+     * posting the command.
+     *
+     * More precisely, it is set to `true`, if the command has been posted using
+     * the [postCommand] method, but no response or timeout error has been
+     * received yet, and `false` otherwise.
+     *
+     * This property is backed by a [State] object, so it can be used as part of
+     * a composition, which will be updated automatically when this property
+     * is changed. E.g. it can be used to disable the respective "Post" button
+     * to prevent making it possible to post command duplicates.
+     */
+    public var posting: Boolean by mutableStateOf(false)
+
+    /**
+     * Specifies whether field editors should be disabled when the command is
+     * being posted (when [posting] equals `true`).
+     */
+    public var disableOnPosting: Boolean = true
+
+    /**
+     * This overridden implementation ensures that the editors are disabled when
+     * the command is being posted (when [posting] is `true`).
+     *
+     * Note: if `disableOnPosting` is `false`, no automatic disabling is
+     * performed during posting the command.
+     */
+    override val shouldEnableEditors: Boolean
+        get() = super.shouldEnableEditors && (!posting || !disableOnPosting)
+
     override fun initialize() {
         super.initialize()
         check(this::eventSubscription.isInitialized) {
@@ -326,14 +360,20 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   throws [TimeoutCancellationException].
      *
      * @return `true` if the command was successfully built without any
-     *         validation errors, and `false` if the command message could not
-     *         be successfully built from the currently entered data (validation
-     *         errors are displayed to the user in this case).
-     * @throws TimeoutCancellationException
-     *         if the event doesn't arrive within a reasonable timeout defined
-     *         by the implementation.
+     *   validation errors, and `false` if the command message could not be
+     *   successfully built from the currently entered data (validation errors
+     *   are displayed to the user in this case).
+     * @throws TimeoutCancellationException If the event doesn't arrive within
+     *   a reasonable timeout defined by the implementation.
+     * @throws IllegalStateException If the method is invoked while
+     *   the [postCommand] invocation is still being handled (when [posting] is
+     *   still `true`).
      */
     public suspend fun postCommand(): Boolean {
+        if (posting) {
+            throw IllegalStateException("Cannot invoke `postCommand`, while" +
+                    "waiting for handling the previously posted command.")
+        }
         updateValidationDisplay(true)
         if (!valueValid.value) {
             return false
@@ -343,8 +383,9 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "CommandMessageForm's value should be not null since it was just " +
             "checked to be valid within postCommand."
         }
+        val subscription = eventSubscription(command)
         return try {
-            val subscription = eventSubscription(command)
+            posting = true
             app.client.command(command)
             subscription.awaitEvent()
             true
@@ -360,6 +401,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             e: Exception
         ) {
             false
+        } finally {
+            posting = false
         }
     }
 }
