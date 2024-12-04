@@ -14,7 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import io.spine.chords.core.AbstractComponentSetup
+import io.spine.chords.core.AbstractComponentUsage
 import io.spine.chords.core.ComponentProps
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.future.await
@@ -24,7 +24,7 @@ import kotlinx.coroutines.future.await
  * (e.g. approve or deny some action).
  */
 public class ConfirmationDialog : Dialog() {
-    public companion object : AbstractComponentSetup({ ConfirmationDialog() }) {
+    public companion object : AbstractComponentUsage({ ConfirmationDialog() }) {
 
         /**
          * Displays the confirmation dialog, and waits until the user

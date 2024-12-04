@@ -34,7 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.spine.chords.core.ComponentSetup
+import io.spine.chords.core.ComponentUsage
 import io.spine.chords.core.ValidationErrorText
 import io.spine.chords.proto.form.CustomMessageForm
 import io.spine.chords.proto.form.FormPartScope
@@ -52,7 +52,7 @@ import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
 public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
     { PaymentMethod.newBuilder() }
 ) {
-    public companion object : ComponentSetup<PaymentMethodEditor>({ PaymentMethodEditor() })
+    public companion object : ComponentUsage<PaymentMethodEditor>({ PaymentMethodEditor() })
 
     /**
      * Identifies the component's appearance parameters.

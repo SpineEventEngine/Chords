@@ -33,7 +33,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.ConfirmationDialog
-import io.spine.chords.core.layout.DialogSetup
+import io.spine.chords.core.layout.DialogUsage
 import io.spine.chords.core.layout.DialogDisplayMode
 import io.spine.chords.core.writeOnce
 import java.awt.Dimension
@@ -335,7 +335,7 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      * @param dialog The [Dialog] instance, which needs to be displayed.
      *
      * @see Dialog
-     * @see DialogSetup
+     * @see DialogUsage
      * @see closeDialog
      */
     internal fun openDialog(dialog: Dialog) {

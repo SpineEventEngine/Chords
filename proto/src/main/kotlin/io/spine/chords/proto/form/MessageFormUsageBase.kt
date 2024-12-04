@@ -29,7 +29,7 @@ package io.spine.chords.proto.form
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import com.google.protobuf.Message
-import io.spine.chords.core.AbstractComponentSetup
+import io.spine.chords.core.AbstractComponentUsage
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.ValidatingBuilder
@@ -43,11 +43,11 @@ import io.spine.protobuf.ValidatingBuilder
  * actual implementation.
  *
  * @see io.spine.chords.core.Component
- * @see io.spine.chords.core.ComponentSetup
+ * @see io.spine.chords.core.ComponentUsage
  */
-public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
+public open class MessageFormUsageBase<M: Message, F: MessageForm<M>>(
     createInstance: () -> F
-) : AbstractComponentSetup({ createInstance() }) {
+) : AbstractComponentUsage({ createInstance() }) {
 
     /**
      * Declares a `MessageForm` instance, which is not bound to a parent

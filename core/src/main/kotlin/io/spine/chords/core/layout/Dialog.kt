@@ -72,7 +72,7 @@ import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
-import io.spine.chords.core.AbstractComponentSetup
+import io.spine.chords.core.AbstractComponentUsage
 import io.spine.chords.core.Component
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.core.appshell.app
@@ -90,7 +90,7 @@ private val submitShortcutKey = Ctrl(Enter.key)
  * submitting data.
  *
  * Note that an implementation of this class has to add a companion object of
- * type [DialogSetup]. Here's an example of how a custom dialog can be created:
+ * type [DialogUsage]. Here's an example of how a custom dialog can be created:
  *
  * ```
  * public class MyDialog : Dialog() {
@@ -302,7 +302,7 @@ public abstract class Dialog : Component() {
      * some reason.
      *
      * In most cases the most convenient way to open a dialog would be using its
-     * companion object's [open][DialogSetup.open] method instead, like this:
+     * companion object's [open][DialogUsage.open] method instead, like this:
      *
      * ```
      *     MyDialog.open()
@@ -703,9 +703,9 @@ internal class LightweightDisplayMode(
  *
  * @see Dialog
  */
-public open class DialogSetup<D: Dialog>(
+public open class DialogUsage<D: Dialog>(
     createInstance: () -> D
-) : AbstractComponentSetup(createInstance) {
+) : AbstractComponentUsage(createInstance) {
 
     /**
      * Displays the modal dialog [D].
