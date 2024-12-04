@@ -46,8 +46,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.ShapeDefaults.ExtraSmall
 import androidx.compose.material3.Surface
@@ -121,8 +121,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * A component that attaches a drop-down list attached to a custom composable
- * invoker, and allows selecting a single item in this list.
+ * A component that displays a customizable composable [invoker] content, and
+ * attaches a drop-down list to that content, which allows selecting a single
+ * item in this list.
  *
  * The drop-down list is displayed when the user presses the Up/Down keys with
  * or without the Alt modifier (customizable with [expandKey] property).
@@ -160,15 +161,14 @@ public class DropdownListBox<I> : Component() {
          * Declares an instance of [DropdownListBox] with the respective
          * property value specifications.
          *
-         * @param I
-         *         a type of items displayed in the drop-down list.
-         * @param props
-         *         a lambda that is invoked on a component's instance, and
-         *         should configure its properties in a way that is needed for
-         *         this component's instance. It is invoked before each
-         *         recomposition of the component.
-         * @return a component's instance that has been created for this
-         *         declaration site.
+         * @param I A type of items displayed in the drop-down list.
+         *
+         * @param props A lambda that is invoked on a component's instance, and
+         *   should configure its properties in a way that is needed for this
+         *   component's instance. It is invoked before each recomposition of
+         *   the component.
+         * @return A component's instance that has been created for this
+         *   declaration site.
          */
         @Composable
         public operator fun <I> invoke(
@@ -190,6 +190,12 @@ public class DropdownListBox<I> : Component() {
      * A list of items to display in the drop-down list.
      */
     public var items: Iterable<I> = emptyList()
+
+    /**
+     * Specifies whether clicking the invoker triggers displaying of the
+     * drop-down list box.
+     */
+    public var enabled: Boolean by mutableStateOf(true)
 
     /**
      * Currently selected item in the drop-down list,
@@ -425,6 +431,12 @@ public class DropdownListBox<I> : Component() {
         val coroutineScope = rememberCoroutineScope()
         val scrollState = rememberScrollState(0)
 
+        LaunchedEffect(enabled) {
+            if (!enabled) {
+                expanded.value = false
+            }
+        }
+
         val expanded = expanded.value
         LaunchedEffect(expanded) {
             expandedBeforeDismissRequest = expanded
@@ -438,6 +450,7 @@ public class DropdownListBox<I> : Component() {
                 }
             }
         }
+
 
         LaunchedEffect(noneItemEnabled) {
             if (!noneItemEnabled) {
@@ -604,7 +617,7 @@ public class DropdownListBox<I> : Component() {
     private fun onInvokerClick() {
         if (clearSelectedItemPressed) {
             clearSelectedItemPressed = false
-        } else {
+        } else if (enabled) {
             expanded.value = !expandedBeforeDismissRequest
             expandedBeforeDismissRequest = !expandedBeforeDismissRequest
         }
@@ -826,10 +839,9 @@ public class DropdownListBox<I> : Component() {
     /**
      * Handles user's key presses when drop-down list is not expanded.
      *
-     * @param event
-     *         a key event that was triggered in the invoker.
-     * @return `true` if further event's propagation should be prevented, and
-     *         `false` otherwise.
+     * @param event A key event that was triggered in the invoker.
+     * @return `true` If further event's propagation should be prevented, and
+     *   `false` otherwise.
      */
     private fun handleKeyEventWhenDropdownNotExpanded(event: KeyEvent): Boolean = when {
         event matches expandKey.down -> {
@@ -839,8 +851,12 @@ public class DropdownListBox<I> : Component() {
         }
 
         event matches expandKey.up -> {
-            expanded.value = true
-            true
+            if (enabled) {
+                expanded.value = true
+                true
+            } else {
+                false
+            }
         }
 
         else -> false
@@ -849,12 +865,10 @@ public class DropdownListBox<I> : Component() {
     /**
      * Composable for wrapping items in a column within the drop-down list.
      *
-     * @receiver
-     *         a [BoxScope], the scope within which this function
-     *         is intended to be used.
-     * @param scrollState
-     *         a [ScrollState], whose value indicates current
-     *         drop-down list scrollbar position.
+     * @receiver A [BoxScope], the scope within which this function is intended
+     *   to be used.
+     * @param scrollState A [ScrollState], whose value indicates current
+     *   drop-down list scrollbar position.
      */
     @Composable
     private fun BoxScope.DropdownListContent(scrollState: ScrollState) {
@@ -1215,7 +1229,7 @@ private fun DropdownListNoItems(content: @Composable (() -> Unit)) {
     ) {
         StyledContent(
             contentColor = colorScheme.secondary.copy(alpha = 0.5f),
-            textStyle = MaterialTheme.typography.titleSmall,
+            textStyle = typography.titleSmall,
             content = content
         )
     }

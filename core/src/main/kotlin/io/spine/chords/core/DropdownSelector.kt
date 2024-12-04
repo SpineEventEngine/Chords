@@ -27,7 +27,7 @@
 package io.spine.chords.core
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -91,8 +91,7 @@ import java.util.*
  * Like any [InputComponent][io.spine.chords.core.InputComponent], this
  * component identifies the currently selected item using its [value] property.
  *
- * @param I
- *         a type of items from which the selection is made by this component.
+ * @param I A type of items from which the selection is made by this component.
  */
 @Stable
 public abstract class DropdownSelector<I> : InputComponent<I>() {
@@ -206,6 +205,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
             noneItemEnabled = !valueRequired
             onSelectItem = ::onSelectItem
             expanded = this@DropdownSelector.expanded
+            enabled = this@DropdownSelector.enabled
             preselectNoneByDefault = searchString.trim().length == 0
             itemContent = {
                 val itemText = itemText(it)
@@ -251,7 +251,8 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
                 TrailingIcons(
                     valueRequired,
                     selectedItem != null,
-                    expanded.value
+                    expanded.value,
+                    enabled
                 )
             }
         )
@@ -408,29 +409,29 @@ private fun String.annotateSubstring(
  * The trailing `DropdownSelector`'s icons that are helpful to see and control
  * the component's state.
  *
- * @param valueRequired
- *         the value of `valueRequired` property of `DropdownSelector`.
- * @param containsValue
- *         `true`, if `DropdownSelector` currently contains a value, and
- *         `false` otherwise.
- * @param expanded
- *         `true`, if `DropdownSelector` is currently expanded, and
- *         `false` otherwise.
+ * @param valueRequired The value of `valueRequired` property
+ *   of `DropdownSelector`.
+ * @param containsValue `true`, if `DropdownSelector` currently contains
+ *   a value, and `false` otherwise.
+ * @param expanded `true`, if `DropdownSelector` is currently expanded, and
+ *   `false` otherwise.
+ * @param enabled Specifies whether the `DropdownSelector` is currently enabled.
  */
 @Composable
 private fun DropdownListBoxScope.TrailingIcons(
     valueRequired: Boolean,
     containsValue: Boolean,
-    expanded: Boolean
+    expanded: Boolean,
+    enabled: Boolean
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = spacedBy(10.dp),
         verticalAlignment = CenterVertically
     ) {
-        if (!valueRequired) {
+        if (!valueRequired && enabled) {
             ClearValueIcon(containsValue)
         }
-        DropdownExpansionIcon(expanded)
+        DropdownExpansionIcon(expanded, enabled)
     }
 }
 
@@ -449,7 +450,7 @@ private fun DropdownListBoxScope.ClearValueIcon(containsValue: Boolean) {
     var isClearIconHovered by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
-            .pointerHoverIcon(if (containsValue)  Hand else Text)
+            .pointerHoverIcon(if (containsValue) Hand else Text)
             .alpha(if (containsValue) 1f else 0f)
             .onPointerEvent(Press) { handleClearSelectedItemPress() }
             .onPointerEvent(Enter) { isClearIconHovered = true }
@@ -469,22 +470,22 @@ private fun DropdownListBoxScope.ClearValueIcon(containsValue: Boolean) {
 /**
  * A trailing `DropdownSelector`'s icon, which displays its expansion state.
  *
- * @param expanded
- *         `true`, if `DropdownSelector` is currently expanded, and
- *         `false` otherwise.
+ * @param expanded `true`, if the `DropdownSelector` is currently expanded, and
+ *   `false` otherwise.
+ * @param enabled Specifies whether the `DropdownSelector` is currently enabled.
  */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
-private fun DropdownExpansionIcon(expanded: Boolean) {
+private fun DropdownExpansionIcon(expanded: Boolean, enabled: Boolean) {
     var isTrailingIconHovered by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
-            .pointerHoverIcon(Hand)
+            .pointerHoverIcon(if (enabled) Hand else Text)
             .padding(end = 10.dp)
             .onPointerEvent(Enter) { isTrailingIconHovered = true }
             .onPointerEvent(Exit) { isTrailingIconHovered = false }
             .background(
-                if (isTrailingIconHovered) {
+                if (isTrailingIconHovered && enabled) {
                     colorScheme.primary.copy(alpha = 0.1f)
                 } else {
                     Transparent

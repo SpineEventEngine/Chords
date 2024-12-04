@@ -30,7 +30,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
@@ -39,7 +39,7 @@ import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.FormPartScope
-import io.spine.chords.proto.form.ValidationDisplayMode
+import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.protobuf.ValidatingBuilder
 
 /**
@@ -57,6 +57,8 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      */
     private lateinit var commandMessageForm: CommandMessageForm<C>
 
+    protected override val submissionInProgress: Boolean get() = commandMessageForm.posting
+
     /**
      * Creates the [commandMessageForm] in which the command field editors
      * are rendered.
@@ -64,22 +66,16 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     @Composable
     protected override fun formContent() {
         commandMessageForm = CommandMessageForm(
-            {
-                createCommandBuilder()
-            },
-            onBeforeBuild = {
-                beforeBuild(it)
-            },
+            ::createCommandBuilder,
+            onBeforeBuild = ::beforeBuild,
             props = {
-                validationDisplayMode = ValidationDisplayMode.MANUAL
-                eventSubscription = {
-                    subscribeToEvent(it)
-                }
+                validationDisplayMode = MANUAL
+                eventSubscription = ::subscribeToEvent
             }
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = CenterHorizontally
             ) {
                 content()
             }

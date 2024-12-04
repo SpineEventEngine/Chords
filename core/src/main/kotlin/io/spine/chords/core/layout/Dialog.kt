@@ -193,6 +193,13 @@ public abstract class Dialog : Component() {
     public var displayMode: DialogDisplayMode = DesktopWindow
 
     /**
+     * Specifies whether the dialog is currently in progress of submission
+     * (an asynchronous process upon pressing the "Submit" button has been
+     * initiated but not completed yet).
+     */
+    protected open val submissionInProgress: Boolean = false
+
+    /**
      * An object allowing adjustments of visual appearance parameters.
      *
      * @param padding The padding applied to the entire content of the dialog.
@@ -434,28 +441,16 @@ public abstract class DialogDisplayMode {
         dialog: Dialog,
         formContent: @Composable () -> Unit
     ) {
-        val coroutineScope = rememberCoroutineScope()
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(dialog.look.padding),
         ) {
-
             titleArea(dialog)
             Column(Modifier.weight(1F)) {
                 formContent()
             }
-            DialogButtons(
-                dialog.submitButtonText, {
-                    coroutineScope.launch { dialog.handleSubmitClick() }
-                },
-                dialog.cancelButtonText, {
-                    coroutineScope.launch { dialog.handleCancelClick() }
-                },
-                dialog.look.buttonsPanelPadding,
-                dialog.look.buttonsSpacing
-            )
+            DialogButtons(dialog)
         }
     }
 
@@ -467,6 +462,33 @@ public abstract class DialogDisplayMode {
     @Composable
     protected open fun titleArea(dialog: Dialog) {
         DialogTitle(dialog.title, dialog.look.titlePadding)
+    }
+
+    /**
+     * The panel with control buttons of the dialog.
+     */
+    @Composable
+    @Suppress("LongParameterList")
+    private fun DialogButtons(dialog: Dialog) {
+        val coroutineScope = rememberCoroutineScope()
+
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .padding(dialog.look.buttonsPanelPadding),
+            horizontalArrangement = End,
+            verticalAlignment = Bottom
+        ) {
+            Row(
+                horizontalArrangement = spacedBy(dialog.look.buttonsSpacing)
+            ) {
+                DialogButton(dialog.cancelButtonText) {
+                    coroutineScope.launch { dialog.handleCancelClick() }
+                }
+                DialogButton(dialog.submitButtonText) {
+                    coroutineScope.launch { dialog.handleSubmitClick() }
+                }
+            }
+        }
     }
 
     public companion object {
@@ -719,45 +741,20 @@ private fun DialogTitle(
 }
 
 /**
- * The panel with control buttons of the dialog.
- */
-@Composable
-@Suppress("LongParameterList")
-private fun DialogButtons(
-    confirmButtonText: String,
-    onConfirm: () -> Unit,
-    cancelButtonText: String,
-    onCancel: () -> Unit,
-    padding: PaddingValues,
-    buttonsSpacing: Dp
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth()
-            .padding(padding),
-        horizontalArrangement = End,
-        verticalAlignment = Bottom
-    ) {
-        Row(
-            horizontalArrangement = spacedBy(buttonsSpacing)
-        ) {
-            DialogButton(cancelButtonText) { onCancel() }
-            DialogButton(confirmButtonText) { onConfirm() }
-        }
-    }
-}
-
-/**
  * The action button of the dialog.
  *
  * @param label The label of the button.
+ * @param enabled Specifies whether the button should appear and behave as
+ *   an enabled one.
  * @param onClick The callback triggered on the button click.
  */
 @Composable
 private fun DialogButton(
     label: String,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
-    Button(onClick = onClick) {
+    Button(onClick = onClick, enabled = enabled) {
         Row(
             verticalAlignment = CenterVertically
         ) {
