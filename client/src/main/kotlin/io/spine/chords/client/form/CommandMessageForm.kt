@@ -330,8 +330,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * Note: if `disableOnPosting` is `false`, no automatic disabling is
      * performed during posting the command.
      */
-    override val editorsEnabledSource: Boolean
-        get() = super.editorsEnabledSource && (!posting || !disableOnPosting)
+    override val shouldEnableEditors: Boolean
+        get() = super.shouldEnableEditors && (!posting || !disableOnPosting)
 
     override fun initialize() {
         super.initialize()

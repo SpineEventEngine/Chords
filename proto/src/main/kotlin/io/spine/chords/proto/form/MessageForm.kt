@@ -1134,14 +1134,16 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     private lateinit var editorsEnabledInternal: MutableState<Boolean>
 
     /**
-     * A property that serves as the source of truth about whether form's
-     * editors should be enabled (if `true`) or disabled (if `false`).
+     * A property that serves as the source of truth for filling in the value
+     * in the state referred to by the `editorsEnabled` property.
      *
-     * By default, it reflects the value of the [enabled] property, but can be
-     * overridden by subclasses if they have some logic on top of
-     * the [enabled] property's.
+     * It is needed as a separate protected property because it can be
+     * overridden in a subclass to customize the actual value provided
+     * via `editorsEnabled`. By default, it reflects the value of the [enabled]
+     * property, but can be overridden by subclasses if they have some logic on
+     * top of the [enabled] property's.
      */
-    protected open val editorsEnabledSource: Boolean get() = enabled
+    protected open val shouldEnableEditors: Boolean get() = enabled
 
     /**
      * A current form-wide validation error (the one that is not related to any
@@ -1240,7 +1242,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         _dirty = identifyInitialDirtyState(value.value)
         enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
         lastObservedEnteringNonNullValue = enteringNonNullValue.value
-        editorsEnabledInternal = mutableStateOf(editorsEnabledSource)
+        editorsEnabledInternal = mutableStateOf(shouldEnableEditors)
     }
 
     /**
@@ -1421,7 +1423,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         }
         lastObservedEnteringNonNullValue = enteringNonNullValue
 
-        editorsEnabledInternal.value = editorsEnabledSource
+        editorsEnabledInternal.value = shouldEnableEditors
     }
 
     private fun identifyInitialDirtyState(initialMessageValue: M?): Boolean = when {
