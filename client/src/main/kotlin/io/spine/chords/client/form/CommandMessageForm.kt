@@ -369,7 +369,9 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   the [postCommand] invocation is still being handled (when [posting] is
      *   still `true`).
      */
-    public suspend fun postCommand(): Boolean {
+    public suspend fun postCommand(
+        responseHandler: CommandResponseHandler<C> = DefaultResponseHandler()
+    ): Boolean {
         if (posting) {
             throw IllegalStateException("Cannot invoke `postCommand`, while" +
                     "waiting for handling the previously posted command.")
@@ -391,18 +393,26 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             true
         } catch (
             @Suppress(
-                // Using a defensive wide-scope catch to cover any message
-                // creation failures.
-                "TooGenericExceptionCaught",
-                // TODO:2023-09-22:dmitry.pikhulya: handle server communication errors
-                //                                  https://github.com/Projects-tm/1DAM/issues/17
+                // A timeout condition is handled by `responseHandler`.
                 "SwallowedException"
             )
-            e: Exception
+            e: TimeoutCancellationException
         ) {
+            responseHandler.responseWaitingTimedOut(command)
             false
         } finally {
             posting = false
         }
+    }
+}
+
+public interface CommandResponseHandler<C : CommandMessage> {
+    public fun responseWaitingTimedOut(command: C)
+}
+
+public class DefaultResponseHandler<C : CommandMessage> : CommandResponseHandler<C> {
+    override fun responseWaitingTimedOut(command: C) {
+        println("Timed out waiting for an event that was expected " +
+                "to be generated in response to the command ${command.javaClass.simpleName}")
     }
 }
