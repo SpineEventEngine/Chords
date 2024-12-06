@@ -121,7 +121,7 @@ public class DesktopClient(
         if (entities.isEmpty()) {
             return null
         }
-        return entities[0];
+        return entities[0]
     }
 
     /**
@@ -182,12 +182,10 @@ public class DesktopClient(
         val eventReceival = CompletableFuture<E>()
         observeEvent(
             event = event,
-            onEmit = { evt ->
-                eventReceival.complete(evt)
-            },
             field = field,
-            fieldValue = fieldValue
-        )
+            fieldValue = fieldValue) { evt ->
+                eventReceival.complete(evt)
+            }
         return FutureEventSubscription(eventReceival)
     }
 
@@ -201,17 +199,17 @@ public class DesktopClient(
      */
     override fun <E : EventMessage> observeEvent(
         event: Class<E>,
-        onEmit: (E) -> Unit,
         field: EventMessageField,
-        fieldValue: Message
+        fieldValue: Message,
+        onEmit: (E) -> Unit
     ) {
         clientRequest()
             .subscribeToEvent(event)
-            ?.where(eq(field, fieldValue))
-            ?.observe { evt ->
+            .where(eq(field, fieldValue))
+            .observe { evt ->
                 onEmit(evt)
             }
-            ?.post()
+            .post()
     }
 
     /**
