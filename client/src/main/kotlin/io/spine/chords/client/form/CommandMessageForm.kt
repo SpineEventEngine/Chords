@@ -28,6 +28,7 @@ package io.spine.chords.client.form
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -333,6 +334,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     override val shouldEnableEditors: Boolean
         get() = super.shouldEnableEditors && (!posting || !disableOnPosting)
 
+    @Composable
+    @ReadOnlyComposable
     override fun initialize() {
         super.initialize()
         check(this::eventSubscription.isInitialized) {

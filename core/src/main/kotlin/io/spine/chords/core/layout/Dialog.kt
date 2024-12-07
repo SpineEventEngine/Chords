@@ -80,6 +80,8 @@ import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.layout.DialogDisplayMode.Companion.DesktopWindow
+import io.spine.chords.core.writeOnce
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 private val cancelShortcutKey = Escape.key
@@ -141,6 +143,10 @@ private val submitShortcutKey = Ctrl(Enter.key)
  * The dialog will be closed automatically, when the "Cancel" button is pressed,
  * or when the "OK" button is pressed (and [submitForm] returns `true`).
  */
+@Suppress(
+    // All functions are apparently appropriate in the class.
+    "TooManyFunctions"
+)
 public abstract class Dialog : Component() {
 
     /**
@@ -250,7 +256,7 @@ public abstract class Dialog : Component() {
      *
      *     init {
      *         onBeforeCancel = {
-     *             ConfirmationDialog.ask {
+     *             ConfirmationDialog.showConfirmation {
      *                 message = "Are you sure you want to cancel the dialog?"
      *             }
      *         }
@@ -283,7 +289,7 @@ public abstract class Dialog : Component() {
      *
      *     init {
      *         onBeforeSubmit = {
-     *             ConfirmationDialog.ask {
+     *             ConfirmationDialog.showConfirmation {
      *                 message = "Are you sure you want to proceed?"
      *                 description = "This action is irreversible!"
      *             }
@@ -293,6 +299,33 @@ public abstract class Dialog : Component() {
      * ```
      */
     public var onBeforeSubmit: suspend () -> Boolean = { true }
+
+    /**
+     * Coroutine scope for launching asynchronous execution of actions initiated
+     * by the dialog's controls.
+     */
+    private var coroutineScope: CoroutineScope by writeOnce()
+
+    /**
+     * Specifies whether the "Submit" button should be displayed.
+     */
+    protected var submitAvailable: Boolean = true
+    internal var submitAvailableInternal: Boolean
+        get() = submitAvailable
+        set(value) { submitAvailable = value }
+
+    /**
+     * Specifies whether the "Cancel" button should be displayed.
+     */
+    protected var cancelAvailable: Boolean = true
+    internal var cancelAvailableInternal: Boolean
+        get() = cancelAvailable
+        set(value) { cancelAvailable = value }
+
+    override fun initialize() {
+        super.initialize()
+        coroutineScope = rememberCoroutineScope()
+    }
 
     /**
      * Displays the modal dialog.
@@ -330,7 +363,7 @@ public abstract class Dialog : Component() {
      * Submits the dialog's form.
      *
      * This action is executed when the user submits the dialog
-     * by pressing the confirmation button.
+     * by pressing the Submit button.
      *
      * If this method returns `true` the dialog will be closed. As an example
      * this would be a typical case when the method has identified that the data
@@ -351,6 +384,34 @@ public abstract class Dialog : Component() {
     @Composable
     protected override fun content() {
         displayMode.content(this) { formContent() }
+    }
+
+    /**
+     * The panel with control buttons of the dialog.
+     */
+    @Composable
+    internal open fun buttonsRow() {
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .padding(look.buttonsPanelPadding),
+            horizontalArrangement = End,
+            verticalAlignment = Bottom
+        ) {
+            Row(
+                horizontalArrangement = spacedBy(look.buttonsSpacing)
+            ) {
+                if (cancelAvailable) {
+                    DialogButton(cancelButtonText) {
+                        coroutineScope.launch { handleCancelClick() }
+                    }
+                }
+                if (submitAvailable) {
+                    DialogButton(submitButtonText, !submissionInProgress) {
+                        coroutineScope.launch { handleSubmitClick() }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -460,7 +521,7 @@ public abstract class DialogDisplayMode {
             Column(Modifier.weight(1F)) {
                 formContent()
             }
-            DialogButtons(dialog)
+            dialog.buttonsRow()
         }
     }
 
@@ -472,33 +533,6 @@ public abstract class DialogDisplayMode {
     @Composable
     protected open fun titleArea(dialog: Dialog) {
         DialogTitle(dialog.title, dialog.look.titlePadding)
-    }
-
-    /**
-     * The panel with control buttons of the dialog.
-     */
-    @Composable
-    @Suppress("LongParameterList")
-    private fun DialogButtons(dialog: Dialog) {
-        val coroutineScope = rememberCoroutineScope()
-
-        Row(
-            modifier = Modifier.fillMaxWidth()
-                .padding(dialog.look.buttonsPanelPadding),
-            horizontalArrangement = End,
-            verticalAlignment = Bottom
-        ) {
-            Row(
-                horizontalArrangement = spacedBy(dialog.look.buttonsSpacing)
-            ) {
-                DialogButton(dialog.cancelButtonText) {
-                    coroutineScope.launch { dialog.handleCancelClick() }
-                }
-                DialogButton(dialog.submitButtonText, !dialog.submissionInProgress) {
-                    coroutineScope.launch { dialog.handleSubmitClick() }
-                }
-            }
-        }
     }
 
     public companion object {
@@ -541,10 +575,10 @@ internal class DesktopWindowDisplayMode(
             ),
             onCloseRequest = { dialog.close() },
             onKeyEvent = { event ->
-                if (event matches cancelShortcutKey.down) {
+                if (dialog.cancelAvailableInternal && event matches cancelShortcutKey.down) {
                     coroutineScope.launch { dialog.handleCancelClick() }
                 }
-                if (event matches submitShortcutKey.up) {
+                if (dialog.submitAvailableInternal && event matches submitShortcutKey.up) {
                     coroutineScope.launch { dialog.handleSubmitClick() }
                 }
                 false
@@ -557,7 +591,7 @@ internal class DesktopWindowDisplayMode(
 
     @Composable
     override fun titleArea(dialog: Dialog) {
-        // No title need to be composed explicitly because desktop dialog
+        // No title needs to be composed explicitly, because desktop dialog
         // windows have their own titles displayed by the OS.
     }
 
@@ -612,14 +646,15 @@ internal class LightweightDisplayMode(
                 properties = PopupProperties(focusable = true),
                 onPreviewKeyEvent = { false },
                 onKeyEvent = cancelShortcutHandler {
-                    coroutineScope.launch { dialog.handleCancelClick() }
+                    if (dialog.cancelAvailableInternal) {
+                        coroutineScope.launch { dialog.handleCancelClick() }
+                    }
                 }
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(backdropColor)
-                    ,
+                        .background(backdropColor),
                     contentAlignment = Center
                 ) {
                     Box(

@@ -101,9 +101,10 @@ import io.spine.chords.core.appshell.app
  * ### Preferred instance declarations style
  *
  * Note that the component instance declaration examples above are technically
- * a shorthand notation for using the `invoke` function on the component's
- * companion object explicitly. So, theoretically, the same examples could be
- * written like this:
+ * a shorthand notation for using the
+ * [`invoke` operator function](https://kotlinlang.org/docs/operator-overloading.html#invoke-operator)
+ * on the component's companion object explicitly. So, theoretically, the same
+ * examples could be written like this:
  *
  * ```kotlin
  *     SomeComponent.Companion.invoke({
@@ -124,7 +125,7 @@ import io.spine.chords.core.appshell.app
  * ```
  *
  * Nevertheless, such explicit usage of `Companion` or `invoke` is not
- * recommended, and a shorthand form is recommended instead:
+ * recommended, and **a shorthand syntax is recommended** instead:
  *
  * ```kotlin
  *     SomeComponent {
@@ -354,7 +355,7 @@ import io.spine.chords.core.appshell.app
  *     }
  * ```
  *
- * # When to write class-based and function-based components?
+ * # When to write class-based components or function-based ones?
  *
  * A class-based components writing style is only a convenience that can be used
  * if it provides some benefits relative to function-based ones. Function-based
@@ -417,6 +418,61 @@ import io.spine.chords.core.appshell.app
  *   implementation boundaries more explicit, and also makes all component's
  *   data (stored in its properties) to be implicitly available in each of such
  *   functions without explicitly passing them around with parameters.
+ *
+ * # Component's lifecycle
+ *
+ * In most cases, what you would typically need to do when developing a new
+ * component, is just to implement the [content] method to specify how the
+ * component is rendered (similar to how you would do when writing a
+ * function-based component), and specify the component's companion object, as
+ * is generally described in the "Implementing class-based components"
+ * section above.
+ *
+ * Nevertheless, the [Component] class provides some extra `open` functions,
+ * which can be overridden to customize certain points in the
+ * component's lifecycle. Below is a description of the overall component's
+ * lifecycle (listed in the order of running the respective stages), including
+ * such overridable lifecycle methods.
+ *
+ * - Once per each component's instance:
+ *
+ *    - **Class's constructor** — typically, not expected to accept any
+ *      parameters, and doesn't need to be called directly, since component
+ *      instances are _declared_ by invoking component's companion object
+ *      instead (see the "Component instance declarations vs constructors"
+ *      section above).
+ *
+ *      Nevertheless, it is useful to understand that a new component's instance
+ *      is implicitly created during the component's composition, and the same
+ *      instance is then kept and being reused during subsequent recompositions.
+ *      In other words it happens when it was not "visible" (technically not
+ *      called in respective composable function before this), and it becomes
+ *      "visible" (gets called in some composable function for the first time,
+ *      or after being hidden by some conditional execution).
+ *
+ *      Formally, life span of the component's instance is repeats the life span
+ *      of the value calculated and remembered by the [remember] function (if it
+ *      was invoked in the same place where the component's instance
+ *      is declared).
+ *
+ *    - **Properties update + [initialize]** — when the component is composed
+ *      (rendered for the first time), first, the component's properties are
+ *      updated (as specified with `props` specified when [declaring a
+ *      component's instance][ComponentSetup.invoke]), and then the component's
+ *      [initialize] method is called.
+ *
+ * -  Each time the component is rendered (composed or recomposed):
+ *
+ *    - **Properties update**. This basically assigns property values as
+ *      specified with the `props` parameter specified when [declaring a
+ *      component's instance][ComponentSetup.invoke].
+ *
+ *    - **[beforeComposeContent]** — some optional logic that needs to be done
+ *      before the component is rendered.
+ *
+ *    - **[content]** — the component's content, which is analogous to the
+ *      content of a function-based component (see "Implementing
+ *      class-based components").
  *
  * # Converting function-based components into class-based ones
  *
@@ -573,6 +629,8 @@ public abstract class Component {
      * properties and other
      * [CompositionLocal][androidx.compose.runtime.CompositionLocal] values.
      */
+    @Composable
+    @ReadOnlyComposable
     protected open fun initialize() {
         check(!initialized.value) {
             "Component.initialize() shouldn't be invoked more than once."

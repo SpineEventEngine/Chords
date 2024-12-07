@@ -34,9 +34,9 @@ public class ConfirmationDialog : Dialog() {
          *   Submit button), and `false`, if the user makes a negative decision
          *   (presses the Cancel button).
          */
-        public suspend fun ask(props: ComponentProps<ConfirmationDialog>? = null): Boolean {
+        public suspend fun showConfirmation(props: ComponentProps<ConfirmationDialog>? = null): Boolean {
             val dialog = create(config = props)
-            return dialog.ask()
+            return dialog.showConfirmation()
         }
     }
 
@@ -105,7 +105,7 @@ public class ConfirmationDialog : Dialog() {
      * be the case when confirmations are set for all dialogs by setting
      * `onBeforeSubmit` for all dialogs on an application-wide level.
      *
-     * @see ask
+     * @see showConfirmation
      * @see updateProps
      */
     private var onBeforeSubmitInternal: suspend () -> Boolean = { true }
@@ -116,7 +116,7 @@ public class ConfirmationDialog : Dialog() {
      * be the case when confirmations are set for all dialogs by setting
      * `onBeforeCancel` for all dialogs on an application-wide level.
      *
-     * @see ask
+     * @see showConfirmation
      * @see updateProps
      */
     private var onBeforeCancelInternal: suspend () -> Boolean = { true }
@@ -125,7 +125,7 @@ public class ConfirmationDialog : Dialog() {
      * Displays the confirmation dialog, and waits until the user
      * makes a decision.
      */
-    public suspend fun ask(): Boolean {
+    public suspend fun showConfirmation(): Boolean {
         var confirmed = false
         val dialogClosure = CompletableFuture<Unit>()
         onBeforeSubmitInternal = {
