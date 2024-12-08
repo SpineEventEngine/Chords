@@ -32,6 +32,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import io.spine.chords.core.appshell.app
 import io.spine.base.CommandMessage
@@ -39,12 +40,17 @@ import io.spine.base.EventMessage
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.appshell.client
+import io.spine.chords.core.layout.MessageDialog
+import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
+import io.spine.chords.core.writeOnce
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.MessageFormSetupBase
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.launch
 
 /**
  * A form that allows entering a value of a command message and posting
@@ -334,6 +340,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     override val shouldEnableEditors: Boolean
         get() = super.shouldEnableEditors && (!posting || !disableOnPosting)
 
+    private var coroutineScope: CoroutineScope by writeOnce()
+
     @Composable
     @ReadOnlyComposable
     override fun initialize() {
@@ -342,6 +350,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "CommandMessageForm's `eventSubscription` property must " +
             "be specified."
         }
+        coroutineScope = rememberCoroutineScope()
     }
 
     /**
@@ -410,12 +419,14 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
 }
 
 public interface CommandResponseHandler<C : CommandMessage> {
-    public fun responseWaitingTimedOut(command: C)
+    public suspend fun responseWaitingTimedOut(command: C)
 }
 
 public class DefaultResponseHandler<C : CommandMessage> : CommandResponseHandler<C> {
-    override fun responseWaitingTimedOut(command: C) {
-        println("Timed out waiting for an event that was expected " +
-                "to be generated in response to the command ${command.javaClass.simpleName}")
+    override suspend fun responseWaitingTimedOut(command: C) {
+        showMessage(
+            "Timed out waiting for an event in response to " +
+                    "the command ${command.javaClass.simpleName}"
+        )
     }
 }

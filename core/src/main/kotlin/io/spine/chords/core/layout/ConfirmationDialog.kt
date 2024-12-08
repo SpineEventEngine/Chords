@@ -30,6 +30,24 @@ public class ConfirmationDialog : Dialog() {
          * Displays the confirmation dialog, and waits until the user
          * makes a decision.
          *
+         * Here's a usage example:
+         * ```
+         *     val confirmed = ConfirmationDialog.showConfirmation {
+         *         message = "Are you sure that you want to continue?"
+         *         description = "This action is irreversible."
+         *         submitButtonText = "Proceed"
+         *         cancelButtonText = "Cancel"
+         *     }
+         * ```
+         *
+         * You can also import this function specifically and make its usages
+         * more concise, like this:
+         * ```
+         *     val confirmed = showConfirmation {
+         *         message = "Are you sure that you want to continue?"
+         *     }
+         * ```
+         *
          * @return `true`, if the user makes a positive decision (presses the
          *   Submit button), and `false`, if the user makes a negative decision
          *   (presses the Cancel button).
@@ -68,6 +86,28 @@ public class ConfirmationDialog : Dialog() {
     public var description: String = ""
 
     /**
+     * These internal variants of `onBeforeSubmit`/`onBeforeCancel` are needed
+     * to prevent any potential "recursive" confirmations display, which might
+     * be the case when confirmations are set for all dialogs by setting
+     * `onBeforeSubmit` for all dialogs on an application-wide level.
+     *
+     * @see showConfirmation
+     * @see updateProps
+     */
+    private var onBeforeSubmitInternal: suspend () -> Boolean = { true }
+
+    /**
+     * These internal variants of `onBeforeSubmit`/`onBeforeCancel` are needed
+     * to prevent any potential "recursive" confirmations display, which might
+     * be the case when confirmations are set for all dialogs by setting
+     * `onBeforeCancel` for all dialogs on an application-wide level.
+     *
+     * @see showConfirmation
+     * @see updateProps
+     */
+    private var onBeforeCancelInternal: suspend () -> Boolean = { true }
+
+    /**
      * Creates the content of the dialog.
      */
     @Composable
@@ -98,28 +138,6 @@ public class ConfirmationDialog : Dialog() {
     protected override suspend fun submitForm(): Boolean {
         return true
     }
-
-    /**
-     * These internal variants of `onBeforeSubmit`/`onBeforeCancel` are needed
-     * to prevent any potential "recursive" confirmations display, which might
-     * be the case when confirmations are set for all dialogs by setting
-     * `onBeforeSubmit` for all dialogs on an application-wide level.
-     *
-     * @see showConfirmation
-     * @see updateProps
-     */
-    private var onBeforeSubmitInternal: suspend () -> Boolean = { true }
-
-    /**
-     * These internal variants of `onBeforeSubmit`/`onBeforeCancel` are needed
-     * to prevent any potential "recursive" confirmations display, which might
-     * be the case when confirmations are set for all dialogs by setting
-     * `onBeforeCancel` for all dialogs on an application-wide level.
-     *
-     * @see showConfirmation
-     * @see updateProps
-     */
-    private var onBeforeCancelInternal: suspend () -> Boolean = { true }
 
     /**
      * Displays the confirmation dialog, and waits until the user
