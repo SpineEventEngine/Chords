@@ -48,11 +48,15 @@ public class ConfirmationDialog : Dialog() {
          *     }
          * ```
          *
+         * @param props A lambda, which configures the confirmation
+         *   dialog's properties.
          * @return `true`, if the user makes a positive decision (presses the
          *   Submit button), and `false`, if the user makes a negative decision
          *   (presses the Cancel button).
          */
-        public suspend fun showConfirmation(props: ComponentProps<ConfirmationDialog>? = null): Boolean {
+        public suspend fun showConfirmation(
+            props: ComponentProps<ConfirmationDialog>? = null
+        ): Boolean {
             val dialog = create(config = props)
             return dialog.showConfirmation()
         }

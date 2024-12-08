@@ -622,15 +622,7 @@ public abstract class Component {
      * [props] callback (which is passed along with component instance's
      * declaration) has been invoked for the first time, and before
      * the component's composable content is rendered for the first time.
-     *
-     * This function is declared as being a read-only composable one for
-     * the implementations to be able to access the composition-related data,
-     * such as various [MaterialTheme][androidx.compose.material3.MaterialTheme]
-     * properties and other
-     * [CompositionLocal][androidx.compose.runtime.CompositionLocal] values.
      */
-    @Composable
-    @ReadOnlyComposable
     protected open fun initialize() {
         check(!initialized.value) {
             "Component.initialize() shouldn't be invoked more than once."

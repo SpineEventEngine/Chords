@@ -424,14 +424,6 @@ public class DropdownListBox<I> : Component() {
 
     @Composable
     @ReadOnlyComposable
-    override fun initialize() {
-        super.initialize()
-        scrollState = rememberScrollState(0)
-        coroutineScope = rememberCoroutineScope()
-    }
-
-    @Composable
-    @ReadOnlyComposable
     override fun beforeComposeContent() {
         super.beforeComposeContent()
         density = LocalDensity.current
@@ -439,6 +431,9 @@ public class DropdownListBox<I> : Component() {
 
     @Composable
     override fun content() {
+        scrollState = rememberScrollState(0)
+        coroutineScope = rememberCoroutineScope()
+
         LaunchedEffect(enabled) {
             if (!enabled) {
                 expanded.value = false

@@ -1234,8 +1234,6 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     public val dirty: Boolean get() = _dirty
     private var _dirty = false
 
-    @Composable
-    @ReadOnlyComposable
     override fun initialize() {
         super.initialize()
         requireProperty(::builder.isInitialized, "builder")
@@ -1373,7 +1371,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
-    final override fun content() {
+    override fun content() {
         updateBeforeRendering()
 
         formScope.customMultipartContent()

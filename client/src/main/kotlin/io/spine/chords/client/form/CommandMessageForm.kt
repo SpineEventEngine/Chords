@@ -28,19 +28,17 @@ package io.spine.chords.client.form
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import io.spine.chords.core.appshell.app
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
-import io.spine.chords.core.ComponentProps
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.appshell.client
-import io.spine.chords.core.layout.MessageDialog
+import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.app
 import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
 import io.spine.chords.core.writeOnce
 import io.spine.chords.proto.form.FormPartScope
@@ -50,7 +48,6 @@ import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.launch
 
 /**
  * A form that allows entering a value of a command message and posting
@@ -342,15 +339,18 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
 
     private var coroutineScope: CoroutineScope by writeOnce()
 
-    @Composable
-    @ReadOnlyComposable
     override fun initialize() {
         super.initialize()
         check(this::eventSubscription.isInitialized) {
             "CommandMessageForm's `eventSubscription` property must " +
             "be specified."
         }
+    }
+
+    @Composable
+    override fun content() {
         coroutineScope = rememberCoroutineScope()
+        super.content()
     }
 
     /**

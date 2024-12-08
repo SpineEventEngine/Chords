@@ -322,11 +322,6 @@ public abstract class Dialog : Component() {
         get() = cancelAvailable
         set(value) { cancelAvailable = value }
 
-    override fun initialize() {
-        super.initialize()
-        coroutineScope = rememberCoroutineScope()
-    }
-
     /**
      * Displays the modal dialog.
      *
@@ -383,6 +378,7 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected override fun content() {
+        coroutineScope = rememberCoroutineScope()
         displayMode.content(this) { formContent() }
     }
 

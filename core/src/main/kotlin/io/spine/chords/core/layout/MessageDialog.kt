@@ -48,8 +48,21 @@ public class MessageDialog : Dialog() {
 
         /**
          * Displays the message dialog, and waits until the user dismissed it.
+         *
+         * Here's a usage example:
+         * ```
+         *     MessageDialog.showMessage("An error has occurred: ...")
+         * ```
+         *
+         * You can make its usage more concise if you import this function:
+         * ```
+         *     showMessage("An error has occurred: ...")
+         * ```
          */
-        public suspend fun showMessage(message: String, props: ComponentProps<MessageDialog>? = null) {
+        public suspend fun showMessage(
+            message: String,
+            props: ComponentProps<MessageDialog>? = null
+        ) {
             val dialog = create(config = props)
             dialog.message = message
             dialog.showMessage()

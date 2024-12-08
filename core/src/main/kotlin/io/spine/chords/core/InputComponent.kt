@@ -269,8 +269,6 @@ public abstract class InputComponent<V> : FocusableComponent() {
      */
     public var enabled: Boolean by mutableStateOf(true)
 
-    @Composable
-    @ReadOnlyComposable
     override fun initialize() {
         super.initialize()
         if (!this::value.isInitialized) {
