@@ -37,7 +37,7 @@ import io.spine.base.EventMessage
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.Dialog
-import io.spine.chords.core.layout.OkCancelDialog
+import io.spine.chords.core.layout.SubmitOrCancelDialog
 import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
@@ -51,10 +51,11 @@ import io.spine.protobuf.ValidatingBuilder
  * @param B A type of the command message builder.
  */
 public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>>
-    : OkCancelDialog() {
+    : SubmitOrCancelDialog() {
 
     /**
-     * The [CommandMessageForm] used as a container for the message field editors.
+     * The [CommandMessageForm] used as a container for the message
+     * field editors.
      */
     private lateinit var commandMessageForm: CommandMessageForm<C>
 
@@ -108,8 +109,8 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * response to handling that command.
      *
      * @param command A command, which is going to be posted.
-     * @return A subscription to the event that is expected to arrive in response
-     *         to handling [command]
+     * @return A subscription to the event that is expected to arrive in
+     *   response to handling [command].
      */
     protected abstract fun subscribeToEvent(command: C):
             EventSubscription<out EventMessage>

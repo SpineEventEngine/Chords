@@ -49,6 +49,7 @@ import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputContext
 import io.spine.chords.core.ValidationErrorText
+import io.spine.chords.core.recompositionWorkaroundReadonly
 import io.spine.chords.proto.form.MessageForm.Companion.Multipart
 import io.spine.chords.proto.form.MessageForm.Companion.create
 import io.spine.chords.proto.form.MessageForm.Companion.invoke
@@ -1371,7 +1372,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
-    override fun content() {
+    override fun content(): Unit = recompositionWorkaroundReadonly {
         updateBeforeRendering()
 
         formScope.customMultipartContent()

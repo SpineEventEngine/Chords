@@ -40,7 +40,6 @@ import io.spine.chords.client.appshell.client
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.core.appshell.app
 import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
-import io.spine.chords.core.writeOnce
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.MessageFormSetupBase
@@ -337,7 +336,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     override val shouldEnableEditors: Boolean
         get() = super.shouldEnableEditors && (!posting || !disableOnPosting)
 
-    private var coroutineScope: CoroutineScope by writeOnce()
+    private lateinit var coroutineScope: CoroutineScope
 
     override fun initialize() {
         super.initialize()

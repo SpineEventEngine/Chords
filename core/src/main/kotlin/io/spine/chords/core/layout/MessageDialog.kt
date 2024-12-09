@@ -72,6 +72,7 @@ public class MessageDialog : Dialog() {
      * Initializes the `confirmButtonText` and the size of the dialog.
      */
     init {
+        submitAvailable = true
         submitButtonText = "OK"
         dialogWidth = 430.dp
         dialogHeight = 210.dp
@@ -98,18 +99,15 @@ public class MessageDialog : Dialog() {
         cancelAvailable = false
     }
 
-    public suspend fun showMessage(): Boolean {
-        var confirmed = false
+    public suspend fun showMessage() {
         val dialogClosure = CompletableFuture<Unit>()
         onBeforeSubmit = {
-            confirmed = true
             dialogClosure.complete(Unit)
             true
         }
 
         open()
         dialogClosure.await()
-        return confirmed
     }
 
     override suspend fun submitForm(): Boolean {

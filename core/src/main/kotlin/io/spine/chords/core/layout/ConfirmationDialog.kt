@@ -35,8 +35,8 @@ public class ConfirmationDialog : Dialog() {
          *     val confirmed = ConfirmationDialog.showConfirmation {
          *         message = "Are you sure that you want to continue?"
          *         description = "This action is irreversible."
-         *         submitButtonText = "Proceed"
-         *         cancelButtonText = "Cancel"
+         *         yesButtonText = "Proceed"
+         *         noButtonText = "Cancel"
          *     }
          * ```
          *
@@ -63,16 +63,6 @@ public class ConfirmationDialog : Dialog() {
     }
 
     /**
-     * Initializes the `confirmButtonText` and the size of the dialog.
-     */
-    init {
-        submitButtonText = "Yes"
-        cancelButtonText = "No"
-        dialogWidth = 430.dp
-        dialogHeight = 210.dp
-    }
-
-    /**
      * The title of the dialog.
      */
     public override var title: String = "Confirm"
@@ -88,6 +78,34 @@ public class ConfirmationDialog : Dialog() {
      * an extra context about the question being asked.
      */
     public var description: String = ""
+
+    /**
+     * The label for the dialog's Yes button.
+     *
+     * The default value is `Yes`.
+     */
+    public var yesButtonText: String
+        get() = submitButtonText
+        set(value) { submitButtonText = value }
+
+    /**
+     * The label for the dialog's No button.
+     *
+     * The default value is `No`.
+     */
+    public var noButtonText: String
+        get() = cancelButtonText
+        set(value) { cancelButtonText = value }
+
+    init {
+        submitAvailable = true
+        cancelAvailable = true
+
+        yesButtonText = "Yes"
+        noButtonText = "No"
+        dialogWidth = 430.dp
+        dialogHeight = 210.dp
+    }
 
     /**
      * Creates the content of the dialog.
