@@ -44,7 +44,7 @@ import java.awt.Dimension
  * This property automatically obtains a reference to the application
  * when the [Application]'s [run][Application.run] method is invoked.
  */
-public var app: Application by writeOnce()
+public var app: Application by writeOnce(false)
 
 /**
  * A desktop client application.

@@ -132,9 +132,9 @@ import java.util.concurrent.CompletableFuture
      */
     public fun <E : EventMessage> observeEvent(
         event: Class<E>,
-        onEmit: (E) -> Unit,
         field: EventMessageField,
-        fieldValue: Message
+        fieldValue: Message,
+        onEmit: (E) -> Unit
     )
 }
 

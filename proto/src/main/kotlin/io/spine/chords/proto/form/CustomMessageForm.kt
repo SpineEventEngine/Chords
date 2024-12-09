@@ -26,6 +26,7 @@
 
 package io.spine.chords.proto.form
 
+import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
 import io.spine.protobuf.ValidatingBuilder
 import io.spine.chords.core.Component
@@ -105,5 +106,19 @@ public open class CustomMessageForm<M : Message>
 protected constructor(builder: () -> ValidatingBuilder<M>) : MessageForm<M>() {
     init {
         this.builder = builder
+    }
+
+    /**
+     * This method is made final to prevent potential confusion for custom form
+     * implementers of whether it should be overridden to provide custom
+     * form's content.
+     *
+     * In order to specify custom form's content, make sure to override either
+     * [customContent] or [customMultipartContent] instead. See the
+     * documentation for the [CustomMessageForm] class.
+     */
+    @Composable
+    final override fun content() {
+        super.content()
     }
 }

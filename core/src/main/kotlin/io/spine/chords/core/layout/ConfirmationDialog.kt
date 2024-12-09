@@ -30,24 +30,36 @@ public class ConfirmationDialog : Dialog() {
          * Displays the confirmation dialog, and waits until the user
          * makes a decision.
          *
+         * Here's a usage example:
+         * ```
+         *     val confirmed = ConfirmationDialog.showConfirmation {
+         *         message = "Are you sure that you want to continue?"
+         *         description = "This action is irreversible."
+         *         yesButtonText = "Proceed"
+         *         noButtonText = "Cancel"
+         *     }
+         * ```
+         *
+         * You can also import this function specifically and make its usages
+         * more concise, like this:
+         * ```
+         *     val confirmed = showConfirmation {
+         *         message = "Are you sure that you want to continue?"
+         *     }
+         * ```
+         *
+         * @param props A lambda, which configures the confirmation
+         *   dialog's properties.
          * @return `true`, if the user makes a positive decision (presses the
          *   Submit button), and `false`, if the user makes a negative decision
          *   (presses the Cancel button).
          */
-        public suspend fun ask(props: ComponentProps<ConfirmationDialog>? = null): Boolean {
+        public suspend fun showConfirmation(
+            props: ComponentProps<ConfirmationDialog>? = null
+        ): Boolean {
             val dialog = create(config = props)
-            return dialog.ask()
+            return dialog.showConfirmation()
         }
-    }
-
-    /**
-     * Initializes the `confirmButtonText` and the size of the dialog.
-     */
-    init {
-        submitButtonText = "Yes"
-        cancelButtonText = "No"
-        dialogWidth = 430.dp
-        dialogHeight = 210.dp
     }
 
     /**
@@ -66,6 +78,34 @@ public class ConfirmationDialog : Dialog() {
      * an extra context about the question being asked.
      */
     public var description: String = ""
+
+    /**
+     * The label for the dialog's Yes button.
+     *
+     * The default value is `Yes`.
+     */
+    public var yesButtonText: String
+        get() = submitButtonText
+        set(value) { submitButtonText = value }
+
+    /**
+     * The label for the dialog's No button.
+     *
+     * The default value is `No`.
+     */
+    public var noButtonText: String
+        get() = cancelButtonText
+        set(value) { cancelButtonText = value }
+
+    init {
+        submitAvailable = true
+        cancelAvailable = true
+
+        yesButtonText = "Yes"
+        noButtonText = "No"
+        dialogWidth = 430.dp
+        dialogHeight = 210.dp
+    }
 
     /**
      * Creates the content of the dialog.
@@ -100,40 +140,18 @@ public class ConfirmationDialog : Dialog() {
     }
 
     /**
-     * These internal variants of `onBeforeSubmit`/`onBeforeCancel` are needed
-     * to prevent any potential "recursive" confirmations display, which might
-     * be the case when confirmations are set for all dialogs by setting
-     * `onBeforeSubmit` for all dialogs on an application-wide level.
-     *
-     * @see ask
-     * @see updateProps
-     */
-    private var onBeforeSubmitInternal: suspend () -> Boolean = { true }
-
-    /**
-     * These internal variants of `onBeforeSubmit`/`onBeforeCancel` are needed
-     * to prevent any potential "recursive" confirmations display, which might
-     * be the case when confirmations are set for all dialogs by setting
-     * `onBeforeCancel` for all dialogs on an application-wide level.
-     *
-     * @see ask
-     * @see updateProps
-     */
-    private var onBeforeCancelInternal: suspend () -> Boolean = { true }
-
-    /**
      * Displays the confirmation dialog, and waits until the user
      * makes a decision.
      */
-    public suspend fun ask(): Boolean {
+    public suspend fun showConfirmation(): Boolean {
         var confirmed = false
         val dialogClosure = CompletableFuture<Unit>()
-        onBeforeSubmitInternal = {
+        onBeforeSubmit = {
             confirmed = true
             dialogClosure.complete(Unit)
             true
         }
-        onBeforeCancelInternal = {
+        onBeforeCancel = {
             dialogClosure.complete(Unit)
             true
         }
@@ -141,12 +159,5 @@ public class ConfirmationDialog : Dialog() {
         open()
         dialogClosure.await()
         return confirmed
-    }
-
-    override fun updateProps() {
-        super.updateProps()
-
-        onBeforeSubmit = onBeforeSubmitInternal
-        onBeforeCancel = onBeforeCancelInternal
     }
 }
