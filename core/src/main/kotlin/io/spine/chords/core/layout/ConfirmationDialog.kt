@@ -90,28 +90,6 @@ public class ConfirmationDialog : Dialog() {
     public var description: String = ""
 
     /**
-     * These internal variants of `onBeforeSubmit`/`onBeforeCancel` are needed
-     * to prevent any potential "recursive" confirmations display, which might
-     * be the case when confirmations are set for all dialogs by setting
-     * `onBeforeSubmit` for all dialogs on an application-wide level.
-     *
-     * @see showConfirmation
-     * @see updateProps
-     */
-    private var onBeforeSubmitInternal: suspend () -> Boolean = { true }
-
-    /**
-     * These internal variants of `onBeforeSubmit`/`onBeforeCancel` are needed
-     * to prevent any potential "recursive" confirmations display, which might
-     * be the case when confirmations are set for all dialogs by setting
-     * `onBeforeCancel` for all dialogs on an application-wide level.
-     *
-     * @see showConfirmation
-     * @see updateProps
-     */
-    private var onBeforeCancelInternal: suspend () -> Boolean = { true }
-
-    /**
      * Creates the content of the dialog.
      */
     @Composable
@@ -150,12 +128,12 @@ public class ConfirmationDialog : Dialog() {
     public suspend fun showConfirmation(): Boolean {
         var confirmed = false
         val dialogClosure = CompletableFuture<Unit>()
-        onBeforeSubmitInternal = {
+        onBeforeSubmit = {
             confirmed = true
             dialogClosure.complete(Unit)
             true
         }
-        onBeforeCancelInternal = {
+        onBeforeCancel = {
             dialogClosure.complete(Unit)
             true
         }
@@ -163,12 +141,5 @@ public class ConfirmationDialog : Dialog() {
         open()
         dialogClosure.await()
         return confirmed
-    }
-
-    override fun updateProps() {
-        super.updateProps()
-
-        onBeforeSubmit = onBeforeSubmitInternal
-        onBeforeCancel = onBeforeCancelInternal
     }
 }

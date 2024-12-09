@@ -36,7 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.ComponentProps
-import io.spine.chords.core.layout.ConfirmationDialog.Companion.showConfirmation
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.future.await
 
@@ -95,17 +94,6 @@ public class MessageDialog : Dialog() {
      */
     public var description: String = ""
 
-    /**
-     * These internal variants of `onBeforeSubmit`/`onBeforeCancel` are needed
-     * to prevent any potential "recursive" confirmations display, which might
-     * be the case when confirmations are set for all dialogs by setting
-     * `onBeforeSubmit` for all dialogs on an application-wide level.
-     *
-     * @see showConfirmation
-     * @see updateProps
-     */
-    private var onBeforeSubmitInternal: suspend () -> Boolean = { true }
-
     init {
         cancelAvailable = false
     }
@@ -113,7 +101,7 @@ public class MessageDialog : Dialog() {
     public suspend fun showMessage(): Boolean {
         var confirmed = false
         val dialogClosure = CompletableFuture<Unit>()
-        onBeforeSubmitInternal = {
+        onBeforeSubmit = {
             confirmed = true
             dialogClosure.complete(Unit)
             true
@@ -155,9 +143,4 @@ public class MessageDialog : Dialog() {
         }
     }
 
-    override fun updateProps() {
-        super.updateProps()
-
-        onBeforeSubmit = onBeforeSubmitInternal
-    }
 }

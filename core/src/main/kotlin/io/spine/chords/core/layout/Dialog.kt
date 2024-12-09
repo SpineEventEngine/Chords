@@ -87,6 +87,24 @@ import kotlinx.coroutines.launch
 private val cancelShortcutKey = Escape.key
 private val submitShortcutKey = Ctrl(Enter.key)
 
+public abstract class OkCancelDialog : Dialog() {
+
+    /**
+     * The label for the dialog's Submit button.
+     *
+     * The default value is `OK`.
+     */
+    public override var submitButtonText: String = "OK"
+
+    /**
+     * The label for the dialog's Cancel button.
+     *
+     * The default value is `Cancel`.
+     */
+    public override var cancelButtonText: String = "Cancel"
+
+}
+
 /**
  * The base class for creating a modal dialog window, e.g. for editing and
  * submitting data.
@@ -159,14 +177,14 @@ public abstract class Dialog : Component() {
      *
      * The default value is `OK`.
      */
-    public var submitButtonText: String = "OK"
+    protected open var submitButtonText: String = "OK"
 
     /**
      * The label for the dialog's Cancel button.
      *
      * The default value is `Cancel`.
      */
-    public var cancelButtonText: String = "Cancel"
+    protected open var cancelButtonText: String = "Cancel"
 
     /**
      * The width of the dialog.

@@ -37,6 +37,7 @@ import io.spine.base.EventMessage
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.Dialog
+import io.spine.chords.core.layout.OkCancelDialog
 import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
@@ -50,7 +51,7 @@ import io.spine.protobuf.ValidatingBuilder
  * @param B A type of the command message builder.
  */
 public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>>
-    : Dialog() {
+    : OkCancelDialog() {
 
     /**
      * The [CommandMessageForm] used as a container for the message field editors.
