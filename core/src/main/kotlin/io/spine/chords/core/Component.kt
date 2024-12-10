@@ -169,7 +169,7 @@ import io.spine.chords.core.appshell.app
  *   each component's configurable public property (except lambda-typed ones) in
  *   the following style:
  *   ```
- *       public var someProp by mutableStateOf<String>("")
+ *       public var someProp: String by mutableStateOf("")
  *   ```
  *
  *   Note the `String` type parameter of `mutableStateOf` above, which
@@ -186,7 +186,7 @@ import io.spine.chords.core.appshell.app
  *             HelloComponent()
  *         })
  *
- *         public var name by mutableStateOf<String>("")
+ *         public var name: String by mutableStateOf("")
  *
  *         @Composable
  *         override fun content() {
@@ -236,9 +236,9 @@ import io.spine.chords.core.appshell.app
  *         })
  *
  *         // Add some more component customization properties...
- *         public var style by mutableStateOf<TextStyle>(MaterialTheme.typography.bodyMedium)
- *         public var color by mutableStateOf<Color>(MaterialTheme.colorScheme.onBackground)
- *         public var modifier by mutableStateOf<Modifier>(Modifier)
+ *         public var style: TextStyle by mutableStateOf(MaterialTheme.typography.bodyMedium)
+ *         public var color: Color by mutableStateOf(MaterialTheme.colorScheme.onBackground)
+ *         public var modifier: Modifier by mutableStateOf(Modifier)
  *
  *         init {
  *             // Amend default values for parent class's properties if needed...
@@ -456,16 +456,24 @@ import io.spine.chords.core.appshell.app
  *      is declared).
  *
  *    - **Properties update + [initialize]** — when the component is composed
- *      (rendered for the first time), first, the component's properties are
- *      updated (as specified with `props` specified when [declaring a
- *      component's instance][ComponentSetup.invoke]), and then the component's
- *      [initialize] method is called.
+ *      (rendered for the first time):
+ *
+ *      - First, the component's properties are updated (including the
+ *      [application-wide][Application] ones, and instance-specific ones)
+ *
+ *      - Then, the component's [initialize] method is called.
  *
  * -  Each time the component is rendered (composed or recomposed):
  *
- *    - **Properties update**. This basically assigns property values as
- *      specified with the `props` parameter specified when [declaring a
- *      component's instance][ComponentSetup.invoke].
+ *    - **Properties update**. This consists of two parts:
+ *
+ *      - Application-wide properties that are applicable to this component type
+ *        are applied. See the "Customizing default values for different
+ *        component types" section of the [Application] class's documentation.
+ *
+ *      - Instance-specific properties are applied. This basically assigns
+ *        property values as specified with the `props` parameter specified when
+ *        [declaring a component's instance][ComponentSetup.invoke].
  *
  *    - **[beforeComposeContent]** — some optional logic that needs to be done
  *      before the component is rendered.

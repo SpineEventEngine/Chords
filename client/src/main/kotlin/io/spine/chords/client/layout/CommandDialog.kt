@@ -64,7 +64,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * are rendered.
      */
     @Composable
-    protected override fun formContent() {
+    protected override fun contentSection() {
         commandMessageForm = CommandMessageForm(
             ::createCommandBuilder,
             onBeforeBuild = ::beforeBuild,

@@ -111,7 +111,7 @@ public class ConfirmationDialog : Dialog() {
      * Creates the content of the dialog.
      */
     @Composable
-    protected override fun formContent() {
+    protected override fun contentSection() {
         val textStyle = typography.bodyLarge
 
         Column {

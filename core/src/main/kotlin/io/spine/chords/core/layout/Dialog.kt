@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.Arrangement.End
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -88,8 +89,10 @@ private val cancelShortcutKey = Escape.key
 private val submitShortcutKey = Ctrl(Enter.key)
 
 /**
- * The base class for creating a modal dialog window, e.g. for editing and
- * submitting data.
+ * A base class for creating modal dialog windows, e.g. ones for displaying,
+ * entering or editing some information, making decisions, etc.
+ *
+ * ## Implementing dialogs
  *
  * Note that an implementation of this class has to add a companion object of
  * type [DialogSetup]. Here's an example of how a custom dialog can be created:
@@ -102,6 +105,10 @@ private val submitShortcutKey = Ctrl(Enter.key)
  *         // Set up own dialog's properties if/as needed.
  *         dialogWidth = 650.dp
  *         dialogHeight = 400.dp
+ *
+ *         // Include the Submit/Cancel buttons
+ *         submitAvailable = true
+ *         cancelAvailable = true
  *     }
  *
  *     override val title: String = "My Dialog"
@@ -123,9 +130,11 @@ private val submitShortcutKey = Ctrl(Enter.key)
  * }
  * ```
  *
- * Once such class has been implemented, it is possible to display
- * the respective dialog like this (if no dialog property customizations
- * are needed):
+ * ## Using dialogs
+ *
+ * Once a dialog class like the one in the section above been implemented, it is
+ * possible to display the respective dialog like this (if no dialog property
+ * customizations are needed):
  *
  * ```
  *     MyDialog.open()
@@ -142,6 +151,58 @@ private val submitShortcutKey = Ctrl(Enter.key)
  *
  * The dialog will be closed automatically, when the "Cancel" button is pressed,
  * or when the "OK" button is pressed (and [submitForm] returns `true`).
+ *
+ * ## Predefined dialog actions
+ *
+ * The [Dialog] base class provides two built-in dialog-related actions, which
+ * can be useful for many dialogs, and basically represent two ways of
+ * completing the dialog's usage:
+ *
+ * - Submitting the dialog. This typically implies that a user has entered
+ *   some data in the dialog, according to its purpose, and is ready to proceed
+ *   with the actual function that the dialog was created for (e.g., adding or
+ *   editing some data, etc.). Setting the [submitAvailable] property to `true`
+ *   adds the Submit button to the dialog (labeled "OK" by default).
+ *
+ *   Pressing the Submit button invokes the [submitForm] method, which can be
+ *   implemented by the actual dialog's subclass to perform the required action.
+ *   If [submitForm] completes with a return value of `true`, the dialog is
+ *   then closed.
+ *
+ *   If [submitAvailable] is `true`, the user also has an ability to trigger
+ *   form submission by pressing the Ctrl+Enter key combination.
+ *
+ * - Cancelling the dialog. This corresponds to the usage scenario when the user
+ *   has opened the dialog by mistake and wants to close it without performing
+ *   any actions. This basically just closes the dialog. Setting the
+ *   [cancelAvailable] property to `true` adds the respective Cancel button.
+ *
+ *   If [cancelAvailable] is `true`, the user can also cancel the dialog by
+ *   pressing the Escape key.
+ *
+ * ## Customizing dialog's buttons
+ *
+ * The text for the optional Submit and Cancel buttons, which can be displayed
+ * as described in the "Predefined dialog actions" above, can be customized
+ * using the [submitButtonText] and [cancelButtonText] properties.
+ *
+ * The set of buttons within the buttons section can be customized by overriding
+ * the [buttons] method.
+ *
+ * You can in particular choose to implement custom Submit and Cancel buttons.
+ * In this case, to ensure that these buttons perform the same actions as the
+ * original ones, make sure that they invoke the [submit] and [cancel]
+ * methods respectively
+ *
+ * ## Display modes
+ *
+ * The way that the dialog is displayed can be customized using the
+ * [displayMode] property. By default, a dialog is displayed as a separate
+ * desktop window (with a [DesktopWindow] value of [displayMode]), and it is
+ * possible to make the dialog to be displayed in a "lightweight" mode, where
+ * it is displayed as a modal popup within the existing desktop window, with
+ * any currently displayed window's content covered with an overlay to ensure
+ * that nothing except the dialog's popup can be interacted within this window.
  */
 @Suppress(
     // All functions are apparently appropriate in the class.
@@ -188,24 +249,6 @@ public abstract class Dialog : Component() {
     public var look: Look = Look()
 
     /**
-     * Specifies the way that the dialog is displayed.
-     *
-     * The following two display modes are supported:
-     * - [DesktopWindow][DialogDisplayMode.DesktopWindow] — a dialog is
-     *   displayed in a separate desktop window.
-     * - [Lightweight][DialogDisplayMode.Lightweight] — a dialog is displayed
-     *   as a lightweight modal popup within the current desktop window.
-     */
-    public var displayMode: DialogDisplayMode = DesktopWindow
-
-    /**
-     * Specifies whether the dialog is currently in progress of submission
-     * (an asynchronous process upon pressing the "Submit" button has been
-     * initiated but not completed yet).
-     */
-    internal var submissionInProgress: Boolean by mutableStateOf(false)
-
-    /**
      * An object allowing adjustments of visual appearance parameters.
      *
      * @param padding The padding applied to the entire content of the dialog.
@@ -222,20 +265,15 @@ public abstract class Dialog : Component() {
     )
 
     /**
-     * This property is automatically set to `true` by the application, if
-     * this dialog is a bottom-most one (the first dialog that was invoked in
-     * the sequence of nested dialogs display).
+     * Specifies the way that the dialog is displayed.
      *
-     * If it's a nested dialog of another dialog, this property is set
-     * to `false`.
+     * The following two display modes are supported:
+     * - [DesktopWindow][DialogDisplayMode.DesktopWindow] — a dialog is
+     *   displayed in a separate desktop window.
+     * - [Lightweight][DialogDisplayMode.Lightweight] — a dialog is displayed
+     *   as a lightweight modal popup within the current desktop window.
      */
-    internal var isBottomDialog: Boolean = true
-
-    /**
-     * A dialog nested in this one (the one that was displayed while this one
-     * was open).
-     */
-    internal var nestedDialog by mutableStateOf<Dialog?>(null)
+    public var displayMode: DialogDisplayMode = DesktopWindow
 
     /**
      * A suspending callback, which is invoked upon the dialog's Cancel button
@@ -301,6 +339,29 @@ public abstract class Dialog : Component() {
     public var onBeforeSubmit: suspend () -> Boolean = { true }
 
     /**
+     * Specifies whether the dialog is currently in progress of submission
+     * (an asynchronous process upon pressing the "Submit" button has been
+     * initiated but not completed yet).
+     */
+    internal var submissionInProgress: Boolean by mutableStateOf(false)
+
+    /**
+     * This property is automatically set to `true` by the application, if
+     * this dialog is a bottom-most one (the first dialog that was invoked in
+     * the sequence of nested dialogs display).
+     *
+     * If it's a nested dialog of another dialog, this property is set
+     * to `false`.
+     */
+    internal var isBottomDialog: Boolean = true
+
+    /**
+     * A dialog nested in this one (the one that was displayed while this one
+     * was open).
+     */
+    internal var nestedDialog by mutableStateOf<Dialog?>(null)
+
+    /**
      * Coroutine scope for launching asynchronous execution of actions initiated
      * by the dialog's controls.
      */
@@ -349,10 +410,81 @@ public abstract class Dialog : Component() {
     }
 
     /**
-     * Renders the form content the dialog consists.
+     * Submits the dialog, which is equivalent to pressing the "Submit" button.
+     */
+    public fun submit() {
+        coroutineScope.launch {
+            if (onBeforeSubmit()) {
+
+                submissionInProgress = true
+                val submittedSuccessfully = try {
+                    submitForm()
+                } finally {
+                    submissionInProgress = false
+                }
+
+                if (submittedSuccessfully) {
+                    close()
+                }
+            }
+        }
+    }
+
+    /**
+     * Cancels the dialog, which is equivalent to pressing the "Cancel" button.
+     */
+    public fun cancel() {
+        coroutineScope.launch {
+            if (onBeforeCancel()) {
+                close()
+            }
+        }
+    }
+
+    /**
+     * Renders the dialog window according to the current [displayMode].
+     *
+     * Custom dialog implementations should implement the [contentSection] method
+     * in order to specify the content that needs to be displayed inside
+     * the dialog window.
      */
     @Composable
-    protected abstract fun formContent()
+    protected final override fun content() {
+        coroutineScope = rememberCoroutineScope()
+        displayMode.dialogWindow(this)
+    }
+
+    /**
+     * Renders the dialog window's content, which is everything in the dialog
+     * except the window's frame and the window's title (which are rendered
+     * by [DialogDisplayMode]).
+     *
+     * By default, this renders the content section (see [contentSection]),
+     * and the buttons section below it (see [buttonsSection]).
+     *
+     * @see contentSection
+     * @see buttonsSection
+     */
+    @Composable
+    protected open fun ColumnScope.windowContent() {
+        Column(Modifier.weight(1F)) {
+            contentSection()
+        }
+        buttonsSection()
+    }
+
+
+    context(ColumnScope)
+    @Composable
+    internal fun windowContentInternal() {
+        windowContent()
+    }
+
+    /**
+     * Renders the dialog window's content.
+     */
+    @Composable
+    protected abstract fun contentSection()
 
     /**
      * Submits the dialog's form.
@@ -360,13 +492,14 @@ public abstract class Dialog : Component() {
      * This action is executed when the user submits the dialog
      * by pressing the Submit button.
      *
-     * If this method returns `true` the dialog will be closed. As an example
+     * If this method returns `true` the dialog will be closed. As an example,
      * this would be a typical case when the method has identified that the data
      * entered in the dialog is complete and valid, and the respective dialog's
-     * action that it was designed for was performed successfully. On the other
-     * hand, this method can return `false` to prevent closing the dialog, which
-     * can in particular be useful when the user has entered incomplete or
-     * invalid data.
+     * action that it was designed for was performed successfully.
+     *
+     * On the other hand, this method can return `false` to prevent closing the
+     * dialog, which can in particular be useful when the user has entered
+     * incomplete or invalid data.
      *
      * @return `true` if the dialog should be closed after this method returns,
      *   and `false` if it has to remain open.
@@ -374,19 +507,11 @@ public abstract class Dialog : Component() {
     protected abstract suspend fun submitForm(): Boolean
 
     /**
-     * Creates the dialog content composition.
+     * Renders the dialog's buttons section, which is displayed
+     * below [contentSection].
      */
     @Composable
-    protected override fun content() {
-        coroutineScope = rememberCoroutineScope()
-        displayMode.content(this) { formContent() }
-    }
-
-    /**
-     * The panel with control buttons of the dialog.
-     */
-    @Composable
-    internal open fun buttonsRow() {
+    protected open fun buttonsSection() {
         Row(
             modifier = Modifier.fillMaxWidth()
                 .padding(look.buttonsPanelPadding),
@@ -396,16 +521,36 @@ public abstract class Dialog : Component() {
             Row(
                 horizontalArrangement = spacedBy(look.buttonsSpacing)
             ) {
-                if (cancelAvailable) {
-                    DialogButton(cancelButtonText) {
-                        coroutineScope.launch { handleCancelClick() }
-                    }
-                }
-                if (submitAvailable) {
-                    DialogButton(submitButtonText, !submissionInProgress) {
-                        coroutineScope.launch { handleSubmitClick() }
-                    }
-                }
+                buttons()
+            }
+        }
+    }
+
+    /**
+     * Exposes [buttonsSection] within the `internal` visibility scope.
+     */
+    @Composable
+    internal fun buttonsSectionInternal() {
+        buttonsSection()
+    }
+
+    /**
+     * Renders the buttons, which need to be displayed in the dialog's
+     * buttons section.
+     *
+     * This method can be overridden to provide a custom set of buttons,
+     * which are needed for a particular dialog's implementation.
+     */
+    @Composable
+    protected fun buttons() {
+        if (cancelAvailable) {
+            DialogButton(cancelButtonText) {
+                cancel()
+            }
+        }
+        if (submitAvailable) {
+            DialogButton(submitButtonText, !submissionInProgress) {
+                submit()
             }
         }
     }
@@ -449,28 +594,6 @@ public abstract class Dialog : Component() {
             nestedDialog!!.closeNestedDialog(dialog)
         }
     }
-
-    internal suspend fun handleSubmitClick() {
-        if (onBeforeSubmit()) {
-
-            submissionInProgress = true
-            val submittedSuccessfully = try {
-                submitForm()
-            } finally {
-                submissionInProgress = false
-            }
-
-            if (submittedSuccessfully) {
-                close()
-            }
-        }
-    }
-
-    internal suspend fun handleCancelClick() {
-        if (onBeforeCancel()) {
-            close()
-        }
-    }
 }
 
 /**
@@ -480,56 +603,13 @@ public abstract class Dialog : Component() {
 public abstract class DialogDisplayMode {
 
     /**
-     * Renders the dialog with its content according to the display mode
-     * defined by this object.
+     * Renders the dialog window according to the display mode defined by this
+     * object.
      *
      * @param dialog The [Dialog] that is being displayed.
-     * @param formContent Composable dialog content as defined by the dialog's
-     *   [formContent][Dialog.formContent] method.
      */
     @Composable
-    public abstract fun content(
-        dialog: Dialog,
-        formContent: @Composable () -> Unit
-    )
-
-    /**
-     * Renders the dialog's frame, which makes up main elements that are common
-     * for all dialogs, including dialog's title and buttons, while delegating
-     * the rendering of the dialog's content to the actual dialog's
-     * implementation (via the [formContent] method).
-     *
-     * @param dialog The [Dialog] that is being displayed.
-     * @param formContent Composable dialog content as defined by the dialog's
-     *   [formContent][Dialog.formContent] method.
-     */
-    @Composable
-    protected open fun dialogFrame(
-        dialog: Dialog,
-        formContent: @Composable () -> Unit
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(dialog.look.padding),
-        ) {
-            titleArea(dialog)
-            Column(Modifier.weight(1F)) {
-                formContent()
-            }
-            dialog.buttonsRow()
-        }
-    }
-
-    /**
-     * Renders the content of the area where window's title can be placed.
-     *
-     * @param dialog The dialog being rendered.
-     */
-    @Composable
-    protected open fun titleArea(dialog: Dialog) {
-        DialogTitle(dialog.title, dialog.look.titlePadding)
-    }
+    public abstract fun dialogWindow(dialog: Dialog)
 
     public companion object {
 
@@ -557,12 +637,7 @@ internal class DesktopWindowDisplayMode(
 ) : DialogDisplayMode() {
 
     @Composable
-    override fun content(
-        dialog: Dialog,
-        formContent: @Composable  () -> Unit
-    ) {
-        val coroutineScope = rememberCoroutineScope()
-
+    override fun dialogWindow(dialog: Dialog) {
         DialogWindow(
             title = dialog.title,
             resizable = resizable,
@@ -572,33 +647,28 @@ internal class DesktopWindowDisplayMode(
             onCloseRequest = { dialog.close() },
             onKeyEvent = { event ->
                 if (dialog.cancelAvailableInternal && event matches cancelShortcutKey.down) {
-                    coroutineScope.launch { dialog.handleCancelClick() }
+                    dialog.cancel()
                 }
                 if (dialog.submitAvailableInternal && event matches submitShortcutKey.up) {
-                    coroutineScope.launch { dialog.handleSubmitClick() }
+                    dialog.submit()
                 }
                 false
             }
         ) {
-            dialogFrame(dialog, formContent)
-            dialog.nestedDialog?.Content()
-        }
-    }
-
-    @Composable
-    override fun titleArea(dialog: Dialog) {
-        // No title needs to be composed explicitly, because desktop dialog
-        // windows have their own titles displayed by the OS.
-    }
-
-    @Composable
-    override fun dialogFrame(dialog: Dialog, formContent: @Composable () -> Unit) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colorScheme.background),
-        ) {
-            super.dialogFrame(dialog, formContent)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colorScheme.background),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(dialog.look.padding),
+                ) {
+                    dialog.windowContentInternal()
+                    dialog.nestedDialog?.Content()
+                }
+            }
         }
     }
 }
@@ -629,70 +699,54 @@ internal class LightweightDisplayMode(
 ) : DialogDisplayMode() {
 
     @Composable
-    override fun content(
-        dialog: Dialog,
-        formContent: @Composable () -> Unit
-    ) {
-        val coroutineScope = rememberCoroutineScope()
-
-        if (dialog.isBottomDialog) {
-            Popup(
-                popupPositionProvider = centerWindowPositionProvider,
-                onDismissRequest = { dialog.close() },
-                properties = PopupProperties(focusable = true),
-                onPreviewKeyEvent = { false },
-                onKeyEvent = cancelShortcutHandler {
-                    if (dialog.cancelAvailableInternal) {
-                        coroutineScope.launch { dialog.handleCancelClick() }
-                    }
-                }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(backdropColor),
-                    contentAlignment = Center
-                ) {
-                    Box(
-                        modifier = Modifier.pointerInput(dialog) {
-                            detectTapGestures(onPress = {})
-                        }
-                    ) {
-                        dialogFrame(dialog, formContent)
-                    }
+    override fun dialogWindow(dialog: Dialog) {
+        Popup(
+            popupPositionProvider = centerWindowPositionProvider,
+            properties = PopupProperties(focusable = true),
+            onPreviewKeyEvent = { false },
+            onKeyEvent = cancelShortcutHandler {
+                if (dialog.cancelAvailableInternal) {
+                    dialog.cancel()
                 }
             }
-        } else {
-            Popup(
-                popupPositionProvider = centerWindowPositionProvider,
-                properties = PopupProperties(focusable = true),
-                onPreviewKeyEvent = { false }
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(backdropColor),
+                contentAlignment = Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(backdropColor),
-                    contentAlignment = Center
-                ) {
-                    Box {
-                        dialogFrame(dialog, formContent)
+                val modifier = if (dialog.isBottomDialog) {
+                    Modifier.pointerInput(dialog) {
+                        detectTapGestures(onPress = {})
                     }
+                } else {
+                    Modifier
+                }
+                Box(modifier = modifier) {
+                    dialogFrame(dialog)
                 }
             }
         }
-
-        dialog.nestedDialog ?.Content()
     }
 
     @Composable
-    override fun dialogFrame(dialog: Dialog, formContent: @Composable () -> Unit) {
+    private fun dialogFrame(dialog: Dialog) {
         Column(
             modifier = Modifier
                 .clip(shapes.large)
                 .size(dialog.dialogWidth, dialog.dialogHeight)
                 .background(colorScheme.background),
         ) {
-            super.dialogFrame(dialog, formContent)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(dialog.look.padding),
+            ) {
+                DialogTitle(dialog.title, dialog.look.titlePadding)
+                dialog.windowContentInternal()
+                dialog.nestedDialog ?.Content()
+            }
         }
     }
 
