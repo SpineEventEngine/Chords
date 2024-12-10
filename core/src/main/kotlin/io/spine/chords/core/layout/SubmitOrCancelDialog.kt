@@ -24,7 +24,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.core.layout
+
 /**
-  * The version of all Chords libraries.
-  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.53")
+ * A modal dialog window, which has OK and Cancel buttons.
+ *
+ * It can be used in the same way as its base [Dialog] class, but it also
+ * exposes
+ *
+ * @see Dialog
+ */
+public abstract class SubmitOrCancelDialog : Dialog() {
+
+    /**
+     * The label for the dialog's Submit button.
+     *
+     * The default value is `OK`.
+     */
+    public override var submitButtonText: String = "OK"
+
+    /**
+     * The label for the dialog's Cancel button.
+     *
+     * The default value is `Cancel`.
+     */
+    public override var cancelButtonText: String = "Cancel"
+
+    init {
+        submitAvailable = true
+        cancelAvailable = true
+    }
+}

@@ -31,18 +31,21 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import io.spine.chords.core.appshell.app
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
-import io.spine.chords.core.ComponentProps
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.appshell.client
+import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.app
+import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.MessageFormSetupBase
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 
 /**
@@ -333,12 +336,20 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     override val shouldEnableEditors: Boolean
         get() = super.shouldEnableEditors && (!posting || !disableOnPosting)
 
+    private lateinit var coroutineScope: CoroutineScope
+
     override fun initialize() {
         super.initialize()
         check(this::eventSubscription.isInitialized) {
             "CommandMessageForm's `eventSubscription` property must " +
             "be specified."
         }
+    }
+
+    @Composable
+    override fun content() {
+        coroutineScope = rememberCoroutineScope()
+        super.content()
     }
 
     /**
@@ -369,7 +380,9 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   the [postCommand] invocation is still being handled (when [posting] is
      *   still `true`).
      */
-    public suspend fun postCommand(): Boolean {
+    public suspend fun postCommand(
+        responseHandler: CommandResponseHandler<C> = DefaultResponseHandler()
+    ): Boolean {
         if (posting) {
             throw IllegalStateException("Cannot invoke `postCommand`, while" +
                     "waiting for handling the previously posted command.")
@@ -391,18 +404,28 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             true
         } catch (
             @Suppress(
-                // Using a defensive wide-scope catch to cover any message
-                // creation failures.
-                "TooGenericExceptionCaught",
-                // TODO:2023-09-22:dmitry.pikhulya: handle server communication errors
-                //                                  https://github.com/Projects-tm/1DAM/issues/17
+                // A timeout condition is handled by `responseHandler`.
                 "SwallowedException"
             )
-            e: Exception
+            e: TimeoutCancellationException
         ) {
+            responseHandler.responseWaitingTimedOut(command)
             false
         } finally {
             posting = false
         }
+    }
+}
+
+public interface CommandResponseHandler<C : CommandMessage> {
+    public suspend fun responseWaitingTimedOut(command: C)
+}
+
+public class DefaultResponseHandler<C : CommandMessage> : CommandResponseHandler<C> {
+    override suspend fun responseWaitingTimedOut(command: C) {
+        showMessage(
+            "Timed out waiting for an event in response to " +
+                    "the command ${command.javaClass.simpleName}"
+        )
     }
 }
