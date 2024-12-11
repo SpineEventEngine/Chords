@@ -440,17 +440,28 @@ public interface CommandResponseHandler<C : CommandMessage> {
 
 /**
  * A default implementation for [CommandResponseHandler], which is expected to
- * be suitable in most cases.
+ * be suitable in most typical cases.
+ *
+ * @param responseEventHandler An optional callback, which will be invoked when
+ *   an event that is expected in response to the command [C] is emitted.
+ * @param timeoutMessage A lambda, which, given a command that was posted with
+ *   no subsequent response received in time, should provide a message that
+ *   should be displayed to the user in this case. If not specified, a default
+ *   message is displayed.
  */
-public class DefaultResponseHandler<C : CommandMessage> : CommandResponseHandler<C> {
+public class DefaultResponseHandler<C : CommandMessage>(
+    private val responseEventHandler: ((EventMessage) -> Unit)? = null,
+    private val timeoutMessage: ((C) -> String)? = null
+) : CommandResponseHandler<C> {
     override suspend fun responseWaitingTimedOut(command: C) {
-        showMessage(
-            "Timed out waiting for an event in response to " +
-                    "the command ${command.javaClass.simpleName}"
-        )
+        val message = timeoutMessage?.invoke(command) ?: (
+                "Timed out waiting for an event in response to " +
+                        "the command ${command.javaClass.simpleName}"
+                )
+        showMessage(message)
     }
 
     override fun handleResponseEvent(event: EventMessage) {
-        TODO("Not yet implemented")
+        responseEventHandler?.invoke(event)
     }
 }

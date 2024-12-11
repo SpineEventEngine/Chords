@@ -50,8 +50,10 @@ private const val ReactionTimeoutMillis = 15_000L
 /**
  * Provides API to interact with the application server via gRPC.
  *
- * @param host The host of the application server to which client should connect.
- * @param port The port on which the application server is listening for gRPC connections.
+ * @param host The host of the application server to which client
+ *   should connect.
+ * @param port The port on which the application server is listening for
+ *   gRPC connections.
  * @param user The callback that should return the user ID on whose behalf
  *   the `DesktopClient` should send requests to the server.
  *   If the callback return `null` the client will send requests
@@ -84,10 +86,10 @@ public class DesktopClient(
      * as well.
      *
      * @param entityClass A class of entities that should be read and observed.
-     * @param targetList A [MutableState] that contains a list whose content should be
-     *   populated and kept up to date by this function.
-     * @param entityIdField Reads the value of the entity's field that can uniquely identify
-     *   an entity.
+     * @param targetList A [MutableState] that contains a list whose content
+     *   should be populated and kept up to date by this function.
+     * @param entityIdField Reads the value of the entity's field that can
+     *   uniquely identify an entity.
      */
     public override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
@@ -144,7 +146,8 @@ public class DesktopClient(
      *   the command.
      * @param field A field that should be used for identifying the event to be
      *   awaited for.
-     * @param fieldValue A value of the field that identifies the event to be awaited for.
+     * @param fieldValue A value of the field that identifies the event to be
+     *   awaited for.
      * @return An event specified in the parameters, which was emitted in
      *   response to the command.
      * @throws kotlinx.coroutines.TimeoutCancellationException
@@ -234,8 +237,8 @@ public class DesktopClient(
      *
      * @param targetList A [MutableState] that contains a list to be updated.
      * @param entity An item that has to be merged into the list.
-     * @param entityIdField A function that, given a list item, or a value of [entity],
-     *   returns the value of its field, which uniquely identifies
+     * @param entityIdField A function that, given a list item, or a value of
+     *   [entity], returns the value of its field, which uniquely identifies
      *   the respective instance.
      */
     private fun <E : EntityState> updateList(
