@@ -40,13 +40,14 @@ import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.future.await
 
 /**
- * A dialog that displays the specified message for the user.
+ * A dialog that displays the specified text message for the user.
  */
 public class MessageDialog : Dialog() {
     public companion object : AbstractComponentSetup({ MessageDialog() }) {
 
         /**
-         * Displays the message dialog, and waits until the user dismissed it.
+         * Displays the text message dialog, and waits until the user
+         * dismisses it.
          *
          * Here's a usage example:
          * ```
@@ -68,12 +69,8 @@ public class MessageDialog : Dialog() {
         }
     }
 
-    /**
-     * Initializes the `confirmButtonText` and the size of the dialog.
-     */
     init {
         submitAvailable = true
-        submitButtonText = "OK"
         dialogWidth = 430.dp
         dialogHeight = 210.dp
     }
@@ -84,16 +81,10 @@ public class MessageDialog : Dialog() {
     public override var title: String = "Message"
 
     /**
-     * The main message of the confirmation dialog, which is usually expected
+     * The main message of the dialog, which is usually expected
      * to contain the question presented to the user.
      */
     public var message: String = ""
-
-    /**
-     * An optional auxiliary text displayed below the message, which can provide
-     * an extra context about the question being asked.
-     */
-    public var description: String = ""
 
     init {
         cancelAvailable = false
@@ -129,12 +120,6 @@ public class MessageDialog : Dialog() {
             ) {
                 Text(
                     text = message,
-                    style = textStyle
-                )
-            }
-            Row {
-                Text(
-                    text = description,
                     style = textStyle
                 )
             }

@@ -482,7 +482,7 @@ public abstract class Dialog : Component() {
     }
 
     /**
-     * Exposes the [windowContent] with an `internal` visibility scope.
+     * Exposes the [windowContent] within an `internal` visibility scope.
      */
     context(ColumnScope)
     @Composable

@@ -1344,24 +1344,6 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     }
 
     /**
-     * Renders the form's instance, which was created using
-     * the [create] function.
-     *
-     * In most cases forms (like class-based
-     * [Component][io.spine.chords.core.Component]s in general) would be
-     * declared using either of [invoke] functions, and thus won't need this
-     * function to be invoked explicitly though.
-     *
-     * If you're implementing a custom `MessageForm` subclass that needs its own
-     * built-in content to be specified, override the [customContent] or
-     * [customMultipartContent] method instead.
-     */
-    @Composable
-    final override fun Content() {
-        super.Content()
-    }
-
-    /**
      * The `MessageForm`'s rendering implementation.
      *
      * When defining custom `MessageForm` implementations (subclasses) that need

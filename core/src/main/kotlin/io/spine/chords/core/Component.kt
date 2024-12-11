@@ -455,17 +455,18 @@ import io.spine.chords.core.appshell.app
  *      was invoked in the same place where the component's instance
  *      is declared).
  *
- *    - **Properties update + [initialize]** — when the component is composed
- *      (rendered for the first time):
+ *    - **Properties update([updateProps]) + [initialize]** — when the component
+ *      is composed (rendered for the first time):
  *
  *      - First, the component's properties are updated (including the
- *      [application-wide][Application] ones, and instance-specific ones)
+ *      [application-wide][Application] ones, and instance-specific ones).
  *
  *      - Then, the component's [initialize] method is called.
  *
- * -  Each time the component is rendered (composed or recomposed):
+ * -  Each time the component is rendered (composed or recomposed,
+ *    see [Content]):
  *
- *    - **Properties update**. This consists of two parts:
+ *    - **Properties update** (see [updateProps]). This consists of two parts:
  *
  *      - Application-wide properties that are applicable to this component type
  *        are applied. See the "Customizing default values for different
@@ -692,8 +693,8 @@ public abstract class Component {
      * Updates property values and renders the composable content that
      * represents this component.
      *
-     * NOTE: in most cases this method is not expected to be invoked or
-     * overridden by application developers, and is used internally within
+     * NOTE: in most cases this method is not expected to be invoked by
+     * application developers, and is used internally within
      * the component's implementation.
      *
      * - Instead of invoking this method explicitly, the component instance
@@ -708,7 +709,7 @@ public abstract class Component {
      *   the [content] method.
      */
     @Composable
-    public open fun Content(): Unit = recompositionWorkaround {
+    public fun Content(): Unit = recompositionWorkaround {
         updateProps()
         if (!initialized.value) {
             initialize()
