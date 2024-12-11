@@ -75,7 +75,7 @@ import java.util.concurrent.CompletableFuture
      *   populated and kept up to date by this function.
      * @param entityIdField A callback that should read the value of the entity's field
      *   that can uniquely identify an entity.
-     * @param queryFilters Filters to be applied on querying the initial list of entities.
+     * @param queryFilters Filters to apply when querying the initial list of entities.
      * @param observeFilters Filters to apply when observing updates to the entities.
      */
     public fun <E : EntityState> readAndObserve(
