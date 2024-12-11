@@ -29,8 +29,10 @@ package io.spine.chords.core.layout
 /**
  * A modal dialog window, which has OK and Cancel buttons.
  *
- * It can be used in the same way as its base [Dialog] class, but it also
- * exposes
+ * It can be used in the same way as its base [Dialog] class. Compared to
+ * [Dialog], this component includes the Submit and Cancel buttons by default,
+ * and makes the respective button customization properties to be public ones:
+ * [submitButtonText], [cancelButtonText].
  *
  * @see Dialog
  */

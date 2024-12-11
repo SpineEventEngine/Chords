@@ -370,6 +370,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   an adequate delay from user's perspective, this method
      *   throws [TimeoutCancellationException].
      *
+     * @param responseHandler
      * @return `true` if the command was successfully built without any
      *   validation errors, and `false` if the command message could not be
      *   successfully built from the currently entered data (validation errors
@@ -400,7 +401,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
         return try {
             posting = true
             app.client.command(command)
-            subscription.awaitEvent()
+            val event = subscription.awaitEvent()
+            responseHandler.handleResponseEvent(event)
             true
         } catch (
             @Suppress(
@@ -417,15 +419,38 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     }
 }
 
+/**
+ * An object, which is capable of handling different kinds of outcomes that can
+ * follow as a result of posting a command.
+ */
 public interface CommandResponseHandler<C : CommandMessage> {
+
+    /**
+     * Invoked upon receiving an event that has been emitted in response to
+     * the command [C].
+     */
+    public fun handleResponseEvent(event: EventMessage)
+
+    /**
+     * Invoked if no event has been received in response to the command [C]
+     * in a reasonable period of time defined by the implementation.
+     */
     public suspend fun responseWaitingTimedOut(command: C)
 }
 
+/**
+ * A default implementation for [CommandResponseHandler], which is expected to
+ * be suitable in most cases.
+ */
 public class DefaultResponseHandler<C : CommandMessage> : CommandResponseHandler<C> {
     override suspend fun responseWaitingTimedOut(command: C) {
         showMessage(
             "Timed out waiting for an event in response to " +
                     "the command ${command.javaClass.simpleName}"
         )
+    }
+
+    override fun handleResponseEvent(event: EventMessage) {
+        TODO("Not yet implemented")
     }
 }
