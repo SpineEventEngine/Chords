@@ -34,6 +34,8 @@ import io.spine.base.EntityState
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.client.ClientRequest
+import io.spine.client.CompositeEntityStateFilter
+import io.spine.client.CompositeQueryFilter
 import io.spine.client.EventFilter.eq
 import io.spine.core.UserId
 import java.util.concurrent.CompletableFuture
@@ -105,6 +107,41 @@ public class DesktopClient(
     }
 
     /**
+     * Reads the list of the [entityClass] entities that match the provided [queryFilters],
+     * populates the [targetList] with the results, and sets up observation to ensure that future
+     * updates to the entities are reflected in the [targetList]. Observed updates are filtered
+     * using the [observeFilters].
+     *
+     * @param entityClass A class of entities that should be read and observed.
+     * @param targetList A [MutableState] that contains a list whose content should be
+     *   populated and kept up to date by this function.
+     * @param entityIdField A callback that should read the value of the entity's field
+     *   that can uniquely identify an entity.
+     * @param queryFilters Filters to be applied on querying the initial list of entities.
+     * @param observeFilters Filters to apply when observing updates to the entities.
+     */
+    public override fun <E : EntityState> readAndObserve(
+        entityClass: Class<E>,
+        targetList: MutableState<List<E>>,
+        entityIdField: (E) -> Any,
+        queryFilters: CompositeQueryFilter,
+        observeFilters: CompositeEntityStateFilter
+    ) {
+        targetList.value = clientRequest()
+            .select(entityClass)
+            .where(queryFilters)
+            .run()
+
+        clientRequest()
+            .subscribeTo(entityClass)
+            .observe { entity ->
+                updateList(targetList, entity, entityIdField)
+            }
+            .where(observeFilters)
+            .post()
+    }
+
+    /**
      * Retrieves an entity of the specified class with the given ID.
      *
      * @param entityClass The class of the entity to retrieve.
@@ -121,7 +158,7 @@ public class DesktopClient(
         if (entities.isEmpty()) {
             return null
         }
-        return entities[0];
+        return entities.firstOrNull()
     }
 
     /**
@@ -251,7 +288,7 @@ public class DesktopClient(
         }
 
         val newList = if (existingItemIndex != -1) {
-            prevList.subList(0, existingItemIndex - 1) +
+            prevList.subList(0, existingItemIndex) +
                     entity +
                     prevList.subList(existingItemIndex + 1, prevList.size)
         } else {
