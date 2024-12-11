@@ -155,9 +155,6 @@ public class DesktopClient(
             .select(entityClass)
             .byId(id)
             .run()
-        if (entities.isEmpty()) {
-            return null
-        }
         return entities.firstOrNull()
     }
 
