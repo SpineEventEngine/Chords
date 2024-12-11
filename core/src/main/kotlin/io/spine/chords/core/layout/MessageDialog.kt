@@ -110,7 +110,7 @@ public class MessageDialog : Dialog() {
         dialogClosure.await()
     }
 
-    override suspend fun submitForm(): Boolean {
+    override suspend fun submitContent(): Boolean {
         // No custom logic is required when the user acknowledges
         // the displayed message.
         return true

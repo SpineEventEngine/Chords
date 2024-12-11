@@ -114,11 +114,11 @@ private val submitShortcutKey = Ctrl(Enter.key)
  *     override val title: String = "My Dialog"
  *
  *     @Composable
- *     override fun dialogContent() {
+ *     override fun contentSection() {
  *         // Arbitrary composable dialog's content can be included here.
  *     }
  *
- *     override suspend fun submitForm(): Boolean {
+ *     override suspend fun submitContent(): Boolean {
  *         // Invoked when the dialog is "submitted" by the user by pressing the
  *         // OK button. Inspect any data entered in the dialog, and perform
  *         // the respective dialog's action that it was designed for here.
@@ -150,7 +150,7 @@ private val submitShortcutKey = Ctrl(Enter.key)
  * ```
  *
  * The dialog will be closed automatically, when the "Cancel" button is pressed,
- * or when the "OK" button is pressed (and [submitForm] returns `true`).
+ * or when the "OK" button is pressed (and [submitContent] returns `true`).
  *
  * ## Predefined dialog actions
  *
@@ -164,9 +164,9 @@ private val submitShortcutKey = Ctrl(Enter.key)
  *   editing some data, etc.). Setting the [submitAvailable] property to `true`
  *   adds the Submit button to the dialog (labeled "OK" by default).
  *
- *   Pressing the Submit button invokes the [submitForm] method, which can be
+ *   Pressing the Submit button invokes the [submitContent] method, which can be
  *   implemented by the actual dialog's subclass to perform the required action.
- *   If [submitForm] completes with a return value of `true`, the dialog is
+ *   If [submitContent] completes with a return value of `true`, the dialog is
  *   then closed.
  *
  *   If [submitAvailable] is `true`, the user also has an ability to trigger
@@ -191,8 +191,8 @@ private val submitShortcutKey = Ctrl(Enter.key)
  *
  * You can in particular choose to implement custom Submit and Cancel buttons.
  * In this case, to ensure that these buttons perform the same actions as the
- * original ones, make sure that they invoke the [submit] and [cancel]
- * methods respectively
+ * original ones, make sure that they invoke the dialog's [submit] and [cancel]
+ * methods respectively.
  *
  * ## Display modes
  *
@@ -306,7 +306,7 @@ public abstract class Dialog : Component() {
 
     /**
      * A suspending callback, which is invoked upon the dialog's Submit button
-     * click before the [submitForm] function is called.
+     * click before the [submitContent] function is called.
      *
      * The callback should return `true` in order for the dialog to proceed with
      * submission. Returning `false` prevents submission from happening and
@@ -319,7 +319,7 @@ public abstract class Dialog : Component() {
      *
      * For example, here's an example of a custom `MyDialog` implementation
      * displaying a confirmation upon pressing the Submit button, right before
-     * invoking the [submitForm] method:
+     * invoking the [submitContent] method:
      *
      * ```
      * public class MyDialog : Dialog() {
@@ -410,7 +410,12 @@ public abstract class Dialog : Component() {
     }
 
     /**
-     * Submits the dialog, which is equivalent to pressing the "Submit" button.
+     * Submits the dialog and closes it upon a successful submission, which is
+     * equivalent to pressing the "Submit" button.
+     *
+     * This in particular involves invoking the [onBeforeSubmit] callback before
+     * performing the submission, and then invoking the [submitContent] method,
+     * which actually performs a dialog-specific submission procedure.
      */
     public fun submit() {
         coroutineScope.launch {
@@ -418,7 +423,7 @@ public abstract class Dialog : Component() {
 
                 submissionInProgress = true
                 val submittedSuccessfully = try {
-                    submitForm()
+                    submitContent()
                 } finally {
                     submissionInProgress = false
                 }
@@ -432,6 +437,9 @@ public abstract class Dialog : Component() {
 
     /**
      * Cancels the dialog, which is equivalent to pressing the "Cancel" button.
+     *
+     * This means invoking the [onBeforeCancel] callback, and closing the dialog
+     * if the callback didn't prevent closing.
      */
     public fun cancel() {
         coroutineScope.launch {
@@ -473,7 +481,9 @@ public abstract class Dialog : Component() {
         buttonsSection()
     }
 
-
+    /**
+     * Exposes the [windowContent] with an `internal` visibility scope.
+     */
     context(ColumnScope)
     @Composable
     internal fun windowContentInternal() {
@@ -487,9 +497,11 @@ public abstract class Dialog : Component() {
     protected abstract fun contentSection()
 
     /**
-     * Submits the dialog's form.
+     * Submits the dialog's content, which means performing whatever action is
+     * appropriate for the actual dialog's implementation, based on the content
+     * entered by the user in the dialog.
      *
-     * This action is executed when the user submits the dialog
+     * This action is executed when the user completes the dialog
      * by pressing the Submit button.
      *
      * If this method returns `true` the dialog will be closed. As an example,
@@ -504,7 +516,7 @@ public abstract class Dialog : Component() {
      * @return `true` if the dialog should be closed after this method returns,
      *   and `false` if it has to remain open.
      */
-    protected abstract suspend fun submitForm(): Boolean
+    protected abstract suspend fun submitContent(): Boolean
 
     /**
      * Renders the dialog's buttons section, which is displayed

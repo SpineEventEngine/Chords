@@ -135,7 +135,7 @@ public class ConfirmationDialog : Dialog() {
     /**
      * Just returns `true` on form submission since there is no data to submit.
      */
-    protected override suspend fun submitForm(): Boolean {
+    protected override suspend fun submitContent(): Boolean {
         return true
     }
 

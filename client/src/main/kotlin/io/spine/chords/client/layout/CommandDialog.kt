@@ -60,11 +60,11 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     private lateinit var commandMessageForm: CommandMessageForm<C>
 
     /**
-     * Creates the [commandMessageForm] in which the command field editors
-     * are rendered.
+     * Creates and renders the [commandMessageForm], and then delegates the
+     * rendering of the actual form's content to the [content] method.
      */
     @Composable
-    protected override fun contentSection() {
+    protected final override fun contentSection() {
         commandMessageForm = CommandMessageForm(
             ::createCommandBuilder,
             onBeforeBuild = ::beforeBuild,
@@ -124,14 +124,12 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * fields have already been set from all form's field editors,
      * which currently have valid values.
      */
-    protected open fun beforeBuild(builder: B): B {
-        return builder
-    }
+    protected open fun beforeBuild(builder: B) {}
 
     /**
      * Posts the command message [C] created in this dialog.
      */
-    protected override suspend fun submitForm(): Boolean {
+    protected override suspend fun submitContent(): Boolean {
         return commandMessageForm.postCommand()
     }
 }

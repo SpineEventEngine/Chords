@@ -370,7 +370,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   an adequate delay from user's perspective, this method
      *   throws [TimeoutCancellationException].
      *
-     * @param responseHandler
+     * @param responseHandler Specifies the way that command response is
+     *   handled, e.g. the way how unexpected outcomes are processed.
      * @return `true` if the command was successfully built without any
      *   validation errors, and `false` if the command message could not be
      *   successfully built from the currently entered data (validation errors
