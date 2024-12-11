@@ -1,6 +1,6 @@
 
 
-# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.52`
+# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.53`
 
 ## Runtime
 1.  **Group** : com.google.android. **Name** : annotations. **Version** : 4.1.1.4.
@@ -111,7 +111,7 @@
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -230,7 +230,7 @@
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -750,7 +750,7 @@
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -992,7 +992,7 @@
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -1066,12 +1066,12 @@
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Dec 03 00:18:52 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Dec 11 16:54:23 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-codegen-tests:2.0.0-SNAPSHOT.52`
+# Dependencies of `io.spine.chords:spine-chords-codegen-tests:2.0.0-SNAPSHOT.53`
 
 ## Runtime
 1.  **Group** : com.google.android. **Name** : annotations. **Version** : 4.1.1.4.
@@ -1925,12 +1925,12 @@ This report was generated on **Tue Dec 03 00:18:52 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Dec 03 00:18:55 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Dec 11 16:54:26 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.52`
+# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.53`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -1992,7 +1992,7 @@ This report was generated on **Tue Dec 03 00:18:55 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -2107,7 +2107,7 @@ This report was generated on **Tue Dec 03 00:18:55 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -2596,7 +2596,7 @@ This report was generated on **Tue Dec 03 00:18:55 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -2838,7 +2838,7 @@ This report was generated on **Tue Dec 03 00:18:55 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -2912,12 +2912,12 @@ This report was generated on **Tue Dec 03 00:18:55 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Dec 03 00:18:57 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Dec 11 16:54:27 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto:2.0.0-SNAPSHOT.52`
+# Dependencies of `io.spine.chords:spine-chords-proto:2.0.0-SNAPSHOT.53`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -2996,7 +2996,7 @@ This report was generated on **Tue Dec 03 00:18:57 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -3111,7 +3111,7 @@ This report was generated on **Tue Dec 03 00:18:57 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -3600,7 +3600,7 @@ This report was generated on **Tue Dec 03 00:18:57 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -3842,7 +3842,7 @@ This report was generated on **Tue Dec 03 00:18:57 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -3916,12 +3916,12 @@ This report was generated on **Tue Dec 03 00:18:57 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Dec 03 00:18:59 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Dec 11 16:54:29 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto-values:2.0.0-SNAPSHOT.52`
+# Dependencies of `io.spine.chords:spine-chords-proto-values:2.0.0-SNAPSHOT.53`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -4715,12 +4715,12 @@ This report was generated on **Tue Dec 03 00:18:59 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Dec 03 00:19:01 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Dec 11 16:54:30 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-runtime:2.0.0-SNAPSHOT.52`
+# Dependencies of `io.spine.chords:spine-chords-runtime:2.0.0-SNAPSHOT.53`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -5484,4 +5484,4 @@ This report was generated on **Tue Dec 03 00:19:01 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Dec 03 00:19:02 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Dec 11 16:54:31 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
