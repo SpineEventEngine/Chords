@@ -55,35 +55,34 @@ import java.util.concurrent.CompletableFuture
      * @param entityClass A class of entities that should be read and observed.
      * @param targetList A [MutableState] that contains a list whose content should be
      *   populated and kept up to date by this function.
-     * @param entityIdField Reads the value of the entity's field that can uniquely identify
-     *   an entity.
+     * @param extractId  A callback that should read the value of the entity's ID.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         targetList: MutableState<List<E>>,
-        entityIdField: (E) -> Any
+        extractId: (E) -> Any
     )
 
     /**
-     * Reads the list of the [entityClass] entities that match the provided [queryFilters],
-     * populates the [targetList] with the results, and sets up observation to ensure that future
-     * updates to the entities are reflected in the [targetList]. Observed updates are filtered
-     * using the [observeFilters].
+     * Reads all entities of type [entityClass] that match the given [queryFilters] and invokes the
+     * [onNext] callback with the initial list of entities. Then sets up observation to receive
+     * future updates to the entities, filtering the observed updates using the provided [observeFilters].
+     * Each time any entity that matches the [observeFilters] changes, the [onNext] callback
+     * will be invoked again with the updated list of entities.
      *
      * @param entityClass A class of entities that should be read and observed.
-     * @param targetList A [MutableState] that contains a list whose content should be
-     *   populated and kept up to date by this function.
-     * @param entityIdField A callback that should read the value of the entity's field
-     *   that can uniquely identify an entity.
+     * @param extractId A callback that should read the value of the entity's ID.
      * @param queryFilters Filters to apply when querying the initial list of entities.
      * @param observeFilters Filters to apply when observing updates to the entities.
+     * @param onNext A callback function that is called with the list of entities after the initial
+     *   query completes, and each time any of the observed entities is updated.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
-        targetList: MutableState<List<E>>,
-        entityIdField: (E) -> Any,
+        extractId: (E) -> Any,
         queryFilters: CompositeQueryFilter,
-        observeFilters: CompositeEntityStateFilter
+        observeFilters: CompositeEntityStateFilter,
+        onNext: (List<E>) -> Unit
     )
 
     /**
