@@ -30,6 +30,7 @@ import androidx.compose.runtime.MutableState
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
+import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.core.UserId
@@ -77,6 +78,8 @@ import java.util.concurrent.CompletableFuture
      * Posts a command to the server.
      *
      * @param cmd A command that has to be posted.
+     * @throws CommandPostingError If some error has occurred during posting and
+     *   acknowledging the command on the server.
      */
     public fun command(cmd: CommandMessage)
 
@@ -157,4 +160,34 @@ public interface EventSubscription<E: EventMessage> {
      *   by the implementation.
      */
     public suspend fun awaitEvent(): E
+}
+
+/**
+ * Signifies an error that has occurred during the process of posting the
+ * command and acknowledging it on the server.
+ */
+public open class CommandPostingError(message: String? = null, cause: Throwable? = null) :
+    RuntimeException(message, cause)
+{
+    public companion object {
+        private const val serialVersionUID: Long = 3555883899622560720L
+    }
+}
+
+/**
+ * Signifies an error that has occurred when delivering events.
+ */
+public class StreamingError(error: Throwable) : CommandPostingError(cause = error) {
+    public companion object {
+        private const val serialVersionUID: Long = -5438430153458733051L
+    }
+}
+
+/**
+ * Signifies an error that has occurred on the server (e.g. a validation error).
+ */
+public class ServerError(public val error: Error) : CommandPostingError(error.message) {
+    public companion object {
+        private const val serialVersionUID: Long = -5438430153458733051L
+    }
 }

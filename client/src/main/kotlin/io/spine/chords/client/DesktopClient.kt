@@ -31,6 +31,7 @@ import com.google.protobuf.Message
 import io.grpc.ManagedChannelBuilder
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
+import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.client.ClientRequest
@@ -130,11 +131,23 @@ public class DesktopClient(
      * Posts a command to the server.
      *
      * @param cmd A command that has to be posted.
+     * @throws CommandPostingError If some error has occurred during posting and
+     *   acknowledging the command on the server.
      */
     override fun command(cmd: CommandMessage) {
+        var error: CommandPostingError? = null
         clientRequest()
             .command(cmd)
+            .onServerError { msg, err: Error ->
+                error = ServerError(err)
+            }
+            .onStreamingError { err: Throwable ->
+                error = StreamingError(err)
+            }
             .postAndForget()
+        if (error != null) {
+            throw error!!
+        }
     }
 
     /**

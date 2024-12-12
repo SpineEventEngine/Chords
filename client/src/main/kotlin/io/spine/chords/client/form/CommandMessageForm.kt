@@ -35,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
+import io.spine.chords.client.CommandPostingError
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.appshell.client
 import io.spine.chords.core.ComponentProps
@@ -370,7 +371,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   an adequate delay from user's perspective, this method
      *   throws [TimeoutCancellationException].
      *
-     * @param responseHandler Specifies the way that command response is
+     * @param outcomeHandler Specifies the way that command outcome is
      *   handled, e.g. the way how unexpected outcomes are processed.
      * @return `true` if the command was successfully built without any
      *   validation errors, and `false` if the command message could not be
@@ -383,7 +384,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   still `true`).
      */
     public suspend fun postCommand(
-        responseHandler: CommandResponseHandler<C> = DefaultResponseHandler()
+        outcomeHandler: CommandOutcomeHandler<C> = DefaultOutcomeHandler()
     ): Boolean {
         if (posting) {
             throw IllegalStateException("Cannot invoke `postCommand`, while" +
@@ -401,18 +402,23 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
         val subscription = eventSubscription(command)
         return try {
             posting = true
-            app.client.command(command)
-            val event = subscription.awaitEvent()
-            responseHandler.handleResponseEvent(event)
-            true
+            try {
+                app.client.command(command)
+                val event = subscription.awaitEvent()
+                outcomeHandler.onEvent(event)
+                true
+            } catch (e: CommandPostingError) {
+                outcomeHandler.onPostingError(e)
+                false
+            }
         } catch (
             @Suppress(
-                // A timeout condition is handled by `responseHandler`.
+                // A timeout condition is handled by `outcomeHandler`.
                 "SwallowedException"
             )
             e: TimeoutCancellationException
         ) {
-            responseHandler.responseWaitingTimedOut(command)
+            outcomeHandler.onTimeout(command)
             false
         } finally {
             posting = false
@@ -424,37 +430,54 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
  * An object, which is capable of handling different kinds of outcomes that can
  * follow as a result of posting a command.
  */
-public interface CommandResponseHandler<C : CommandMessage> {
+public interface CommandOutcomeHandler<C : CommandMessage> {
 
     /**
-     * Invoked upon receiving an event that has been emitted in response to
+     * Invoked upon receiving an event that has
      * the command [C].
      */
-    public fun handleResponseEvent(event: EventMessage)
+    public fun onEvent(event: EventMessage)
 
     /**
      * Invoked if no event has been received in response to the command [C]
      * in a reasonable period of time defined by the implementation.
      */
-    public suspend fun responseWaitingTimedOut(command: C)
+    public suspend fun onTimeout(command: C)
+
+    /**
+     * Invoked if an error has occurred during posting and acknowledging
+     * the command on the server.
+     *
+     * @param error The exception that signifies the error that has occurred.
+     * @see io.spine.chords.client.Client.command
+     */
+    public suspend fun onPostingError(error: CommandPostingError)
 }
 
 /**
- * A default implementation for [CommandResponseHandler], which is expected to
+ * A default implementation for [CommandOutcomeHandler], which is expected to
  * be suitable in most typical cases.
  *
- * @param responseEventHandler An optional callback, which will be invoked when
- *   an event that is expected in response to the command [C] is emitted.
+ * @param eventHandler An optional callback, which will be invoked when
+ *   an event that is expected as an outcome of the command [C] is emitted.
  * @param timeoutMessage A lambda, which, given a command that was posted with
  *   no subsequent response received in time, should provide a message that
  *   should be displayed to the user in this case. If not specified, a default
  *   message is displayed.
+ * @param postingErrorMessage A lambda, which, given a [CommandPostingError]
+ *   that has occurred when posting the command, returns the text that should
+ *   be displayed to the user.
  */
-public class DefaultResponseHandler<C : CommandMessage>(
-    private val responseEventHandler: ((EventMessage) -> Unit)? = null,
-    private val timeoutMessage: ((C) -> String)? = null
-) : CommandResponseHandler<C> {
-    override suspend fun responseWaitingTimedOut(command: C) {
+public class DefaultOutcomeHandler<C : CommandMessage>(
+    private val eventHandler: ((EventMessage) -> Unit)? = null,
+    private val timeoutMessage: ((C) -> String)? = null,
+    private val postingErrorMessage: ((CommandPostingError) -> String)? = null
+) : CommandOutcomeHandler<C> {
+    override fun onEvent(event: EventMessage) {
+        eventHandler?.invoke(event)
+    }
+
+    override suspend fun onTimeout(command: C) {
         val message = timeoutMessage?.invoke(command) ?: (
                 "Timed out waiting for an event in response to " +
                         "the command ${command.javaClass.simpleName}"
@@ -462,7 +485,11 @@ public class DefaultResponseHandler<C : CommandMessage>(
         showMessage(message)
     }
 
-    override fun handleResponseEvent(event: EventMessage) {
-        responseEventHandler?.invoke(event)
+    override suspend fun onPostingError(error: CommandPostingError) {
+        val message = postingErrorMessage?.invoke(error) ?: (
+                "An error has occurred when posting or acknowledging " +
+                        "the command ${error.message}"
+                )
+        showMessage(message)
     }
 }
