@@ -37,6 +37,7 @@ import io.spine.base.EventMessage
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.Dialog
+import io.spine.chords.core.layout.SubmitOrCancelDialog
 import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
@@ -50,19 +51,20 @@ import io.spine.protobuf.ValidatingBuilder
  * @param B A type of the command message builder.
  */
 public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>>
-    : Dialog() {
+    : SubmitOrCancelDialog() {
 
     /**
-     * The [CommandMessageForm] used as a container for the message field editors.
+     * The [CommandMessageForm] used as a container for the message
+     * field editors.
      */
     private lateinit var commandMessageForm: CommandMessageForm<C>
 
     /**
-     * Creates the [commandMessageForm] in which the command field editors
-     * are rendered.
+     * Creates and renders the [commandMessageForm], and then delegates the
+     * rendering of the actual form's content to the [content] method.
      */
     @Composable
-    protected override fun formContent() {
+    protected final override fun contentSection() {
         commandMessageForm = CommandMessageForm(
             ::createCommandBuilder,
             onBeforeBuild = ::beforeBuild,
@@ -107,8 +109,8 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * response to handling that command.
      *
      * @param command A command, which is going to be posted.
-     * @return A subscription to the event that is expected to arrive in response
-     *         to handling [command]
+     * @return A subscription to the event that is expected to arrive in
+     *   response to handling [command].
      */
     protected abstract fun subscribeToEvent(command: C):
             EventSubscription<out EventMessage>
@@ -122,14 +124,12 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * fields have already been set from all form's field editors,
      * which currently have valid values.
      */
-    protected open fun beforeBuild(builder: B): B {
-        return builder
-    }
+    protected open fun beforeBuild(builder: B) {}
 
     /**
      * Posts the command message [C] created in this dialog.
      */
-    protected override suspend fun submitForm(): Boolean {
+    protected override suspend fun submitContent(): Boolean {
         return commandMessageForm.postCommand()
     }
 }

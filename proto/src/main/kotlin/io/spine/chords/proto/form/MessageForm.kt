@@ -49,6 +49,7 @@ import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputContext
 import io.spine.chords.core.ValidationErrorText
+import io.spine.chords.core.recompositionWorkaroundReadonly
 import io.spine.chords.proto.form.MessageForm.Companion.Multipart
 import io.spine.chords.proto.form.MessageForm.Companion.create
 import io.spine.chords.proto.form.MessageForm.Companion.invoke
@@ -1343,24 +1344,6 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     }
 
     /**
-     * Renders the form's instance, which was created using
-     * the [create] function.
-     *
-     * In most cases forms (like class-based
-     * [Component][io.spine.chords.core.Component]s in general) would be
-     * declared using either of [invoke] functions, and thus won't need this
-     * function to be invoked explicitly though.
-     *
-     * If you're implementing a custom `MessageForm` subclass that needs its own
-     * built-in content to be specified, override the [customContent] or
-     * [customMultipartContent] method instead.
-     */
-    @Composable
-    final override fun Content() {
-        super.Content()
-    }
-
-    /**
      * The `MessageForm`'s rendering implementation.
      *
      * When defining custom `MessageForm` implementations (subclasses) that need
@@ -1371,7 +1354,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
-    final override fun content() {
+    override fun content(): Unit = recompositionWorkaroundReadonly {
         updateBeforeRendering()
 
         formScope.customMultipartContent()

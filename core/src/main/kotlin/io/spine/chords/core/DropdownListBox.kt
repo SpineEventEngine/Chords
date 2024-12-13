@@ -65,8 +65,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.BottomEnd
+import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Alignment.Companion.TopEnd
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -419,6 +419,9 @@ public class DropdownListBox<I> : Component() {
      */
     private val firstItemIndex: Int get() = if (noneItemEnabled) -1 else 0
 
+    private var scrollState: ScrollState by writeOnce()
+    private var coroutineScope: CoroutineScope by writeOnce()
+
     @Composable
     @ReadOnlyComposable
     override fun beforeComposeContent() {
@@ -428,8 +431,8 @@ public class DropdownListBox<I> : Component() {
 
     @Composable
     override fun content() {
-        val coroutineScope = rememberCoroutineScope()
-        val scrollState = rememberScrollState(0)
+        scrollState = rememberScrollState(0)
+        coroutineScope = rememberCoroutineScope()
 
         LaunchedEffect(enabled) {
             if (!enabled) {
@@ -484,7 +487,7 @@ public class DropdownListBox<I> : Component() {
             }
 
             if (expanded) {
-                DropdownList(coroutineScope, scrollState)
+                DropdownList()
             }
         }
     }
@@ -772,7 +775,7 @@ public class DropdownListBox<I> : Component() {
         }
     }
 
-    private fun scrollPreselectionIntoView(scrollState: ScrollState) {
+    private fun scrollPreselectionIntoView() {
         val viewportTop = scrollState.value
         val itemPosTop = getItemPos(preselectedItemIndex)
         if (itemPosTop < viewportTop) {
@@ -866,12 +869,9 @@ public class DropdownListBox<I> : Component() {
      *
      * @receiver A [BoxScope], the scope within which this function is intended
      *   to be used.
-     * @param scrollState A [ScrollState], whose value indicates current
-     *   drop-down list scrollbar position.
      */
     @Composable
-    private fun BoxScope.DropdownListContent(scrollState: ScrollState) {
-
+    private fun BoxScope.DropdownListContent() {
         Column(
             modifier = Modifier
                 .width(MinWidth)
@@ -929,25 +929,18 @@ public class DropdownListBox<I> : Component() {
             }
         }
         VerticalScrollbar(scrollState) {
-            Modifier.align(Alignment.CenterEnd)
+            Modifier.align(CenterEnd)
         }
     }
 
     /**
      * A popup, which is displaying drop-down list.
-     *
-     * @param coroutineScope
-     *         a [CoroutineScope] used to launch a job which scrolls
-     *         vertical drop-down list scrollbar to desired position.
-     * @param scrollState
-     *         a [ScrollState], whose value indicates current
-     *         drop-down list scrollbar position.
      */
     @Composable
     @OptIn(ExperimentalComposeUiApi::class)
-    private fun DropdownList(coroutineScope: CoroutineScope, scrollState: ScrollState) {
+    private fun DropdownList() {
         LaunchedEffect(preselectedItemIndex) {
-            scrollPreselectionIntoView(scrollState)
+            scrollPreselectionIntoView()
         }
 
         LaunchedEffect(totalItemsHeight) {
@@ -988,10 +981,10 @@ public class DropdownListBox<I> : Component() {
                         }
                     }
 
-                    DropdownListContent(scrollState)
+                    DropdownListContent()
                 }
                 if (showSearchSelection.value) {
-                    SearchSelectionField(coroutineScope)
+                    SearchSelectionField()
                 }
             }
         }
@@ -999,14 +992,10 @@ public class DropdownListBox<I> : Component() {
 
     /**
      * Composable for displaying search selection field.
-     *
-     * @param coroutineScope
-     *         a [CoroutineScope] used to launch a job which scrolls
-     *         vertical drop-down list scrollbar to desired position.
      */
     @Composable
     @OptIn(ExperimentalMaterial3Api::class)
-    private fun SearchSelectionField(coroutineScope: CoroutineScope) {
+    private fun SearchSelectionField() {
         val focusRequester = remember { FocusRequester() }
         val interactionSource = remember { MutableInteractionSource() }
         val searchSelectionContent = remember {

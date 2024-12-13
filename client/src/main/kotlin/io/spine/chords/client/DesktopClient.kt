@@ -32,6 +32,7 @@ import com.google.protobuf.Message
 import io.grpc.ManagedChannelBuilder
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
+import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.client.ClientRequest
@@ -53,8 +54,10 @@ private const val ReactionTimeoutMillis = 15_000L
 /**
  * Provides API to interact with the application server via gRPC.
  *
- * @param host The host of the application server to which client should connect.
- * @param port The port on which the application server is listening for gRPC connections.
+ * @param host The host of the application server to which client
+ *   should connect.
+ * @param port The port on which the application server is listening for
+ *   gRPC connections.
  * @param user The callback that should return the user ID on whose behalf
  *   the `DesktopClient` should send requests to the server.
  *   If the callback return `null` the client will send requests
@@ -165,11 +168,23 @@ public class DesktopClient(
      * Posts a command to the server.
      *
      * @param cmd A command that has to be posted.
+     * @throws CommandPostingError If some error has occurred during posting and
+     *   acknowledging the command on the server.
      */
     override fun command(cmd: CommandMessage) {
+        var error: CommandPostingError? = null
         clientRequest()
             .command(cmd)
+            .onServerError { msg, err: Error ->
+                error = ServerError(err)
+            }
+            .onStreamingError { err: Throwable ->
+                error = StreamingError(err)
+            }
             .postAndForget()
+        if (error != null) {
+            throw error!!
+        }
     }
 
     /**
@@ -181,7 +196,8 @@ public class DesktopClient(
      *   the command.
      * @param field A field that should be used for identifying the event to be
      *   awaited for.
-     * @param fieldValue A value of the field that identifies the event to be awaited for.
+     * @param fieldValue A value of the field that identifies the event to be
+     *   awaited for.
      * @return An event specified in the parameters, which was emitted in
      *   response to the command.
      * @throws kotlinx.coroutines.TimeoutCancellationException
@@ -219,12 +235,10 @@ public class DesktopClient(
         val eventReceival = CompletableFuture<E>()
         observeEvent(
             event = event,
-            onEmit = { evt ->
-                eventReceival.complete(evt)
-            },
             field = field,
-            fieldValue = fieldValue
-        )
+            fieldValue = fieldValue) { evt ->
+                eventReceival.complete(evt)
+            }
         return FutureEventSubscription(eventReceival)
     }
 
@@ -238,17 +252,17 @@ public class DesktopClient(
      */
     override fun <E : EventMessage> observeEvent(
         event: Class<E>,
-        onEmit: (E) -> Unit,
         field: EventMessageField,
-        fieldValue: Message
+        fieldValue: Message,
+        onEmit: (E) -> Unit
     ) {
         clientRequest()
             .subscribeToEvent(event)
-            ?.where(eq(field, fieldValue))
-            ?.observe { evt ->
+            .where(eq(field, fieldValue))
+            .observe { evt ->
                 onEmit(evt)
             }
-            ?.post()
+            .post()
     }
 
     /**
