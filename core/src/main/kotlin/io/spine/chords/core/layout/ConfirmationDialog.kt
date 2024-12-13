@@ -33,7 +33,7 @@ public class ConfirmationDialog : Dialog() {
          * Here's a usage example:
          * ```
          *     val confirmed = ConfirmationDialog.showConfirmation {
-         *         message = "Are you sure that you want to continue?"
+         *         message = "Are you sure you want to continue?"
          *         description = "This action is irreversible."
          *         yesButtonText = "Proceed"
          *         noButtonText = "Cancel"
@@ -44,7 +44,7 @@ public class ConfirmationDialog : Dialog() {
          * more concise, like this:
          * ```
          *     val confirmed = showConfirmation {
-         *         message = "Are you sure that you want to continue?"
+         *         message = "Are you sure you want to continue?"
          *     }
          * ```
          *
