@@ -73,7 +73,7 @@ all modules and does not describe the project structure per-subproject.
   </dependency>
   <dependency>
     <groupId>org.jetbrains.compose.desktop</groupId>
-    <artifactId>desktop-jvm-windows-x64</artifactId>
+    <artifactId>desktop-jvm-macos-x64</artifactId>
     <version>1.5.12</version>
     <scope>compile</scope>
   </dependency>
