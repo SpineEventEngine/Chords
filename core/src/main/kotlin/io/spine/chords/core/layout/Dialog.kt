@@ -59,8 +59,15 @@ import io.spine.chords.core.writeOnce
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-internal val cancelShortcutKey = Escape.key
+/**
+ * A shortcut (key combination), which invokes dialog submission.
+ */
 internal val submitShortcutKey = Ctrl(Enter.key)
+
+/**
+ * A shortcut (key combination), which invokes dialog cancellation.
+ */
+internal val cancelShortcutKey = Escape.key
 
 /**
  * A base class for creating modal dialog windows, e.g. ones for displaying,
@@ -125,6 +132,26 @@ internal val submitShortcutKey = Ctrl(Enter.key)
  *
  * The dialog will be closed automatically, when the "Cancel" button is pressed,
  * or when the "OK" button is pressed (and [submitContent] returns `true`).
+ *
+ * ## Customizable dialog's sections
+ *
+ * Besides the dialog's title (customizable with the [title] property), which is
+ * displayed in a way that is defined by the current [windowType], the two main
+ * dialog's sections are:
+ *
+ * - The content section, which actually contains the main dialog's content.
+ *   The [Dialog] class by itself doesn't provide any content for this section,
+ *   and it should be provided in subclasses by implementing
+ *   the [contentSection] method.
+ *
+ * - The buttons section. The [Dialog] class has a built-in support for
+ *   displaying the Submit and Cancel buttons, which should be opted in when
+ *   needed (see the "Predefined dialog actions" and "Customizing dialog's
+ *   buttons" sections below).
+ *
+ *   It's also possible to substitute the way how the entire buttons section is
+ *   rendered (or remove this section altogether if needed) by overriding
+ *   the [buttonsSection] method.
  *
  * ## Predefined dialog actions
  *
@@ -395,7 +422,6 @@ public abstract class Dialog : Component() {
     public fun submit() {
         coroutineScope.launch {
             if (onBeforeSubmit()) {
-
                 submissionInProgress = true
                 val submittedSuccessfully = try {
                     submitContent()
@@ -409,6 +435,28 @@ public abstract class Dialog : Component() {
             }
         }
     }
+
+    /**
+     * Submits the dialog's content, which means performing whatever action is
+     * appropriate for the actual dialog's implementation, based on the content
+     * entered by the user in the dialog.
+     *
+     * This action is executed when the user completes the dialog
+     * by pressing the Submit button.
+     *
+     * If this method returns `true` the dialog will be closed. As an example,
+     * this would be a typical case when the method has identified that the data
+     * entered in the dialog is complete and valid, and the respective dialog's
+     * action that it was designed for was performed successfully.
+     *
+     * On the other hand, this method can return `false` to prevent closing the
+     * dialog, which can in particular be useful when the user has entered
+     * incomplete or invalid data.
+     *
+     * @return `true` if the dialog should be closed after this method returns,
+     *   and `false` if it has to remain open.
+     */
+    protected abstract suspend fun submitContent(): Boolean
 
     /**
      * Cancels the dialog, which is equivalent to pressing the "Cancel" button.
@@ -466,36 +514,23 @@ public abstract class Dialog : Component() {
     }
 
     /**
-     * Renders the dialog window's content.
+     * Renders the dialog window's content section.
+     *
+     * @see buttonsSection
      */
     @Composable
     protected abstract fun contentSection()
 
     /**
-     * Submits the dialog's content, which means performing whatever action is
-     * appropriate for the actual dialog's implementation, based on the content
-     * entered by the user in the dialog.
-     *
-     * This action is executed when the user completes the dialog
-     * by pressing the Submit button.
-     *
-     * If this method returns `true` the dialog will be closed. As an example,
-     * this would be a typical case when the method has identified that the data
-     * entered in the dialog is complete and valid, and the respective dialog's
-     * action that it was designed for was performed successfully.
-     *
-     * On the other hand, this method can return `false` to prevent closing the
-     * dialog, which can in particular be useful when the user has entered
-     * incomplete or invalid data.
-     *
-     * @return `true` if the dialog should be closed after this method returns,
-     *   and `false` if it has to remain open.
-     */
-    protected abstract suspend fun submitContent(): Boolean
-
-    /**
      * Renders the dialog's buttons section, which is displayed
      * below [contentSection].
+     *
+     * Note that unlike the [buttons] method, which actually renders the set of
+     * dialog's buttons, this method renders the container for those buttons,
+     * and then invokes [buttons] to place the buttons in that container.
+     *
+     * @see buttons
+     * @see contentSection
      */
     @Composable
     protected open fun buttonsSection() {
@@ -527,6 +562,8 @@ public abstract class Dialog : Component() {
      *
      * This method can be overridden to provide a custom set of buttons,
      * which are needed for a particular dialog's implementation.
+     *
+     * @see buttonsSection
      */
     @Composable
     protected fun buttons() {
