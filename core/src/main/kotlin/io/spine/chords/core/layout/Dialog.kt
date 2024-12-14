@@ -26,23 +26,15 @@
 
 package io.spine.chords.core.layout
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement.End
 import androidx.compose.foundation.layout.Arrangement.spacedBy
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.MaterialTheme.shapes
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,43 +42,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.Bottom
-import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.input.key.Key.Companion.Enter
 import androidx.compose.ui.input.key.Key.Companion.Escape
-import androidx.compose.ui.input.key.KeyEvent
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntOffset.Companion.Zero
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogState
-import androidx.compose.ui.window.DialogWindow
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupPositionProvider
-import androidx.compose.ui.window.PopupProperties
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.Component
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.core.appshell.app
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
-import io.spine.chords.core.keyboard.matches
-import io.spine.chords.core.layout.DialogDisplayMode.Companion.DesktopWindow
+import io.spine.chords.core.layout.WindowType.DesktopWindow
 import io.spine.chords.core.writeOnce
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-private val cancelShortcutKey = Escape.key
-private val submitShortcutKey = Ctrl(Enter.key)
+internal val cancelShortcutKey = Escape.key
+internal val submitShortcutKey = Ctrl(Enter.key)
 
 /**
  * A base class for creating modal dialog windows, e.g. ones for displaying,
@@ -103,8 +77,8 @@ private val submitShortcutKey = Ctrl(Enter.key)
  *
  *     init {
  *         // Set up own dialog's properties if/as needed.
- *         dialogWidth = 650.dp
- *         dialogHeight = 400.dp
+ *         width = 650.dp
+ *         height = 400.dp
  *
  *         // Include the Submit/Cancel buttons
  *         submitAvailable = true
@@ -197,8 +171,8 @@ private val submitShortcutKey = Ctrl(Enter.key)
  * ## Display modes
  *
  * The way that the dialog is displayed can be customized using the
- * [displayMode] property. By default, a dialog is displayed as a separate
- * desktop window (with a [DesktopWindow] value of [displayMode]), and it is
+ * [windowType] property. By default, a dialog is displayed as a separate
+ * desktop window (with a [DesktopWindow] value of [windowType]), and it is
  * possible to make the dialog to be displayed in a "lightweight" mode, where
  * it is displayed as a modal popup within the existing desktop window, with
  * any currently displayed window's content covered with an overlay to ensure
@@ -234,14 +208,14 @@ public abstract class Dialog : Component() {
      *
      * The default value is `700.dp`.
      */
-    public var dialogWidth: Dp = 700.dp
+    public var width: Dp = 700.dp
 
     /**
      * The height of the dialog.
      *
      * The default value is `450.dp`.
      */
-    public var dialogHeight: Dp = 450.dp
+    public var height: Dp = 450.dp
 
     /**
      * Specifies appearance-related parameters.
@@ -265,15 +239,16 @@ public abstract class Dialog : Component() {
     )
 
     /**
-     * Specifies the way that the dialog is displayed.
+     * Specifies the way that the dialog window is displayed.
      *
      * The following two display modes are supported:
-     * - [DesktopWindow][DialogDisplayMode.DesktopWindow] — a dialog is
+     * - [DesktopWindow][WindowType.DesktopWindow] — a dialog is
      *   displayed in a separate desktop window.
-     * - [Lightweight][DialogDisplayMode.Lightweight] — a dialog is displayed
-     *   as a lightweight modal popup within the current desktop window.
+     * - [LightweightWindow][WindowType.LightweightWindow] — a dialog is
+     *   displayed as a lightweight modal popup within the current
+     *   desktop window.
      */
-    public var displayMode: DialogDisplayMode = DesktopWindow
+    public var windowType: WindowType = DesktopWindow()
 
     /**
      * A suspending callback, which is invoked upon the dialog's Cancel button
@@ -405,7 +380,7 @@ public abstract class Dialog : Component() {
      * Closes the dialog while ignoring any data that might have been
      * possibly entered in the dialog currently.
      */
-    internal fun close() {
+    public fun close() {
         app.ui.closeDialog(this)
     }
 
@@ -450,7 +425,7 @@ public abstract class Dialog : Component() {
     }
 
     /**
-     * Renders the dialog window according to the current [displayMode].
+     * Renders the dialog window according to the current [windowType].
      *
      * Custom dialog implementations should implement the [contentSection] method
      * in order to specify the content that needs to be displayed inside
@@ -459,13 +434,13 @@ public abstract class Dialog : Component() {
     @Composable
     protected final override fun content() {
         coroutineScope = rememberCoroutineScope()
-        displayMode.dialogWindow(this)
+        windowType.dialogWindow(this)
     }
 
     /**
      * Renders the dialog window's content, which is everything in the dialog
      * except the window's frame and the window's title (which are rendered
-     * by [DialogDisplayMode]).
+     * by [WindowType]).
      *
      * By default, this renders the content section (see [contentSection]),
      * and the buttons section below it (see [buttonsSection]).
@@ -608,173 +583,6 @@ public abstract class Dialog : Component() {
     }
 }
 
-/**
- * Defines the way that a dialog is displayed on the screen (e.g. as a separate
- * desktop window, or as a lightweight modal popup).
- */
-public abstract class DialogDisplayMode {
-
-    /**
-     * Renders the dialog window according to the display mode defined by this
-     * object.
-     *
-     * @param dialog The [Dialog] that is being displayed.
-     */
-    @Composable
-    public abstract fun dialogWindow(dialog: Dialog)
-
-    public companion object {
-
-        /**
-         * A dialog display mode, which makes each dialog to be displayed
-         * in its own desktop window.
-         */
-        public val DesktopWindow: DialogDisplayMode = DesktopWindowDisplayMode()
-
-        /**
-         * A dialog display platform that makes the dialogs to be displayed
-         * in a "lightweight" way — without displaying a new desktop window,
-         * as a modal popup inside the current desktop window.
-         */
-        public val Lightweight: DialogDisplayMode = LightweightDisplayMode()
-    }
-}
-
-/**
- * A [DialogDisplayMode] implementation, which ensures displaying a dialog
- * as a separate desktop window.
- */
-internal class DesktopWindowDisplayMode(
-    private val resizable: Boolean = false
-) : DialogDisplayMode() {
-
-    @Composable
-    override fun dialogWindow(dialog: Dialog) {
-        DialogWindow(
-            title = dialog.title,
-            resizable = resizable,
-            state = DialogState(
-                size = DpSize(dialog.dialogWidth, dialog.dialogHeight)
-            ),
-            onCloseRequest = { dialog.close() },
-            onKeyEvent = { event ->
-                if (dialog.cancelAvailableInternal && event matches cancelShortcutKey.down) {
-                    dialog.cancel()
-                }
-                if (dialog.submitAvailableInternal && event matches submitShortcutKey.up) {
-                    dialog.submit()
-                }
-                false
-            }
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(colorScheme.background),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(dialog.look.padding),
-                ) {
-                    dialog.windowContentInternal()
-                    dialog.nestedDialog?.Content()
-                }
-            }
-        }
-    }
-}
-
-/**
- * A [PopupPositionProvider], which makes a lightweight popup to appear at
- * the window's center.
- */
-private val centerWindowPositionProvider = object : PopupPositionProvider {
-    override fun calculatePosition(
-        anchorBounds: IntRect,
-        windowSize: IntSize,
-        layoutDirection: LayoutDirection,
-        popupContentSize: IntSize
-    ): IntOffset = Zero
-}
-
-/**
- * A [DialogDisplayMode] implementation, which ensures displaying a dialog
- * as a lightweight modal popup inside the current desktop window.
- *
- * @param backdropColor The color of the surface that covers the entire content
- *   of the current desktop window behind the dialog's modal popup displayed in
- *   this window.
- */
-internal class LightweightDisplayMode(
-    private val backdropColor: Color = Black.copy(alpha = 0.5f)
-) : DialogDisplayMode() {
-
-    @Composable
-    override fun dialogWindow(dialog: Dialog) {
-        Popup(
-            popupPositionProvider = centerWindowPositionProvider,
-            properties = PopupProperties(focusable = true),
-            onPreviewKeyEvent = { false },
-            onKeyEvent = cancelShortcutHandler {
-                if (dialog.cancelAvailableInternal) {
-                    dialog.cancel()
-                }
-            }
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(backdropColor),
-                contentAlignment = Center
-            ) {
-                val modifier = if (dialog.isBottomDialog) {
-                    Modifier.pointerInput(dialog) {
-                        detectTapGestures(onPress = {})
-                    }
-                } else {
-                    Modifier
-                }
-                Box(modifier = modifier) {
-                    dialogFrame(dialog)
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun dialogFrame(dialog: Dialog) {
-        Column(
-            modifier = Modifier
-                .clip(shapes.large)
-                .size(dialog.dialogWidth, dialog.dialogHeight)
-                .background(colorScheme.background),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(dialog.look.padding),
-            ) {
-                DialogTitle(dialog.title, dialog.look.titlePadding)
-                dialog.windowContentInternal()
-                dialog.nestedDialog ?.Content()
-            }
-        }
-    }
-
-    /**
-     * Creates a key event handler function that executes a provided [cancelHandler]
-     * callback whenever the `Escape` key is pressed.
-     */
-    private fun cancelShortcutHandler(cancelHandler: () -> Unit): (KeyEvent) -> Boolean = { event ->
-        if (event matches cancelShortcutKey.down) {
-            cancelHandler()
-            true
-        } else {
-            false
-        }
-    }
-}
 
 /**
  * A class that should be used for creating companion objects of
@@ -827,24 +635,6 @@ public open class DialogSetup<D: Dialog>(
         dialog.open()
         return dialog
     }
-}
-
-
-/**
- * The title of the dialog.
- *
- * @param text The text to be title.
- */
-@Composable
-private fun DialogTitle(
-    text: String,
-    padding: PaddingValues
-) {
-    Text(
-        modifier = Modifier.padding(padding),
-        text = text,
-        style = typography.headlineLarge
-    )
 }
 
 /**

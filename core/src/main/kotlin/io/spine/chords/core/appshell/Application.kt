@@ -34,7 +34,7 @@ import androidx.compose.ui.window.application
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.ConfirmationDialog
 import io.spine.chords.core.layout.DialogSetup
-import io.spine.chords.core.layout.DialogDisplayMode
+import io.spine.chords.core.layout.WindowType
 import io.spine.chords.core.writeOnce
 import java.awt.Dimension
 
@@ -85,13 +85,13 @@ public var app: Application by writeOnce(false)
  * ```
  *     override fun ComponentDefaultsScope.componentDefaults() {
  *         Dialog::class defaultsTo {
- *             displayMode = DesktopWindow
+ *             windowType = DesktopWindow
  *             look = Look(
  *                 buttonsPanelPadding = 20.pt
  *             }
  *         }
  *         ConfirmationDialog::class defaultsTo {
- *             displayMode = Lightweight
+ *             windowType = LightweightWindow
  *         }
  *     }
  * ```
@@ -100,8 +100,8 @@ public var app: Application by writeOnce(false)
  * like this in your application:
  * ```
  *     MyCustomDialog.open {
- *         dialogWidth = 600.dp
- *         dialogHeight = 400.dp
+ *         width = 600.dp
+ *         height = 400.dp
  *     }
  * ```
  *
@@ -109,12 +109,12 @@ public var app: Application by writeOnce(false)
  * all of these property values:
  * ```
  * {
- *     displayMode = DesktopWindow
+ *     windowType = DesktopWindow
  *     look = Look(
  *         buttonsPanelPadding = 20.pt
  *     }
- *     dialogWidth = 600.dp
- *     dialogHeight = 400.dp
+ *     width = 600.dp
+ *     height = 400.dp
  * }
  * ```
  *
@@ -131,8 +131,8 @@ public var app: Application by writeOnce(false)
  * override those found in base classes. In the example above, since
  * [ConfirmationDialog] extends [Dialog], all instances of `ConfirmationDialog`
  * declared within the application will get a value of
- * [displayMode][ConfirmationDialog.displayMode] equal to
- * [Lightweight][DialogDisplayMode.Lightweight].
+ * [displayMode][ConfirmationDialog.windowType] equal to
+ * [Lightweight][WindowType.LightweightWindow].
  *
  * @param name An application's name, which is in particular displayed in
  *   the application window's title.
