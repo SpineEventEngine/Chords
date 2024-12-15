@@ -233,13 +233,15 @@ public class DesktopClient(
         fieldValue: Message
     ): EventSubscription<E> {
         val eventReceival = CompletableFuture<E>()
+        val futureEventSubscription = FutureEventSubscription(eventReceival)
         observeEvent(
             event = event,
             field = field,
             fieldValue = fieldValue) { evt ->
                 eventReceival.complete(evt)
+                futureEventSubscription.onEvent?.invoke(evt)
             }
-        return FutureEventSubscription(eventReceival)
+        return futureEventSubscription
     }
 
     /**
@@ -326,4 +328,6 @@ private class FutureEventSubscription<E: EventMessage>(
     override suspend fun awaitEvent(): E {
         return withTimeout(ReactionTimeoutMillis) { future.await() }
     }
+
+    override var onEvent: ((E) -> Unit)? = null
 }

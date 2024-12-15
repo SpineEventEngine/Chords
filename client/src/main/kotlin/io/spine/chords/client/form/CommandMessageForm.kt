@@ -34,13 +34,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import io.spine.base.CommandMessage
-import io.spine.base.EventMessage
-import io.spine.chords.client.CommandPostingError
-import io.spine.chords.client.EventSubscription
-import io.spine.chords.client.appshell.client
+import io.spine.chords.client.CommandLifecycle
 import io.spine.chords.core.ComponentProps
-import io.spine.chords.core.appshell.app
-import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.MessageFormSetupBase
@@ -304,7 +299,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * should subscribe to a respective event that is expected to arrive in
      * response to handling that command.
      */
-    public lateinit var eventSubscription: (C) -> EventSubscription<out EventMessage>
+    public lateinit var commandLifecycle: (C) -> CommandLifecycle<out C>
 
     /**
      * A state, which reports whether the form is currently in progress of
@@ -341,10 +336,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
 
     override fun initialize() {
         super.initialize()
-        check(this::eventSubscription.isInitialized) {
-            "CommandMessageForm's `eventSubscription` property must " +
-            "be specified."
-        }
+        requireProperty(this::commandLifecycle.isInitialized, "commandOutcomeHandler")
     }
 
     @Composable
@@ -365,7 +357,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   errors to be displayed.
      * - Posts the command that was validated and built.
      * - Awaits for an event that should arrive upon successful handling of
-     *   the command, as defined by the [eventSubscription]
+     *   the command, as defined by the [commandLifecycle]
      *   constructor's parameters.
      * - If the event doesn't arrive in a predefined timeout that is considered
      *   an adequate delay from user's perspective, this method
@@ -383,9 +375,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   the [postCommand] invocation is still being handled (when [posting] is
      *   still `true`).
      */
-    public suspend fun postCommand(
-        outcomeHandler: CommandOutcomeHandler<C> = DefaultOutcomeHandler()
-    ): Boolean {
+    public suspend fun postCommand(): Boolean {
         if (posting) {
             throw IllegalStateException("Cannot invoke `postCommand`, while" +
                     "waiting for handling the previously posted command.")
@@ -399,97 +389,13 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "CommandMessageForm's value should be not null since it was just " +
             "checked to be valid within postCommand."
         }
-        val subscription = eventSubscription(command)
+        val commandOutcomeHandler = commandLifecycle(command)
+
         return try {
             posting = true
-            try {
-                app.client.command(command)
-                val event = subscription.awaitEvent()
-                outcomeHandler.onEvent(event)
-                true
-            } catch (e: CommandPostingError) {
-                outcomeHandler.onPostingError(e)
-                false
-            }
-        } catch (
-            @Suppress(
-                // A timeout condition is handled by `outcomeHandler`.
-                "SwallowedException"
-            )
-            e: TimeoutCancellationException
-        ) {
-            outcomeHandler.onTimeout(command)
-            false
+            commandOutcomeHandler.post()
         } finally {
             posting = false
         }
-    }
-}
-
-/**
- * An object, which is capable of handling different kinds of outcomes that can
- * follow as a result of posting a command.
- */
-public interface CommandOutcomeHandler<C : CommandMessage> {
-
-    /**
-     * Invoked upon receiving an event that has
-     * the command [C].
-     */
-    public fun onEvent(event: EventMessage)
-
-    /**
-     * Invoked if no event has been received in response to the command [C]
-     * in a reasonable period of time defined by the implementation.
-     */
-    public suspend fun onTimeout(command: C)
-
-    /**
-     * Invoked if an error has occurred during posting and acknowledging
-     * the command on the server.
-     *
-     * @param error The exception that signifies the error that has occurred.
-     * @see io.spine.chords.client.Client.command
-     */
-    public suspend fun onPostingError(error: CommandPostingError)
-}
-
-/**
- * A default implementation for [CommandOutcomeHandler], which is expected to
- * be suitable in most typical cases.
- *
- * @param eventHandler An optional callback, which will be invoked when
- *   an event that is expected as an outcome of the command [C] is emitted.
- * @param timeoutMessage A lambda, which, given a command that was posted with
- *   no subsequent response received in time, should provide a message that
- *   should be displayed to the user in this case. If not specified, a default
- *   message is displayed.
- * @param postingErrorMessage A lambda, which, given a [CommandPostingError]
- *   that has occurred when posting the command, returns the text that should
- *   be displayed to the user.
- */
-public class DefaultOutcomeHandler<C : CommandMessage>(
-    private val eventHandler: ((EventMessage) -> Unit)? = null,
-    private val timeoutMessage: ((C) -> String)? = null,
-    private val postingErrorMessage: ((CommandPostingError) -> String)? = null
-) : CommandOutcomeHandler<C> {
-    override fun onEvent(event: EventMessage) {
-        eventHandler?.invoke(event)
-    }
-
-    override suspend fun onTimeout(command: C) {
-        val message = timeoutMessage?.invoke(command) ?: (
-                "Timed out waiting for an event in response to " +
-                        "the command ${command.javaClass.simpleName}"
-                )
-        showMessage(message)
-    }
-
-    override suspend fun onPostingError(error: CommandPostingError) {
-        val message = postingErrorMessage?.invoke(error) ?: (
-                "An error has occurred when posting or acknowledging " +
-                        "the command ${error.message}"
-                )
-        showMessage(message)
     }
 }

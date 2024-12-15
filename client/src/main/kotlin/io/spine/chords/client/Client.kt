@@ -183,6 +183,11 @@ public interface EventSubscription<E: EventMessage> {
      *   by the implementation.
      */
     public suspend fun awaitEvent(): E
+
+    /**
+     * A callback, which is invoked when the subscribed event is emitted.
+     */
+    public var onEvent: ((E) -> Unit)?
 }
 
 /**

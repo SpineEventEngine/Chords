@@ -30,8 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
-import io.spine.base.EventMessage
-import io.spine.chords.client.EventSubscription
+import io.spine.chords.client.CommandLifecycle
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.AbstractWizardPage
 import io.spine.chords.core.layout.Wizard
@@ -74,7 +73,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
             onBeforeBuild = { beforeBuild(it) }
         ) {
             validationDisplayMode = MANUAL
-            eventSubscription = { subscribeToEvent(it) }
+            commandLifecycle = ::commandLifecycle
         }
 
     /**
@@ -107,7 +106,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * @return a subscription to the event that is expected to arrive in response
      *         to handling [command]
      */
-    protected abstract fun subscribeToEvent(command: C): EventSubscription<out EventMessage>
+    protected abstract fun commandLifecycle(command: C): CommandLifecycle<C>
 
     /**
      * Allows to programmatically amend the command message builder before
