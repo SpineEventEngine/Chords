@@ -269,16 +269,15 @@ public open class Application(
 /**
  * A top-level API that concerns the application's UI.
  *
- * @param appWindow
- *         main application's window.
+ * @param appWindow The main application's window.
  */
 public class ApplicationUI
 internal constructor(private val appWindow: AppWindow) {
 
-    @Composable
-    public fun navigator(): ScreenNavigator {
-        return ScreenNavigator(appWindow)
-    }
+    /**
+     * The [ScreenNavigator] that allows displaying or closing app screens.
+     */
+    public val navigator: ScreenNavigator = ScreenNavigator(appWindow)
 
     /**
      * Displays the given [Dialog] instance.
@@ -338,7 +337,13 @@ internal constructor(private val appWindow: AppWindow) {
 }
 
 /**
- * Thw screen navigator.
+ * The screen navigator that allows displaying or closing app screens.
+ *
+ * It also keeps a history of displayed screens and enables navigation between them.
+ *
+ * Actually, it delegates all the API calls to the app main window.
+ *
+ * @param appWindow The main application's window.
  */
 public class ScreenNavigator
 internal constructor(
@@ -346,40 +351,35 @@ internal constructor(
 ) {
 
     /**
-     * Displays a modal screen.
+     * Displays a screen.
      *
      * This screen will be rendered using the entire area
      * of the application window. No other components
-     * from other screens will be visible or interactable,
-     * so it acts like a modal screen.
+     * from other screens will be visible or interactable.
      *
-     * The hierarchy of modal screens is not supported,
-     * so it will be an illegal state when some modal screen
-     * display is requested while another screen is already displayed.
-     *
-     * @throws IllegalStateException
-     *         to indicate the illegal state when another modal screen
-     *         is already displayed.
+     * @param screen The screen to be shown.
+     * @param keepCurrentScreenInHistory Specifies whether to save the currently
+     * visible screen in the navigation history or not.
      */
-    public fun showScreen(screen: Screen, keepCurrentInHistory: Boolean = true) {
-        appWindow.showScreen(screen, keepCurrentInHistory)
+    public fun showScreen(screen: Screen, keepCurrentScreenInHistory: Boolean = true) {
+        appWindow.showScreen(screen, keepCurrentScreenInHistory)
     }
 
     /**
-     * Closes the currently visible modal screen.
+     * Displays the main screen of the window.
      *
-     * @throws IllegalStateException
-     *         to indicate the illegal state when no modal screen to close.
+     * @param keepCurrentScreenInHistory Specifies whether to save the currently
+     * visible screen in the navigation history or not.
      */
-    public fun showMainScreen(keepCurrentInHistory: Boolean = true) {
-        appWindow.showMainScreen(keepCurrentInHistory)
+    public fun showMainScreen(keepCurrentScreenInHistory: Boolean = true) {
+        appWindow.showMainScreen(keepCurrentScreenInHistory)
     }
 
     /**
-     * Closes the currently visible modal screen.
+     * Closes the currently visible screen.
      *
-     * @throws IllegalStateException
-     *         to indicate the illegal state when no modal screen to close.
+     * The currently visible screen won't be saved to the navigation history and
+     * the top-most screen in the history will be displayed.
      */
     public fun closeCurrentScreen() {
         appWindow.closeCurrentScreen()
