@@ -87,12 +87,98 @@ import kotlinx.coroutines.withTimeout
  *   [onTimeout] callback is invoked (or the [timeoutMessage] text is displayed
  *   if the callback is not specified).
  *
- * ### Usage example
+ * ## Usage examples
  *
- * Here's an example of using `CommandLifecycle`:
+ * Note that the [outcomeSubscriptions] parameter in context of the
+ * [OutcomeSubscriptionScope] object, which provides some functions that can be
+ * used to declare the list of expected command outcomes. See the
+ * [event][OutcomeSubscriptionScope.event],
+ * [rejection][OutcomeSubscriptionScope.rejection], and
+ * [handledAs][OutcomeSubscriptionScope.handledAs] functions for details.
  *
- * val command: SomeCommand = someCommand()
- * command.post
+ * Here's a simple example of using `CommandLifecycle`:
+ * ```
+ *     val command: SomeCommand = someCommand()
+ *     val succeeded: Boolean = command.post(
+ *         CommandLifecycle({
+ *             event(
+ *                 ExpectedEvent::class.java,
+ *                 ExpectedEvent.Field.id(),
+ *                 command.id
+ *             )
+ *         })
+ *     )
+ *     // `succeeded` will contain `true` if `ExpectedEvent.id == command.id` was
+ *     // emitted as an outcome of handling command `SomeCommand` during the
+ *     // default timeout period.
+ * ```
+ *
+ * Below is an example, which demonstrates handling both a regular
+ * (non-rejection) event, and a rejection. Receiving the specified rejection
+ * will display the text message defined by [rejectionMessage], and will make
+ * the `post` function to return `false`.
+ * ```
+ *     val command: SomeCommand = someCommand()
+ *     val succeeded: Boolean = command.post(
+ *         CommandLifecycle(
+ *             {
+ *                 event(
+ *                     ExpectedEvent::class.java,
+ *                     ExpectedEvent.Field.id(),
+ *                     command.id
+ *                 )
+ *                 rejection(
+ *                     ExpectedRejection::class.java,
+ *                     ExpectedRejection.Field.id(),
+ *                     command.id
+ *                 )
+ *             }
+ *         )
+ *     )
+ *     // If `ExpectedRejection` is emitted during the [timeout] period,
+ *     // `succeeded` will be `false.
+ * ```
+ *
+ * It is also possible to customize event/rejection handlers either on a
+ * per-event/per-rejection basis using the
+ * [handledAs][OutcomeSubscriptionScope.handledAs] infix function, or using the
+ * [onEvent]/[onRejection] callbacks, which will be invoked upon receiving any
+ * of the expected events/rejections:
+ * ```
+ *     val command: SomeCommand = someCommand()
+ *     val succeeded: Boolean = command.post(
+ *         CommandLifecycle(
+ *             {
+ *                 event(
+ *                     ExpectedEvent::class.java,
+ *                     ExpectedEvent.Field.id(),
+ *                     command.id
+ *                 )
+ *                 rejection(
+ *                     ExpectedRejection1::class.java,
+ *                     ExpectedRejection1.Field.id(),
+ *                     command.id
+ *                 )
+ *                 rejection(
+ *                     ExpectedRejection2::class.java,
+ *                     ExpectedRejection2.Field.id(),
+ *                     command.id
+ *                 ) handledAs {
+ *                     showMessage("Custom rejection message for ExpectedRejection2")
+ *                     anyOtherCodeForThisRejection()
+ *                 }
+ *             },
+ *             onRejection = { command, rejection ->
+ *                 showMessage("Rejection ${rejection.javaClass.simpleName} was " +
+ *                         "received as an outcome for command ${command.javaClass.simpleName}")
+ *             }
+ *
+ *         )
+ *     )
+ * ```
+ *
+ * Please see the property descriptions for the full list of
+ * customizations available.
  *
  * @param C A type of command whose lifecycle is being configured.
  *
@@ -105,6 +191,10 @@ import kotlinx.coroutines.withTimeout
  *   [handledBy][OutcomeSubscriptionScope.handledAs] infix function to specify
  *   a custom per-event/per-rejection handler(s) where such fine-grained
  *   handlers are required.
+ * @param onEvent An optional callback, which will be invoked upon receiving any
+ *   of the expected non-rejection events.
+ * @param onRejection An optional callback, which will be invoked upon receiving any
+ *   of the expected rejections.
  * @param onPostingError An optional callback, which will be invoked when an
  *   error was received during posting and acknowledging the command. If no
  *   callback is provided, the [handlePostingError] method will be invoked,
@@ -112,6 +202,12 @@ import kotlinx.coroutines.withTimeout
  * @param onTimeout An optional callback, which will be invoked when neither of
  *   the events/rejections configured with [outcomeSubscriptions] were received
  *   during the [timeout] period.
+ * @param eventMessage A callback, which can return a non-null value to specify
+ *   the text message that needs to be displayed when either of the expected
+ *   non-rejection events is received.
+ * @param rejectionMessage A callback, which can return a non-null value to
+ *   specify the text message that needs to be displayed when either of the
+ *   expected rejections is received.
  * @param timeoutMessage A callback, which provides a message that should be
  *   displayed upon the timeout condition by default (if no [onTimeout]
  *   parameter is specified).
@@ -146,6 +242,7 @@ public open class CommandLifecycle<C : CommandMessage>(
     },
     private var timeout: Duration = 20.seconds
 ) {
+
     /**
      * Subscriptions, which should be waited for before the [post]
      * method returns.
@@ -153,7 +250,9 @@ public open class CommandLifecycle<C : CommandMessage>(
     private val subscriptions: MutableSet<EventSubscription<out EventMessage>> = HashSet()
 
     /**
+     * The handlers that were attached to subscriptions.
      *
+     * The keys are a subset of [subscriptions].
      */
     private val subscriptionHandlers: MutableMap<
             EventSubscription<out EventMessage>,
@@ -183,6 +282,11 @@ public open class CommandLifecycle<C : CommandMessage>(
         }
     }
 
+    /**
+     * Subscribes to the specified type of event according to the specified
+     * field value, and registers this subscription as the one that the [post]
+     * method should wait for.
+     */
     protected fun <E : EventMessage> subscribe(
         eventType: Class<out E>,
         field: EventMessageField,
@@ -193,11 +297,29 @@ public open class CommandLifecycle<C : CommandMessage>(
         return eventSubscription
     }
 
-    protected open fun makeSubscriptions() {}
-
-    public suspend fun post(command: C): Boolean {
+    /**
+     * Configures the object with any subscriptions that are needed.
+     *
+     * The event subscriptions are expected to be made with the
+     * [subscribe] method.
+     */
+    protected open fun makeSubscriptions(command: C) {
         val scope = OutcomeSubscriptionScopeImpl(command)
         scope.outcomeSubscriptions()
+    }
+
+    /**
+     * Posts the given [command], and makes sure that the expected outcomes
+     * (events/rejections) or other conditions (posting errors or outcome
+     * waiting timeout condition) are handled according to this
+     * object's configuration.
+     *
+     * @param command The command that should be posted.
+     * @return `true` if any of the expected non-rejection events were received
+     *   before the [timeout] period elapses, and `false` otherwise.
+     */
+    public suspend fun post(command: C): Boolean {
+        makeSubscriptions(command)
 
         val futureCommandOutcome = CompletableFuture<EventMessage>()
         var subscriptionTriggered: EventSubscription<*> by writeOnce()
@@ -240,6 +362,13 @@ public open class CommandLifecycle<C : CommandMessage>(
         }
     }
 
+    /**
+     * Invoked when any of the expected non-rejection events was received.
+     *
+     * @param command The command that was posted.
+     * @param event The non-rejection event that was received after posting
+     *   the [command].
+     */
     protected open suspend fun handleEvent(command: C, event: EventMessage) {
         if (onEvent != null) {
             onEvent!!(command, event)
@@ -251,6 +380,13 @@ public open class CommandLifecycle<C : CommandMessage>(
         }
     }
 
+    /**
+     * Invoked when any of the expected rejections was received.
+     *
+     * @param command The command that was posted.
+     * @param rejection The rejection that was received after posting
+     *   the [command].
+     */
     protected open suspend fun handleRejection(command: C, rejection: RejectionMessage) {
         if (onRejection != null) {
             onRejection!!(command, rejection)
@@ -262,6 +398,14 @@ public open class CommandLifecycle<C : CommandMessage>(
         }
     }
 
+    /**
+     * Invoked when an error has occurred during posting or acknowledging
+     * the command.
+     *
+     * @param command The command that was posted.
+     * @param error The error that has occurred during posting or acknowledging
+     *   the command.
+     */
     protected open suspend fun handlePostingError(command: C, error: CommandPostingError) {
         if (onPostingError != null) {
             onPostingError!!(command, error)
@@ -273,6 +417,12 @@ public open class CommandLifecycle<C : CommandMessage>(
         }
     }
 
+    /**
+     * Invoked when neither of the expected events/rejections were received
+     * during the [timeout] period after the [command] was posted.
+     *
+     * @param command The command that was posted.
+     */
     protected open suspend fun handleTimeout(command: C) {
         if (onTimeout != null) {
             onTimeout!!(command)

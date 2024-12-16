@@ -128,7 +128,11 @@ public abstract class Wizard : Component() {
     private var submitting: Boolean by mutableStateOf(false)
 
     private var currentPageIndex by mutableStateOf(0)
-    private val pages by lazy { createPages() }
+
+    /**
+     * A list of pages present in the wizard.
+     */
+    protected val pages: List<WizardPage> by lazy { createPages() }
 
     /**
      * Creates the list of pages of which the wizard consists.
