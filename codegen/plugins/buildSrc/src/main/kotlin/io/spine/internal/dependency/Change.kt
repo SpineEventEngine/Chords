@@ -24,20 +24,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.codegen.plugins
-
-import io.spine.chords.runtime.MessageDef
-import io.spine.chords.runtime.MessageField
-import io.spine.chords.runtime.MessageOneof
-import io.spine.protodata.plugin.Plugin
+package io.spine.internal.dependency
 
 /**
- * The ProtoData [Plugin] that generates [MessageDef], [MessageField],
- * and [MessageOneof] implementations for Proto messages.
+ * Spine Reflect library.
  *
- * See the [MessageFieldsRenderer] for detail on code generation.
+ * @see <a href="https://github.com/SpineEventEngine/change">spine-change</a>
  */
-public class MessageFieldsPlugin : Plugin(
-    renderers = listOf(MessageFieldsRenderer()),
-    viewRepositories = setOf(MessageViewRepository())
-)
+@Suppress("ConstPropertyName")
+object Change {
+    const val version = "2.0.0-SNAPSHOT.118"
+    const val group = Spine.group
+    const val artifact = "spine-change"
+    const val lib = "$group:$artifact:$version"
+}

@@ -24,20 +24,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.codegen.plugins
-
-import io.spine.chords.runtime.MessageDef
-import io.spine.chords.runtime.MessageField
-import io.spine.chords.runtime.MessageOneof
-import io.spine.protodata.plugin.Plugin
+package io.spine.internal.dependency
 
 /**
- * The ProtoData [Plugin] that generates [MessageDef], [MessageField],
- * and [MessageOneof] implementations for Proto messages.
+ * Dependencies on `core-java` modules.
  *
- * See the [MessageFieldsRenderer] for detail on code generation.
+ * See [`SpineEventEngine/core-java`](https://github.com/SpineEventEngine/core-java/).
  */
-public class MessageFieldsPlugin : Plugin(
-    renderers = listOf(MessageFieldsRenderer()),
-    viewRepositories = setOf(MessageViewRepository())
-)
+@Suppress("ConstPropertyName", "unused")
+object CoreJava {
+    const val group = Spine.group
+    const val version = "2.0.0-SNAPSHOT.182"
+
+    const val coreArtifact = "spine-core"
+    const val clientArtifact = "spine-client"
+    const val serverArtifact = "spine-server"
+
+    const val core = "$group:$coreArtifact:$version"
+    const val client = "$group:$clientArtifact:$version"
+    const val server = "$group:$serverArtifact:$version"
+
+    const val testUtilServer = "${Spine.toolsGroup}:spine-testutil-server:$version"
+}

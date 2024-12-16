@@ -55,7 +55,7 @@ plugins {
     id("net.ltgt.errorprone")
     id("detekt-code-analysis")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.61.7"
+    id("io.spine.protodata") version "0.70.3"
     idea
 }
 

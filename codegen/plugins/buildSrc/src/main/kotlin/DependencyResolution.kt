@@ -62,10 +62,13 @@ import org.gradle.kotlin.dsl.invoke
 fun doForceVersions(configurations: ConfigurationContainer) {
     configurations.forceVersions()
 
-    val spine = io.spine.internal.dependency.Spine
     val validation = io.spine.internal.dependency.Validation
     val protoData = io.spine.internal.dependency.ProtoData
-    val logging = io.spine.internal.dependency.Spine.Logging
+    val logging = io.spine.internal.dependency.Logging
+    val reflect = io.spine.internal.dependency.Reflect
+    val base = io.spine.internal.dependency.Base
+    val toolBase = io.spine.internal.dependency.ToolBase
+    val coreJava = io.spine.internal.dependency.CoreJava
 
     configurations {
         all {
@@ -74,13 +77,14 @@ fun doForceVersions(configurations: ConfigurationContainer) {
             resolutionStrategy {
                 force(
                     io.spine.internal.dependency.Grpc.api,
-                    spine.reflect,
-                    spine.base,
-                    spine.toolBase,
-                    spine.server,
+                    reflect.lib,
+                    base.lib,
+                    toolBase.lib,
+                    coreJava.server,
                     protoData.pluginLib,
                     protoData.lib,
                     logging.lib,
+                    logging.middleware,
                     validation.runtime
                 )
             }

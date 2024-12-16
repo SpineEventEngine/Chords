@@ -26,8 +26,9 @@
 
 package io.spine.internal.dependency
 
+
 /**
- * Dependencies on Spine modules.
+ * Dependencies on smaller Spine modules.
  */
 @Suppress("unused", "ConstPropertyName")
 object Spine {
@@ -36,171 +37,82 @@ object Spine {
     const val toolsGroup = "io.spine.tools"
 
     /**
-     * Versions for published Spine SDK artifacts.
-     */
-    object ArtifactVersion {
-
-        /**
-         * The version of [Spine.base].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/base">spine-base</a>
-         */
-        const val base = "2.0.0-SNAPSHOT.212"
-        const val baseForBuildScript = "2.0.0-SNAPSHOT.212"
-
-        /**
-         * The version of [Spine.base_1_9]
-         *
-         * @see <a href="https://github.com/SpineEventEngine/base">spine-base</a>
-         */
-        const val base_1_9 = "1.9.0"
-
-        /**
-         * The version of [Spine.reflect].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/reflect">spine-reflect</a>
-         */
-        const val reflect = "2.0.0-SNAPSHOT.188"
-
-        /**
-         * The version of [Spine.Logging].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/logging">spine-logging</a>
-         */
-        const val logging = "2.0.0-SNAPSHOT.233"
-
-        /**
-         * The version of [Spine.testlib].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/testlib">spine-testlib</a>
-         */
-        const val testlib = "2.0.0-SNAPSHOT.184"
-
-        /**
-         * The version of `core-java`.
-         *
-         * @see [Spine.CoreJava.client]
-         * @see [Spine.CoreJava.server]
-         * @see <a href="https://github.com/SpineEventEngine/core-java">core-java</a>
-         */
-        const val core = "2.0.0-SNAPSHOT.177"
-
-        /**
-         * The version of [Spine.modelCompiler].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/model-compiler">spine-model-compiler</a>
-         */
-        const val mc = "2.0.0-SNAPSHOT.133"
-
-        /**
-         * The version of [Spine.baseTypes].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/base-types">spine-base-types</a>
-         */
-        const val baseTypes = "2.0.0-SNAPSHOT.126"
-
-        /**
-         * The version of [Spine.time].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/time">spine-time</a>
-         */
-        const val time = "2.0.0-SNAPSHOT.135"
-
-        /**
-         * The version of [Spine.change].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/change">spine-change</a>
-         */
-        const val change = "2.0.0-SNAPSHOT.118"
-
-        /**
-         * The version of [Spine.text].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/text">spine-text</a>
-         */
-        const val text = "2.0.0-SNAPSHOT.6"
-
-        /**
-         * The version of [Spine.toolBase].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/tool-base">spine-tool-base</a>
-         */
-        const val toolBase = "2.0.0-SNAPSHOT.226"
-
-        /**
-         * The version of [Spine.javadocFilter].
-         *
-         * @see <a href="https://github.com/SpineEventEngine/doc-tools">spine-javadoc-tools</a>
-         */
-        const val javadocTools = "2.0.0-SNAPSHOT.75"
-    }
-
-    const val base = "$group:spine-base:${ArtifactVersion.base}"
-
-    /**
      * The dependency on Spine 1.9 to allow access to
      * `io.spine.protobuf.ValidatingBuilder` from the generated Kotlin code.
      */
-    const val base_1_9 = "$group:spine-base:${ArtifactVersion.base_1_9}"
+    const val base_1_9 = "$group:spine-base:1.9.0"
 
-    const val baseForBuildScript = "$group:spine-base:${ArtifactVersion.baseForBuildScript}"
+    @Deprecated(message = "Please use `Base.lib`.", ReplaceWith("Base.lib"))
+    const val base = Base.lib
 
-    const val reflect = "$group:spine-reflect:${ArtifactVersion.reflect}"
-    const val baseTypes = "$group:spine-base-types:${ArtifactVersion.baseTypes}"
-    const val time = "$group:spine-time:${ArtifactVersion.time}"
-    const val change = "$group:spine-change:${ArtifactVersion.change}"
-    const val text = "$group:spine-text:${ArtifactVersion.text}"
+    @Deprecated(
+        message = "Please use `Base.libForBuildScript`.",
+        ReplaceWith("Base.libForBuildScript")
+    )
+    const val baseForBuildScript = Base.libForBuildScript
 
-    const val testlib = "$toolsGroup:spine-testlib:${ArtifactVersion.testlib}"
-    const val testUtilTime = "$toolsGroup:spine-testutil-time:${ArtifactVersion.time}"
-    const val psiJava = "$toolsGroup:spine-psi-java:${ArtifactVersion.toolBase}"
-    const val psiJavaBundle = "$toolsGroup:spine-psi-java-bundle:${ArtifactVersion.toolBase}"
-    const val toolBase = "$toolsGroup:spine-tool-base:${ArtifactVersion.toolBase}"
-    const val pluginBase = "$toolsGroup:spine-plugin-base:${ArtifactVersion.toolBase}"
-    const val pluginTestlib = "$toolsGroup:spine-plugin-testlib:${ArtifactVersion.toolBase}"
-    const val modelCompiler = "$toolsGroup:spine-model-compiler:${ArtifactVersion.mc}"
+    @Deprecated(message = "Please use `Reflect.lib`.", ReplaceWith("Reflect.lib"))
+    const val reflect = Reflect.lib
 
-    @Deprecated(message = "Please use top level `McJava` object instead.")
+    @Deprecated(message = "Please use `BaseTypes.lib`.", ReplaceWith("BaseTypes.lib"))
+    const val baseTypes = BaseTypes.lib
+
+    @Deprecated(message = "Please use `Time.lib`.", ReplaceWith("Time.lib"))
+    const val time = Time.lib
+
+    @Deprecated(message = "Please use `Time.lib`.", ReplaceWith("Time.lib"))
+    const val change = Change.lib
+
+    @Deprecated(message = "Please use `Text.lib`.", ReplaceWith("Text.lib"))
+    const val text = Text.lib
+
+    @Deprecated(message = "Please use `TestLib.lib`.", ReplaceWith("TestLib.lib"))
+    const val testlib = TestLib.lib
+
+    @Deprecated(message = "Please use `Time.testLib`.", ReplaceWith("Time.testLib"))
+    const val testUtilTime = Time.testLib
+
+    @Deprecated(message = "Please use `ToolBase.psiJava` instead`.")
+    const val psiJava = "$toolsGroup:spine-psi-java:${ToolBase.version}"
+
+    @Deprecated(message = "Please use `ToolBase.psiJava` instead`.")
+    const val psiJavaBundle = "$toolsGroup:spine-psi-java-bundle:${ToolBase.version}"
+
+    @Deprecated(message = "Please use `ToolBase.lib` instead`.")
+    const val toolBase = "$toolsGroup:spine-tool-base:${ToolBase.version}"
+
+    @Deprecated(message = "Please use `ToolBase.pluginBase` instead`.")
+    const val pluginBase = "$toolsGroup:spine-plugin-base:${ToolBase.version}"
+
+    @Deprecated(
+        message = "Please use `ToolBase.pluginTestlib` instead`.",
+        ReplaceWith("ToolBase.pluginTestlib")
+    )
+    const val pluginTestlib = ToolBase.pluginTestlib
+
+    @Deprecated(
+        message = "Please use `ModelCompiler.lib` instead.",
+        ReplaceWith("ModelCompiler.lib")
+    )
+    const val modelCompiler = ModelCompiler.lib
+
+    @Deprecated(
+        message = "Please use top level `McJava` object instead.",
+        ReplaceWith("McJava", "io.spine.dependency.local.McJava")
+    )
     val McJava = io.spine.internal.dependency.McJava
-
-    /**
-     * Dependencies on the artifacts of the Spine Logging library.
-     *
-     * @see <a href="https://github.com/SpineEventEngine/logging">spine-logging</a>
-     */
-    object Logging {
-        const val version = ArtifactVersion.logging
-        const val lib = "$group:spine-logging:$version"
-
-        const val log4j2Backend = "$group:spine-logging-log4j2-backend:$version"
-        const val stdContext = "$group:spine-logging-std-context:$version"
-        const val grpcContext = "$group:spine-logging-grpc-context:$version"
-        const val smokeTest = "$group:spine-logging-smoke-test:$version"
-
-        // Transitive dependencies.
-        // Make `public` and use them to force a version in a particular repository, if needed.
-        internal const val julBackend = "$group:spine-logging-jul-backend:$version"
-        internal const val middleware = "$group:spine-logging-middleware:$version"
-        internal const val platformGenerator = "$group:spine-logging-platform-generator:$version"
-        internal const val jvmDefaultPlatform = "$group:spine-logging-jvm-default-platform:$version"
-    }
 
     const val javadocFilter = "$toolsGroup:spine-javadoc-filter:${ArtifactVersion.javadocTools}"
 
-    const val client = CoreJava.client // Added for brevity.
-    const val server = CoreJava.server // Added for brevity.
+    @Deprecated(
+        message = "Please use top level `CoreJava.client` object instead.",
+        ReplaceWith("CoreJava.client", "io.spine.dependency.local.CoreJava")
+    )
+    const val client = CoreJava.client
 
-    /**
-     * Dependencies on `core-java` modules.
-     *
-     * See [`SpineEventEngine/core-java`](https://github.com/SpineEventEngine/core-java/).
-     */
-    object CoreJava {
-        const val version = ArtifactVersion.core
-        const val core = "$group:spine-core:$version"
-        const val client = "$group:spine-client:$version"
-        const val server = "$group:spine-server:$version"
-        const val server_1_9 = "$group:spine-server:${ArtifactVersion.base_1_9}"
-        const val testUtilServer = "$toolsGroup:spine-testutil-server:$version"
-    }
+    @Deprecated(
+        message = "Please use top level `CoreJava.server` object instead.",
+        ReplaceWith("CoreJava.server", "io.spine.dependency.local.CoreJava")
+    )
+    const val server = CoreJava.server
 }

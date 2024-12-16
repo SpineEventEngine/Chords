@@ -24,20 +24,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.codegen.plugins
-
-import io.spine.chords.runtime.MessageDef
-import io.spine.chords.runtime.MessageField
-import io.spine.chords.runtime.MessageOneof
-import io.spine.protodata.plugin.Plugin
+package io.spine.internal.dependency
 
 /**
- * The ProtoData [Plugin] that generates [MessageDef], [MessageField],
- * and [MessageOneof] implementations for Proto messages.
+ * Dependencies on the artifacts of the Spine Logging library.
  *
- * See the [MessageFieldsRenderer] for detail on code generation.
+ * @see <a href="https://github.com/SpineEventEngine/logging">spine-logging</a>
  */
-public class MessageFieldsPlugin : Plugin(
-    renderers = listOf(MessageFieldsRenderer()),
-    viewRepositories = setOf(MessageViewRepository())
-)
+@Suppress("ConstPropertyName", "unused")
+object Logging {
+    const val version = "2.0.0-SNAPSHOT.242"
+    const val group = Spine.group
+
+    const val loggingArtifact = "spine-logging"
+
+    const val lib = "$group:$loggingArtifact:$version"
+    const val libJvm = "$group:spine-logging-jvm:$version"
+
+    const val log4j2Backend = "$group:spine-logging-log4j2-backend:$version"
+    const val stdContext = "$group:spine-logging-std-context:$version"
+    const val grpcContext = "$group:spine-logging-grpc-context:$version"
+    const val smokeTest = "$group:spine-logging-smoke-test:$version"
+
+    // Transitive dependencies.
+    // Make `public` and use them to force a version in a particular repository, if needed.
+    internal const val julBackend = "$group:spine-logging-jul-backend:$version"
+    const val middleware = "$group:spine-logging-middleware:$version"
+    internal const val platformGenerator = "$group:spine-logging-platform-generator:$version"
+    internal const val jvmDefaultPlatform = "$group:spine-logging-jvm-default-platform:$version"
+}
