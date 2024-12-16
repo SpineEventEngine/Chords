@@ -388,8 +388,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "CommandMessageForm's value should be not null since it was just " +
             "checked to be valid within postCommand."
         }
-        val commandOutcomeHandler = commandLifecycle(command)
 
+        val commandOutcomeHandler = commandLifecycle(command)
         return try {
             posting = true
             command.post(commandOutcomeHandler)
