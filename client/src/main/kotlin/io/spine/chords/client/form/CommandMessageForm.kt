@@ -297,8 +297,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
 
     /**
      * A function, which, given a command message that is about to be posted,
-     * should subscribe to a respective event that is expected to arrive in
-     * response to handling that command.
+     * should provide the [CommandLifecycle] object that defines how the
+     * command's outcomes should be handled.
      */
     public lateinit var commandLifecycle: (C) -> CommandLifecycle<C>
 

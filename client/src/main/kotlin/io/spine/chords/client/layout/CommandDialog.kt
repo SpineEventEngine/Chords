@@ -104,12 +104,11 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
 
     /**
      * A function, which, given a command message that is about to be posted,
-     * should subscribe to a respective event that is expected to arrive in
-     * response to handling that command.
+     * should provide the [CommandLifecycle] object that defines how the
+     * command's outcomes should be handled.
      *
      * @param command A command, which is going to be posted.
-     * @return A subscription to the event that is expected to arrive in
-     *   response to handling [command].
+     * @return A respectively configured [CommandLifecycle] instance.
      */
     protected abstract fun commandLifecycle(command: C): CommandLifecycle<C>
 
