@@ -230,7 +230,7 @@ public class AppWindow(
 }
 
 /**
- * The SignInScreen.
+ * The sign-in screen of the application.
  */
 private class SignInScreen(
     private val content: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
