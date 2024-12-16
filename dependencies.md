@@ -1,8 +1,23 @@
 
 
-# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.54`
+# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.55`
 
 ## Runtime
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
 1.  **Group** : com.google.android. **Name** : annotations. **Version** : 4.1.1.4.
      * **Project URL:** [http://source.android.com/](http://source.android.com/)
      * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
@@ -111,7 +126,7 @@
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -230,7 +245,7 @@
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -238,6 +253,21 @@
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
      * **Project URL:** [http://aopalliance.sourceforge.net](http://aopalliance.sourceforge.net)
      * **License:** Public Domain
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
 
 1.  **Group** : com.beust. **Name** : jcommander. **Version** : 1.48.
      * **Project URL:** [http://beust.com/jcommander](http://beust.com/jcommander)
@@ -750,7 +780,7 @@
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -992,7 +1022,7 @@
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -1066,12 +1096,12 @@
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Fri Dec 13 16:31:57 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Mon Dec 16 08:29:25 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-codegen-tests:2.0.0-SNAPSHOT.54`
+# Dependencies of `io.spine.chords:spine-chords-codegen-tests:2.0.0-SNAPSHOT.55`
 
 ## Runtime
 1.  **Group** : com.google.android. **Name** : annotations. **Version** : 4.1.1.4.
@@ -1925,14 +1955,29 @@ This report was generated on **Fri Dec 13 16:31:57 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Fri Dec 13 16:32:02 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Mon Dec 16 08:29:27 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.54`
+# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.55`
 
 ## Runtime
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
      * **Project URL:** [http://findbugs.sourceforge.net/](http://findbugs.sourceforge.net/)
      * **License:** [The Apache Software License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -1992,7 +2037,7 @@ This report was generated on **Fri Dec 13 16:32:02 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -2107,7 +2152,7 @@ This report was generated on **Fri Dec 13 16:32:02 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -2115,6 +2160,21 @@ This report was generated on **Fri Dec 13 16:32:02 EET 2024** using [Gradle-Lice
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
      * **Project URL:** [http://aopalliance.sourceforge.net](http://aopalliance.sourceforge.net)
      * **License:** Public Domain
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
 
 1.  **Group** : com.beust. **Name** : jcommander. **Version** : 1.48.
      * **Project URL:** [http://beust.com/jcommander](http://beust.com/jcommander)
@@ -2596,7 +2656,7 @@ This report was generated on **Fri Dec 13 16:32:02 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -2838,7 +2898,7 @@ This report was generated on **Fri Dec 13 16:32:02 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -2912,14 +2972,29 @@ This report was generated on **Fri Dec 13 16:32:02 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Fri Dec 13 16:32:05 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Mon Dec 16 08:29:28 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto:2.0.0-SNAPSHOT.54`
+# Dependencies of `io.spine.chords:spine-chords-proto:2.0.0-SNAPSHOT.55`
 
 ## Runtime
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
      * **Project URL:** [http://findbugs.sourceforge.net/](http://findbugs.sourceforge.net/)
      * **License:** [The Apache Software License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -2996,7 +3071,7 @@ This report was generated on **Fri Dec 13 16:32:05 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -3111,7 +3186,7 @@ This report was generated on **Fri Dec 13 16:32:05 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -3119,6 +3194,21 @@ This report was generated on **Fri Dec 13 16:32:05 EET 2024** using [Gradle-Lice
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
      * **Project URL:** [http://aopalliance.sourceforge.net](http://aopalliance.sourceforge.net)
      * **License:** Public Domain
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
+
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
+1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
+     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
+     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
 
 1.  **Group** : com.beust. **Name** : jcommander. **Version** : 1.48.
      * **Project URL:** [http://beust.com/jcommander](http://beust.com/jcommander)
@@ -3600,7 +3690,7 @@ This report was generated on **Fri Dec 13 16:32:05 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -3842,7 +3932,7 @@ This report was generated on **Fri Dec 13 16:32:05 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -3916,12 +4006,12 @@ This report was generated on **Fri Dec 13 16:32:05 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Fri Dec 13 16:32:08 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Mon Dec 16 08:29:28 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto-values:2.0.0-SNAPSHOT.54`
+# Dependencies of `io.spine.chords:spine-chords-proto-values:2.0.0-SNAPSHOT.55`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -4715,12 +4805,12 @@ This report was generated on **Fri Dec 13 16:32:08 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Fri Dec 13 16:32:12 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Mon Dec 16 08:29:29 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-runtime:2.0.0-SNAPSHOT.54`
+# Dependencies of `io.spine.chords:spine-chords-runtime:2.0.0-SNAPSHOT.55`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -5484,4 +5574,4 @@ This report was generated on **Fri Dec 13 16:32:12 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Fri Dec 13 16:32:14 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Mon Dec 16 08:29:30 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
