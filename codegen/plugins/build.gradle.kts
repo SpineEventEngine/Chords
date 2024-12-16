@@ -71,6 +71,8 @@ allprojects {
 
     // Define the repositories universally for all modules, including the root.
     repositories.standardToSpineSdk()
+
+    doForceVersions(configurations)
 }
 
 // It is assumed that every module in the project requires

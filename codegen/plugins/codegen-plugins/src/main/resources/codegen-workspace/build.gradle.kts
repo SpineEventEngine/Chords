@@ -47,7 +47,7 @@ buildscript {
 plugins {
     kotlin("jvm")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.61.7"
+    id("io.spine.protodata") version "0.70.3"
     idea
 }
 
@@ -80,6 +80,8 @@ allprojects {
             }
         }
     }
+
+    doForceVersions(configurations)
 }
 
 // It is assumed that every module in the project requires
