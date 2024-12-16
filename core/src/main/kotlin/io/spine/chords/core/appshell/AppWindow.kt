@@ -35,6 +35,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.CurrentScreen
+import cafe.adriel.voyager.navigator.Navigator
 import io.spine.chords.core.layout.Dialog
 import java.awt.Dimension
 
@@ -63,21 +66,12 @@ public class AppWindow(
     /**
      * The main screen of the application.
      */
-    private val mainScreen: @Composable () -> Unit = {
-        MainScreen(views, initialView)
-    }
+    private val mainScreen: Screen = MainScreen(views, initialView)
 
     /**
      * The sign-in screen of the application.
      */
-    private val signInScreen: @Composable () -> Unit = {
-        signInScreenContent { currentScreen = mainScreen }
-    }
-
-    /**
-     * Holds the current visible screen.
-     */
-    private var currentScreen by mutableStateOf<@Composable () -> Unit>(signInScreen)
+    private val signInScreen: Screen = SignInScreen(signInScreenContent)
 
     /**
      * The bottom-most dialog in the current dialog display stack, or `null` if
@@ -98,6 +92,8 @@ public class AppWindow(
      */
     private var bottomDialog by mutableStateOf<Dialog?>(null)
 
+    private var screenNavigator: Navigator? = null
+
     /**
      * Renders the application window's content.
      */
@@ -116,7 +112,10 @@ public class AppWindow(
             Box(
                 modifier = Modifier.background(MaterialTheme.colorScheme.background)
             ) {
-                currentScreen()
+                Navigator(signInScreen) { navigator ->
+                    screenNavigator = navigator
+                    CurrentScreen()
+                }
             }
             bottomDialog?.Content()
         }
@@ -138,14 +137,20 @@ public class AppWindow(
      *          to indicate the illegal state when another modal screen
      *          is already displayed.
      */
-    public fun openModalScreen(screen: @Composable () -> Unit) {
-        check(currentScreen == mainScreen) {
-            "Another modal screen is visible already."
-        }
+    internal fun showScreen(
+        screen: Screen,
+        keepCurrentInHistory: Boolean = true
+    ) {
         check(bottomDialog == null) {
             "Cannot display the modal screen when a dialog is displayed."
         }
-        currentScreen = screen
+        check(screenNavigator != null) {
+            "The screen navigator is not initialized."
+        }
+        if (!keepCurrentInHistory) {
+            screenNavigator!!.pop()
+        }
+        screenNavigator!!.push(screen)
     }
 
     /**
@@ -154,8 +159,29 @@ public class AppWindow(
      * @throws IllegalStateException
      *          to indicate the illegal state when no modal screen to close.
      */
-    public fun closeCurrentModalScreen() {
-        currentScreen = mainScreen
+    internal fun showMainScreen(
+        keepCurrentInHistory: Boolean = true
+    ) {
+        check(screenNavigator != null) {
+            "The screen navigator is not initialized."
+        }
+        if (!keepCurrentInHistory) {
+            screenNavigator!!.pop()
+        }
+        showScreen(mainScreen)
+    }
+
+    /**
+     * Closes the currently visible modal screen.
+     *
+     * @throws IllegalStateException
+     *          to indicate the illegal state when no modal screen to close.
+     */
+    internal fun closeCurrentScreen() {
+        check(screenNavigator != null) {
+            "The screen navigator is not initialized."
+        }
+        screenNavigator!!.pop()
     }
 
     /**
@@ -193,6 +219,21 @@ public class AppWindow(
             bottomDialog = null
         } else {
             bottomDialog!!.closeNestedDialog(dialog)
+        }
+    }
+}
+
+/**
+ * The SignInScreen.
+ */
+internal class SignInScreen(
+    private val content: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
+) : Screen {
+    @Composable
+    override fun Content() {
+        val navigator = app.ui.navigator()
+        content {
+            navigator.showMainScreen(false)
         }
     }
 }

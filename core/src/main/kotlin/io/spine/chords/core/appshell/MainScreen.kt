@@ -30,26 +30,37 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.Navigator
 
 /**
  * Represents the main screen in the application.
  */
-@Composable
-public fun MainScreen(appViews: List<AppView>, initialView: AppView?) {
-    val selectedItemHolder = remember {
-        mutableStateOf(
-            initialView ?: appViews[0]
-        )
-    }
+public class MainScreen(
+    private val appViews: List<AppView>,
+    private val initialView: AppView?
+) : Screen {
 
-    Scaffold(
-        topBar = {
-            TopBar()
+    @Composable
+    override fun Content() {
+        val selectedItemHolder = remember {
+            mutableStateOf(
+                initialView ?: appViews[0]
+            )
         }
-    ) {
-        val topPadding = it.calculateTopPadding()
-        NavigationDrawer(appViews, selectedItemHolder, topPadding) {
-            selectedItemHolder.value.Content()
+
+        Navigator(selectedItemHolder.value) { navigator ->
+
+            Scaffold(
+                topBar = {
+                    TopBar()
+                }
+            ) {
+                val topPadding = it.calculateTopPadding()
+                NavigationDrawer(appViews, selectedItemHolder, navigator, topPadding) {
+                    selectedItemHolder.value.Content()
+                }
+            }
         }
     }
 }

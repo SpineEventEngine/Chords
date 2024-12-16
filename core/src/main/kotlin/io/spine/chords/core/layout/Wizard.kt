@@ -62,6 +62,7 @@ import androidx.compose.ui.input.key.Key.Companion.DirectionLeft
 import androidx.compose.ui.input.key.Key.Companion.DirectionRight
 import androidx.compose.ui.input.key.Key.Companion.Enter
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.screen.Screen
 import io.spine.chords.core.Component
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Alt
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
@@ -96,7 +97,7 @@ private object WizardContentSize {
  * the composition) upon this event.
  */
 @Stable
-public abstract class Wizard : Component() {
+public abstract class Wizard : Component(), Screen {
 
     /**
      * The text to be the title of the wizard.
