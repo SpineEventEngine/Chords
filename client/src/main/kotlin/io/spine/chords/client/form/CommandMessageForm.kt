@@ -35,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import io.spine.base.CommandMessage
 import io.spine.chords.client.CommandLifecycle
+import io.spine.chords.client.post
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
@@ -299,7 +300,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * should subscribe to a respective event that is expected to arrive in
      * response to handling that command.
      */
-    public lateinit var commandLifecycle: (C) -> CommandLifecycle<out C>
+    public lateinit var commandLifecycle: (C) -> CommandLifecycle<C>
 
     /**
      * A state, which reports whether the form is currently in progress of
@@ -363,8 +364,6 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   an adequate delay from user's perspective, this method
      *   throws [TimeoutCancellationException].
      *
-     * @param outcomeHandler Specifies the way that command outcome is
-     *   handled, e.g. the way how unexpected outcomes are processed.
      * @return `true` if the command was successfully built without any
      *   validation errors, and `false` if the command message could not be
      *   successfully built from the currently entered data (validation errors
@@ -393,7 +392,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
 
         return try {
             posting = true
-            commandOutcomeHandler.post()
+            command.post(commandOutcomeHandler)
         } finally {
             posting = false
         }

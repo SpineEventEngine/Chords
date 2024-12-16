@@ -34,6 +34,7 @@ import io.spine.base.RejectionMessage
 import io.spine.chords.client.appshell.client
 import io.spine.chords.core.appshell.app
 import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
+import io.spine.chords.core.writeOnce
 import java.util.concurrent.CompletableFuture
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -41,16 +42,38 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withTimeout
 
+public interface CommandLifecycleScope<C: CommandMessage> {
+    public fun event(
+        event: Class<out EventMessage>,
+        field: EventMessageField,
+        fieldValue: Message
+    ): EventSubscription<out EventMessage>
+
+    public fun rejection(
+        event: Class<out RejectionMessage>,
+        field: EventMessageField,
+        fieldValue: Message
+    ): EventSubscription<out RejectionMessage>
+
+    public infix fun EventSubscription<out EventMessage>.handledAs(
+        handler: suspend (EventMessage) -> Unit
+    )
+}
+
 /**
  * An object, which is capable of handling different kinds of outcomes that can
  * follow as a result of posting a command.
  */
-public open class CommandLifecycle<C : CommandMessage>(private val command: C) {
-    private val eventSubscriptions: MutableMap<
-            Class<EventMessage>,
-            Pair<EventSubscription<*>, suspend (EventMessage) -> Unit>
+public open class CommandLifecycle<C : CommandMessage>(
+    private val setupSubscriptions: CommandLifecycleScope<C>.() -> Unit
+) {
+    private val subscriptions: MutableSet<EventSubscription<out EventMessage>> = HashSet()
+    private val subscriptionHandlers: MutableMap<
+            EventSubscription<out EventMessage>,
+            suspend (EventMessage) -> Unit
             > = HashMap()
-    private var onTimeout: suspend () -> Unit = ::showTimeoutMessage
+
+    private var onTimeout: suspend (C) -> Unit = ::showTimeoutMessage
 
     private var timeoutMessage: (C) -> String = { command ->
         "Timed out waiting for an event in response to " +
@@ -62,36 +85,57 @@ public open class CommandLifecycle<C : CommandMessage>(private val command: C) {
                 "the command ${error.message}"
     }
 
-    protected fun <E : EventMessage> on(
-        event: Class<E>,
+    private inner class CommandLifecycleScopeImpl : CommandLifecycleScope<C> {
+        override fun event(
+            event: Class<out EventMessage>,
+            field: EventMessageField,
+            fieldValue: Message
+        ): EventSubscription<out EventMessage> = subscribe(event, field, fieldValue)
+
+        override fun rejection(
+            event: Class<out RejectionMessage>,
+            field: EventMessageField,
+            fieldValue: Message
+        ): EventSubscription<out RejectionMessage> = subscribe(event, field, fieldValue)
+
+        override fun EventSubscription<out EventMessage>.handledAs(
+            handler: suspend (EventMessage) -> Unit
+        ) {
+            subscriptions += this
+            subscriptionHandlers[this] = handler
+        }
+    }
+
+    protected fun <E : EventMessage> subscribe(
+        eventType: Class<out E>,
         field: EventMessageField,
-        fieldValue: Message,
-        handler: suspend (E) -> Unit
-    ) {
-        val eventSubscription = app.client.subscribeToEvent(
-            event, field, fieldValue
-        ) as EventSubscription<EventMessage>
-        val subscription = eventSubscription
-        eventSubscriptions[event as Class<EventMessage>] =
-            Pair(subscription, handler as suspend (EventMessage) -> Unit)
+        fieldValue: Message
+    ): EventSubscription<out E> {
+        val eventSubscription = app.client.subscribeToEvent(eventType, field, fieldValue)
+        subscriptions += eventSubscription
+        return eventSubscription
     }
 
     protected open fun makeSubscriptions() {}
 
-    public suspend fun post(timeout: Duration = 15.seconds): Boolean {
+    public suspend fun post(command: C, timeout: Duration = 20.seconds): Boolean {
+        val scope = CommandLifecycleScopeImpl()
+        scope.setupSubscriptions()
         val eventReceival = CompletableFuture<EventMessage>()
-        for (entry in eventSubscriptions.entries) {
-            val subscription = entry.value.first
+        var subscriptionTriggered: EventSubscription<*> by writeOnce()
+        for (subscription in subscriptions) {
             subscription.onEvent = { event ->
+                subscriptionTriggered = subscription
                 eventReceival.complete(event)
             }
         }
         return try {
             app.client.command(command)
+
             val event = withTimeout(timeout) { eventReceival.await() }
-            val eventHandler = eventSubscriptions[event.javaClass]
-            check(eventHandler != null)
-            eventHandler.second(event)
+
+            val eventHandler = subscriptionHandlers[subscriptionTriggered]
+            eventHandler?.invoke(event)
             event !is RejectionMessage
         } catch (e: CommandPostingError) {
             showPostingError(e)
@@ -103,16 +147,23 @@ public open class CommandLifecycle<C : CommandMessage>(private val command: C) {
             )
             e: TimeoutCancellationException
         ) {
-            onTimeout()
+            onTimeout(command)
             false
         }
     }
 
-    protected open suspend fun showTimeoutMessage() {
+    protected open suspend fun showTimeoutMessage(command: C) {
         showMessage(timeoutMessage(command))
     }
 
     protected open suspend fun showPostingError(error: CommandPostingError) {
         showMessage(postingErrorMessage(error))
     }
+}
+
+public suspend fun <C: CommandMessage> C.post(
+    lifecycle: CommandLifecycle<C>,
+    timeout: Duration = 20.seconds
+): Boolean {
+    return lifecycle.post(this, timeout)
 }
