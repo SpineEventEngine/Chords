@@ -48,16 +48,12 @@ public class MainScreen(
                 initialView ?: appViews[0]
             )
         }
-
-        Navigator(selectedItemHolder.value) { navigator ->
-
+        Navigator(selectedItemHolder.value) {
             Scaffold(
-                topBar = {
-                    TopBar()
-                }
+                topBar = { TopBar() }
             ) {
                 val topPadding = it.calculateTopPadding()
-                NavigationDrawer(appViews, selectedItemHolder, navigator, topPadding) {
+                NavigationDrawer(appViews, selectedItemHolder, topPadding) {
                     selectedItemHolder.value.Content()
                 }
             }

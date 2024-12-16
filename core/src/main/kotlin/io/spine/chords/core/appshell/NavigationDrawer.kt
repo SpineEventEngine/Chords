@@ -42,7 +42,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 
 /**
  * Represents a navigation bar that changes the current view
@@ -56,12 +57,10 @@ import cafe.adriel.voyager.navigator.Navigator
  * @param appContent
  *         content displayed to the right of the drawer.
  */
-@Suppress("LongParameterList", "FunctionName")
 @Composable
 public fun NavigationDrawer(
     appViews: List<AppView>,
     currentAppView: MutableState<AppView>,
-    navigator: Navigator,
     topPadding: Dp,
     modifier: Modifier = Modifier,
     appContent: @Composable () -> Unit
@@ -74,6 +73,7 @@ public fun NavigationDrawer(
                 drawerContainerColor = MaterialTheme.colorScheme.background
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
+                val navigator = LocalNavigator.currentOrThrow
                 appViews.forEach { item ->
                     NavigationDrawerItem(
                         icon = { Icon(item.icon, contentDescription = null) },
