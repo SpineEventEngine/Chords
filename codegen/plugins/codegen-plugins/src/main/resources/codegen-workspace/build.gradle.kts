@@ -27,11 +27,11 @@
 @file:Suppress("RemoveRedundantQualifierName")
 
 import Build_gradle.Module
-import io.spine.internal.dependency.Protobuf
-import io.spine.internal.gradle.javac.configureJavac
-import io.spine.internal.gradle.kotlin.applyJvmToolchain
-import io.spine.internal.gradle.kotlin.setFreeCompilerArgs
-import io.spine.internal.gradle.standardToSpineSdk
+import io.spine.dependency.lib.Protobuf
+import io.spine.gradle.javac.configureJavac
+import io.spine.gradle.kotlin.applyJvmToolchain
+import io.spine.gradle.kotlin.setFreeCompilerArgs
+import io.spine.gradle.standardToSpineSdk
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
@@ -40,7 +40,7 @@ buildscript {
     doForceVersions(configurations)
 
     dependencies {
-        classpath(io.spine.internal.dependency.McJava.pluginLib)
+        classpath(io.spine.dependency.local.McJava.pluginLib)
     }
 }
 

@@ -24,8 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.CoreJava
-import io.spine.internal.gradle.standardToSpineSdk
+import io.spine.dependency.local.CoreJava
+import io.spine.gradle.standardToSpineSdk
 
 // Apply ProtoData directly, without Spine's Model Compiler.
 plugins {

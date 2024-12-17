@@ -27,16 +27,16 @@
 @file:Suppress("RemoveRedundantQualifierName")
 
 import Build_gradle.Module
-import io.spine.internal.dependency.Chords
-import io.spine.internal.dependency.ErrorProne
-import io.spine.internal.dependency.Protobuf
-import io.spine.internal.gradle.javac.configureErrorProne
-import io.spine.internal.gradle.javac.configureJavac
-import io.spine.internal.gradle.kotlin.applyJvmToolchain
-import io.spine.internal.gradle.kotlin.setFreeCompilerArgs
-import io.spine.internal.gradle.publish.PublishingRepos
-import io.spine.internal.gradle.publish.spinePublishing
-import io.spine.internal.gradle.standardToSpineSdk
+import io.spine.dependency.build.ErrorProne
+import io.spine.dependency.lib.Protobuf
+import io.spine.dependency.local.Chords
+import io.spine.gradle.javac.configureErrorProne
+import io.spine.gradle.javac.configureJavac
+import io.spine.gradle.kotlin.applyJvmToolchain
+import io.spine.gradle.kotlin.setFreeCompilerArgs
+import io.spine.gradle.publish.PublishingRepos
+import io.spine.gradle.publish.spinePublishing
+import io.spine.gradle.standardToSpineSdk
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -46,7 +46,7 @@ buildscript {
     doForceVersions(configurations)
 
     dependencies {
-        classpath(io.spine.internal.dependency.McJava.pluginLib)
+        classpath(io.spine.dependency.local.McJava.pluginLib)
     }
 }
 
