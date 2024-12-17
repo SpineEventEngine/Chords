@@ -30,8 +30,6 @@ import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.plugin.Plugin
-import io.spine.protodata.plugin.ViewRepository
-import io.spine.protodata.render.Renderer
 
 /**
  * The ProtoData [Plugin] that generates [MessageDef], [MessageField],
@@ -39,13 +37,7 @@ import io.spine.protodata.render.Renderer
  *
  * See the [MessageFieldsRenderer] for detail on code generation.
  */
-public class MessageFieldsPlugin : Plugin {
-
-    override fun renderers(): List<Renderer<*>> {
-        return listOf(MessageFieldsRenderer())
-    }
-
-    override fun viewRepositories(): Set<ViewRepository<*, *, *>> {
-        return setOf(MessageViewRepository())
-    }
-}
+public class MessageFieldsPlugin : Plugin(
+    renderers = listOf(MessageFieldsRenderer()),
+    viewRepositories = setOf(MessageViewRepository())
+)
