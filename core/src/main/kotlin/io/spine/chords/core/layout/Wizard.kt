@@ -85,7 +85,7 @@ private object WizardContentSize {
 }
 
 /**
- * The base class for creating multi-step form component known as wizard.
+ * The base class for creating a multi-step form component known as a wizard.
  *
  * To create a concrete wizard you need to extend the class
  * and override all abstract methods that configure the data needed for the wizard.
@@ -99,9 +99,10 @@ private object WizardContentSize {
 public abstract class Wizard : Component() {
 
     /**
-     * The text to be the title of the wizard.
+     * The text to be the title of the wizard, or `null`, if the wizard's title
+     * shouldn't be displayed at all.
      */
-    protected abstract val title: String
+    protected abstract val title: String?
 
     /**
      * A callback that should be handled to close the wizard (exclude it from
@@ -127,7 +128,11 @@ public abstract class Wizard : Component() {
     private var submitting: Boolean by mutableStateOf(false)
 
     private var currentPageIndex by mutableStateOf(0)
-    private val pages by lazy { createPages() }
+
+    /**
+     * A list of pages present in the wizard.
+     */
+    protected val pages: List<WizardPage> by lazy { createPages() }
 
     /**
      * Creates the list of pages of which the wizard consists.
@@ -165,7 +170,9 @@ public abstract class Wizard : Component() {
                     .padding(32.dp),
                 verticalArrangement = spacedBy(16.dp)
             ) {
-                Title(title)
+                if (title != null) {
+                    Title(title!!)
+                }
                 Column(
                     Modifier
                         .weight(1F)
@@ -289,19 +296,20 @@ private fun Title(text: String) {
 /**
  * The panel with control buttons of the wizard.
  *
- * @param onNextClick
- *         a callback triggered when the user clicks on the "Next" button.
- * @param onBackClick
- *         a callback triggered when the user clicks on the "Back" button.
- * @param onFinishClick
- *         a callback triggered when the user clicks on the "Finish" button.
- *         this callback triggers in a separate coroutine.
- * @param onCancelClick
- *         a callback triggered when the user clicks on the "Cancel" button.
- * @param isOnFirstPage
- *         is a wizard's currently displayed page the first one.
- * @param isOnLastPage
- *         is a wizard's currently displayed page the last one.
+ * @param onNextClick A callback triggered when the user clicks on
+ *   the "Next" button.
+ * @param onBackClick A callback triggered when the user clicks on
+ *   the "Back" button.
+ * @param onFinishClick A callback triggered when the user clicks on
+ *   the "Finish" button. This callback is triggered in a separate coroutine.
+ * @param onCancelClick A callback triggered when the user clicks on
+ *   the "Cancel" button.
+ * @param isOnFirstPage Specifies whether the wizard's currently displayed page
+ *   is the first one.
+ * @param isOnLastPage Specifies whether the wizard's currently displayed page
+ *   is the last one.
+ * @param submitting Specifies whether wizard's submission is currently
+ *   in progress.
  */
 @Composable
 private fun NavigationPanel(

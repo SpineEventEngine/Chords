@@ -33,8 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import io.spine.base.CommandMessage
-import io.spine.base.EventMessage
-import io.spine.chords.client.EventSubscription
+import io.spine.chords.client.CommandLifecycle
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.SubmitOrCancelDialog
@@ -70,7 +69,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
             onBeforeBuild = ::beforeBuild,
             props = {
                 validationDisplayMode = MANUAL
-                eventSubscription = ::subscribeToEvent
+                commandLifecycle = ::commandLifecycle
             }
         ) {
             Column(
@@ -105,15 +104,13 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
 
     /**
      * A function, which, given a command message that is about to be posted,
-     * should subscribe to a respective event that is expected to arrive in
-     * response to handling that command.
+     * should provide the [CommandLifecycle] object that defines how the
+     * command's outcomes should be handled.
      *
      * @param command A command, which is going to be posted.
-     * @return A subscription to the event that is expected to arrive in
-     *   response to handling [command].
+     * @return A respectively configured [CommandLifecycle] instance.
      */
-    protected abstract fun subscribeToEvent(command: C):
-            EventSubscription<out EventMessage>
+    protected abstract fun commandLifecycle(command: C): CommandLifecycle<C>
 
     /**
      * Allows to programmatically amend the command message builder before

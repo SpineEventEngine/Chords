@@ -103,8 +103,8 @@ public class ConfirmationDialog : Dialog() {
 
         yesButtonText = "Yes"
         noButtonText = "No"
-        dialogWidth = 430.dp
-        dialogHeight = 210.dp
+        width = 430.dp
+        height = 210.dp
     }
 
     /**
