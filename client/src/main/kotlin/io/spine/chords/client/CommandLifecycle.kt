@@ -98,7 +98,7 @@ public suspend fun <C: CommandMessage> C.post(lifecycle: CommandLifecycle<C>): B
  *   will override the default behavior above if more granular event/rejection
  *   handling is required.
  *
- * - If an error happens when posting and acknowledging the command, the
+ * - If an error happens when posting or acknowledging the command, the
  *   [onPostingError] callback is invoked (or the [postingErrorMessage] text is
  *   displayed if the callback is not specified).
  *
