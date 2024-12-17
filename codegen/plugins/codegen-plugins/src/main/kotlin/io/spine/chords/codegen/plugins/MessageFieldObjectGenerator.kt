@@ -42,9 +42,14 @@ import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.FieldType
+import io.spine.protodata.ast.FieldType.KindCase.ENUMERATION
+import io.spine.protodata.ast.FieldType.KindCase.LIST
+import io.spine.protodata.ast.FieldType.KindCase.MESSAGE
+import io.spine.protodata.ast.FieldType.KindCase.PRIMITIVE
 import io.spine.protodata.ast.Type
 import io.spine.protodata.ast.TypeName
 import io.spine.protodata.ast.isList
+import io.spine.protodata.ast.toType
 import io.spine.protodata.ast.typeName
 import io.spine.protodata.java.getterName
 import io.spine.protodata.java.javaPackage
@@ -255,36 +260,29 @@ private fun Field.generateSetValueCode(messageTypeName: TypeName): String {
  * Returns a [ClassName] of the value of a [Field].
  */
 private fun Field.valueClassName(typeSystem: TypeSystem)
-        : com.squareup.kotlinpoet.TypeName {
-    return type.valueClassName(typeSystem)
-}
+        : com.squareup.kotlinpoet.TypeName = type.toClassName(typeSystem)
 
 /**
- * Returns a [ClassName] of the value of a [Field].
+ * Returns a [ClassName] for the [FieldType].
  */
-@Suppress("ReturnCount")
-private fun FieldType.valueClassName(typeSystem: TypeSystem)
-        : com.squareup.kotlinpoet.TypeName {
-    if (isMessage || isEnum) {
-        val javaPackage = typeSystem.findHeader(this)!!.javaPackage()
-        return typeName.messageClassName(javaPackage)
-    } else if (isPrimitive) {
-        return primitive.primitiveClass().asClassName()
-    } else if (isList) {
-        return Iterable::class.asClassName().parameterizedBy(
-            list.valueClassName(typeSystem)
+private fun FieldType.toClassName(typeSystem: TypeSystem)
+        : com.squareup.kotlinpoet.TypeName =
+    when (kindCase) {
+        MESSAGE, ENUMERATION, PRIMITIVE -> toType().toClassName(typeSystem)
+        LIST -> List::class.asClassName().parameterizedBy(
+            list.toClassName(typeSystem)
         )
+
+        else -> error("The field type is not supported yet: `$this`")
     }
 
-    error("The field type is not supported yet: `$this`")
-}
-
-private fun Type.valueClassName(typeSystem: TypeSystem)
-        : com.squareup.kotlinpoet.TypeName {
+/**
+ * Returns a [ClassName] for the [Type] that is a message or primitive.
+ */
+private fun Type.toClassName(typeSystem: TypeSystem): ClassName {
     if (isPrimitive) {
         return primitive.primitiveClass().asClassName()
     }
-
     val javaPackage = typeSystem.findHeader(this)!!.javaPackage()
     return typeName.messageClassName(javaPackage)
 }
