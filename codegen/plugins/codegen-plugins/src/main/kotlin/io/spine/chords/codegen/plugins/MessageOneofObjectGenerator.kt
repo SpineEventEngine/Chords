@@ -78,7 +78,7 @@ internal class MessageOneofObjectGenerator(
         fields.filter { field ->
             field.isPartOfOneof
         }.groupBy { oneofField ->
-            oneofField.oneofName.value
+            oneofField.enclosingOneof.value
         }.forEach { nameToFields ->
             fileBuilder.addType(
                 buildMessageOneofObject(

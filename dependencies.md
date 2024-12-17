@@ -111,7 +111,7 @@
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -230,7 +230,7 @@
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -750,7 +750,7 @@
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -992,7 +992,7 @@
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -1066,7 +1066,7 @@
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Sat Dec 14 18:31:28 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 11:36:27 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
@@ -1925,7 +1925,7 @@ This report was generated on **Sat Dec 14 18:31:28 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Sat Dec 14 18:31:32 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 11:36:29 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
@@ -1992,7 +1992,7 @@ This report was generated on **Sat Dec 14 18:31:32 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -2107,7 +2107,7 @@ This report was generated on **Sat Dec 14 18:31:32 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -2596,7 +2596,7 @@ This report was generated on **Sat Dec 14 18:31:32 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -2838,7 +2838,7 @@ This report was generated on **Sat Dec 14 18:31:32 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -2912,7 +2912,7 @@ This report was generated on **Sat Dec 14 18:31:32 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Sat Dec 14 18:31:34 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 11:36:30 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
@@ -2996,7 +2996,7 @@ This report was generated on **Sat Dec 14 18:31:34 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -3111,7 +3111,7 @@ This report was generated on **Sat Dec 14 18:31:34 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -3600,7 +3600,7 @@ This report was generated on **Sat Dec 14 18:31:34 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-windows-x64. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.desktop. **Name** : desktop-jvm-macos-x64. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.foundation. **Name** : foundation-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -3842,7 +3842,7 @@ This report was generated on **Sat Dec 14 18:31:34 EET 2024** using [Gradle-Lice
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-windows-x64. **Version** : 0.7.85.4.
+1.  **Group** : org.jetbrains.skiko. **Name** : skiko-awt-runtime-macos-x64. **Version** : 0.7.85.4.
      * **Project URL:** [https://www.github.com/JetBrains/skiko](https://www.github.com/JetBrains/skiko)
      * **License:** [The Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -3916,7 +3916,7 @@ This report was generated on **Sat Dec 14 18:31:34 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Sat Dec 14 18:31:37 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 11:36:31 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
@@ -4715,7 +4715,7 @@ This report was generated on **Sat Dec 14 18:31:37 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Sat Dec 14 18:31:40 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 11:36:32 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
@@ -5484,4 +5484,4 @@ This report was generated on **Sat Dec 14 18:31:40 EET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Sat Dec 14 18:31:42 EET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 11:36:33 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).

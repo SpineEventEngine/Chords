@@ -24,9 +24,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Chords
-import io.spine.internal.dependency.KotlinPoet
-import io.spine.internal.dependency.ProtoData
+import io.spine.dependency.lib.KotlinPoet
+import io.spine.dependency.local.Chords
+import io.spine.dependency.local.ProtoData
 
 dependencies {
     // To use ProtoData API in code generation plugin.
