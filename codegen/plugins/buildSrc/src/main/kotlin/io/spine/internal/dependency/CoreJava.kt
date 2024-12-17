@@ -44,5 +44,7 @@ object CoreJava {
     const val client = "$group:$clientArtifact:$version"
     const val server = "$group:$serverArtifact:$version"
 
+    const val server_1_9 = "$group:$serverArtifact:1.9.0"
+
     const val testUtilServer = "${Spine.toolsGroup}:spine-testutil-server:$version"
 }

@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Spine
+import io.spine.internal.dependency.CoreJava
 import io.spine.internal.gradle.standardToSpineSdk
 
 // Apply ProtoData directly, without Spine's Model Compiler.
@@ -49,7 +49,7 @@ val sourceModuleDir = project.properties["sourceModuleDir"] as String
 
 dependencies {
     // The generated code relies onto `ValidatingBuilder` from Spine `1.9.x`.
-    implementation(Spine.CoreJava.server_1_9)
+    implementation(CoreJava.server_1_9)
     protoData(codegenPluginsArtifact)
 }
 

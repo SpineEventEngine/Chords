@@ -256,23 +256,37 @@ private fun Field.generateSetValueCode(messageTypeName: TypeName): String {
  */
 private fun Field.valueClassName(typeSystem: TypeSystem)
         : com.squareup.kotlinpoet.TypeName {
-    val valueClassName = type.className(typeSystem)
-    return if (isList)
-        Iterable::class.asClassName().parameterizedBy(valueClassName)
-    else
-        valueClassName
+    return type.valueClassName(typeSystem)
 }
 
 /**
- * Returns a [ClassName] for the [Type].
+ * Returns a [ClassName] of the value of a [Field].
  */
-private fun FieldType.className(typeSystem: TypeSystem): ClassName {
-    return if (isPrimitive)
-        primitive.primitiveClass().asClassName()
-    else
-        typeName.messageClassName(
-            typeSystem.findHeader(this)!!.javaPackage()
+@Suppress("ReturnCount")
+private fun FieldType.valueClassName(typeSystem: TypeSystem)
+        : com.squareup.kotlinpoet.TypeName {
+    if (isMessage || isEnum) {
+        val javaPackage = typeSystem.findHeader(this)!!.javaPackage()
+        return typeName.messageClassName(javaPackage)
+    } else if (isPrimitive) {
+        return primitive.primitiveClass().asClassName()
+    } else if (isList) {
+        return Iterable::class.asClassName().parameterizedBy(
+            list.valueClassName(typeSystem)
         )
+    }
+
+    error("The field type is not supported yet: `$this`")
+}
+
+private fun Type.valueClassName(typeSystem: TypeSystem)
+        : com.squareup.kotlinpoet.TypeName {
+    if (isPrimitive) {
+        return primitive.primitiveClass().asClassName()
+    }
+
+    val javaPackage = typeSystem.findHeader(this)!!.javaPackage()
+    return typeName.messageClassName(javaPackage)
 }
 
 /**
