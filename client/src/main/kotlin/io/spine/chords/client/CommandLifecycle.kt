@@ -43,8 +43,27 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withTimeout
 
 /**
+ * An extension function, which first posts the command on which it is invoked,
+ * then waits until either of the outcomes configured by the passed [lifecycle]
+ * is received, or until the timeout period configured in [lifecycle]
+ * object elapses.
+ *
+ * This function makes the [lifecycle] object to handle the outcomes or error
+ * conditions that have occurred after posting the command.
+ *
+ * @param lifecycle A [CommandLifecycle] instance whose configuration defines
+ *   how the command's possible outcomes should be handled.
+ * @return `true`, if either of the non-rejection events configured in
+ *   [lifecycle] was received before the timeout period elapses, and
+ *   `false` otherwise.
+ *
+ */
+public suspend fun <C: CommandMessage> C.post(lifecycle: CommandLifecycle<C>): Boolean =
+    lifecycle.post(this)
+
+/**
  * An object, which can be set up to handle the client-side lifecycle of command
- * [C], starting with posting of a command, including handling different types
+ * [C], starting with posting of a command, and then handling different types
  * of outcomes, and error/timeout conditions.
  *
  * This object supports configuring the following aspects of the client side
@@ -53,28 +72,29 @@ import kotlinx.coroutines.withTimeout
  * - First, the respective command [C] should be posted using the [post] method,
  *   or using the respective `CommandMessage.post` extension function.
  *
- *   This call will wait until any of the events or rejections specified within
- *   [outcomeSubscriptions] is emitted, or until the [timeout] period elapses.
+ *   This call will wait until either of the events or rejections specified
+ *   within [outcomeSubscriptions] is emitted, or until the [timeout]
+ *   period elapses.
  *
  *   If either of the specified non-rejection events is emitted during this
  *   period, then the function will run the respective handler (if specified),
  *   and return `true` to signify the "positive" command posting outcome.
  *
- *   Otherwise (if any of the specified rejections is emitted, or if an error
+ *   Otherwise (if either of the specified rejections is emitted, or if an error
  *   is identified during the command's posting, or when no events or rejections
- *   are emitted during the [timeout] period), the respective condition is
- *   handled accordingly (see below), and `false` is returned to signify the
- *   "negative" command posting outcome.
+ *   are emitted during the [timeout] period), the respective condition is first
+ *   handled accordingly (see below), and then `false` is returned to signify
+ *   the "negative" command posting outcome.
  *
  * - The [outcomeSubscriptions] lambda can be used to specify an arbitrary set
  *   of event and rejection subscriptions to specify the expected positive and
- *   negative outcomes of posting the command [C].
+ *   negative outcomes of posting the command [C] respectively.
  *
  *   By default, upon receiving either of the expected rejections, it invokes
- *   the [onRejection] callback, or, if it's not specified displays a message
+ *   the [onRejection] callback, or, when it's not specified, displays a message
  *   defined by [rejectionMessage].
  *
- *   It's also possible to specify the per-event/per-rejection handler, which
+ *   It's also possible to specify the per-event/per-rejection handlers, which
  *   will override the default behavior above if more granular event/rejection
  *   handling is required.
  *
@@ -89,14 +109,16 @@ import kotlinx.coroutines.withTimeout
  *
  * ## Usage examples
  *
- * Note that the [outcomeSubscriptions] parameter in context of the
- * [OutcomeSubscriptionScope] object, which provides some functions that can be
- * used to declare the list of expected command outcomes. See the
- * [event][OutcomeSubscriptionScope.event],
+ * Note that the [outcomeSubscriptions] lambda is invoked in context of the
+ * [OutcomeSubscriptionScope] object, which provides the
+ * [command][OutcomeSubscriptionScope.command], which is going to be posted, and
+ * some functions that can be used to declare the list of expected command
+ * outcomes. See the [event][OutcomeSubscriptionScope.event],
  * [rejection][OutcomeSubscriptionScope.rejection], and
- * [handledAs][OutcomeSubscriptionScope.handledAs] functions for details.
+ * [handledAs][OutcomeSubscriptionScope.handledAs] functions.
  *
- * Here's a simple example of using `CommandLifecycle`:
+ * Here's a simple example of configuring `CommandLifecycle` to wait for
+ * `ExpectedEvent` as an expected "positive" outcome of `SomeCommand`:
  * ```
  *     val command: SomeCommand = someCommand()
  *     val succeeded: Boolean = command.post(
@@ -110,42 +132,40 @@ import kotlinx.coroutines.withTimeout
  *     )
  *     // `succeeded` will contain `true` if `ExpectedEvent.id == command.id` was
  *     // emitted as an outcome of handling command `SomeCommand` during the
- *     // default timeout period.
+ *     // default timeout period, and `false` otherwise.
  * ```
  *
  * Below is an example, which demonstrates handling both a regular
- * (non-rejection) event, and a rejection. Receiving the specified rejection
- * will display the text message defined by [rejectionMessage], and will make
- * the `post` function to return `false`.
+ * (non-rejection) event, and a rejection event. Receiving the specified
+ * rejection will display the text message defined by [rejectionMessage], and
+ * will make the `post` function to return `false`.
  * ```
  *     val command: SomeCommand = someCommand()
  *     val succeeded: Boolean = command.post(
- *         CommandLifecycle(
- *             {
- *                 event(
- *                     ExpectedEvent::class.java,
- *                     ExpectedEvent.Field.id(),
- *                     command.id
- *                 )
- *                 rejection(
- *                     ExpectedRejection::class.java,
- *                     ExpectedRejection.Field.id(),
- *                     command.id
- *                 )
- *             }
- *         )
+ *         CommandLifecycle({
+ *             event(
+ *                 ExpectedEvent::class.java,
+ *                 ExpectedEvent.Field.id(),
+ *                 command.id
+ *             )
+ *             rejection(
+ *                 ExpectedRejection::class.java,
+ *                 ExpectedRejection.Field.id(),
+ *                 command.id
+ *             )
+ *         })
  *     )
  *     // If `ExpectedRejection` is emitted during the [timeout] period,
  *     // `succeeded` will be `false.
  * ```
  *
- * It is also possible to customize event/rejection handlers either on a
- * per-event/per-rejection basis using the
+ * It is also optionally possible to customize event/rejection handlers either
+ * on a per-event/per-rejection basis using the
  * [handledAs][OutcomeSubscriptionScope.handledAs] infix function, or using the
- * [onEvent]/[onRejection] callbacks, which will be invoked upon receiving any
- * of the expected events/rejections:
+ * [onEvent]/[onRejection] callbacks, which will be invoked upon receiving
+ * either of the configured events/rejections:
  * ```
- *     val command: SomeCommand = someCommand()
+ *      val command: SomeCommand = someCommand()
  *     val succeeded: Boolean = command.post(
  *         CommandLifecycle(
  *             {
@@ -172,19 +192,18 @@ import kotlinx.coroutines.withTimeout
  *                 showMessage("Rejection ${rejection.javaClass.simpleName} was " +
  *                         "received as an outcome for command ${command.javaClass.simpleName}")
  *             }
- *
  *         )
  *     )
  * ```
  *
- * Please see the property descriptions for the full list of
+ * Please see the property descriptions below for the full list of
  * customizations available.
  *
  * @param C A type of command whose lifecycle is being configured.
  *
  * @param outcomeSubscriptions A lambda, which defines the set of events and
  *   rejections, which can be emitted as an outcome of command [C]. This lambda
- *   can use the [event][OutcomeSubscriptionScope.event] and
+ *   should use the [event][OutcomeSubscriptionScope.event] and
  *   [rejection][OutcomeSubscriptionScope.rejection] functions to set up
  *   expected positive/negative command outcomes respectively. Besides, each
  *   event/command subscriptions can optionally be accompanied with the
@@ -192,11 +211,11 @@ import kotlinx.coroutines.withTimeout
  *   a custom per-event/per-rejection handler(s) where such fine-grained
  *   handlers are required.
  * @param onEvent An optional callback, which will be invoked upon receiving any
- *   of the expected non-rejection events.
+ *   of the configured non-rejection events.
  * @param onRejection An optional callback, which will be invoked upon receiving any
- *   of the expected rejections.
+ *   of the configured rejections.
  * @param onPostingError An optional callback, which will be invoked when an
- *   error was received during posting and acknowledging the command. If no
+ *   error was received during posting or acknowledging the command. If no
  *   callback is provided, the [handlePostingError] method will be invoked,
  *   which displays a respective message dialog by default.
  * @param onTimeout An optional callback, which will be invoked when neither of
@@ -218,8 +237,8 @@ import kotlinx.coroutines.withTimeout
  *   was posted that the configured outcomes are being waited for by
  *   this object.
  * @return `true`, to signify the positive command posting outcome (e.g., when
- *   either of non-rejection events was emitted before the [timeout] period
- *   elapses), and `false` otherwise.
+ *   either of configured non-rejection events was emitted before the [timeout]
+ *   period elapses), and `false` otherwise.
  */
 public open class CommandLifecycle<C : CommandMessage>(
     private val outcomeSubscriptions: OutcomeSubscriptionScope<C>.() -> Unit,
@@ -434,9 +453,6 @@ public open class CommandLifecycle<C : CommandMessage>(
         }
     }
 }
-
-public suspend fun <C: CommandMessage> C.post(lifecycle: CommandLifecycle<C>): Boolean =
-    lifecycle.post(this)
 
 /**
  * Defines a DSL available in scope of the [CommandLifecycle]'s

@@ -139,7 +139,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
 
 /**
  * A base class for a page in `CommandWizard`, which helps fill in a message
- * that constitutes the content of one the command message's fields.
+ * that constitutes the content of one of the command message's fields.
  *
  * @param M A type of the command's field edited in this page.
  * @param B A builder type of the command's field edited in this page.
