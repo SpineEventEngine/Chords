@@ -72,9 +72,8 @@ protoData {
 }
 
 /**
- * Disable `compileKotlin`, `compileTestKotlin`, `compileJava`,
- * and `compileTestJava` tasks because Kotlin sources are not compilable
- * due to dependency on `ValidatingBuilder` from Spine 1.9.x.
+ * Disable `compileKotlin` and `compileTestKotlin` tasks because Kotlin sources
+ * are not compilable due to dependency on `ValidatingBuilder` from Spine 1.9.x.
  */
 tasks.named("compileKotlin") {
     enabled = false
@@ -84,6 +83,10 @@ tasks.named("compileTestKotlin") {
     enabled = false
 }
 
+/**
+ * Disable `compileJava` and `compileTestJava` tasks because Java sources
+ * are not compilable due to dependency on `ValidatingBuilder` from Spine 1.9.x.
+ */
 tasks.named("compileJava") {
     enabled = false
 }
