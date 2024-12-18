@@ -48,7 +48,7 @@ import io.spine.chords.core.Component
  *   constructor's parameter.
  *
  * - Add a companion object of type
- *   [ComponentSetup][io.spine.chords.core.ComponentSetup] to ensure that the
+ *   [ComponentSetup][io.spine.chords.core.ComponentUsage] to ensure that the
  *   component can actually be used (like any other class-based [Component]]).
  *
  * - Override either [customContent] (for rendering ordinary singlepart forms),

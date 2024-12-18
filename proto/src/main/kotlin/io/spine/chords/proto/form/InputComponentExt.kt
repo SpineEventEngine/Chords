@@ -29,7 +29,7 @@ package io.spine.chords.proto.form
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
 import io.spine.chords.core.ComponentProps
-import io.spine.chords.core.ComponentSetup
+import io.spine.chords.core.ComponentUsage
 import io.spine.chords.core.InputComponent
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
@@ -117,7 +117,7 @@ import io.spine.chords.runtime.MessageFieldValue
  *   instance. It is invoked before each recomposition of the component.
  * @return A component's instance that has been created for this
  *   declaration site.
- * @see ComponentSetup.invoke
+ * @see ComponentUsage.invoke
  */
 context(FormFieldsScope<M>)
 @Composable
@@ -125,7 +125,7 @@ public operator fun <
         C : InputComponent<V>,
         M : Message,
         V : MessageFieldValue
-> ComponentSetup<C>.invoke(
+> ComponentUsage<C>.invoke(
     field: MessageField<M, V>,
     props: ComponentProps<C>? = null
 ): C {
@@ -145,7 +145,7 @@ public operator fun <
  *
  * A regular way to both lazily instantiate and render a component is via
  * the respective component's companion object's `invoke` operator (see the
- * [ComponentSetup.invoke] operator functions).
+ * [ComponentUsage.invoke] operator functions).
  *
  * @receiver A context introduced by the parent form whose fields need to
  *   be edited.

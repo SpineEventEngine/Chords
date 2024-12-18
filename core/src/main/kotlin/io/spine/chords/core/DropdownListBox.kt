@@ -155,7 +155,7 @@ import kotlinx.coroutines.launch
 // All class's functions are better to have in this class.
 @Suppress("TooManyFunctions", "LargeClass")
 public class DropdownListBox<I> : Component() {
-    public companion object : AbstractComponentSetup() {
+    public companion object : AbstractComponentUsage() {
 
         /**
          * Declares an instance of [DropdownListBox] with the respective

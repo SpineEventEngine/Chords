@@ -87,7 +87,7 @@ public class AppWindow(
      * dialog that the user can interact with at a time. It's possible to
      * display nested dialogs though. That is, when some dialog is already
      * displayed, another dialog can be open (see
-     * [DialogSetup][io.spine.chords.core.layout.DialogSetup.open]), which means
+     * [DialogSetup][io.spine.chords.core.layout.DialogUsage.open]), which means
      * that the first dialog still remains opened, but cannot be interacted with
      * until the second one (which is displayed on top of it) is closed.
      *

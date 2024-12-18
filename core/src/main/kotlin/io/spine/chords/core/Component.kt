@@ -93,7 +93,7 @@ import io.spine.chords.core.appshell.app
  *
  * A component's constructor would actually not need to be used directly in most
  * cases! Instead of using the constructor, such expressions work thanks to
- * the [invoke][ComponentSetup.invoke] operator function being declared
+ * the [invoke][ComponentUsage.invoke] operator function being declared
  * on the component's companion object, which is in particular required to
  * prevent creating a new component's instance upon each composition, and use
  * a cached instance instead.
@@ -146,7 +146,7 @@ import io.spine.chords.core.appshell.app
  *
  * - Create a subclass of [Component].
  *
- * - Add a companion object of type [ComponentSetup], which introduces
+ * - Add a companion object of type [ComponentUsage], which introduces
  *   the instance declaration API (which is technically being an invocation).
  *
  *   You can consider the presence of this companion object as a kind of
@@ -588,7 +588,7 @@ import io.spine.chords.core.appshell.app
  *
  * @constructor A constructor, which is used internally by the component's
  *   implementation (its companion object). As an application developer, use
- *   [companion object][ComponentSetup]'s [invoke][ComponentSetup.invoke]
+ *   [companion object][ComponentUsage]'s [invoke][ComponentUsage.invoke]
  *   operator for instantiating and rendering any specific
  *   component's implementation.
  *
@@ -605,7 +605,7 @@ public abstract class Component {
      *
      * In most cases this property would not need to be used by the
      * application's code directly, since it would be set automatically by
-     * [ComponentSetup.invoke] or an analogous component
+     * [ComponentUsage.invoke] or an analogous component
      * declaration function.
      */
     internal var props: ComponentProps<Component>? = null
@@ -702,7 +702,7 @@ public abstract class Component {
      *   lifecycle, including instance creation, property updates, and
      *   rendering, which removes the need to perform any of those steps
      *   explicitly. See the "Using class-based components" section in
-     *   [Component] class description, and the [ComponentSetup.invoke]
+     *   [Component] class description, and the [ComponentUsage.invoke]
      *   operator functions for details.
      *
      * - The component's composable content has to be specified by overriding
@@ -773,12 +773,12 @@ public abstract class Component {
  *
  * It generally doesn't need to be used directly when using the components,
  * since it would be implicitly created by a lambda that is passed to the
- * [ComponentSetup.invoke] function.
+ * [ComponentUsage.invoke] function.
  * It is a part of an internal implementation of [Component], and, in case of
  * some advanced components, can also be used when creating new components.
  *
  * @See Component
- * @see ComponentSetup.invoke
+ * @see ComponentUsage.invoke
  * @see Component.props
  */
 public fun interface ComponentProps <C: Component> {
@@ -801,16 +801,16 @@ public fun interface ComponentProps <C: Component> {
  * components" sections of the [Component] class for general information about
  * how class-based components are used in an application.
  *
- * In most cases custom class-based components would use [ComponentSetup]
+ * In most cases custom class-based components would use [ComponentUsage]
  * for to introduce the component's _instance declaration API_. However, in some
  * rare case a component might require different instance declaration API. In
  * such cases those companion objects would use this class as a base class for
  * a companion object instead.
  *
  * @param createInstance A lambda that should create a component's instance.
- * @see ComponentSetup
+ * @see ComponentUsage
  */
-public abstract class AbstractComponentSetup(
+public abstract class AbstractComponentUsage(
     protected val createInstance: (() -> Component)? = null
 ) {
 
@@ -921,11 +921,11 @@ public abstract class AbstractComponentSetup(
  * @constructor Creates a companion object for a component of type [C].
  * @param createInstance A lambda that should create a component's instance of
  *   type [C] with the given properties configuration callback.
- * @see AbstractComponentSetup
+ * @see AbstractComponentUsage
  */
-public open class ComponentSetup<C: Component>(
+public open class ComponentUsage<C: Component>(
     createInstance: () -> C
-) : AbstractComponentSetup(createInstance) {
+) : AbstractComponentUsage(createInstance) {
 
     /**
      * Declares an instance of component of type [C] with the respective
