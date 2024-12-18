@@ -84,6 +84,18 @@ tasks.named("compileTestKotlin") {
 }
 
 /**
+ * Disable `compileJava` and `compileTestJava` tasks because Java sources
+ * are not compilable due to dependency on `ValidatingBuilder` from Spine 1.9.x.
+ */
+tasks.named("compileJava") {
+    enabled = false
+}
+
+tasks.named("compileTestJava") {
+    enabled = false
+}
+
+/**
  * Copy Proto sources from the source module.
  */
 val copyProtoSourcesTask = tasks.register("copyProtoSources") {
