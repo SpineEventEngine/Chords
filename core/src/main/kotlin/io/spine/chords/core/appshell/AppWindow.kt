@@ -35,6 +35,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.CurrentScreen
+import cafe.adriel.voyager.navigator.Navigator
 import io.spine.chords.core.layout.Dialog
 import java.awt.Dimension
 
@@ -63,21 +66,12 @@ public class AppWindow(
     /**
      * The main screen of the application.
      */
-    private val mainScreen: @Composable () -> Unit = {
-        MainScreen(views, initialView)
-    }
+    private val mainScreen: Screen = MainScreen(views, initialView)
 
     /**
      * The sign-in screen of the application.
      */
-    private val signInScreen: @Composable () -> Unit = {
-        signInScreenContent { currentScreen = mainScreen }
-    }
-
-    /**
-     * Holds the current visible screen.
-     */
-    private var currentScreen by mutableStateOf<@Composable () -> Unit>(signInScreen)
+    private val signInScreen: Screen = SignInScreen(signInScreenContent)
 
     /**
      * The bottom-most dialog in the current dialog display stack, or `null` if
@@ -99,6 +93,12 @@ public class AppWindow(
     private var bottomDialog by mutableStateOf<Dialog?>(null)
 
     /**
+     * An instance of [Navigator] that will be initialized during the rendering
+     * of main window.
+     */
+    private var navigator: Navigator? = null
+
+    /**
      * Renders the application window's content.
      */
     @Composable
@@ -116,46 +116,78 @@ public class AppWindow(
             Box(
                 modifier = Modifier.background(MaterialTheme.colorScheme.background)
             ) {
-                currentScreen()
+                Navigator(signInScreen) {
+                    navigator = it
+                    CurrentScreen()
+                }
             }
             bottomDialog?.Content()
         }
     }
 
     /**
-     * Makes the given screen the current visible modal screen.
+     * Makes the given screen the current visible app screen.
      *
      * This screen will be rendered using the entire area
      * of the application window. No other components
-     * from other screens will be visible or interactable,
-     * so it acts like a modal screen.
+     * from other screens will be visible or interactable.
      *
-     * The hierarchy of modal screens is not supported,
-     * so it will be an illegal state when some modal screen
-     * display is requested while another screen is already displayed.
+     * @param screen The screen to be shown.
+     * @param keepCurrentScreenInHistory Specifies whether to save the currently
+     * visible screen in the history or not.
      *
-     * @throws IllegalStateException
-     *          to indicate the illegal state when another modal screen
-     *          is already displayed.
+     * @throws IllegalStateException To indicate the illegal state when some
+     * dialog is displayed.
      */
-    public fun openModalScreen(screen: @Composable () -> Unit) {
-        check(currentScreen == mainScreen) {
-            "Another modal screen is visible already."
-        }
+    internal fun showScreen(
+        screen: Screen,
+        keepCurrentScreenInHistory: Boolean = true
+    ) {
         check(bottomDialog == null) {
-            "Cannot display the modal screen when a dialog is displayed."
+            "Cannot display the screen when a dialog is displayed."
         }
-        currentScreen = screen
+        check(navigator != null) {
+            "The screen navigator is not initialized."
+        }
+        if (!keepCurrentScreenInHistory) {
+            navigator!!.pop()
+        }
+        navigator!!.push(screen)
     }
 
     /**
-     * Closes the currently visible modal screen.
+     * Displays the main app screen.
      *
-     * @throws IllegalStateException
-     *          to indicate the illegal state when no modal screen to close.
+     * @param keepCurrentScreenInHistory Specifies whether to save the currently
+     * visible screen in the history or not.
      */
-    public fun closeCurrentModalScreen() {
-        currentScreen = mainScreen
+    internal fun showMainScreen(
+        keepCurrentScreenInHistory: Boolean = true
+    ) {
+        check(navigator != null) {
+            "The screen navigator is not initialized."
+        }
+        if (!keepCurrentScreenInHistory) {
+            navigator!!.pop()
+        }
+        showScreen(mainScreen)
+    }
+
+    /**
+     * Closes the currently visible screen.
+     *
+     * The currently visible screen won't be saved to the navigation history and
+     * the top-most screen in the history will be displayed.
+     */
+    internal fun closeCurrentScreen() {
+        check(navigator != null) {
+            "The screen navigator is not initialized."
+        }
+        check(navigator!!.size > 1) {
+            "Cannot close the current screen because this is a bottom-most " +
+                    "screen at the moment."
+        }
+        navigator!!.pop()
     }
 
     /**
@@ -193,6 +225,20 @@ public class AppWindow(
             bottomDialog = null
         } else {
             bottomDialog!!.closeNestedDialog(dialog)
+        }
+    }
+}
+
+/**
+ * The sign-in screen of the application.
+ */
+private class SignInScreen(
+    private val content: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
+) : Screen {
+    @Composable
+    override fun Content() {
+        content {
+            app.ui.navigator.showMainScreen(false)
         }
     }
 }

@@ -27,6 +27,7 @@
 import io.spine.internal.dependency.Kotlin
 import io.spine.internal.dependency.Material3
 import io.spine.internal.dependency.Spine
+import io.spine.internal.dependency.Voyager
 
 plugins {
     id("io.spine.tools.gradle.bootstrap")
@@ -38,6 +39,8 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
     implementation(Spine.CoreJava.server)
+    implementation(Voyager.navigator)
+    implementation(Voyager.screenModel)
     implementation(project(":core"))
     implementation(project(":proto-values"))
     implementation(project(":proto"))

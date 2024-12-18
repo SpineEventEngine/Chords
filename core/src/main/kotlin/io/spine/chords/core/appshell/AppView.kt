@@ -29,6 +29,7 @@ package io.spine.chords.core.appshell
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.graphics.vector.ImageVector
+import cafe.adriel.voyager.core.screen.Screen
 import io.spine.chords.core.Component
 
 /**
@@ -70,4 +71,4 @@ public abstract class AppView
 protected constructor(
     public val name: String,
     public val icon: ImageVector = Icons.Default.Menu
-) : Component()
+) : Component(), Screen

@@ -31,10 +31,11 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
-import io.spine.chords.core.layout.Dialog
+import cafe.adriel.voyager.core.screen.Screen
 import io.spine.chords.core.layout.ConfirmationDialog
-import io.spine.chords.core.layout.DialogSetup
+import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.DialogDisplayMode
+import io.spine.chords.core.layout.DialogSetup
 import io.spine.chords.core.writeOnce
 import java.awt.Dimension
 
@@ -268,40 +269,15 @@ public open class Application(
 /**
  * A top-level API that concerns the application's UI.
  *
- * @param appWindow
- *         main application's window.
+ * @param appWindow The main application's window.
  */
-public class ApplicationUI(private val appWindow: AppWindow) {
+public class ApplicationUI
+internal constructor(private val appWindow: AppWindow) {
 
     /**
-     * Displays a modal screen.
-     *
-     * This screen will be rendered using the entire area
-     * of the application window. No other components
-     * from other screens will be visible or interactable,
-     * so it acts like a modal screen.
-     *
-     * The hierarchy of modal screens is not supported,
-     * so it will be an illegal state when some modal screen
-     * display is requested while another screen is already displayed.
-     *
-     * @throws IllegalStateException
-     *         to indicate the illegal state when another modal screen
-     *         is already displayed.
+     * The [ScreenNavigator] that allows displaying or closing app screens.
      */
-    public fun openModalScreen(screen: @Composable () -> Unit) {
-        appWindow.openModalScreen(screen)
-    }
-
-    /**
-     * Closes the currently visible modal screen.
-     *
-     * @throws IllegalStateException
-     *         to indicate the illegal state when no modal screen to close.
-     */
-    public fun closeCurrentModalScreen() {
-        appWindow.closeCurrentModalScreen()
-    }
+    public val navigator: ScreenNavigator = ScreenNavigator(appWindow)
 
     /**
      * Displays the given [Dialog] instance.
@@ -357,5 +333,55 @@ public class ApplicationUI(private val appWindow: AppWindow) {
      */
     internal fun closeDialog(dialog: Dialog) {
         appWindow.closeDialog(dialog)
+    }
+}
+
+/**
+ * The screen navigator that allows displaying or closing app screens.
+ *
+ * It also keeps a history of displayed screens and enables navigation between them.
+ *
+ * Actually, it delegates all the API calls to the app main window.
+ *
+ * @param appWindow The main application's window.
+ */
+public class ScreenNavigator
+internal constructor(
+    private val appWindow: AppWindow,
+) {
+
+    /**
+     * Displays a screen.
+     *
+     * This screen will be rendered using the entire area
+     * of the application window. No other components
+     * from other screens will be visible or interactable.
+     *
+     * @param screen The screen to be shown.
+     * @param keepCurrentScreenInHistory Specifies whether to save the currently
+     * visible screen in the navigation history or not.
+     */
+    public fun showScreen(screen: Screen, keepCurrentScreenInHistory: Boolean = true) {
+        appWindow.showScreen(screen, keepCurrentScreenInHistory)
+    }
+
+    /**
+     * Displays the main screen of the window.
+     *
+     * @param keepCurrentScreenInHistory Specifies whether to save the currently
+     * visible screen in the navigation history or not.
+     */
+    public fun showMainScreen(keepCurrentScreenInHistory: Boolean = true) {
+        appWindow.showMainScreen(keepCurrentScreenInHistory)
+    }
+
+    /**
+     * Closes the currently visible screen.
+     *
+     * The currently visible screen won't be saved to the navigation history and
+     * the top-most screen in the history will be displayed.
+     */
+    public fun closeCurrentScreen() {
+        appWindow.closeCurrentScreen()
     }
 }
