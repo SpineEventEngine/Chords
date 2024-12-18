@@ -10,7 +10,7 @@ all modules and does not describe the project structure per-subproject.
  -->
 <groupId>io.spine.chords</groupId>
 <artifactId>Chords</artifactId>
-<version>2.0.0-SNAPSHOT.55</version>
+<version>2.0.0-SNAPSHOT.56</version>
 
 <inceptionYear>2015</inceptionYear>
 
@@ -23,18 +23,6 @@ all modules and does not describe the project structure per-subproject.
 </licenses>
 
 <dependencies>
-  <dependency>
-    <groupId>cafe.adriel.voyager</groupId>
-    <artifactId>voyager-navigator</artifactId>
-    <version>1.0.0</version>
-    <scope>compile</scope>
-  </dependency>
-  <dependency>
-    <groupId>cafe.adriel.voyager</groupId>
-    <artifactId>voyager-screenmodel</artifactId>
-    <version>1.0.0</version>
-    <scope>compile</scope>
-  </dependency>
   <dependency>
     <groupId>com.google.guava</groupId>
     <artifactId>guava</artifactId>

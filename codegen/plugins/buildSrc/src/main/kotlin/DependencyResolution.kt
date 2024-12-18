@@ -24,30 +24,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Asm
-import io.spine.internal.dependency.AutoCommon
-import io.spine.internal.dependency.AutoService
-import io.spine.internal.dependency.AutoValue
-import io.spine.internal.dependency.CheckerFramework
-import io.spine.internal.dependency.CommonsCli
-import io.spine.internal.dependency.CommonsCodec
-import io.spine.internal.dependency.CommonsLogging
-import io.spine.internal.dependency.ErrorProne
-import io.spine.internal.dependency.FindBugs
-import io.spine.internal.dependency.Gson
-import io.spine.internal.dependency.Guava
-import io.spine.internal.dependency.Hamcrest
-import io.spine.internal.dependency.J2ObjC
-import io.spine.internal.dependency.JUnit
-import io.spine.internal.dependency.Jackson
-import io.spine.internal.dependency.JavaDiffUtils
-import io.spine.internal.dependency.Kotest
-import io.spine.internal.dependency.Kotlin
-import io.spine.internal.dependency.KotlinX
-import io.spine.internal.dependency.OpenTest4J
-import io.spine.internal.dependency.Protobuf
-import io.spine.internal.dependency.Slf4J
-import io.spine.internal.dependency.Truth
+import io.spine.dependency.build.CheckerFramework
+import io.spine.dependency.build.ErrorProne
+import io.spine.dependency.build.FindBugs
+import io.spine.dependency.lib.Asm
+import io.spine.dependency.lib.AutoCommon
+import io.spine.dependency.lib.AutoService
+import io.spine.dependency.lib.AutoValue
+import io.spine.dependency.lib.CommonsCli
+import io.spine.dependency.lib.CommonsCodec
+import io.spine.dependency.lib.CommonsLogging
+import io.spine.dependency.lib.Gson
+import io.spine.dependency.lib.Guava
+import io.spine.dependency.lib.J2ObjC
+import io.spine.dependency.lib.Jackson
+import io.spine.dependency.lib.JavaDiffUtils
+import io.spine.dependency.lib.Kotlin
+import io.spine.dependency.lib.KotlinX
+import io.spine.dependency.lib.Protobuf
+import io.spine.dependency.lib.Slf4J
+import io.spine.dependency.test.Hamcrest
+import io.spine.dependency.test.JUnit
+import io.spine.dependency.test.Kotest
+import io.spine.dependency.test.OpenTest4J
+import io.spine.dependency.test.Truth
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
@@ -62,10 +62,14 @@ import org.gradle.kotlin.dsl.invoke
 fun doForceVersions(configurations: ConfigurationContainer) {
     configurations.forceVersions()
 
-    val spine = io.spine.internal.dependency.Spine
-    val validation = io.spine.internal.dependency.Validation
-    val protoData = io.spine.internal.dependency.ProtoData
-    val logging = io.spine.internal.dependency.Spine.Logging
+    val validation = io.spine.dependency.local.Validation
+    val protoData = io.spine.dependency.local.ProtoData
+    val logging = io.spine.dependency.local.Logging
+    val reflect = io.spine.dependency.local.Reflect
+    val base = io.spine.dependency.local.Base
+    val toolBase = io.spine.dependency.local.ToolBase
+    val coreJava = io.spine.dependency.local.CoreJava
+    val time = io.spine.dependency.local.Time
 
     configurations {
         all {
@@ -73,14 +77,16 @@ fun doForceVersions(configurations: ConfigurationContainer) {
 
             resolutionStrategy {
                 force(
-                    io.spine.internal.dependency.Grpc.api,
-                    spine.reflect,
-                    spine.base,
-                    spine.toolBase,
-                    spine.server,
+                    io.spine.dependency.lib.Grpc.api,
+                    reflect.lib,
+                    base.lib,
+                    toolBase.lib,
+                    coreJava.server,
                     protoData.pluginLib,
                     protoData.lib,
                     logging.lib,
+                    logging.middleware,
+                    time.lib,
                     validation.runtime
                 )
             }
@@ -122,6 +128,8 @@ private fun ResolutionStrategy.forceProductionDependencies() {
         KotlinX.Coroutines.core,
         KotlinX.Coroutines.jvm,
         KotlinX.Coroutines.jdk8,
+        KotlinX.Coroutines.bom,
+        KotlinX.Coroutines.slf4j,
         Protobuf.GradlePlugin.lib,
         Protobuf.libs,
         Slf4J.lib

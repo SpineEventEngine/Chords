@@ -71,7 +71,7 @@ internal class MessageDefObjectGenerator(
     private val oneofNames = fields.filter { field ->
         field.isPartOfOneof
     }.groupBy { oneofField ->
-        oneofField.oneofName.value
+        oneofField.enclosingOneof.value
     }.map { it.key }
 
     /**

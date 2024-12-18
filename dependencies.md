@@ -1,23 +1,8 @@
 
 
-# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.55`
+# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.56`
 
 ## Runtime
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
 1.  **Group** : com.google.android. **Name** : annotations. **Version** : 4.1.1.4.
      * **Project URL:** [http://source.android.com/](http://source.android.com/)
      * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
@@ -253,21 +238,6 @@
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
      * **Project URL:** [http://aopalliance.sourceforge.net](http://aopalliance.sourceforge.net)
      * **License:** Public Domain
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
 
 1.  **Group** : com.beust. **Name** : jcommander. **Version** : 1.48.
      * **Project URL:** [http://beust.com/jcommander](http://beust.com/jcommander)
@@ -1096,12 +1066,12 @@
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Mon Dec 16 11:46:53 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 16:59:45 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-codegen-tests:2.0.0-SNAPSHOT.55`
+# Dependencies of `io.spine.chords:spine-chords-codegen-tests:2.0.0-SNAPSHOT.56`
 
 ## Runtime
 1.  **Group** : com.google.android. **Name** : annotations. **Version** : 4.1.1.4.
@@ -1955,29 +1925,14 @@ This report was generated on **Mon Dec 16 11:46:53 CET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Mon Dec 16 11:46:55 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 16:59:46 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.55`
+# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.56`
 
 ## Runtime
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
      * **Project URL:** [http://findbugs.sourceforge.net/](http://findbugs.sourceforge.net/)
      * **License:** [The Apache Software License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -2160,21 +2115,6 @@ This report was generated on **Mon Dec 16 11:46:55 CET 2024** using [Gradle-Lice
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
      * **Project URL:** [http://aopalliance.sourceforge.net](http://aopalliance.sourceforge.net)
      * **License:** Public Domain
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
 
 1.  **Group** : com.beust. **Name** : jcommander. **Version** : 1.48.
      * **Project URL:** [http://beust.com/jcommander](http://beust.com/jcommander)
@@ -2972,29 +2912,14 @@ This report was generated on **Mon Dec 16 11:46:55 CET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Mon Dec 16 11:46:56 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 16:59:47 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto:2.0.0-SNAPSHOT.55`
+# Dependencies of `io.spine.chords:spine-chords-proto:2.0.0-SNAPSHOT.56`
 
 ## Runtime
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
      * **Project URL:** [http://findbugs.sourceforge.net/](http://findbugs.sourceforge.net/)
      * **License:** [The Apache Software License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -3194,21 +3119,6 @@ This report was generated on **Mon Dec 16 11:46:56 CET 2024** using [Gradle-Lice
 1.  **Group** : aopalliance. **Name** : aopalliance. **Version** : 1.0.
      * **Project URL:** [http://aopalliance.sourceforge.net](http://aopalliance.sourceforge.net)
      * **License:** Public Domain
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-navigator-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
-
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel. **Version** : 1.0.0.**No license information found**
-1.  **Group** : cafe.adriel.voyager. **Name** : voyager-screenmodel-desktop. **Version** : 1.0.0.
-     * **Project URL:** [https://github.com/adrielcafe/voyager](https://github.com/adrielcafe/voyager)
-     * **License:** [The MIT License](https://opensource.org/licenses/MIT)
 
 1.  **Group** : com.beust. **Name** : jcommander. **Version** : 1.48.
      * **Project URL:** [http://beust.com/jcommander](http://beust.com/jcommander)
@@ -4006,12 +3916,12 @@ This report was generated on **Mon Dec 16 11:46:56 CET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Mon Dec 16 11:46:57 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 16:59:48 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto-values:2.0.0-SNAPSHOT.55`
+# Dependencies of `io.spine.chords:spine-chords-proto-values:2.0.0-SNAPSHOT.56`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -4805,12 +4715,12 @@ This report was generated on **Mon Dec 16 11:46:57 CET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Mon Dec 16 11:46:57 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 16:59:49 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-runtime:2.0.0-SNAPSHOT.55`
+# Dependencies of `io.spine.chords:spine-chords-runtime:2.0.0-SNAPSHOT.56`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -5574,4 +5484,4 @@ This report was generated on **Mon Dec 16 11:46:57 CET 2024** using [Gradle-Lice
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Mon Dec 16 11:46:58 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Dec 17 16:59:49 CET 2024** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
