@@ -275,9 +275,14 @@ public class ApplicationUI
 internal constructor(private val appWindow: AppWindow) {
 
     /**
-     * The [ScreenNavigator] that allows displaying or closing app screens.
+     * The [Screens] that allows displaying or closing app screens.
      */
-    public val navigator: ScreenNavigator = ScreenNavigator(appWindow)
+    public val screens: Screens = Screens(appWindow)
+
+    /**
+     * The [Views] that allows displaying or closing app screens.
+     */
+    public val views: Views = Views(appWindow)
 
     /**
      * Displays the given [Dialog] instance.
@@ -345,7 +350,7 @@ internal constructor(private val appWindow: AppWindow) {
  *
  * @param appWindow The main application's window.
  */
-public class ScreenNavigator
+public class Screens
 internal constructor(
     private val appWindow: AppWindow,
 ) {
@@ -361,7 +366,7 @@ internal constructor(
      * @param keepCurrentScreenInHistory Specifies whether to save the currently
      * visible screen in the navigation history or not.
      */
-    public fun showScreen(screen: Screen, keepCurrentScreenInHistory: Boolean = true) {
+    public fun show(screen: Screen, keepCurrentScreenInHistory: Boolean = true) {
         appWindow.showScreen(screen, keepCurrentScreenInHistory)
     }
 
@@ -371,7 +376,7 @@ internal constructor(
      * @param keepCurrentScreenInHistory Specifies whether to save the currently
      * visible screen in the navigation history or not.
      */
-    public fun showMainScreen(keepCurrentScreenInHistory: Boolean = true) {
+    internal fun showMain(keepCurrentScreenInHistory: Boolean = true) {
         appWindow.showMainScreen(keepCurrentScreenInHistory)
     }
 
@@ -381,7 +386,39 @@ internal constructor(
      * The currently visible screen won't be saved to the navigation history and
      * the top-most screen in the history will be displayed.
      */
-    public fun closeCurrentScreen() {
+    public fun closeCurrent() {
         appWindow.closeCurrentScreen()
     }
+}
+
+/**
+ * The screen navigator that allows displaying or closing app screens.
+ *
+ * It also keeps a history of displayed screens and enables navigation between them.
+ *
+ * Actually, it delegates all the API calls to the app main window.
+ *
+ * @param appWindow The main application's window.
+ */
+public class Views
+internal constructor(
+    private val appWindow: AppWindow,
+) {
+
+    /**
+     * Displays a screen.
+     *
+     * This screen will be rendered using the entire area
+     * of the application window. No other components
+     * from other screens will be visible or interactable.
+     *
+     * @param screen The screen to be shown.
+     * @param keepCurrentScreenInHistory Specifies whether to save the currently
+     * visible screen in the navigation history or not.
+     */
+    public fun select(appView: AppView) {
+        appWindow.selectView(appView)
+    }
+
+    public fun current(): AppView = appWindow.currentView()
 }

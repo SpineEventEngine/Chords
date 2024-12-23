@@ -33,6 +33,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":runtime"))
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
     implementation(Voyager.navigator)

@@ -66,12 +66,12 @@ public class AppWindow(
     /**
      * The main screen of the application.
      */
-    private val mainScreen: Screen = MainScreen(views, initialView)
+    private val mainScreen: MainScreen = MainScreen(views, initialView)
 
     /**
      * The sign-in screen of the application.
      */
-    private val signInScreen: Screen = SignInScreen(signInScreenContent)
+    private val signInScreen: SignInScreen = SignInScreen(signInScreenContent)
 
     /**
      * The bottom-most dialog in the current dialog display stack, or `null` if
@@ -190,6 +190,22 @@ public class AppWindow(
         navigator!!.pop()
     }
 
+    public fun selectView(appView: AppView) {
+        checkMainScreenIsVisible()
+        mainScreen.selectView(appView)
+    }
+
+    public fun currentView(): AppView {
+        checkMainScreenIsVisible()
+        return mainScreen.currentView()
+    }
+
+    private fun checkMainScreenIsVisible() {
+        check(navigator!!.lastItem == mainScreen) {
+            "The main screen is not a currently displayed."
+        }
+    }
+
     /**
      * Displays a modal window.
      *
@@ -238,7 +254,7 @@ private class SignInScreen(
     @Composable
     override fun Content() {
         content {
-            app.ui.navigator.showMainScreen(false)
+            app.ui.screens.showMain(false)
         }
     }
 }

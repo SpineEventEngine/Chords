@@ -38,12 +38,10 @@ import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.CurrentScreen
 
 /**
  * Represents a navigation bar that changes the current view
@@ -52,18 +50,12 @@ import cafe.adriel.voyager.navigator.currentOrThrow
  * @param appViews
  *         a list application views for which to display respective
  *         navigation items.
- * @param currentAppView
- *         the currently selected view.
- * @param appContent
- *         content displayed to the right of the drawer.
  */
 @Composable
 public fun NavigationDrawer(
     appViews: List<AppView>,
-    currentAppView: MutableState<AppView>,
     topPadding: Dp,
     modifier: Modifier = Modifier,
-    appContent: @Composable () -> Unit
 ) {
     PermanentNavigationDrawer(
         modifier = Modifier.padding(top = topPadding),
@@ -73,16 +65,12 @@ public fun NavigationDrawer(
                 drawerContainerColor = MaterialTheme.colorScheme.background
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
-                val navigator = LocalNavigator.currentOrThrow
-                appViews.forEach { item ->
+                appViews.forEach { view ->
                     NavigationDrawerItem(
-                        icon = { Icon(item.icon, contentDescription = null) },
-                        label = { Text(item.name) },
-                        selected = currentAppView.value.name == item.name,
-                        onClick = {
-                            currentAppView.value = item
-                            navigator.push(item)
-                        },
+                        icon = { Icon(view.icon, contentDescription = null) },
+                        label = { Text(view.name) },
+                        selected = app.ui.views.current() == view,
+                        onClick = { app.ui.views.select(view) },
                         modifier = Modifier.padding(
                             horizontal = 12.dp,
                             vertical = 4.dp
@@ -94,6 +82,6 @@ public fun NavigationDrawer(
                 }
             }
         },
-        content = appContent
+        content = { CurrentScreen() }
     )
 }

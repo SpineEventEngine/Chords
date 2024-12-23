@@ -28,10 +28,9 @@ package io.spine.chords.core.appshell
 
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
+import io.spine.chords.runtime.safeCast
 
 /**
  * Represents the main screen in the application.
@@ -41,22 +40,27 @@ public class MainScreen(
     private val initialView: AppView?
 ) : Screen {
 
+    private var navigator: Navigator? = null
+
     @Composable
-    override fun Content() {
-        val selectedItemHolder = remember {
-            mutableStateOf(
-                initialView ?: appViews[0]
-            )
-        }
-        Navigator(selectedItemHolder.value) {
+    public override fun Content() {
+        Navigator(initialView ?: appViews[0]) {
+            navigator = it
             Scaffold(
                 topBar = { TopBar() }
             ) {
                 val topPadding = it.calculateTopPadding()
-                NavigationDrawer(appViews, selectedItemHolder, topPadding) {
-                    selectedItemHolder.value.Content()
-                }
+                NavigationDrawer(appViews, topPadding)
             }
         }
     }
+
+    public fun selectView(appView: AppView) {
+        check(appViews.contains(appView)) {
+            "The given view has not been added to the main screen `$appView`."
+        }
+        navigator!!.push(appView)
+    }
+
+    public fun currentView(): AppView = navigator!!.lastItem.safeCast<AppView>()
 }
