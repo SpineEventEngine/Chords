@@ -72,8 +72,7 @@ public class AppWindow(
      * The sign-in screen of the application.
      */
     private val signInScreen: SignInScreen = SignInScreen(signInScreenContent) {
-        checkScreenNavigator()
-        screenNavigator!!.pop()
+        screenNavigator().pop()
         showScreen(mainScreen)
     }
 
@@ -152,12 +151,11 @@ public class AppWindow(
         check(bottomDialog == null) {
             "Cannot display the screen when a dialog is displayed."
         }
-        checkScreenNavigator()
         if (!keepCurrentScreenInHistory) {
-            screenNavigator!!.pop()
+            screenNavigator().pop()
         }
         keepCurrentScreenInHistory = keepInHistory
-        screenNavigator!!.push(screen)
+        screenNavigator().push(screen)
     }
 
     /**
@@ -167,20 +165,20 @@ public class AppWindow(
      * the bottom-most screen in the history will be displayed.
      */
     internal fun closeCurrentScreen() {
-        checkScreenNavigator()
-        check(screenNavigator!!.size > 1) {
+        check(screenNavigator().size > 1) {
             "Cannot close the bottom-most screen `${screenNavigator!!.lastItem}`."
         }
-        screenNavigator!!.pop()
+        screenNavigator().pop()
     }
 
     /**
-     * Checks that [screenNavigator] is initialized.
+     * Returns the current [screenNavigator].
      */
-    private fun checkScreenNavigator() {
+    private fun screenNavigator(): Navigator {
         check(screenNavigator != null) {
             "The screen navigator is not initialized."
         }
+        return screenNavigator!!
     }
 
     /**
@@ -204,7 +202,7 @@ public class AppWindow(
      */
     private fun checkMainScreenIsVisible() {
         check(screenNavigator!!.lastItem == mainScreen) {
-            "The main screen is not a currently displayed."
+            "The main screen is not currently displayed."
         }
     }
 
