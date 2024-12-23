@@ -35,8 +35,8 @@ package io.spine.internal.dependency
 object Voyager {
     private const val version = "1.0.0"
     private const val group = "cafe.adriel.voyager"
-    private const val baseName = "voyager"
+    private const val name = "voyager"
 
-    const val navigator = "$group:$baseName-navigator:$version"
-    const val screenModel = "$group:$baseName-screenmodel:$version"
+    const val navigator = "$group:$name-navigator:$version"
+    const val screenModel = "$group:$name-screenmodel:$version"
 }
