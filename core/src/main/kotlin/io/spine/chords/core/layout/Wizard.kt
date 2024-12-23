@@ -95,6 +95,10 @@ private object WizardContentSize {
  * finished using the wizard, and it needs to be closed. The container where
  * the wizard is placed is responsible for hiding the wizard (excluding it from
  * the composition) upon this event.
+ *
+ * It implements Voyager's [Screen] since any wizard currently displays
+ * as an application screen. This will likely be removed once wizards
+ * are displayed as dialogs.
  */
 @Stable
 public abstract class Wizard : Component(), Screen {
