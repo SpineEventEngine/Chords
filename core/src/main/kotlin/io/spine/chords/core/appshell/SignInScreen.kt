@@ -32,14 +32,14 @@ import cafe.adriel.voyager.core.screen.Screen
 /**
  * Represents the Sign-In screen in the application.
  */
-internal class SignInScreen(
+public class SignInScreen(
     private val content: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
-    private val appWindow: AppWindow
+    private val onSuccessAuthentication: () -> Unit
 ) : Screen {
     @Composable
     override fun Content() {
         content {
-            appWindow.showMainScreen(false)
+            onSuccessAuthentication.invoke()
         }
     }
 }

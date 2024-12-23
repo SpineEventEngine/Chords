@@ -275,12 +275,12 @@ public class ApplicationUI
 internal constructor(private val appWindow: AppWindow) {
 
     /**
-     * The [Screens] that allows displaying or closing app screens.
+     * The Screens API that allows displaying or closing app screens.
      */
     public val screens: Screens = Screens(appWindow)
 
     /**
-     * The [Views] that allows displaying or closing app screens.
+     * The Views API that allows displaying or closing app views.
      */
     public val views: Views = Views(appWindow)
 

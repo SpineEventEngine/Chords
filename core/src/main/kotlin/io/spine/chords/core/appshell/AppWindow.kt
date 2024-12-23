@@ -71,7 +71,11 @@ public class AppWindow(
     /**
      * The sign-in screen of the application.
      */
-    private val signInScreen: SignInScreen = SignInScreen(signInScreenContent, this)
+    private val signInScreen: SignInScreen = SignInScreen(signInScreenContent) {
+        checkScreenNavigatorIsInitialized()
+        screenNavigator!!.pop()
+        showScreen(mainScreen)
+    }
 
     /**
      * The bottom-most dialog in the current dialog display stack, or `null` if
@@ -93,7 +97,7 @@ public class AppWindow(
     private var bottomDialog by mutableStateOf<Dialog?>(null)
 
     /**
-     * An instance of the screens navigator that will be initialized during
+     * An instance of the screens [Navigator] that will be initialized during
      * the rendering of the main window.
      */
     private var screenNavigator: Navigator? = null
@@ -146,9 +150,7 @@ public class AppWindow(
         check(bottomDialog == null) {
             "Cannot display the screen when a dialog is displayed."
         }
-        check(screenNavigator != null) {
-            "The screen navigator is not initialized."
-        }
+        checkScreenNavigatorIsInitialized()
         if (!keepCurrentScreenInHistory) {
             screenNavigator!!.pop()
         }
@@ -162,9 +164,7 @@ public class AppWindow(
      * the bottom-most screen in the history will be displayed.
      */
     internal fun closeCurrentScreen() {
-        check(screenNavigator != null) {
-            "The screen navigator is not initialized."
-        }
+        checkScreenNavigatorIsInitialized()
         check(screenNavigator!!.size > 1) {
             "Cannot close the current screen because this is a bottom-most " +
                     "screen at the moment."
@@ -173,21 +173,12 @@ public class AppWindow(
     }
 
     /**
-     * Displays the main app screen.
-     *
-     * @param keepCurrentScreenInHistory Specifies whether to save the currently
-     * visible screen in the history or not. Default value is `true`.
+     * Checks that [screenNavigator] is initialized.
      */
-    internal fun showMainScreen(
-        keepCurrentScreenInHistory: Boolean = true
-    ) {
+    private fun checkScreenNavigatorIsInitialized() {
         check(screenNavigator != null) {
             "The screen navigator is not initialized."
         }
-        if (!keepCurrentScreenInHistory) {
-            screenNavigator!!.pop()
-        }
-        showScreen(mainScreen)
     }
 
     /**
@@ -253,5 +244,3 @@ public class AppWindow(
         }
     }
 }
-
-
