@@ -71,7 +71,7 @@ public class AppWindow(
     /**
      * The sign-in screen of the application.
      */
-    private val signInScreen: SignInScreen = SignInScreen(signInScreenContent)
+    private val signInScreen: SignInScreen = SignInScreen(signInScreenContent, this)
 
     /**
      * The bottom-most dialog in the current dialog display stack, or `null` if
@@ -93,10 +93,10 @@ public class AppWindow(
     private var bottomDialog by mutableStateOf<Dialog?>(null)
 
     /**
-     * An instance of [Navigator] that will be initialized during the rendering
-     * of main window.
+     * An instance of the screens navigator that will be initialized during
+     * the rendering of the main window.
      */
-    private var navigator: Navigator? = null
+    private var screenNavigator: Navigator? = null
 
     /**
      * Renders the application window's content.
@@ -117,7 +117,7 @@ public class AppWindow(
                 modifier = Modifier.background(MaterialTheme.colorScheme.background)
             ) {
                 Navigator(signInScreen) {
-                    navigator = it
+                    screenNavigator = it
                     CurrentScreen()
                 }
             }
@@ -146,62 +146,71 @@ public class AppWindow(
         check(bottomDialog == null) {
             "Cannot display the screen when a dialog is displayed."
         }
-        check(navigator != null) {
+        check(screenNavigator != null) {
             "The screen navigator is not initialized."
         }
         if (!keepCurrentScreenInHistory) {
-            navigator!!.pop()
+            screenNavigator!!.pop()
         }
-        navigator!!.push(screen)
-    }
-
-    /**
-     * Displays the main app screen.
-     *
-     * @param keepCurrentScreenInHistory Specifies whether to save the currently
-     * visible screen in the history or not.
-     */
-    internal fun showMainScreen(
-        keepCurrentScreenInHistory: Boolean = true
-    ) {
-        check(navigator != null) {
-            "The screen navigator is not initialized."
-        }
-        if (!keepCurrentScreenInHistory) {
-            navigator!!.pop()
-        }
-        showScreen(mainScreen)
+        screenNavigator!!.push(screen)
     }
 
     /**
      * Closes the currently visible screen.
      *
      * The currently visible screen won't be saved to the navigation history and
-     * the top-most screen in the history will be displayed.
+     * the bottom-most screen in the history will be displayed.
      */
     internal fun closeCurrentScreen() {
-        check(navigator != null) {
+        check(screenNavigator != null) {
             "The screen navigator is not initialized."
         }
-        check(navigator!!.size > 1) {
+        check(screenNavigator!!.size > 1) {
             "Cannot close the current screen because this is a bottom-most " +
                     "screen at the moment."
         }
-        navigator!!.pop()
+        screenNavigator!!.pop()
     }
 
+    /**
+     * Displays the main app screen.
+     *
+     * @param keepCurrentScreenInHistory Specifies whether to save the currently
+     * visible screen in the history or not. Default value is `true`.
+     */
+    internal fun showMainScreen(
+        keepCurrentScreenInHistory: Boolean = true
+    ) {
+        check(screenNavigator != null) {
+            "The screen navigator is not initialized."
+        }
+        if (!keepCurrentScreenInHistory) {
+            screenNavigator!!.pop()
+        }
+        showScreen(mainScreen)
+    }
+
+    /**
+     * Selects the given [appView].
+     */
     public fun selectView(appView: AppView) {
         checkMainScreenIsVisible()
         mainScreen.selectView(appView)
     }
 
+    /**
+     * Returns the currently selected view.
+     */
     public fun currentView(): AppView {
         checkMainScreenIsVisible()
         return mainScreen.currentView()
     }
 
+    /**
+     * Checks that the main screen is the currently visible.
+     */
     private fun checkMainScreenIsVisible() {
-        check(navigator!!.lastItem == mainScreen) {
+        check(screenNavigator!!.lastItem == mainScreen) {
             "The main screen is not a currently displayed."
         }
     }
@@ -245,16 +254,4 @@ public class AppWindow(
     }
 }
 
-/**
- * The sign-in screen of the application.
- */
-private class SignInScreen(
-    private val content: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
-) : Screen {
-    @Composable
-    override fun Content() {
-        content {
-            app.ui.screens.showMain(false)
-        }
-    }
-}
+

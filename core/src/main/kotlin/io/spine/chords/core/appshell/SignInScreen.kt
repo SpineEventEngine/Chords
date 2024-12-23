@@ -26,52 +26,20 @@
 
 package io.spine.chords.core.appshell
 
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.Navigator
-import io.spine.chords.runtime.safeCast
 
 /**
- * Represents the main screen in the application.
+ * Represents the Sign-In screen in the application.
  */
-public class MainScreen(
-    private val appViews: List<AppView>,
-    private val initialView: AppView?
+internal class SignInScreen(
+    private val content: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
+    private val appWindow: AppWindow
 ) : Screen {
-
-    /**
-     * The instance if views navigator that is initialized
-     * during the rendering of the screen.
-     */
-    private var viewNavigator: Navigator? = null
-
     @Composable
-    public override fun Content() {
-        Navigator(initialView ?: appViews[0]) {
-            viewNavigator = it
-            Scaffold(
-                topBar = { TopBar() }
-            ) {
-                val topPadding = it.calculateTopPadding()
-                NavigationDrawer(appViews, topPadding)
-            }
+    override fun Content() {
+        content {
+            appWindow.showMainScreen(false)
         }
     }
-
-    /**
-     * Selects the given [appView].
-     */
-    public fun selectView(appView: AppView) {
-        check(appViews.contains(appView)) {
-            "The given view has not been added to the main screen `$appView`."
-        }
-        viewNavigator!!.push(appView)
-    }
-
-    /**
-     * Returns the currently selected view.
-     */
-    public fun currentView(): AppView =
-        viewNavigator!!.lastItem.safeCast<AppView>()
 }

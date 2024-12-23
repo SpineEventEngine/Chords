@@ -342,11 +342,9 @@ internal constructor(private val appWindow: AppWindow) {
 }
 
 /**
- * The screen navigator that allows displaying or closing app screens.
+ * The Screen API that allows displaying or closing app screens.
  *
  * It also keeps a history of displayed screens and enables navigation between them.
- *
- * Actually, it delegates all the API calls to the app main window.
  *
  * @param appWindow The main application's window.
  */
@@ -356,7 +354,7 @@ internal constructor(
 ) {
 
     /**
-     * Displays a screen.
+     * Displays the given [screen].
      *
      * This screen will be rendered using the entire area
      * of the application window. No other components
@@ -364,20 +362,10 @@ internal constructor(
      *
      * @param screen The screen to be shown.
      * @param keepCurrentScreenInHistory Specifies whether to save the currently
-     * visible screen in the navigation history or not.
+     * visible screen in the navigation history or not. Default value is `true`.
      */
     public fun show(screen: Screen, keepCurrentScreenInHistory: Boolean = true) {
         appWindow.showScreen(screen, keepCurrentScreenInHistory)
-    }
-
-    /**
-     * Displays the main screen of the window.
-     *
-     * @param keepCurrentScreenInHistory Specifies whether to save the currently
-     * visible screen in the navigation history or not.
-     */
-    internal fun showMain(keepCurrentScreenInHistory: Boolean = true) {
-        appWindow.showMainScreen(keepCurrentScreenInHistory)
     }
 
     /**
@@ -392,11 +380,9 @@ internal constructor(
 }
 
 /**
- * The screen navigator that allows displaying or closing app screens.
+ * The View API that allows displaying or closing [AppView]s.
  *
- * It also keeps a history of displayed screens and enables navigation between them.
- *
- * Actually, it delegates all the API calls to the app main window.
+ * It also keeps a history of displayed views.
  *
  * @param appWindow The main application's window.
  */
@@ -406,19 +392,16 @@ internal constructor(
 ) {
 
     /**
-     * Displays a screen.
+     * Selects the given [appView].
      *
-     * This screen will be rendered using the entire area
-     * of the application window. No other components
-     * from other screens will be visible or interactable.
-     *
-     * @param screen The screen to be shown.
-     * @param keepCurrentScreenInHistory Specifies whether to save the currently
-     * visible screen in the navigation history or not.
+     * @param appView The view to be shown.
      */
     public fun select(appView: AppView) {
         appWindow.selectView(appView)
     }
 
+    /**
+     * Returns the currently selected view.
+     */
     public fun current(): AppView = appWindow.currentView()
 }
