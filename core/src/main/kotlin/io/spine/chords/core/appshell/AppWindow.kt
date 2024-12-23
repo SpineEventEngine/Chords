@@ -72,7 +72,7 @@ public class AppWindow(
      * The sign-in screen of the application.
      */
     private val signInScreen: SignInScreen = SignInScreen(signInScreenContent) {
-        checkScreenNavigatorIsInitialized()
+        checkScreenNavigator()
         screenNavigator!!.pop()
         showScreen(mainScreen)
     }
@@ -101,6 +101,12 @@ public class AppWindow(
      * the rendering of the main window.
      */
     private var screenNavigator: Navigator? = null
+
+    /**
+     * Specifies whether to save the currently visible screen in the history
+     * after it is closed.
+     */
+    private var keepCurrentScreenInHistory = true
 
     /**
      * Renders the application window's content.
@@ -137,23 +143,20 @@ public class AppWindow(
      * from other screens will be visible or interactable.
      *
      * @param screen The screen to be shown.
-     * @param keepCurrentScreenInHistory Specifies whether to save the currently
-     * visible screen in the history or not.
-     *
-     * @throws IllegalStateException To indicate the illegal state when some
-     * dialog is displayed.
+     * @param keepInHistory Specifies whether to save this screen in the history.
      */
     internal fun showScreen(
         screen: Screen,
-        keepCurrentScreenInHistory: Boolean = true
+        keepInHistory: Boolean = true
     ) {
         check(bottomDialog == null) {
             "Cannot display the screen when a dialog is displayed."
         }
-        checkScreenNavigatorIsInitialized()
+        checkScreenNavigator()
         if (!keepCurrentScreenInHistory) {
             screenNavigator!!.pop()
         }
+        keepCurrentScreenInHistory = keepInHistory
         screenNavigator!!.push(screen)
     }
 
@@ -164,10 +167,9 @@ public class AppWindow(
      * the bottom-most screen in the history will be displayed.
      */
     internal fun closeCurrentScreen() {
-        checkScreenNavigatorIsInitialized()
+        checkScreenNavigator()
         check(screenNavigator!!.size > 1) {
-            "Cannot close the current screen because this is a bottom-most " +
-                    "screen at the moment."
+            "Cannot close the bottom-most screen `${screenNavigator!!.lastItem}`."
         }
         screenNavigator!!.pop()
     }
@@ -175,7 +177,7 @@ public class AppWindow(
     /**
      * Checks that [screenNavigator] is initialized.
      */
-    private fun checkScreenNavigatorIsInitialized() {
+    private fun checkScreenNavigator() {
         check(screenNavigator != null) {
             "The screen navigator is not initialized."
         }
