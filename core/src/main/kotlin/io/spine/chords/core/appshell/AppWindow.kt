@@ -97,7 +97,7 @@ public class AppWindow(
     private var bottomDialog by mutableStateOf<Dialog?>(null)
 
     /**
-     * An instance of the screens [Navigator] that will be initialized during
+     * An instance of the screen [Navigator] that will be initialized during
      * the rendering of the main window.
      */
     private var screenNavigator: Navigator? = null
