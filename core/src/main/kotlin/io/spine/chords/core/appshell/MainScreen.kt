@@ -41,10 +41,10 @@ public class MainScreen(
 ) : Screen {
 
     /**
-     * The instance of the views [Navigator] that is initialized
+     * The instance of the view [Navigator] that is initialized
      * during the rendering of the screen.
      */
-    private var viewNavigator: Navigator? = null
+    private lateinit var viewNavigator: Navigator
 
     @Composable
     public override fun Content() {
@@ -66,24 +66,13 @@ public class MainScreen(
         check(appViews.contains(appView)) {
             "The given view has not been added to the main screen `$appView`."
         }
-        checkViewsNavigatorIsInitialized()
-        viewNavigator!!.push(appView)
+        viewNavigator.push(appView)
     }
 
     /**
      * Returns the currently selected view.
      */
     public fun currentView(): AppView {
-        checkViewsNavigatorIsInitialized()
-        return viewNavigator!!.lastItem.safeCast<AppView>()
-    }
-
-    /**
-     * Checks that [viewNavigator] is initialized.
-     */
-    private fun checkViewsNavigatorIsInitialized() {
-        check(viewNavigator != null) {
-            "The views navigator is not initialized."
-        }
+        return viewNavigator.lastItem.safeCast<AppView>()
     }
 }

@@ -72,7 +72,7 @@ public class AppWindow(
      * The sign-in screen of the application.
      */
     private val signInScreen: SignInScreen = SignInScreen(signInScreenContent) {
-        screenNavigator().pop()
+        screenNavigator.pop()
         showScreen(mainScreen)
     }
 
@@ -99,7 +99,7 @@ public class AppWindow(
      * An instance of the screen [Navigator] that will be initialized during
      * the rendering of the main window.
      */
-    private var screenNavigator: Navigator? = null
+    private lateinit var screenNavigator: Navigator
 
     /**
      * Specifies whether to save the currently visible screen in the history
@@ -152,10 +152,10 @@ public class AppWindow(
             "Cannot display the screen when a dialog is displayed."
         }
         if (!keepCurrentScreenInHistory) {
-            screenNavigator().pop()
+            screenNavigator.pop()
         }
         keepCurrentScreenInHistory = keepInHistory
-        screenNavigator().push(screen)
+        screenNavigator.push(screen)
     }
 
     /**
@@ -165,20 +165,10 @@ public class AppWindow(
      * the bottom-most screen in the history will be displayed.
      */
     internal fun closeCurrentScreen() {
-        check(screenNavigator().size > 1) {
-            "Cannot close the bottom-most screen `${screenNavigator!!.lastItem}`."
+        check(screenNavigator.size > 1) {
+            "Cannot close the bottom-most screen `${screenNavigator.lastItem}`."
         }
-        screenNavigator().pop()
-    }
-
-    /**
-     * Returns the current [screenNavigator].
-     */
-    private fun screenNavigator(): Navigator {
-        check(screenNavigator != null) {
-            "The screen navigator is not initialized."
-        }
-        return screenNavigator!!
+        screenNavigator.pop()
     }
 
     /**
@@ -201,7 +191,7 @@ public class AppWindow(
      * Checks that the main screen is the currently visible.
      */
     private fun checkMainScreenIsVisible() {
-        check(screenNavigator!!.lastItem == mainScreen) {
+        check(screenNavigator.lastItem == mainScreen) {
             "The main screen is not currently displayed."
         }
     }
