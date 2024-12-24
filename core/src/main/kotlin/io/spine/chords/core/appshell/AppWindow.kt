@@ -160,7 +160,7 @@ public class AppWindow(
     /**
      * Selects the given [appView].
      */
-    public fun selectView(appView: AppView) {
+    internal fun selectView(appView: AppView) {
         checkMainScreenIsVisible()
         mainScreen.selectView(appView)
     }
@@ -168,7 +168,7 @@ public class AppWindow(
     /**
      * Returns the currently selected view.
      */
-    public val currentView: AppView
+    internal val currentView: AppView
         get() {
             checkMainScreenIsVisible()
             return mainScreen.currentView

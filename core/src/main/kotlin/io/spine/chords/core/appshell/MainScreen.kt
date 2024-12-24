@@ -62,7 +62,7 @@ public class MainScreen(
     /**
      * Selects the given [appView].
      */
-    public fun selectView(appView: AppView) {
+    internal fun selectView(appView: AppView) {
         check(appViews.contains(appView)) {
             "The given view has not been added to the main screen `$appView`."
         }
@@ -72,7 +72,7 @@ public class MainScreen(
     /**
      * Returns the currently selected view.
      */
-    public val currentView: AppView
+    internal val currentView: AppView
         get() {
             return viewNavigator.lastItem.safeCast<AppView>()
         }

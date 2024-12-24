@@ -69,8 +69,8 @@ public fun NavigationDrawer(
                     NavigationDrawerItem(
                         icon = { Icon(view.icon, contentDescription = null) },
                         label = { Text(view.name) },
-                        selected = app.ui.views.current == view,
-                        onClick = { app.ui.views.select(view) },
+                        selected = app.ui.currentView == view,
+                        onClick = { app.ui.selectView(view) },
                         modifier = Modifier.padding(
                             horizontal = 12.dp,
                             vertical = 4.dp
