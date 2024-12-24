@@ -168,10 +168,11 @@ public class AppWindow(
     /**
      * Returns the currently selected view.
      */
-    public fun currentView(): AppView {
-        checkMainScreenIsVisible()
-        return mainScreen.currentView()
-    }
+    public val currentView: AppView
+        get() {
+            checkMainScreenIsVisible()
+            return mainScreen.currentView
+        }
 
     /**
      * Checks that the main screen is the currently visible.

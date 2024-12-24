@@ -72,7 +72,8 @@ public class MainScreen(
     /**
      * Returns the currently selected view.
      */
-    public fun currentView(): AppView {
-        return viewNavigator.lastItem.safeCast<AppView>()
-    }
+    public val currentView: AppView
+        get() {
+            return viewNavigator.lastItem.safeCast<AppView>()
+        }
 }

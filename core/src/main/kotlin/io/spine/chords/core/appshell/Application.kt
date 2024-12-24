@@ -401,5 +401,8 @@ internal constructor(
     /**
      * Returns the currently selected view.
      */
-    public fun current(): AppView = appWindow.currentView()
+    public val current: AppView
+        get() {
+            return appWindow.currentView
+        }
 }
