@@ -102,12 +102,6 @@ public class AppWindow(
     private lateinit var screenNavigator: Navigator
 
     /**
-     * Specifies whether to save the currently visible screen in the history
-     * after it is closed.
-     */
-    private var keepCurrentScreenInHistory = true
-
-    /**
      * Renders the application window's content.
      */
     @Composable
@@ -142,19 +136,11 @@ public class AppWindow(
      * from other screens will be visible or interactable.
      *
      * @param screen The screen to be shown.
-     * @param keepInHistory Specifies whether to save this screen in the history.
      */
-    internal fun showScreen(
-        screen: Screen,
-        keepInHistory: Boolean = true
-    ) {
+    internal fun showScreen(screen: Screen) {
         check(bottomDialog == null) {
             "Cannot display the screen when a dialog is displayed."
         }
-        if (!keepCurrentScreenInHistory) {
-            screenNavigator.pop()
-        }
-        keepCurrentScreenInHistory = keepInHistory
         screenNavigator.push(screen)
     }
 

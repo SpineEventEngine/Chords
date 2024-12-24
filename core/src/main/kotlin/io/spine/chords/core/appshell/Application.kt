@@ -361,11 +361,9 @@ internal constructor(
      * from other screens will be visible or interactable.
      *
      * @param screen The screen to be shown.
-     * @param keepInHistory Specifies whether to save the currently
-     * visible screen in the navigation history or not. Default value is `true`.
      */
-    public fun show(screen: Screen, keepInHistory: Boolean = true) {
-        appWindow.showScreen(screen, keepInHistory)
+    public fun show(screen: Screen) {
+        appWindow.showScreen(screen)
     }
 
     /**
