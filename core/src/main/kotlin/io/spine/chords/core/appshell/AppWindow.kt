@@ -234,3 +234,18 @@ public class AppWindow(
         }
     }
 }
+
+/**
+ * Represents the Sign-In screen in the application.
+ */
+private class SignInScreen(
+    private val content: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
+    private val onSuccessAuthentication: () -> Unit
+) : Screen {
+    @Composable
+    override fun Content() {
+        content {
+            onSuccessAuthentication()
+        }
+    }
+}
