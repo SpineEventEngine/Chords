@@ -24,8 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Material3
 import io.spine.internal.dependency.Kotest
+import io.spine.internal.dependency.Material3
 import io.spine.internal.dependency.Voyager
 
 plugins {
@@ -36,7 +36,6 @@ dependencies {
     implementation(project(":runtime"))
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
-    implementation(Voyager.navigator)
-    implementation(Voyager.screenModel)
+    api(Voyager.navigator)
     testImplementation(Kotest.runnerJUnit5)
 }

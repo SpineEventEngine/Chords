@@ -39,8 +39,6 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
     implementation(Spine.CoreJava.server)
-    implementation(Voyager.navigator)
-    implementation(Voyager.screenModel)
     implementation(project(":core"))
     implementation(project(":proto-values"))
     implementation(project(":proto"))
