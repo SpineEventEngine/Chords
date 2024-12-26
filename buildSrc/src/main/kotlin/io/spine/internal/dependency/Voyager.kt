@@ -33,7 +33,7 @@ package io.spine.internal.dependency
  */
 @Suppress("unused", "ConstPropertyName")
 object Voyager {
-    private const val version = "1.0.0"
+    private const val version = "1.0.1"
     private const val group = "cafe.adriel.voyager"
     private const val name = "voyager"
 

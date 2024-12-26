@@ -26,7 +26,7 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>cafe.adriel.voyager</groupId>
     <artifactId>voyager-navigator</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
