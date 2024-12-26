@@ -73,7 +73,7 @@ public class AppWindow(
      */
     private val signInScreen: SignInScreen = SignInScreen(signInScreenContent) {
         screenNavigator.pop()
-        showScreen(mainScreen)
+        show(mainScreen)
     }
 
     /**
@@ -137,7 +137,7 @@ public class AppWindow(
      *
      * @param screen The screen to be shown.
      */
-    internal fun showScreen(screen: Screen) {
+    internal fun show(screen: Screen) {
         check(bottomDialog == null) {
             "Cannot display the screen when a dialog is displayed."
         }
@@ -160,9 +160,9 @@ public class AppWindow(
     /**
      * Selects the given [appView].
      */
-    internal fun selectView(appView: AppView) {
+    internal fun select(appView: AppView) {
         checkMainScreenIsVisible()
-        mainScreen.selectView(appView)
+        mainScreen.select(appView)
     }
 
     /**

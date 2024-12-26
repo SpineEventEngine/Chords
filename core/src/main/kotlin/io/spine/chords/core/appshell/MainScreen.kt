@@ -62,7 +62,7 @@ public class MainScreen(
     /**
      * Selects the given [appView].
      */
-    internal fun selectView(appView: AppView) {
+    internal fun select(appView: AppView) {
         check(appViews.contains(appView)) {
             "The given view has not been added to the main screen `$appView`."
         }

@@ -283,8 +283,8 @@ internal constructor(private val appWindow: AppWindow) {
      *
      * @param screen The screen to be shown.
      */
-    public fun showScreen(screen: Screen) {
-        appWindow.showScreen(screen)
+    public fun show(screen: Screen) {
+        appWindow.show(screen)
     }
 
     /**
@@ -302,8 +302,8 @@ internal constructor(private val appWindow: AppWindow) {
      *
      * @param appView The view to be shown.
      */
-    public fun selectView(appView: AppView) {
-        appWindow.selectView(appView)
+    public fun select(appView: AppView) {
+        appWindow.select(appView)
     }
 
     /**
