@@ -290,8 +290,7 @@ internal constructor(private val appWindow: AppWindow) {
     /**
      * Closes the currently visible screen.
      *
-     * The currently visible screen won't be saved to the navigation history and
-     * the top-most screen in the history will be displayed.
+     * The bottom-most screen in the history will be displayed.
      */
     public fun closeCurrentScreen() {
         appWindow.closeCurrentScreen()
