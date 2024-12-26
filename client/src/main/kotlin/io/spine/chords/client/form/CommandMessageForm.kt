@@ -43,7 +43,7 @@ import io.spine.chords.core.appshell.app
 import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
-import io.spine.chords.proto.form.MessageFormSetupBase
+import io.spine.chords.proto.form.MessageFormUsageBase
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
 import kotlinx.coroutines.CoroutineScope
@@ -155,7 +155,7 @@ import kotlinx.coroutines.TimeoutCancellationException
  */
 public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     public companion object :
-        MessageFormSetupBase<CommandMessage, CommandMessageForm<CommandMessage>>(
+        MessageFormUsageBase<CommandMessage, CommandMessageForm<CommandMessage>>(
             { CommandMessageForm() }
         ) {
 

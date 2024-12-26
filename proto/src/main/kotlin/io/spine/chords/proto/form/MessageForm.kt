@@ -431,7 +431,7 @@ import io.spine.validate.ValidationException
 // Seems all class's functions are better to have in this class.
 @Suppress("TooManyFunctions")
 public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
-    public companion object : MessageFormSetupBase<Message, MessageForm<Message>>(
+    public companion object : MessageFormUsageBase<Message, MessageForm<Message>>(
         { MessageForm() }
     ) {
 
