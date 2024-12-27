@@ -27,7 +27,6 @@
 import io.spine.internal.dependency.Kotlin
 import io.spine.internal.dependency.Material3
 import io.spine.internal.dependency.Spine
-import io.spine.internal.dependency.Voyager
 
 plugins {
     id("io.spine.tools.gradle.bootstrap")
