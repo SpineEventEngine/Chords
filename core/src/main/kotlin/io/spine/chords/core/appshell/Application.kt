@@ -285,10 +285,7 @@ internal constructor(private val appWindow: AppWindow) {
     /**
      * Returns the currently selected view.
      */
-    public val currentView: AppView
-        get() {
-            return appWindow.currentView
-        }
+    public val currentView: AppView get() = appWindow.currentView
 
     /**
      * Displays the given [Dialog] instance.
