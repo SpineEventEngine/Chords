@@ -31,7 +31,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
-import cafe.adriel.voyager.core.screen.Screen
 import io.spine.chords.core.layout.ConfirmationDialog
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.DialogDisplayMode
@@ -273,28 +272,6 @@ public open class Application(
  */
 public class ApplicationUI
 internal constructor(private val appWindow: AppWindow) {
-
-    /**
-     * Displays the given [screen].
-     *
-     * This screen will be rendered using the entire area
-     * of the application window. No other components
-     * from other screens will be visible or interactable.
-     *
-     * @param screen The screen to be shown.
-     */
-    public fun show(screen: Screen) {
-        appWindow.show(screen)
-    }
-
-    /**
-     * Closes the currently visible screen.
-     *
-     * The bottom-most screen in the history will be displayed.
-     */
-    public fun closeCurrentScreen() {
-        appWindow.closeCurrentScreen()
-    }
 
     /**
      * Selects the given [appView].

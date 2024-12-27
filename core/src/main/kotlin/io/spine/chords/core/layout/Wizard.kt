@@ -62,7 +62,6 @@ import androidx.compose.ui.input.key.Key.Companion.DirectionLeft
 import androidx.compose.ui.input.key.Key.Companion.DirectionRight
 import androidx.compose.ui.input.key.Key.Companion.Enter
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.screen.Screen
 import io.spine.chords.core.Component
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Alt
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
@@ -95,13 +94,9 @@ private object WizardContentSize {
  * finished using the wizard, and it needs to be closed. The container where
  * the wizard is placed is responsible for hiding the wizard (excluding it from
  * the composition) upon this event.
- *
- * It implements Voyager's [Screen] since any wizard currently displays
- * as an application screen. This will likely be removed once wizards
- * are displayed as dialogs.
  */
 @Stable
-public abstract class Wizard : Component(), Screen {
+public abstract class Wizard : Component() {
 
     /**
      * The text to be the title of the wizard.

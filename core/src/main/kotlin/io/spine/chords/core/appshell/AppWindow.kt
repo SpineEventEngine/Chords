@@ -73,7 +73,7 @@ public class AppWindow(
      */
     private val signInScreen: SignInScreen = SignInScreen(signInScreenContent) {
         screenNavigator.pop()
-        show(mainScreen)
+        screenNavigator.push(mainScreen)
     }
 
     /**
@@ -126,35 +126,6 @@ public class AppWindow(
             }
             bottomDialog?.Content()
         }
-    }
-
-    /**
-     * Makes the given screen the current visible app screen.
-     *
-     * This screen will be rendered using the entire area
-     * of the application window. No other components
-     * from other screens will be visible or interactable.
-     *
-     * @param screen The screen to be shown.
-     */
-    internal fun show(screen: Screen) {
-        check(bottomDialog == null) {
-            "Cannot display the screen when a dialog is displayed."
-        }
-        screenNavigator.push(screen)
-    }
-
-    /**
-     * Closes the currently visible screen.
-     *
-     * The currently visible screen won't be saved to the navigation history and
-     * the bottom-most screen in the history will be displayed.
-     */
-    internal fun closeCurrentScreen() {
-        check(screenNavigator.size > 1) {
-            "Cannot close the bottom-most screen `${screenNavigator.lastItem}`."
-        }
-        screenNavigator.pop()
     }
 
     /**
