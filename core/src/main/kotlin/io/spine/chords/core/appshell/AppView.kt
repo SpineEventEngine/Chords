@@ -59,7 +59,7 @@ import io.spine.chords.core.Component
  *
  * Implements the [Screen] interface, enabling the use of navigation
  * functionality provided by the Voyager multiplatform navigation library.
- * See [AppWindow] on how to select some [AppView] to be displayed.
+ * See [ApplicationUI.select] on how to select some [AppView] to be displayed.
  *
  * The actual view content for the concrete view implementation has to be
  * rendered by implementing the abstract [content] method.
