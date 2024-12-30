@@ -42,13 +42,26 @@ import io.spine.chords.core.layout.Dialog
 import java.awt.Dimension
 
 /**
- * Represents the main application window and provides API to display
- * a modal screens using the entire area of the application window.
- * This API should be used to change the current visible screen
- * of the application, for example for wizards, full screen dialogs, etc.
+ * The main application window that displays the required screen
+ * using the entire area of the window, e.g. [SignInScreen] or [MainScreen].
  *
- * @param signInScreenContent A content for the sign-in screen.
- * @param views The list of application's views.
+ * Provides two levels of navigation enabled by the Voyager multiplatform
+ * navigation library. The first level is screen-level navigation, which allows
+ * selecting a screen to be displayed across the entire main window.
+ * Currently, two screens can be displayed: [SignInScreen] for user
+ * authentication and [MainScreen], which is shown when a user is logged
+ * into the system.
+ *
+ * Currently, there is no public API available to display a custom screen.
+ * This may change in the future as relevant use-cases appear.
+ *
+ * The second level — for selecting an [AppView] to be displayed
+ * on the [MainScreen]. Refer to [ApplicationUI] for details on how
+ * to select an app view.
+ *
+ * @param signInScreenContent A content for the [SignInScreen].
+ * @param views The list of [AppView]s that will be selectively displayed
+ * on the [MainScreen] screen.
  * @param initialView Allows to specify a view from the list of `views`, if any
  *   view other than the first one has to be displayed when
  *   the application starts.
@@ -132,32 +145,18 @@ public class AppWindow(
      * Selects the given [appView].
      */
     internal fun select(appView: AppView) {
-        checkMainScreenIsVisible()
         mainScreen.select(appView)
     }
 
     /**
      * Returns the currently selected view.
      */
-    internal val currentView: AppView
-        get() {
-            checkMainScreenIsVisible()
-            return mainScreen.currentView
-        }
+    internal val currentView: AppView get() = mainScreen.currentView
 
     /**
-     * Checks that the main screen is the currently visible.
-     */
-    private fun checkMainScreenIsVisible() {
-        check(screenNavigator.lastItem == mainScreen) {
-            "The main screen is not currently displayed."
-        }
-    }
-
-    /**
-     * Displays a modal window.
+     * Displays a modal dialog.
      *
-     * When the modal window is shown, no other components from other screens
+     * When the modal dialog is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
      * @param dialog An instance of the dialog that should be displayed.

@@ -57,9 +57,9 @@ import io.spine.chords.core.Component
  * It is equally possible to declare [AppView] subclasses as regular classes
  * if needed.
  *
- * The [AppView] implements the [Screen] interface, enabling the use of
- * navigation functionality provided by the Voyager multiplatform navigation
- * library.
+ * Implements the [Screen] interface, enabling the use of navigation
+ * functionality provided by the Voyager multiplatform navigation library.
+ * See [AppWindow] on how to select some [AppView] to be displayed.
  *
  * The actual view content for the concrete view implementation has to be
  * rendered by implementing the abstract [content] method.

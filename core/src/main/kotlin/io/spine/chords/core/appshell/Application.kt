@@ -138,8 +138,7 @@ public var app: Application by writeOnce(false)
  *   the application window's title.
  * @param views The list of application's views.
  * @param initialView Allows to specify a view from the list of [views], if any
- *   view other than the first one has to be displayed when
- *   the application starts.
+ *   view other than the first one has to be displayed when the application starts.
  * @param minWindowSize The minimal size of the application window.
  */
 public open class Application(
@@ -274,7 +273,7 @@ public class ApplicationUI
 internal constructor(private val appWindow: AppWindow) {
 
     /**
-     * Selects the given [appView].
+     * Selects the given [appView] to be displayed on the [MainScreen].
      *
      * @param appView The view to be shown.
      */
@@ -283,7 +282,7 @@ internal constructor(private val appWindow: AppWindow) {
     }
 
     /**
-     * Returns the currently selected view.
+     * Returns the currently selected [AppView] on the [MainScreen].
      */
     public val currentView: AppView get() = appWindow.currentView
 

@@ -33,11 +33,21 @@ import cafe.adriel.voyager.navigator.Navigator
 import io.spine.chords.runtime.safeCast
 
 /**
- * Represents the main screen in the application.
+ * The main screen of the application.
+ *
+ * Implements the [Screen] interface, enabling the use of navigation
+ * functionality provided by the Voyager multiplatform navigation library.
+ * See [AppWindow] for detail on how to display a screen.
+ *
+ * Provides internal API which allows selecting one of the [AppView]s
+ * to be displayed on the main screen.
+ *
+ * @param appViews The list of [AppView]s that will be selectively displayed on the screen.
+ * @param initialView The initial [AppView] to display.
  */
 public class MainScreen(
     private val appViews: List<AppView>,
-    private val initialView: AppView?
+    private val initialView: AppView? = null
 ) : Screen {
 
     /**
