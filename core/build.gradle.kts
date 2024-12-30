@@ -33,9 +33,9 @@ plugins {
 }
 
 dependencies {
+    api(Voyager.navigator)
     implementation(project(":runtime"))
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
-    api(Voyager.navigator)
     testImplementation(Kotest.runnerJUnit5)
 }
