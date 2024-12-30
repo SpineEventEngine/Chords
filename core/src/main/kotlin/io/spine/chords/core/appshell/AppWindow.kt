@@ -45,19 +45,19 @@ import java.awt.Dimension
  * The main application window that displays the required screen
  * using the entire area of the window, e.g. [SignInScreen] or [MainScreen].
  *
- * Provides two levels of navigation enabled by the Voyager multiplatform
- * navigation library. The first level is screen-level navigation, which allows
- * selecting a screen to be displayed across the entire main window.
- * Currently, two screens can be displayed: [SignInScreen] for user
- * authentication and [MainScreen], which is shown when a user is logged
- * into the system.
+ * Powered by Voyager, provides two levels of navigation:
+ *
+ * 1.The screen-level navigation. Allows selecting a screen
+ * to fill the entire main window.
  *
  * Currently, there is no public API available to display a custom screen.
- * This may change in the future as relevant use-cases appear.
+ * Instead, two screens are predefined: [SignInScreen] and [MainScreen].
+ * Please refer to their description for more detail.
+ * In the future, more screen implementations may be created.
  *
- * The second level — for selecting an [AppView] to be displayed
- * on the [MainScreen]. Refer to [ApplicationUI] for details on how
- * to select an app view.
+ * 2. The view-level navigation. Allows selecting an [AppView] to be displayed
+ * on the `MainScreen`.
+ * Please refer to [ApplicationUI.select] for details.
  *
  * @param signInScreenContent A content for the [SignInScreen].
  * @param views The list of [AppView]s that will be selectively displayed
