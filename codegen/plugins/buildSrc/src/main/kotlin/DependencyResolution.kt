@@ -87,7 +87,8 @@ fun doForceVersions(configurations: ConfigurationContainer) {
                     logging.lib,
                     logging.middleware,
                     time.lib,
-                    validation.runtime
+                    validation.runtime,
+                    validation.javaBundle
                 )
             }
         }

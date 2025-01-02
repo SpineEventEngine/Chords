@@ -24,7 +24,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.internal.dependency
+
 /**
-  * The version of all Chords libraries.
-  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.58")
+ * A multiplatform navigation [library](https://voyager.adriel.cafe/).
+ *
+ * @see <a href="https://github.com/adrielcafe/voyager">Voyager at GitHub</a>
+ */
+@Suppress("unused", "ConstPropertyName")
+object Voyager {
+    private const val version = "1.0.1"
+    private const val group = "cafe.adriel.voyager"
+    private const val name = "voyager"
+
+    const val navigator = "$group:$name-navigator:$version"
+    const val screenModel = "$group:$name-screenmodel:$version"
+}
