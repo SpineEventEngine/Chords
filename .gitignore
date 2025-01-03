@@ -37,6 +37,7 @@ codegen/plugins/.idea/**
 
 # Gradle build files
 **/build/**
+!**/src/**/build/
 
 # Build files produced by the IDE
 **/out/**

@@ -29,6 +29,7 @@ package io.spine.chords.core.appshell
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.graphics.vector.ImageVector
+import cafe.adriel.voyager.core.screen.Screen
 import io.spine.chords.core.Component
 
 /**
@@ -56,6 +57,10 @@ import io.spine.chords.core.Component
  * It is equally possible to declare [AppView] subclasses as regular classes
  * if needed.
  *
+ * Implements the [Screen] interface, enabling the use of navigation
+ * functionality provided by the Voyager multiplatform navigation library.
+ * See [ApplicationUI.select] on how to select some [AppView] to be displayed.
+ *
  * The actual view content for the concrete view implementation has to be
  * rendered by implementing the abstract [content] method.
  *
@@ -70,4 +75,4 @@ public abstract class AppView
 protected constructor(
     public val name: String,
     public val icon: ImageVector = Icons.Default.Menu
-) : Component()
+) : Component(), Screen

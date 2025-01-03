@@ -28,14 +28,16 @@ package io.spine.chords.proto.money
 
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment.Companion.Top
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.spine.chords.core.layout.InputRow
+import io.spine.chords.core.ComponentSetup
+import io.spine.chords.core.ValidationErrorText
+import io.spine.chords.proto.form.CustomMessageForm
 import io.spine.chords.proto.form.FormPartScope
-import io.spine.chords.proto.form.MessageForm
-import io.spine.chords.proto.form.MessageFormSetup
 import io.spine.chords.proto.form.OneofRadioButton
 import io.spine.chords.proto.form.OptionalMessageCheckbox
 import io.spine.chords.proto.form.invoke
@@ -47,39 +49,57 @@ import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
 /**
  * A component that edits a [PaymentMethod].
  */
-public class PaymentMethodEditor : MessageForm<PaymentMethod>() {
-    public companion object : MessageFormSetup<PaymentMethod, PaymentMethodEditor>(
-        { PaymentMethodEditor() }
-    )
+public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
+    { PaymentMethod.newBuilder() }
+) {
+    public companion object : ComponentSetup<PaymentMethodEditor>({ PaymentMethodEditor() })
 
-    init {
-        builder = { PaymentMethod.newBuilder() }
-    }
+    /**
+     * Identifies the component's appearance parameters.
+     */
+    public var look: Look = Look()
+
+    /**
+     * An object, which defines the component's appearance parameters.
+     *
+     * @param interFieldPadding A horizontal distance between the payment card
+     *   and bank account fields.
+     * @param selectorsOffset A vertical distance between radio button selectors
+     *   and their respective fields.
+     * @param optionalCheckboxOffset A vertical distance between the checkbox,
+     *   which is displayed when [valueRequired] is `false`, and the rest of
+     *   the controls within the component.
+     */
+    public data class Look(
+        public var interFieldPadding: Dp = 40.dp,
+        public var selectorsOffset: Dp = 8.dp,
+        public var optionalCheckboxOffset: Dp = 16.dp
+    )
 
     @Composable
     override fun FormPartScope<PaymentMethod>.customContent() {
-        if (!valueRequired) {
-            InputRow(
-                padding = PaddingValues()
-            ) {
-                OptionalMessageCheckbox("Specify payment method")
-            }
-        }
-        InputRow(
-            padding = PaddingValues()
-        ) {
-            OneOfFields(method) {
-                Column(
-                    verticalArrangement = spacedBy(4.dp, Top)
-                ) {
-                    OneofRadioButton(paymentCard, "Payment card")
-                    PaymentCardNumberField(paymentCard)
+        Column {
+            if (!valueRequired) {
+                Row {
+                    OptionalMessageCheckbox("Specify payment method")
                 }
-                Column(
-                    verticalArrangement = spacedBy(4.dp)
-                ) {
-                    OneofRadioButton(bankAccount, "Bank Account")
-                    BankAccountField(bankAccount)
+                Row(modifier = Modifier.height(look.optionalCheckboxOffset)) {}
+            }
+            OneOfFields(method) {
+                Row(horizontalArrangement = spacedBy(look.interFieldPadding)) {
+                    Column(verticalArrangement = spacedBy(look.selectorsOffset)) {
+                        OneofRadioButton(paymentCard, "Payment card")
+                        PaymentCardNumberField(paymentCard)
+                    }
+                    Column(verticalArrangement = spacedBy(look.selectorsOffset)) {
+                        OneofRadioButton(bankAccount, "Bank Account")
+                        BankAccountField(bankAccount)
+                    }
+                }
+                if (validationMessage.value != null) {
+                    Row {
+                        ValidationErrorText(validationMessage)
+                    }
                 }
             }
         }

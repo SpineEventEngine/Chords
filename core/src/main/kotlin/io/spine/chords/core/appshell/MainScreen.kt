@@ -28,36 +28,60 @@ package io.spine.chords.core.appshell
 
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import io.spine.chords.core.Component
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.Navigator
+import io.spine.chords.runtime.safeCast
 
 /**
- * Represents the main screen in the application.
+ * The main screen of the application.
+ *
+ * Implements the [Screen] interface, enabling the use of navigation
+ * functionality provided by the Voyager multiplatform navigation library.
+ * See [AppWindow] for detail on how to display a screen.
+ *
+ * Provides internal API which allows selecting one of the [AppView]s
+ * to be displayed on the main screen.
+ *
+ * @param appViews The list of [AppView]s that will be selectively displayed on the screen.
+ * @param initialView The initial [AppView] to display.
  */
 public class MainScreen(
     private val appViews: List<AppView>,
-    private val initialView: AppView?
-) : Component() {
+    private val initialView: AppView? = null
+) : Screen {
 
-    public val topBar: TopBar = TopBar()
+    /**
+     * The instance of the view [Navigator] that is initialized
+     * during the rendering of the screen.
+     */
+    private lateinit var viewNavigator: Navigator
 
     @Composable
-    override fun content() {
-        val selectedItemHolder = remember {
-            mutableStateOf(
-                initialView ?: appViews[0]
-            )
-        }
-        Scaffold(
-            topBar = {
-                topBar.Content()
-            }
-        ) {
-            val topPadding = it.calculateTopPadding()
-            NavigationDrawer(appViews, selectedItemHolder, topPadding) {
-                selectedItemHolder.value.Content()
+    public override fun Content() {
+        Navigator(initialView ?: appViews[0]) {
+            viewNavigator = it
+            Scaffold(
+                topBar = { TopBar() }
+            ) {
+                val topPadding = it.calculateTopPadding()
+                NavigationDrawer(appViews, topPadding)
             }
         }
     }
+
+    /**
+     * Selects the given [appView].
+     */
+    internal fun select(appView: AppView) {
+        check(appViews.contains(appView)) {
+            "The given view has not been added to the main screen `${appView.name}`."
+        }
+        viewNavigator.push(appView)
+    }
+
+    /**
+     * Returns the currently selected view.
+     */
+    internal val currentView: AppView
+        get() = viewNavigator.lastItem.safeCast<AppView>()
 }

@@ -41,11 +41,15 @@ import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.AnyPacker.unpack
 import io.spine.protodata.ast.Field
+import io.spine.protodata.ast.FieldType
+import io.spine.protodata.ast.FieldType.KindCase.ENUMERATION
+import io.spine.protodata.ast.FieldType.KindCase.LIST
+import io.spine.protodata.ast.FieldType.KindCase.MESSAGE
+import io.spine.protodata.ast.FieldType.KindCase.PRIMITIVE
 import io.spine.protodata.ast.Type
 import io.spine.protodata.ast.TypeName
-import io.spine.protodata.ast.isEnum
-import io.spine.protodata.ast.isPrimitive
-import io.spine.protodata.ast.isRepeated
+import io.spine.protodata.ast.isList
+import io.spine.protodata.ast.toType
 import io.spine.protodata.ast.typeName
 import io.spine.protodata.java.getterName
 import io.spine.protodata.java.javaPackage
@@ -245,7 +249,7 @@ private fun Field.generateSetValueCode(messageTypeName: TypeName): String {
     val messageSimpleClassName = messageTypeName.simpleClassName
     val builderCast = "builder.safeCast<$messageSimpleClassName.Builder>()"
     val setterCall = "$primarySetterName(newValue)"
-    return if (isRepeated) {
+    return if (isList) {
         "$builderCast.clear${name.value.camelCase()}().$setterCall"
     } else {
         "$builderCast.$setterCall"
@@ -256,43 +260,38 @@ private fun Field.generateSetValueCode(messageTypeName: TypeName): String {
  * Returns a [ClassName] of the value of a [Field].
  */
 private fun Field.valueClassName(typeSystem: TypeSystem)
-        : com.squareup.kotlinpoet.TypeName {
-    val valueClassName = type.className(typeSystem)
-    return if (isRepeated)
-        Iterable::class.asClassName().parameterizedBy(valueClassName)
-    else
-        valueClassName
-}
+        : com.squareup.kotlinpoet.TypeName = type.toClassName(typeSystem)
 
 /**
- * Returns a [ClassName] for the [Type].
+ * Returns a [ClassName] for the [FieldType].
  */
-private fun Type.className(typeSystem: TypeSystem): ClassName {
-    return if (isPrimitive)
-        primitiveClassName
-    else
-        messageClassName(typeSystem)
-}
+private fun FieldType.toClassName(typeSystem: TypeSystem)
+        : com.squareup.kotlinpoet.TypeName =
+    when (kindCase) {
+        MESSAGE, ENUMERATION, PRIMITIVE -> toType().toClassName(typeSystem)
+        LIST -> List::class.asClassName().parameterizedBy(
+            list.toClassName(typeSystem)
+        )
+
+        else -> error("The field type is not supported yet: `$this`")
+    }
 
 /**
- * Returns a [ClassName] for the [Type] that is a primitive.
+ * Returns a [ClassName] for the [Type] that is a message or primitive.
  */
-private val Type.primitiveClassName: ClassName
-    get() {
-        check(isPrimitive)
+private fun Type.toClassName(typeSystem: TypeSystem): ClassName {
+    if (isPrimitive) {
         return primitive.primitiveClass().asClassName()
     }
+    val javaPackage = typeSystem.findHeader(this)!!.javaPackage()
+    return typeName.messageClassName(javaPackage)
+}
 
 /**
- * Returns a [ClassName] for the [Type] that is a message.
+ * Returns a [ClassName] for the [TypeName] that is a message.
  */
-private fun Type.messageClassName(typeSystem: TypeSystem): ClassName {
-    check(!isPrimitive)
-    val fileHeader = typeSystem.findHeader(this)
-    checkNotNull(fileHeader) {
-        "Cannot determine file header for type `$this`"
-    }
-    return ClassName(fileHeader.javaPackage(), typeName.simpleClassName)
+private fun TypeName.messageClassName(javaPackage: String): ClassName {
+    return ClassName(javaPackage, simpleClassName)
 }
 
 /**
@@ -313,7 +312,7 @@ private val Field.required: Boolean
  * generated for the fields of such kinds.
  */
 private val Field.hasValueInvocation: String
-    get() = if (isRepeated || type.isEnum || type.isPrimitive)
+    get() = if (isList || type.isEnum || type.isPrimitive)
         "true"
     else
         "message.has${name.value.camelCase()}()"

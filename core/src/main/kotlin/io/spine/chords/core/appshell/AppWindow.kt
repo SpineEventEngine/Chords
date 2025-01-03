@@ -30,31 +30,48 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
-import io.spine.chords.core.modal.ModalWindow
-import io.spine.chords.core.modal.ModalWindowConfig
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.CurrentScreen
+import cafe.adriel.voyager.navigator.Navigator
+import io.spine.chords.core.layout.Dialog
 import java.awt.Dimension
 
 /**
- * Represents the main application window and provides API to display
- * a modal screens using the entire area of the application window.
- * This API should be used to change the current visible screen
- * of the application, for example for wizards, full screen dialogs, etc.
+ * The main application window that displays the required screen
+ * using the entire area of the window, e.g. [SignInScreen] or [MainScreen].
  *
- * @param signInScreenContent A content for the sign-in screen.
- * @param views The list of application's views.
- * @param initialView Allows to specify a view from the list of [views], if any view other
- *   than the first one has to be displayed when the application starts.
+ * Powered by Voyager, provides two levels of navigation:
+ *
+ * 1.The screen-level navigation. Allows selecting a screen
+ * to fill the entire main window.
+ *
+ * Currently, there is no public API available to display a custom screen.
+ * Instead, two screens are predefined: [SignInScreen] and [MainScreen].
+ * Please refer to their description for more detail.
+ * In the future, more screen implementations may be created.
+ *
+ * 2. The view-level navigation. Allows selecting an [AppView] to be displayed
+ * on the `MainScreen`.
+ * Please refer to [ApplicationUI.select] for details.
+ *
+ * @param signInScreenContent A content for the [SignInScreen].
+ * @param views The list of [AppView]s that will be selectively displayed
+ * on the [MainScreen] screen.
+ * @param initialView Allows to specify a view from the list of `views`, if any
+ *   view other than the first one has to be displayed when
+ *   the application starts.
  * @param onCloseRequest An action that should be performed on window closing.
  * @param minWindowSize The minimal size of the application window.
  */
 public class AppWindow(
     private val signInScreenContent: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
-    private val views: List<AppView>,
-    private val initialView: AppView?,
+    views: List<AppView>,
+    initialView: AppView?,
     private val onCloseRequest: () -> Unit,
     private val minWindowSize: Dimension
 ) {
@@ -62,27 +79,40 @@ public class AppWindow(
     /**
      * The main screen of the application.
      */
-    public val mainScreen: MainScreen = MainScreen(views, initialView)
-
-    private val mainScreenContent: @Composable () -> Unit = {
-        mainScreen.Content()
-    }
+    private val mainScreen: MainScreen = MainScreen(views, initialView)
 
     /**
      * The sign-in screen of the application.
      */
-    private val signInScreen: @Composable () -> Unit = {
-        signInScreenContent { currentScreen.value = mainScreenContent }
+    private val signInScreen: SignInScreen = SignInScreen(signInScreenContent) {
+        screenNavigator.pop()
+        screenNavigator.push(mainScreen)
     }
 
     /**
-     * Holds the current visible screen.
+     * The bottom-most dialog in the current dialog display stack, or `null` if
+     * no dialogs are displayed currently.
+     *
+     * Dialogs are modal windows, which means that there can be at most once
+     * dialog that the user can interact with at a time. It's possible to
+     * display nested dialogs though. That is, when some dialog is already
+     * displayed, another dialog can be open (see
+     * [DialogSetup][io.spine.chords.core.layout.DialogSetup.open]), which means
+     * that the first dialog still remains opened, but cannot be interacted with
+     * until the second one (which is displayed on top of it) is closed.
+     *
+     * This means that at any given moment in time there is essentially a stack
+     * of dialogs (zero or more nested dialogs). This property refers to the
+     * very first dialog that was displayed among all these dialogs (the bottom
+     * of the dialogs stack).
      */
-    private val currentScreen: MutableState<@Composable () -> Unit> =
-        mutableStateOf(signInScreen)
+    private var bottomDialog by mutableStateOf<Dialog?>(null)
 
-    private val modalWindow: MutableState<(ModalWindowConfig)?> =
-        mutableStateOf(null)
+    /**
+     * An instance of the screen [Navigator] that will be initialized during
+     * the rendering of the main window.
+     */
+    private lateinit var screenNavigator: Navigator
 
     /**
      * Renders the application window's content.
@@ -102,72 +132,77 @@ public class AppWindow(
             Box(
                 modifier = Modifier.background(MaterialTheme.colorScheme.background)
             ) {
-                currentScreen.value()
+                Navigator(signInScreen) {
+                    screenNavigator = it
+                    CurrentScreen()
+                }
             }
-            if (modalWindow.value != null) {
-                ModalWindow(
-                    onCancel = { modalWindow.value = null },
-                    config = modalWindow.value!!
-                )
-            }
+            bottomDialog?.Content()
         }
     }
 
     /**
-     * Makes the given screen the current visible modal screen.
-     *
-     * This screen will be rendered using the entire area
-     * of the application window. No other components
-     * from other screens will be visible or interactable,
-     * so it acts like a modal screen.
-     *
-     * The hierarchy of modal screens is not supported,
-     * so it will be an illegal state when some modal screen
-     * display is requested while another screen is already displayed.
-     *
-     * @throws IllegalStateException
-     *          to indicate the illegal state when another modal screen
-     *          is already displayed.
+     * Selects the given [appView].
      */
-    public fun openModalScreen(screen: @Composable () -> Unit) {
-        check(currentScreen.value == mainScreenContent) {
-            "Another modal screen is visible already."
-        }
-        check(modalWindow.value == null) {
-            "Cannot display the modal screen above the modal window."
-        }
-        currentScreen.value = screen
+    internal fun select(appView: AppView) {
+        mainScreen.select(appView)
     }
 
     /**
-     * Closes the currently visible modal screen.
-     *
-     * @throws IllegalStateException
-     *          to indicate the illegal state when no modal screen to close.
+     * Returns the currently selected view.
      */
-    public fun closeCurrentModalScreen() {
-        currentScreen.value = mainScreenContent
-    }
+    internal val currentView: AppView get() = mainScreen.currentView
 
     /**
-     * Displays a modal window.
+     * Displays a modal dialog.
      *
-     * When the modal window is shown, no other components from other screens
+     * When the modal dialog is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * @param config The configuration of the modal window.
+     * @param dialog An instance of the dialog that should be displayed.
      */
-    public fun openModalWindow(config: ModalWindowConfig) {
-        check(modalWindow.value == null) {
-            "Another modal window is visible already."
+    internal fun openDialog(dialog: Dialog) {
+        check(bottomDialog != dialog) { "This dialog is already open." }
+
+        dialog.isBottomDialog = bottomDialog == null
+        if (dialog.isBottomDialog) {
+            bottomDialog = dialog
+        } else {
+            bottomDialog!!.openNestedDialog(dialog)
         }
-        modalWindow.value = config
     }
 
     /**
-     * Closes the currently displayed modal window.
+     * Closes the specified dialog.
+     *
+     * This is a part of an internal dialog management API.
+     *
+     * @param dialog The dialog that needs to be closed.
      */
-    public fun closeModalWindow() {
-        modalWindow.value = null
+    internal fun closeDialog(dialog: Dialog) {
+        checkNotNull(bottomDialog) { "No dialogs are displayed currently." }
+        if (dialog == bottomDialog) {
+            check(bottomDialog!!.nestedDialog == null) {
+                "Cannot close a dialog while it has a nested dialog open."
+            }
+            bottomDialog = null
+        } else {
+            bottomDialog!!.closeNestedDialog(dialog)
+        }
+    }
+}
+
+/**
+ * A sign-in screen of the application.
+ */
+private class SignInScreen(
+    private val content: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
+    private val onSuccessAuthentication: () -> Unit
+) : Screen {
+    @Composable
+    override fun Content() {
+        content {
+            onSuccessAuthentication()
+        }
     }
 }

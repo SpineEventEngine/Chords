@@ -46,8 +46,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.ShapeDefaults.ExtraSmall
 import androidx.compose.material3.Surface
@@ -65,8 +65,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.BottomEnd
+import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Alignment.Companion.TopEnd
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -121,8 +121,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * A component that attaches a drop-down list attached to a custom composable
- * invoker, and allows selecting a single item in this list.
+ * A component that displays a customizable composable [invoker] content, and
+ * attaches a drop-down list to that content, which allows selecting a single
+ * item in this list.
  *
  * The drop-down list is displayed when the user presses the Up/Down keys with
  * or without the Alt modifier (customizable with [expandKey] property).
@@ -160,15 +161,14 @@ public class DropdownListBox<I> : Component() {
          * Declares an instance of [DropdownListBox] with the respective
          * property value specifications.
          *
-         * @param I
-         *         a type of items displayed in the drop-down list.
-         * @param props
-         *         a lambda that is invoked on a component's instance, and
-         *         should configure its properties in a way that is needed for
-         *         this component's instance. It is invoked before each
-         *         recomposition of the component.
-         * @return a component's instance that has been created for this
-         *         declaration site.
+         * @param I A type of items displayed in the drop-down list.
+         *
+         * @param props A lambda that is invoked on a component's instance, and
+         *   should configure its properties in a way that is needed for this
+         *   component's instance. It is invoked before each recomposition of
+         *   the component.
+         * @return A component's instance that has been created for this
+         *   declaration site.
          */
         @Composable
         public operator fun <I> invoke(
@@ -190,6 +190,12 @@ public class DropdownListBox<I> : Component() {
      * A list of items to display in the drop-down list.
      */
     public var items: Iterable<I> = emptyList()
+
+    /**
+     * Specifies whether clicking the invoker triggers displaying of the
+     * drop-down list box.
+     */
+    public var enabled: Boolean by mutableStateOf(true)
 
     /**
      * Currently selected item in the drop-down list,
@@ -413,6 +419,9 @@ public class DropdownListBox<I> : Component() {
      */
     private val firstItemIndex: Int get() = if (noneItemEnabled) -1 else 0
 
+    private var scrollState: ScrollState by writeOnce()
+    private var coroutineScope: CoroutineScope by writeOnce()
+
     @Composable
     @ReadOnlyComposable
     override fun beforeComposeContent() {
@@ -422,8 +431,14 @@ public class DropdownListBox<I> : Component() {
 
     @Composable
     override fun content() {
-        val coroutineScope = rememberCoroutineScope()
-        val scrollState = rememberScrollState(0)
+        scrollState = rememberScrollState(0)
+        coroutineScope = rememberCoroutineScope()
+
+        LaunchedEffect(enabled) {
+            if (!enabled) {
+                expanded.value = false
+            }
+        }
 
         val expanded = expanded.value
         LaunchedEffect(expanded) {
@@ -472,7 +487,7 @@ public class DropdownListBox<I> : Component() {
             }
 
             if (expanded) {
-                DropdownList(coroutineScope, scrollState)
+                DropdownList()
             }
         }
     }
@@ -604,7 +619,7 @@ public class DropdownListBox<I> : Component() {
     private fun onInvokerClick() {
         if (clearSelectedItemPressed) {
             clearSelectedItemPressed = false
-        } else {
+        } else if (enabled) {
             expanded.value = !expandedBeforeDismissRequest
             expandedBeforeDismissRequest = !expandedBeforeDismissRequest
         }
@@ -760,7 +775,7 @@ public class DropdownListBox<I> : Component() {
         }
     }
 
-    private fun scrollPreselectionIntoView(scrollState: ScrollState) {
+    private fun scrollPreselectionIntoView() {
         val viewportTop = scrollState.value
         val itemPosTop = getItemPos(preselectedItemIndex)
         if (itemPosTop < viewportTop) {
@@ -826,10 +841,9 @@ public class DropdownListBox<I> : Component() {
     /**
      * Handles user's key presses when drop-down list is not expanded.
      *
-     * @param event
-     *         a key event that was triggered in the invoker.
+     * @param event A key event that was triggered in the invoker.
      * @return `true` if further event's propagation should be prevented, and
-     *         `false` otherwise.
+     *   `false` otherwise.
      */
     private fun handleKeyEventWhenDropdownNotExpanded(event: KeyEvent): Boolean = when {
         event matches expandKey.down -> {
@@ -839,8 +853,12 @@ public class DropdownListBox<I> : Component() {
         }
 
         event matches expandKey.up -> {
-            expanded.value = true
-            true
+            if (enabled) {
+                expanded.value = true
+                true
+            } else {
+                false
+            }
         }
 
         else -> false
@@ -849,16 +867,11 @@ public class DropdownListBox<I> : Component() {
     /**
      * Composable for wrapping items in a column within the drop-down list.
      *
-     * @receiver
-     *         a [BoxScope], the scope within which this function
-     *         is intended to be used.
-     * @param scrollState
-     *         a [ScrollState], whose value indicates current
-     *         drop-down list scrollbar position.
+     * @receiver A [BoxScope], the scope within which this function is intended
+     *   to be used.
      */
     @Composable
-    private fun BoxScope.DropdownListContent(scrollState: ScrollState) {
-
+    private fun BoxScope.DropdownListContent() {
         Column(
             modifier = Modifier
                 .width(MinWidth)
@@ -916,25 +929,18 @@ public class DropdownListBox<I> : Component() {
             }
         }
         VerticalScrollbar(scrollState) {
-            Modifier.align(Alignment.CenterEnd)
+            Modifier.align(CenterEnd)
         }
     }
 
     /**
      * A popup, which is displaying drop-down list.
-     *
-     * @param coroutineScope
-     *         a [CoroutineScope] used to launch a job which scrolls
-     *         vertical drop-down list scrollbar to desired position.
-     * @param scrollState
-     *         a [ScrollState], whose value indicates current
-     *         drop-down list scrollbar position.
      */
     @Composable
     @OptIn(ExperimentalComposeUiApi::class)
-    private fun DropdownList(coroutineScope: CoroutineScope, scrollState: ScrollState) {
+    private fun DropdownList() {
         LaunchedEffect(preselectedItemIndex) {
-            scrollPreselectionIntoView(scrollState)
+            scrollPreselectionIntoView()
         }
 
         LaunchedEffect(totalItemsHeight) {
@@ -975,10 +981,10 @@ public class DropdownListBox<I> : Component() {
                         }
                     }
 
-                    DropdownListContent(scrollState)
+                    DropdownListContent()
                 }
                 if (showSearchSelection.value) {
-                    SearchSelectionField(coroutineScope)
+                    SearchSelectionField()
                 }
             }
         }
@@ -986,14 +992,10 @@ public class DropdownListBox<I> : Component() {
 
     /**
      * Composable for displaying search selection field.
-     *
-     * @param coroutineScope
-     *         a [CoroutineScope] used to launch a job which scrolls
-     *         vertical drop-down list scrollbar to desired position.
      */
     @Composable
     @OptIn(ExperimentalMaterial3Api::class)
-    private fun SearchSelectionField(coroutineScope: CoroutineScope) {
+    private fun SearchSelectionField() {
         val focusRequester = remember { FocusRequester() }
         val interactionSource = remember { MutableInteractionSource() }
         val searchSelectionContent = remember {
@@ -1215,7 +1217,7 @@ private fun DropdownListNoItems(content: @Composable (() -> Unit)) {
     ) {
         StyledContent(
             contentColor = colorScheme.secondary.copy(alpha = 0.5f),
-            textStyle = MaterialTheme.typography.titleSmall,
+            textStyle = typography.titleSmall,
             content = content
         )
     }

@@ -29,6 +29,8 @@ package io.spine.chords.core.primitive
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.material.ContentAlpha.disabled
+import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,44 +48,48 @@ import io.spine.chords.core.keyboard.on
 /**
  * A radio button that includes a given text on the right.
  *
- * @param selected
- *         a [MutableState] that holds a boolean flag indicating whether
- *         the radio button is selected.
- * @param onClick
- *         invoked when the user has selected this radio button. This function
- *         has to be implemented in a way that makes the [selected] parameter
- *         to be updated accordingly.
- * @param text
- *         a text displayed to the right of the radio button.
- * @param focusRequestDispatcher
- *         a [FocusRequestDispatcher], which should be attached to by this field
- *         for receiving and handling field focus requests.
+ * @param selected A [MutableState] that holds a boolean flag indicating whether
+ *   the radio button is selected.
+ * @param onClick Invoked when the user has selected this radio button. This
+ *   function has to be implemented in a way that makes the [selected]
+ *   parameter to be updated accordingly.
+ * @param text A text displayed to the right of the radio button.
+ * @param focusRequestDispatcher A [FocusRequestDispatcher], which should be
+ *   attached to by this field for receiving and handling field focus requests.
  */
 @Composable
 public fun RadioButtonWithText(
     selected: Boolean,
     onClick: () -> Unit,
     text: String,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
     focusRequestDispatcher: FocusRequestDispatcher? = null
 ) {
     Row(
         modifier = modifier
             .focusRequestDispatcher(focusRequestDispatcher)
-            .selectable(
-                selected = selected,
-                onClick = onClick,
-                role = RadioButton
-            ).on(Key.Spacebar.key.up) {
-                onClick()
+            .run {
+                if (enabled) {
+                    selectable(
+                        selected = selected,
+                        onClick = onClick,
+                        role = RadioButton
+                    ).on(Key.Spacebar.key.up) {
+                        onClick()
+                    }
+                } else {
+                    this
+                }
             },
         verticalAlignment = CenterVertically,
-        horizontalArrangement = spacedBy(5.dp)
+        horizontalArrangement = spacedBy(8.dp)
     ) {
         RadioButton(
             selected = selected,
+            enabled = enabled,
             onClick = null
         )
-        Text(text)
+        Text(text, color = if (enabled) colors.onSurface else colors.onSurface.copy(disabled))
     }
 }

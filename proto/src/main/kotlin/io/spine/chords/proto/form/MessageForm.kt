@@ -26,16 +26,21 @@
 
 package io.spine.chords.proto.form
 
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.text.TextStyle
 import com.google.protobuf.Message
 import io.spine.base.FieldPath
 import io.spine.chords.core.ComponentProps
@@ -43,6 +48,8 @@ import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputContext
+import io.spine.chords.core.ValidationErrorText
+import io.spine.chords.core.recompositionWorkaroundReadonly
 import io.spine.chords.proto.form.MessageForm.Companion.Multipart
 import io.spine.chords.proto.form.MessageForm.Companion.create
 import io.spine.chords.proto.form.MessageForm.Companion.invoke
@@ -63,53 +70,29 @@ import io.spine.validate.ConstraintViolation
 import io.spine.validate.ValidationException
 
 /**
- * Different modes of when form's validation errors should be displayed.
- */
-public enum class ValidationDisplayMode {
-
-    /**
-     * Validation errors for form's fields are updated (displayed and hidden
-     * according to the field values) while the user edits field values, without
-     * waiting for filling in the whole form and without the need to trigger
-     * validation errors display explicitly.
-     */
-    LIVE,
-
-    /**
-     * Validation errors are not updated while the user changes form's fields,
-     * and are only updated when the form is asked for this explicitly via
-     * its API.
-     *
-     * @see [MessageForm.updateValidationDisplay]
-     */
-    MANUAL,
-
-    /**
-     * Specifies that the validation mode depends on the parent form
-     * (if it exists).
-     *
-     * If there is no parent form, then validation is updated live, as the user
-     * changes form field values. This is identical to the behavior defined by
-     * the [LIVE] value.
-     *
-     * If there is a parent form, the validation display mode is the same as
-     * that of the parent form. Thus, this allows to "inherit" validation
-     * behavior from the parent form. For convenience, in `MessageForm`
-     * documentation, the form's mode when it is either set to [LIVE] explicitly
-     * or is set to [DEFAULT] but inherits [LIVE] from the parent is said to be
-     * "effectively live". Similarly, there's an "effectively manual" behavior
-     * in case with the [MANUAL] mode being specified directly or indirectly for
-     * the form.
-     */
-    DEFAULT
-}
-
-/**
  * A kind of input component, which allows creating a field-wise editor UI
- * (form) for creating and editing a Protobuf message's value.
+ * (a form) for creating and editing Protobuf message values of type [M].
  *
- * Here's an example of using `MessageForm` with components that already support
- * being placed into a form by themselves (have the `Field` declaration inside):
+ * In order to configure `MessageForm`, it is needed to place one editor
+ * component per each of message's fields (which need to be specified in order
+ * to build a message of type [M]). The simplest way to specify field editors is
+ * to use respective suitable types of class-based input components (the ones,
+ * which extend [InputComponent]), and associate them with respective message's
+ * message's fields as shown below.
+ *
+ * Note that unlike other input components, `MessageForm` doesn't introduce any
+ * visual output or layout capabilities by itself. Instead, it displays whatever
+ * content is placed into it along with field editor components, which can form
+ * an arbitrary layout required for the application.
+ *
+ * `MessageForm` automatically collects any input made by the user in field
+ * editors, builds the respective message [M], and displays per-field validation
+ * errors if the message couldn't be built.
+ *
+ * Here's an example of declaring a `MessageForm` that edits a hypothetical
+ * message type `UserContact`, which has two fields:
+ *  - `name: PersonName`
+ *  - `websiteUrl: Url`
  *
  * ```
  *     val userContact: MutableState<UserContact> = ...
@@ -118,84 +101,48 @@ public enum class ValidationDisplayMode {
  *         value = userContact
  *         builder = { UserContact.newBuilder() })
  *     ) {
- *         PersonNameField(
- *                 fieldNumber = UserContact.NAME,
+ *         Column {
+ *             PersonNameField(UserContactDef.name) {
  *                 label = "Name"
- *         )
- *         UrlField(
- *                 fieldNumber = UserContact.WEBSITE_URL,
- *                 label = "Website URL"
- *         )
- *     }
- * ```
- *
- * Here's also a basic example of using `MessageForm` with a field editor
- * component that wasn't created for being used with `MessageForm` (a standard
- * Compose's [TextField][androidx.compose.material3.TextField] component). This
- * requires wrapping the actual field editor component into the
- * [Field][FormFieldsScope.Field] function (see the sections below for
- * the details):
- *
- * ```
- *     val color = remember { mutableStateOf<Color?>(null) }
- *     Column {
- *         MessageForm(value = color, builder = { newBuilder() }) {
- *             Field(RED_FIELD_NUMBER) {
- *                 val valid = remember { mutableStateOf(true) }
- *                 TextField(
- *                     value = round((fieldValue.value ?: 0.0f) * 100).toInt().toString(),
- *                     onValueChange = {
- *                         fieldValue.value = try {
- *                             fieldValueValid.value = true
- *                             it.toInt() / 100.0f
- *                         } catch (e: NumberFormatException) {
- *                             fieldValueValid.value = false
- *                             null
- *                         }
- *                     },
- *                     isError = !valid.value,
- *                     label = { Text("R [0 - 100]") }
- *                 )
  *             }
- *             // ... same for GREEN_FIELD_NUMBER and BLUE_FIELD_NUMBER ...
- *             ValidationErrorText(formValidationError)
+ *             UrlField(UserContactDef.websiteUrl) {
+ *                 label = "Website URL"
+ *             }
  *         }
  *     }
- *     println("color = [r=${color.value?.red}, g=${color.value?.green}, b=${color.value?.blue}]")
  * ```
  *
- * ### Specifying form's content
+ * In this example, the `PersonNameField` component (which extends
+ * [InputComponent]) is configured to edit the `UserContact.name` field, and
+ * `UrlField`, which is another input component, is configured to edit
+ * the `UserContact.websiteUrl` field.
  *
- * Unlike other input components, `MessageForm` doesn't introduce any visual
- * output or layout capabilities by itself, and rather provides an API for
- * defining per-field editor components within its [content] composable
- * function. The composable declarations provided via [content] specify what
- * will actually be displayed as a form, and can contain any components and
- * layout inside.
+ * Note that this example also contains the `Column` declaration that lays out
+ * these editors, and it can actually contain arbitrary composable content
+ * besides the field editors themselves, as needed by the application's UI.
  *
- * The main requirement for declaring the composable [content] is that it should
- * contain per-field editor components for all message's fields that need to be
- * specified in order to create a value of type [M]. In order to bind each field
- * editor component to its respective message's field, each field editor
- * component has to be wrapped into the [Field][FormFieldsScope.Field]
- * composable function, which provides the scope  that introduces the variables
- * required for such a binding (see [FormFieldScope]). Most importantly,
- * [FormFieldScope] provides the `fieldValue` as [MutableState], which
- * contains the current field value, which has to be displayed by the editor
- * component, and which should accept any value changes from
- * the editor component.
+ * _NOTE: The invocations above require the respective
+ * [`invoke`][io.spine.chords.proto.form.invoke] extension to be imported.
+ * Please see its documentation for a more detailed information of how it works,
+ * and how to easily import it in a practical way in IntelliJ IDEA._
  *
  * ### The current form's value
  *
- * By default, when the form is displayed for the first time, the values that
- * are propagated to field editor components are defined by respective field
- * values in the message stored in [MutableState] provided with
- * the [value] parameter.
+ * In general, similar to other class-based [input components][InputComponent],
+ * the current form's value (stored inside the [value] `MutableState`), always
+ * gets the most up-to-date message value, according to the current form's
+ * editing state, if the inputs are valid and sufficient to create a message of
+ * type [M].
+ *
+ * More precisely, by default, when the form is displayed for the first time,
+ * the values that are propagated to respective field editor components for
+ * initial display are defined by respective field values in the message stored
+ * in `MutableState` provided within the [value] property.
  *
  * Upon any change made in any declared field editor component, an attempt to
- * create a message [M] is made from all the currently entered field values. If
+ * build a message [M] is made from all the currently entered field values. If
  * it succeeds, the respective validated value of type [M] is set into the
- * [value] state, and the value in the [valueValid] state is set to `true`.
+ * [value] state, and the value inside the [valueValid] state is set to `true`.
  *
  * In case when any of the field editors report their own internal validation
  * errors (see [FormFieldScope.fieldValueValid]), or if any validation
@@ -240,8 +187,8 @@ public enum class ValidationDisplayMode {
  *
  * Being a kind of input component, similar to other input components (such as
  * [DateTimeField] or [UrlField]), [MessageForm] can also be nested as a field
- * editor component inside [content] of some other [MessageForm], where
- * a form-like editor is needed for some of its fields.
+ * editor inside some other [MessageForm], which needs some of its message-typed
+ * fields to be edited as a form.
  *
  * This way it's possible to declare arbitrarily deep nested forms whenever
  * needed for editing respective nested message structures.
@@ -257,24 +204,13 @@ public enum class ValidationDisplayMode {
  *     ...
  *     MessageForm(
  *             builder = { UserContact.newBuilder() },
- *             message = userContact
+ *             value = userContact
  *     ) {
- *         Field(fieldNumber = UserContact.NAME) {
+ *         Field(field = UserContactDef.name) {
  *             MessageForm(
  *                     builder = { PersonName.newBuilder() }
  *             ) {
- *                 Field(fieldNumber = PersonName.GIVEN_NAME_FIELD_NUMBER) {
- *                     InputField(
- *                             value = fieldValue,
- *                             label = "Given name"
- *                     )
- *                 }
- *                 Field(fieldNumber = PersonName.FAMILY_NAME_FIELD_NUMBER) {
- *                     InputField(
- *                             value = fieldValue,
- *                             label = "Family name"
- *                     )
- *                 }
+ *                 ...
  *             }
  *         }
  *         ...
@@ -284,7 +220,7 @@ public enum class ValidationDisplayMode {
  * ### Multipart forms
  *
  * In cases when the message's form needs to be split into multiple parts (for
- * example to create a multi-page wizard), the form is declared in the same way
+ * example to create a multipage wizard), the form is declared in the same way
  * as for a regular usage scenario above, but form instance has to be declared
  * with the [Multipart] function, whose content should in turn contain one or
  * more [FormPart][MultipartFormScope.FormPart] declarations where the actual
@@ -333,6 +269,99 @@ public enum class ValidationDisplayMode {
  * its own message, and would have its own sub-form, which you can validate
  * as needed.
  *
+ * ### A low-level (more flexible and complex) way of composing field editors
+ *
+ * The example with `PersonNameField` and `UrlField` in the beginning of this
+ * `MessageForm` documentation looks so simple thanks to the fact that these
+ * components are class-based components that extend [InputComponent]. You might
+ * not have such ready to use class-based [InputComponent] implementations for
+ * all field types that you have to edit within the form though. In this case
+ * you can actually implement a new [InputComponent] for the respective data
+ * type (and this is a recommended, most flexible, and easy to use approach in
+ * most cases).
+ *
+ * Nevertheless, it's also possible to declare custom field editors using
+ * a lower-level field editor declaration API. In this way you can use any
+ * component or components (function-based and/or class-based ones) provided
+ * that you fulfill the contract of how such field editor has to be defined.
+ *
+ * Creating a field editor in this way requires wrapping actual field editor
+ * component(s) into the [Field][FormFieldsScope.Field] function. Here's a basic
+ * example of using `MessageForm` with function-based components. In this case
+ * a form edits a `Color` message, which has three integer fields (`red`,
+ * `green`, and `blue`), which are edited as values in range 0 - 100 using
+ * [TextField][androidx.compose.material3.TextField] components. This example
+ * might require respective refinement, but it shows the general approach:
+ *
+ * ```
+ *     val color = remember { mutableStateOf<Color?>(null) }
+
+ *     MessageForm(value = color, builder = { newBuilder() }) {
+ *         Column {
+ *
+ *             // Each field editor is defined using such a `Field` declaration.
+ *             Field(ColorDef.red) {
+ *                 val valid = remember { mutableStateOf(true) }
+ *
+ *                 // The actual editor components have to be defined in a way
+ *                 // to display a value stored in the `fieldValue: MutableState`
+ *                 // property found in the context provided by
+ *                 // the `Field` function.
+ *                 TextField(
+ *                     value = round((fieldValue.value ?: 0.0f) * 100).toInt().toString(),
+ *                     onValueChange = {
+ *
+ *                         // Any changes made by the editor component have to
+ *                         // be saved back into the `fieldValue` state.
+ *                         fieldValue.value = try {
+ *                             fieldValueValid.value = true
+ *                             it.toInt() / 100.0f
+ *                         } catch (e: NumberFormatException) {
+ *
+ *                             // If the editor component interprets its current
+ *                             // state of input as having an invalid value at
+ *                             // any given moment of time, it has to report
+ *                             // that fact live by changing the `fieldValueValid`
+ *                             // context property to contain a value of `false`.
+ *                             fieldValueValid.value = false
+ *                             null
+ *                         }
+ *                     },
+ *
+ *                     // The component is responsible for displaying its own
+ *                     // input validation errors itself in a way it
+ *                     // considers appropriate.
+ *                     isError = !fieldValueValid.value,
+ *                     label = { Text("R [0 - 100]") }
+ *                 )
+ *             }
+ *
+ *             // Add field editors for `ColorDef.green`, and `ColorDef.blue`
+ *             // similar to the `red` field editor above...
+ *
+ *         }
+ *     }
+ *     println("color = [r=${color.value?.red}, g=${color.value?.green}, b=${color.value?.blue}]")
+ * ```
+ *
+ * In order to bind each field
+ * editor component to its respective message's field, each field editor
+ * component has to be wrapped into the [Field][FormFieldsScope.Field]
+ * composable function, which provides the scope that introduces the variables
+ * required for such a binding (see [FormFieldScope]). Most importantly,
+ * [FormFieldScope] provides the `fieldValue` as [MutableState], which
+ * contains the current field value, which has to be displayed by the editor
+ * component, and which should accept any value changes from
+ * the editor component.
+ *
+ * See the documentation for [FormFieldScope] and its members for the
+ * description of all parts of the field editor embedding contract.
+ *
+ * It should be noted that standard input components mentioned in the beginning
+ * of `MessageForm`'s documentation also use this same low-level mechanism when
+ * using them as field editors (see the implementation of the internal
+ * [io.spine.chords.proto.form.ContentWithinField] function).
+ *
  * ### Instance-based usage
  *
  * The usage examples above follow a declarative style where a `MessageForm`'s
@@ -364,22 +393,6 @@ public enum class ValidationDisplayMode {
  *   (show or hide) form validation errors programmatically. This makes sense
  *   only when using the form's display mode is effectively manual.
  *
- * ### Implementing custom form components
- *
- * It is possible to implement custom form components for editing specific
- * message types with respective built-in editors that are defined as part of
- * such form components.
- *
- * For example, if it is needed to create a custom form component for editing
- * a `PersonName` message value, this can be done like this:
- * - Create a subclass of `MessageForm` (`PersonNameForm` in this case).
- * - Add a companion object of type [MessageFormSetup] to ensure that the
- *   component has an instance declaration API.
- * - Override either [customContent] (for rendering ordinary singlepart forms),
- *   or [customMultipartContent] (if a multipart form is needed), which should
- *   contain field editors in the same way as you would fill the respective
- *   `MessageForm` (e.g. see the "Specifying form's content" section above).
- *
  * ### The `onBeforeBuild` callback
  *
  * In some cases it might be needed to amend the contents of the builder, which
@@ -405,12 +418,11 @@ public enum class ValidationDisplayMode {
  * the form editing experience.
  *
  * For example, if we wanted to set message's `field1` based on what is entered
- * in `field2`
- * explicitly, this could be done like this:
+ * in `field2` explicitly, this could be done like this:
  *
  * ```
  *     MessageForm(..., onBeforeBuild = { builder ->
- *         builder.field1 = field2ToField1(builder.field2Value)
+ *         builder.field1 = field2ToField1(builder.field2)
  *     },  ...) ...
  * ```
  *
@@ -435,8 +447,8 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param B A type of the message builder.
          *
          * @param value The message value to be edited within the form.
-         * @param builder A lambda that should create and return a new builder for
-         *   a message of type [M].
+         * @param builder A lambda that should create and return a new builder
+         *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
          * @param onBeforeBuild A lambda that allows to amend the message
          *   after any valid field is entered to it.
@@ -461,9 +473,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             value as MutableState<Message?>,
             builder,
             props as ComponentProps<MessageForm<Message>>,
-            onBeforeBuild,
-            content as @Composable FormPartScope<Message>.() -> Unit
-        ) as MessageForm<M>
+            onBeforeBuild
+        ) {
+            content(this as FormPartScope<M>)
+        } as MessageForm<M>
 
         /**
          * Declares a `MessageForm` instance, which is automatically bound to
@@ -503,8 +516,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 PM : Message,
                 M : Message,
                 B : ValidatingBuilder<out M>
-                >
-                invoke(
+        > invoke(
             field: MessageField<PM, M>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
@@ -516,9 +528,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             builder,
             props as ComponentProps<MessageForm<Message>>,
             defaultValue,
-            onBeforeBuild,
-            content as @Composable FormPartScope<Message>.() -> Unit
-        ) as MessageForm<M>
+            onBeforeBuild
+        ) {
+            content(this as FormPartScope<M>)
+        } as MessageForm<M>
 
         /**
          * Declares a multipart `MessageForm` instance, which edits a value
@@ -559,9 +572,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             value as MutableState<Message?>,
             builder,
             props as ComponentProps<MessageForm<Message>>,
-            onBeforeBuild,
-            content as @Composable MultipartFormScope<Message>.() -> Unit
-        ) as MessageForm<M>
+            onBeforeBuild
+        ) {
+            content(this as MultipartFormScope<M>)
+        } as MessageForm<M>
 
         /**
          * Declares a multipart `MessageForm` instance, which is automatically
@@ -583,13 +597,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
-         * @param defaultValue A value that should be displayed in the form by default.
+         * @param defaultValue A value that should be displayed in the form
+         *   by default.
          * @param onBeforeBuild A lambda that allows to amend the message
          *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
          * @return a form's instance that has been created for this
-         *         declaration site.
+         *   declaration site.
          */
         context(FormFieldsScope<PM>)
         @Composable
@@ -602,8 +617,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 PM : Message,
                 M : Message,
                 B : ValidatingBuilder<out M>
-                >
-                Multipart(
+        > Multipart(
             field: MessageField<PM, M>,
             builder: () -> B,
             props: ComponentProps<MessageForm<M>> = ComponentProps {},
@@ -615,9 +629,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             builder,
             props as ComponentProps<MessageForm<Message>>,
             defaultValue,
-            onBeforeBuild,
-            content as @Composable MultipartFormScope<Message>.() -> Unit
-        ) as MessageForm<M>
+            onBeforeBuild
+        ) {
+            content(this as MultipartFormScope<M>)
+        } as MessageForm<M>
 
         /**
          * Creates a [MessageForm] instance without rendering it in
@@ -806,7 +821,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * @property formOneof A oneof to which this field belongs.
      */
     internal inner class FormField(
-        private val formFieldsScopeImpl: FormFieldsScopeImpl<M>,
+        internal val formFieldsScopeImpl: FormFieldsScopeImpl<M>,
         internal val field: MessageField<M, MessageFieldValue>,
         initialValue: MessageFieldValue? = null,
         val formOneof: FormOneof? = null
@@ -850,8 +865,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * A [FormFieldScope] instance for DSL declarations related to
          * this field.
          */
-        val scope: FormFieldScopeImpl<M, MessageFieldValue> =
-            FormFieldScopeImpl(this, this@MessageForm)
+        val scope: FormFieldScopeImpl<M, MessageFieldValue> = FormFieldScopeImpl(this)
 
         /**
          * The last field's value (in the [value] state) has been observed,
@@ -1050,6 +1064,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * "contaminates" other types with this type parameter, make the usage of
      * `MessageField` more complex, and didn't add much value to
      * the user anyway.
+     *
+     * Consequently, this property is `internal` in favor of having a properly
+     * typed parameter in the component declaration API (see the [invoke]
+     * methods of the companion object).
      */
     internal lateinit var builder: () -> ValidatingBuilder<M>
 
@@ -1063,7 +1081,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * is built.
      *
      * See the "The `onBeforeBuild` callback" section in the
-     * [MessageForm]'s documentation for details.
+     * [MessageForm]'s documentation for details. Note that like the [builder]
+     * property, this property refers to the builder as
+     * `ValidatingBuilder<out M>`, see the reasoning in the [builder] property's
+     * documentation).
+     *
+     * Consequently, this property is `internal` in favor of having a properly
+     * typed parameter in the component declaration API (see the [invoke]
+     * methods of the companion object).
      */
     internal var onBeforeBuild: (ValidatingBuilder<out M>) -> Unit = {}
 
@@ -1094,6 +1119,32 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * the purpose of observing external updates.
      */
     private var lastEmittedMessageValue: M? = null
+
+    /**
+     * Defines whether the form field editors should be enabled.
+     *
+     * By default, it reflects the value from the [enabled] state inherited from
+     * [InputComponent], but has a potential of additionally disabling form
+     * field editors even when [enabled] is true in certain form's states.
+     * This is primarily dedicated for child classes utilizing this capability,
+     * e.g. [CommandMessageForm][io.spine.chords.client.form.CommandMessageForm]
+     * can disable field editors even if [enabled] is `true` while the command
+     * that has been posted is being handled.
+     */
+    public val editorsEnabled: State<Boolean> get() = editorsEnabledInternal
+    private lateinit var editorsEnabledInternal: MutableState<Boolean>
+
+    /**
+     * A property that serves as the source of truth for filling in the value
+     * in the state referred to by the `editorsEnabled` property.
+     *
+     * It is needed as a separate protected property because it can be
+     * overridden in a subclass to customize the actual value provided
+     * via `editorsEnabled`. By default, it reflects the value of the [enabled]
+     * property, but can be overridden by subclasses if they have some logic on
+     * top of the [enabled] property's.
+     */
+    protected open val shouldEnableEditors: Boolean get() = enabled
 
     /**
      * A current form-wide validation error (the one that is not related to any
@@ -1186,15 +1237,13 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
 
     override fun initialize() {
         super.initialize()
-        // TODO:2024-03-15:dmitry.pikhulya: document specifying required properties
-        require(this::builder.isInitialized) {
-            "MessageForm's `builder` property must be specified."
-        }
+        requireProperty(::builder.isInitialized, "builder")
 
         lastEmittedMessageValue = value.value
         _dirty = identifyInitialDirtyState(value.value)
         enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
         lastObservedEnteringNonNullValue = enteringNonNullValue.value
+        editorsEnabledInternal = mutableStateOf(shouldEnableEditors)
     }
 
     /**
@@ -1287,29 +1336,11 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     protected open fun MultipartFormScope<M>.customMultipartContent() {
         content?.let {
             formScope.FormPart(it)
-            formScope.FormPart {
-                customContent()
-            }
+        }
+        formScope.FormPart {
+            customContent()
         }
         multipartContent?.invoke(formScope)
-    }
-
-    /**
-     * Renders the form's instance, which was created using
-     * the [create] function.
-     *
-     * In most cases forms (like class-based
-     * [Component][io.spine.chords.core.Component]s in general) would be
-     * declared using either of [invoke] functions, and thus won't need this
-     * function to be invoked explicitly though.
-     *
-     * If you're implementing a custom `MessageForm` subclass that needs its own
-     * built-in content to be specified, override the [customContent] or
-     * [customMultipartContent] method instead.
-     */
-    @Composable
-    final override fun Content() {
-        super.Content()
     }
 
     /**
@@ -1323,19 +1354,8 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
-    final override fun content() {
-        if (lastEmittedMessageValue != null && value.value == null) {
-            if (enteringNonNullValue.value) {
-                enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
-            }
-        }
-
-        val enteringNonNullValue = enteringNonNullValue.value
-        if (!enteringNonNullValue && lastObservedEnteringNonNullValue) {
-            clear()
-            lastObservedEnteringNonNullValue = false
-        }
-        lastObservedEnteringNonNullValue = enteringNonNullValue
+    override fun content(): Unit = recompositionWorkaroundReadonly {
+        updateBeforeRendering()
 
         formScope.customMultipartContent()
 
@@ -1364,6 +1384,29 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 focusRequest.value = null
             }
         }
+    }
+
+    /**
+     * Performs form state updates, which need to be performed before form's
+     * content is rendered, and which require a composable context
+     * (e.g. for observing [State]s and reacting appropriately).
+     */
+    @ReadOnlyComposable
+    private fun updateBeforeRendering() {
+        if (lastEmittedMessageValue != null && value.value == null) {
+            if (enteringNonNullValue.value) {
+                enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
+            }
+        }
+
+        val enteringNonNullValue = enteringNonNullValue.value
+        if (!enteringNonNullValue && lastObservedEnteringNonNullValue) {
+            clear()
+            lastObservedEnteringNonNullValue = false
+        }
+        lastObservedEnteringNonNullValue = enteringNonNullValue
+
+        editorsEnabledInternal.value = shouldEnableEditors
     }
 
     private fun identifyInitialDirtyState(initialMessageValue: M?): Boolean = when {
@@ -1527,7 +1570,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
 
         val validatedMessage = try {
             val builder = builderWithCurrentFields()
-            onBeforeBuild(builder)
+            beforeBuild(builder)
             builder.vBuild()
         } catch (e: ValidationException) {
             if (updateValidationErrors) {
@@ -1559,6 +1602,18 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         } else {
             validatedMessage
         }
+    }
+
+    /**
+     * A function, which can be overridden in custom `MessageForm` subclasses if
+     * they need to revise the builder's content right before the message
+     * is built.
+     *
+     * This method is an analog of the `onBeforeBuild` callback for subclasses
+     * (since [onBeforeBuild] is by design an `internal` property).
+     */
+    protected open fun beforeBuild(builder: ValidatingBuilder<out M>) {
+        onBeforeBuild(builder)
     }
 
     /**
@@ -1679,4 +1734,63 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
 
         fieldToFocus?.focusEditor()
     }
+}
+
+/**
+ * Different modes of when form's validation errors should be displayed.
+ */
+public enum class ValidationDisplayMode {
+
+    /**
+     * Validation errors for form's fields are updated (displayed and hidden
+     * according to the field values) while the user edits field values, without
+     * waiting for filling in the whole form and without the need to trigger
+     * validation errors display explicitly.
+     */
+    LIVE,
+
+    /**
+     * Validation errors are not updated while the user changes form's fields,
+     * and are only updated when the form is asked for this explicitly via
+     * its API.
+     *
+     * @see [MessageForm.updateValidationDisplay]
+     */
+    MANUAL,
+
+    /**
+     * Specifies that the validation mode depends on the parent form
+     * (if it exists).
+     *
+     * If there is no parent form, then validation is updated live, as the user
+     * changes form field values. This is identical to the behavior defined by
+     * the [LIVE] value.
+     *
+     * If there is a parent form, the validation display mode is the same as
+     * that of the parent form. Thus, this allows to "inherit" validation
+     * behavior from the parent form. For convenience, in `MessageForm`
+     * documentation, the form's mode when it is either set to [LIVE] explicitly
+     * or is set to [DEFAULT] but inherits [LIVE] from the parent is said to be
+     * "effectively live". Similarly, there's an "effectively manual" behavior
+     * in case with the [MANUAL] mode being specified directly or indirectly for
+     * the form.
+     */
+    DEFAULT
+}
+
+/**
+ * A component, which can be placed inside of [MessageForm] to display
+ * a form-wide validation error message (a validation error pertaining to
+ * the whole form rather than any of its fields or oneofs) — whenever there's
+ * such an error for the form.
+ *
+ * @param style A text's style.
+ * @param color A text's color.
+ */
+@Composable
+public fun <M : Message> FormPartScope<M>.FormValidationError(
+    style: TextStyle = typography.bodySmall,
+    color: Color = colorScheme.error
+) {
+    ValidationErrorText(formValidationError, style, color)
 }

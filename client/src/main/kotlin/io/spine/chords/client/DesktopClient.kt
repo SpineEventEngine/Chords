@@ -27,13 +27,17 @@
 package io.spine.chords.client
 
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import com.google.protobuf.Message
 import io.grpc.ManagedChannelBuilder
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
+import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.client.ClientRequest
+import io.spine.client.CompositeEntityStateFilter
+import io.spine.client.CompositeQueryFilter
 import io.spine.client.EventFilter.eq
 import io.spine.core.UserId
 import java.util.concurrent.CompletableFuture
@@ -50,8 +54,10 @@ private const val ReactionTimeoutMillis = 15_000L
 /**
  * Provides API to interact with the application server via gRPC.
  *
- * @param host The host of the application server to which client should connect.
- * @param port The port on which the application server is listening for gRPC connections.
+ * @param host The host of the application server to which client
+ *   should connect.
+ * @param port The port on which the application server is listening for
+ *   gRPC connections.
  * @param user The callback that should return the user ID on whose behalf
  *   the `DesktopClient` should send requests to the server.
  *   If the callback return `null` the client will send requests
@@ -86,21 +92,58 @@ public class DesktopClient(
      * @param entityClass A class of entities that should be read and observed.
      * @param targetList A [MutableState] that contains a list whose content should be
      *   populated and kept up to date by this function.
-     * @param entityIdField Reads the value of the entity's field that can uniquely identify
-     *   an entity.
+     * @param extractId  A callback that should read the value of the entity's ID.
      */
     public override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         targetList: MutableState<List<E>>,
-        entityIdField: (E) -> Any
+        extractId: (E) -> Any
     ) {
         targetList.value = clientRequest().select(entityClass).run()
 
         clientRequest()
             .subscribeTo(entityClass)
             .observe { entity ->
-                updateList(targetList, entity, entityIdField)
+                updateList(targetList, entity, extractId)
             }
+            .post()
+    }
+
+    /**
+     * Reads all entities of type [entityClass] that match the given [queryFilters] and invokes the
+     * [onNext] callback with the initial list of entities. Then sets up observation to receive
+     * future updates to the entities, filtering the observed updates using the provided [observeFilters].
+     * Each time any entity that matches the [observeFilters] changes, the [onNext] callback
+     * will be invoked again with the updated list of entities.
+     *
+     * @param entityClass A class of entities that should be read and observed.
+     * @param extractId A callback that should read the value of the entity's ID.
+     * @param queryFilters Filters to apply when querying the initial list of entities.
+     * @param observeFilters Filters to apply when observing updates to the entities.
+     * @param onNext A callback function that is called with the list of entities after the initial
+     *   query completes, and each time any of the observed entities is updated.
+     */
+    public override fun <E : EntityState> readAndObserve(
+        entityClass: Class<E>,
+        extractId: (E) -> Any,
+        queryFilters: CompositeQueryFilter,
+        observeFilters: CompositeEntityStateFilter,
+        onNext: (List<E>) -> Unit
+    ) {
+        val initialResult: List<E> = clientRequest()
+            .select(entityClass)
+            .where(queryFilters)
+            .run()
+        onNext(initialResult)
+
+        val observedEntities = mutableStateOf(initialResult)
+        clientRequest()
+            .subscribeTo(entityClass)
+            .observe { updatedEntity ->
+                updateList(observedEntities, updatedEntity, extractId)
+                onNext(observedEntities.value)
+            }
+            .where(observeFilters)
             .post()
     }
 
@@ -118,21 +161,30 @@ public class DesktopClient(
             .select(entityClass)
             .byId(id)
             .run()
-        if (entities.isEmpty()) {
-            return null
-        }
-        return entities[0];
+        return entities.firstOrNull()
     }
 
     /**
      * Posts a command to the server.
      *
      * @param cmd A command that has to be posted.
+     * @throws CommandPostingError If some error has occurred during posting and
+     *   acknowledging the command on the server.
      */
     override fun command(cmd: CommandMessage) {
+        var error: CommandPostingError? = null
         clientRequest()
             .command(cmd)
+            .onServerError { msg, err: Error ->
+                error = ServerError(err)
+            }
+            .onStreamingError { err: Throwable ->
+                error = StreamingError(err)
+            }
             .postAndForget()
+        if (error != null) {
+            throw error!!
+        }
     }
 
     /**
@@ -144,7 +196,8 @@ public class DesktopClient(
      *   the command.
      * @param field A field that should be used for identifying the event to be
      *   awaited for.
-     * @param fieldValue A value of the field that identifies the event to be awaited for.
+     * @param fieldValue A value of the field that identifies the event to be
+     *   awaited for.
      * @return An event specified in the parameters, which was emitted in
      *   response to the command.
      * @throws kotlinx.coroutines.TimeoutCancellationException
@@ -182,12 +235,10 @@ public class DesktopClient(
         val eventReceival = CompletableFuture<E>()
         observeEvent(
             event = event,
-            onEmit = { evt ->
-                eventReceival.complete(evt)
-            },
             field = field,
-            fieldValue = fieldValue
-        )
+            fieldValue = fieldValue) { evt ->
+                eventReceival.complete(evt)
+            }
         return FutureEventSubscription(eventReceival)
     }
 
@@ -201,17 +252,17 @@ public class DesktopClient(
      */
     override fun <E : EventMessage> observeEvent(
         event: Class<E>,
-        onEmit: (E) -> Unit,
         field: EventMessageField,
-        fieldValue: Message
+        fieldValue: Message,
+        onEmit: (E) -> Unit
     ) {
         clientRequest()
             .subscribeToEvent(event)
-            ?.where(eq(field, fieldValue))
-            ?.observe { evt ->
+            .where(eq(field, fieldValue))
+            .observe { evt ->
                 onEmit(evt)
             }
-            ?.post()
+            .post()
     }
 
     /**
@@ -231,27 +282,26 @@ public class DesktopClient(
      *
      * The merging here is either an addition of the new item specified by
      * the [entity] parameter, or, if there's already an item that has the same
-     * ID in the field identified by [entityIdField], a replacement of
+     * ID in the field identified by [extractId], a replacement of
      * the corresponding item with the one passed in [entity].
      *
      * @param targetList A [MutableState] that contains a list to be updated.
      * @param entity An item that has to be merged into the list.
-     * @param entityIdField A function that, given a list item, or a value of [entity],
-     *   returns the value of its field, which uniquely identifies
-     *   the respective instance.
+     * @param extractId A function that, given a list item, or a value of [entity],
+     *   retrieves its ID.
      */
     private fun <E : EntityState> updateList(
         targetList: MutableState<List<E>>,
         entity: E,
-        entityIdField: (E) -> Any
+        extractId: (E) -> Any
     ) {
         val prevList = targetList.value
         val existingItemIndex = prevList.indexOfFirst { e ->
-            entityIdField(e) == entityIdField(entity)
+            extractId(e) == extractId(entity)
         }
 
         val newList = if (existingItemIndex != -1) {
-            prevList.subList(0, existingItemIndex - 1) +
+            prevList.subList(0, existingItemIndex) +
                     entity +
                     prevList.subList(existingItemIndex + 1, prevList.size)
         } else {

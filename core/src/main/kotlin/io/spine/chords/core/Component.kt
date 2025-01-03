@@ -31,6 +31,9 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.MutableState
+import io.spine.chords.core.appshell.Application
+import io.spine.chords.core.appshell.app
 
 /**
  * A base class for class-based component implementations.
@@ -39,7 +42,7 @@ import androidx.compose.runtime.remember
  * provides an alternative way for implementing components with utilizing
  * the features of the object-oriented paradigm.
  *
- * ### Using class-based components
+ * # Using class-based components
  *
  * The syntax for using such components is similar to that of using the regular
  * function-based components. Considering a function-based component declaration
@@ -82,7 +85,7 @@ import androidx.compose.runtime.remember
  *     val someComponent = SomeComponent { ... }
  * ```
  *
- * #### Component instance declarations vs constructors
+ * ### Component instance declarations vs constructors
  *
  * It should be noted that such _component instance declarations_ as shown above
  * are a main way of using class-based components, but they are technically not
@@ -95,12 +98,13 @@ import androidx.compose.runtime.remember
  * prevent creating a new component's instance upon each composition, and use
  * a cached instance instead.
  *
- * #### Preferred instance declarations style
+ * ### Preferred instance declarations style
  *
  * Note that the component instance declaration examples above are technically
- * a shorthand notation for using the `invoke` function on the component's
- * companion object explicitly. So, theoretically, the same examples could be
- * written like this:
+ * a shorthand notation for using the
+ * [`invoke` operator function](https://kotlinlang.org/docs/operator-overloading.html#invoke-operator)
+ * on the component's companion object explicitly. So, theoretically, the same
+ * examples could be written like this:
  *
  * ```kotlin
  *     SomeComponent.Companion.invoke({
@@ -121,7 +125,7 @@ import androidx.compose.runtime.remember
  * ```
  *
  * Nevertheless, such explicit usage of `Companion` or `invoke` is not
- * recommended, and a shorthand form is recommended instead:
+ * recommended, and **a shorthand syntax is recommended** instead:
  *
  * ```kotlin
  *     SomeComponent {
@@ -131,9 +135,14 @@ import androidx.compose.runtime.remember
  *     }
  * ```
  *
+ * NOTE: It is highly discouraged to put any other statements besides component
+ *       property assignments inside such component instance declarations.
+ *       This preserves conceptual clarity, and is similar to how you would pass
+ *       respective parameters to a function-based component.
+ *
  * See also below how to implement such components.
  *
- * ### Implementing class-based components
+ * # Implementing class-based components
  *
  * - Create a subclass of [Component].
  *
@@ -141,7 +150,7 @@ import androidx.compose.runtime.remember
  *   the instance declaration API (which is technically being an invocation).
  *
  *   You can consider the presence of this companion object as a kind of
- *   replacement for a public constructor (albeit it actually both ensures
+ *   replacement for its constructor (since it actually both ensures
  *   a lazy component's creation, and its rendering at the same time).
  *
  *   Note: abstract base components do not need this companion object
@@ -154,6 +163,20 @@ import androidx.compose.runtime.remember
  *
  * - Declare a mutable property for each "parameter" of your component.
  *
+ *   NOTE: in order for dynamic changes of property values to be reflected by
+ *   the component's composition automatically, make sure that such properties
+ *   are backed by a [MutableState] value. In practice this means declaring
+ *   each component's configurable public property (except lambda-typed ones) in
+ *   the following style:
+ *   ```
+ *       public var someProp: String by mutableStateOf("")
+ *   ```
+ *
+ *   Note the `String` type parameter of `mutableStateOf` above, which
+ *   practically means the type of the property. As a result, from the user's
+ *   perspective this would just be a `someProp` property that can be configured
+ *   with any `String` value.
+ *
  * Here's an example of creating an input component that allows entering
  * a string value:
  *
@@ -163,7 +186,7 @@ import androidx.compose.runtime.remember
  *             HelloComponent()
  *         })
  *
- *         public var name: String = ""
+ *         public var name: String by mutableStateOf("")
  *
  *         @Composable
  *         override fun content() {
@@ -188,7 +211,151 @@ import androidx.compose.runtime.remember
  * classes* though, since companion objects here serve the purpose that is
  * similar to a class's constructor.
  *
- * ### When to write class-based and function-based components?
+ * ### Extending components using subclasses
+ *
+ * You can create extended versions of existing class-based components by
+ * creating respective subclasses. In the spirit of object-oriented
+ * programming (OOP) this makes sense if a child component conceptually belongs
+ * to the family of its parent component (can be said to be its
+ * variation/extension).
+ *
+ * Implementing components as subclasses of other components is in principle
+ * the same as creating "regular" class-based components (components that are
+ * subclasses of [Component]), as described above. In particular, make sure to
+ * specify the companion object for the child component's class, and make sure
+ * that it refers to the child component's class itself.
+ *
+ * Here's an example of extending `HelloComponent` shown above with an ability
+ * to specify text style, while also customizing some of the properties of the
+ * parent component with a default value:
+ *
+ * ```kotlin
+ *     public class StyledHelloComponent : Component() {
+ *         public companion object : ComponentSetup<StyledHelloComponent>({
+ *             StyledHelloComponent() // <-- Note child class name. ^^^
+ *         })
+ *
+ *         // Add some more component customization properties...
+ *         public var style: TextStyle by mutableStateOf(MaterialTheme.typography.bodyMedium)
+ *         public var color: Color by mutableStateOf(MaterialTheme.colorScheme.onBackground)
+ *         public var modifier: Modifier by mutableStateOf(Modifier)
+ *
+ *         init {
+ *             // Amend default values for parent class's properties if needed...
+ *             name = "my friend"
+ *         }
+ *
+ *         @Composable
+ *         override fun content() {
+ *             // CAUTION: In practice, `content` should not be overridden
+ *             //          in most cases. See the documentation below.
+ *             Text(
+ *                 text = "Hello, $name",
+ *                 style = style,
+ *                 color = color,
+ *                 modifier = modifier
+ *             )
+ *         }
+ *     }
+ * ```
+ *
+ * Such an extended component can be used just like any other component:
+ * ```
+ *     StyledHelloComponent {
+ *         // Customize properties as needed...
+ *         text = "it's me"
+ *         color = textColor
+ *         style = textStyle
+ *         ...
+ *     }
+ * ```
+ *
+ * **⚠️ A precaution about overriding of the parent `content` method:**
+ *
+ * In general, it is highly discouraged to override the [content] method without
+ * invoking `super.content()`!
+ *
+ * The example above just outlines the main aspects of creating an extended
+ * component, and the [content] method would in most cases in practice not be
+ * overridden at all.
+ *
+ * Overriding [content] without calling `super.content()`
+ * would probably mean that you would discard the whole parent component's
+ * rendering logic while reimplementing its modified copy in an overridden
+ * method at the same time. This is essentially a copy/paste-like code
+ * duplication scenario, which is highly discouraged.
+ *
+ * If you need to override only parts of the rendering procedure found in
+ * the parent `content` method, be sure to follow the spirit of OOP, and rework
+ * the parent class to extract the parts that need to be overridden into
+ * corresponding separate `protected open` methods (or use whatever other proper
+ * means that are needed to properly customize the parent component's display).
+ *
+ * See also some of the other base component classes that extend the [Component]
+ * class, such as [FocusableComponent], [InputComponent], [InputField],
+ * [Wizard][io.spine.chords.core.layout.Wizard], and [AppView][io.spine.chords.core.appshell.AppView].
+ *
+ * You can also study their complete implementations like [DropdownSelector],
+ * and other components that extend these classes found in other libraries of
+ * the Chords suite, such as:
+ *
+ * - Simple ones like `InternetDomainField`, `UrlField`. Note how they don't
+ *   override the `content` method, which is implemented in [InputField] because
+ *   the implementation of `InputField` introduces a respective higher-level
+ *   set of `protected` functions and customization parameters, which provides
+ *   a practically sufficient flexibility for customizing
+ *   the rendering behavior.
+ *
+ * - More complex ones like `MoneyField`, which does override the `content`
+ *   method, but still invokes `super.content()`
+ *   (see the `FieldContent` method).
+ *
+ * ### Required properties
+ *
+ * In many cases you can just specify the default property value, however in
+ * cases when no default property value can be known by the component's
+ * implementation itself (or if it is needed to ensure that the developer who
+ * declares a component's instance specifies property value explicitly), one way
+ * to do it is like this:
+ *
+ * - Declare the respective property as a `lateinit` one without any
+ *   default value.
+ *
+ * - Override the [initialize] method, and invoke the [requireProperty] method
+ *   to ensure that a component throws an exception with a descriptive message
+ *   if the property value is not specified when the component is declared.
+ *
+ *   The `requireProperty` call must contain the explicit [isInitialized]
+ *   property access expression for the respective property literal (see
+ *   an example below). Note that currently it is technically
+ *   [not possible][kotlin.internal.AccessibleLateinitPropertyLiteral] in
+ *   Kotlin to embed the [isInitialized] access into the `requireProperty`
+ *   implementation, and thus it has to be written literally like this.
+ *
+ *   This second point is technically optional but is recommended to make
+ *   the exception message descriptive, and make the actual component's usage
+ *   more clear.
+ *
+ *   Note: make sure to invoke `super.initialize()` when overriding
+ *   the `initialize` method.
+ *
+ * Here's an example:
+ * ```
+ *     public class HelloComponent : Component() {
+ *         public companion object : ComponentSetup<HelloComponent>({ HelloComponent() })
+ *
+ *         public lateinit var name: String
+ *
+ *         protected override initialize() {
+ *             super.initialize()
+ *             requireProperty(::name.isInitialized, "name")
+ *         }
+ *
+ *         ...
+ *     }
+ * ```
+ *
+ * # When to write class-based components or function-based ones?
  *
  * A class-based components writing style is only a convenience that can be used
  * if it provides some benefits relative to function-based ones. Function-based
@@ -198,7 +365,7 @@ import androidx.compose.runtime.remember
  * Both paradigms are mutually compatible: functional components can be used in
  * class-based ones, and class-based ones can be used in functional ones.
  *
- * ### Benefits of writing class-based components
+ * # Benefits of writing class-based components
  *
  * A class-based component implementation provides the following benefits
  * in particular:
@@ -252,7 +419,71 @@ import androidx.compose.runtime.remember
  *   data (stored in its properties) to be implicitly available in each of such
  *   functions without explicitly passing them around with parameters.
  *
- * ### Converting function-based components into class-based ones
+ * # Component's lifecycle
+ *
+ * In most cases, what you would typically need to do when developing a new
+ * component, is just to implement the [content] method to specify how the
+ * component is rendered (similar to how you would do when writing a
+ * function-based component), and specify the component's companion object, as
+ * is generally described in the "Implementing class-based components"
+ * section above.
+ *
+ * Nevertheless, the [Component] class provides some extra `open` functions,
+ * which can be overridden to customize certain points in the
+ * component's lifecycle. Below is a description of the overall component's
+ * lifecycle (listed in the order of running the respective stages), including
+ * such overridable lifecycle methods.
+ *
+ * - Once per each component's instance:
+ *
+ *    - **Class's constructor** — typically, not expected to accept any
+ *      parameters, and doesn't need to be called directly, since component
+ *      instances are _declared_ by invoking component's companion object
+ *      instead (see the "Component instance declarations vs constructors"
+ *      section above).
+ *
+ *      Nevertheless, it is useful to understand that a new component's instance
+ *      is implicitly created during the component's composition, and the same
+ *      instance is then kept and being reused during subsequent recompositions.
+ *      In other words it happens when it was not "visible" (technically not
+ *      called in respective composable function before this), and it becomes
+ *      "visible" (gets called in some composable function for the first time,
+ *      or after being hidden by some conditional execution).
+ *
+ *      Formally, life span of the component's instance is repeats the life span
+ *      of the value calculated and remembered by the [remember] function (if it
+ *      was invoked in the same place where the component's instance
+ *      is declared).
+ *
+ *    - **Properties update([updateProps]) + [initialize]** — when the component
+ *      is composed (rendered for the first time):
+ *
+ *      - First, the component's properties are updated (including the
+ *      [application-wide][Application] ones, and instance-specific ones).
+ *
+ *      - Then, the component's [initialize] method is called.
+ *
+ * -  Each time the component is rendered (composed or recomposed,
+ *    see [Content]):
+ *
+ *    - **Properties update** (see [updateProps]). This consists of two parts:
+ *
+ *      - Application-wide properties that are applicable to this component type
+ *        are applied. See the "Customizing default values for different
+ *        component types" section of the [Application] class's documentation.
+ *
+ *      - Instance-specific properties are applied. This basically assigns
+ *        property values as specified with the `props` parameter specified when
+ *        [declaring a component's instance][ComponentSetup.invoke].
+ *
+ *    - **[beforeComposeContent]** — some optional logic that needs to be done
+ *      before the component is rendered.
+ *
+ *    - **[content]** — the component's content, which is analogous to the
+ *      content of a function-based component (see "Implementing
+ *      class-based components").
+ *
+ * # Converting function-based components into class-based ones
  *
  * The points below can be used as a rule of thumb when converting existing
  * function-based components to class-based ones. This can also be helpful for
@@ -302,7 +533,7 @@ import androidx.compose.runtime.remember
  *   into class methods would make respective class's properties to be available
  *   to such methods implicitly.
  *
- * ### Optimizing performance
+ * # Optimizing performance
  *
  * These recommendations are optional, but can be considered in cases when UI's
  * performance becomes an issue for some components or when you're creating
@@ -360,6 +591,10 @@ import androidx.compose.runtime.remember
  *   [companion object][ComponentSetup]'s [invoke][ComponentSetup.invoke]
  *   operator for instantiating and rendering any specific
  *   component's implementation.
+ *
+ * @see FocusableComponent
+ * @see InputComponent
+ * @see io.spine.chords.core.appshell.AppView
  */
 @Stable
 public abstract class Component {
@@ -373,7 +608,7 @@ public abstract class Component {
      * [ComponentSetup.invoke] or an analogous component
      * declaration function.
      */
-    public var props: ComponentProps<Component>? = null
+    internal var props: ComponentProps<Component>? = null
 
     /**
      * A state variable which specifies whether the component's [initialize]
@@ -382,16 +617,20 @@ public abstract class Component {
     private val initialized = mutableStateOf(false)
 
     /**
-     * A component's lifecycle method, which is invoked right after the
-     * [props] callback (which is passed along with component
-     * instance's declaration) has been invoked for the first time, and before
-     * the component's composable content is rendered for the first time.
+     * A lambda that assigns default property values that are applicable for
+     * this component according to the application-wide configuration.
      *
-     * This function is declared as being a read-only composable one for
-     * the implementations to be able to access the composition-related data,
-     * such as various [MaterialTheme][androidx.compose.material3.MaterialTheme]
-     * properties and other
-     * [CompositionLocal][androidx.compose.runtime.CompositionLocal] values.
+     * @see Application.componentDefaults
+     */
+    private val setDefaultProps: ((Component) -> Unit)? by lazy {
+        app.componentDefaults.componentDefaultsInitializer(javaClass)
+    }
+
+    /**
+     * A component's lifecycle method, which is invoked right after the
+     * [props] callback (which is passed along with component instance's
+     * declaration) has been invoked for the first time, and before
+     * the component's composable content is rendered for the first time.
      */
     protected open fun initialize() {
         check(!initialized.value) {
@@ -400,11 +639,62 @@ public abstract class Component {
     }
 
     /**
+     * Throws a descriptive [IllegalArgumentException] if a `lateinit` property
+     * hasn't been set.
+     *
+     * Merely for the purposes of improving error reporting, this method is
+     * expected (and recommended) to be invoked for each public `lateinit`
+     * property in the [initialize] method of custom component implementations
+     * that declare such properties. See the "Required properties" subsection in
+     * Component's documentation.
+     *
+     * Here's a usage example:
+     *
+     * ```
+     *     public class MyComponent : Component() {
+     *         ...
+     *         public lateinit var property1: String
+     *
+     *         protected override initialize() {
+     *             super.initialize()
+     *             requireProperty(::property1.isInitialized, "property1")
+     *         }
+     *         ...
+     *     }
+     * ```
+     *
+     * Note that the value passed to the first parameter ([propertyInitialized])
+     * has to be an explicit [isInitialized] property access expression for
+     * the respective property because of the Kotlin's limitation of how this
+     * particular property can be used
+     * (see [kotlin.internal.AccessibleLateinitPropertyLiteral]).
+     *
+     * @param propertyInitialized The [isInitialized] property access expression
+     *   for the `lateinit` property being checked
+     *   (e.g. `::property1.isInitialized`).
+     * @param propertyName The name of the property being checked
+     *   (e.g. "property1").
+     * @throws IllegalArgumentException If the property referred to by the
+     *   [propertyInitialized] expression is not set (if [propertyInitialized]
+     *   is `false`).
+     *
+     * @see kotlin.internal.AccessibleLateinitPropertyLiteral
+     */
+    protected fun requireProperty(
+        propertyInitialized: Boolean,
+        propertyName: String
+    ) {
+        require(propertyInitialized) {
+            "${javaClass.simpleName}.$propertyName must be specified."
+        }
+    }
+
+    /**
      * Updates property values and renders the composable content that
      * represents this component.
      *
-     * NOTE: in most cases this method is not expected to be invoked or
-     * overridden by application developers, and is used internally within
+     * NOTE: in most cases this method is not expected to be invoked by
+     * application developers, and is used internally within
      * the component's implementation.
      *
      * - Instead of invoking this method explicitly, the component instance
@@ -419,8 +709,8 @@ public abstract class Component {
      *   the [content] method.
      */
     @Composable
-    public open fun Content(): Unit = recompositionWorkaround {
-        props?.run { configure() }
+    public fun Content(): Unit = recompositionWorkaround {
+        updateProps()
         if (!initialized.value) {
             initialize()
             initialized.value = true
@@ -428,6 +718,23 @@ public abstract class Component {
 
         beforeComposeContent()
         content()
+    }
+
+    /**
+     * Invoked before each recomposition to make sure that component's
+     * properties match any property declarations that are specified for
+     * the dialog.
+     *
+     * This includes both assigning the default property values applicable
+     * to this component from application-wide component customizations (see
+     * [Application.componentDefaults][io.spine.chords.core.appshell.Application.componentDefaults]),
+     * and setting instance-specific properties. If there are conflicts between
+     * these two sources of property values, instance-specific property
+     * declarations override application-wide property declarations.
+     */
+    protected open fun updateProps() {
+        setDefaultProps?.invoke(this)
+        props?.run { configure() }
     }
 
     /**

@@ -46,8 +46,7 @@ import io.spine.chords.core.primitive.CheckboxWithText
  * value based on the currently entered form field values. When the checkbox is
  * unchecked, the form's message value will be `null`.
  *
- * @param text
- *         a checkbox's text.
+ * @param text A checkbox's text.
  */
 @Composable
 public fun <M : Message> FormPartScope<M>.OptionalMessageCheckbox(
@@ -60,19 +59,19 @@ public fun <M : Message> FormPartScope<M>.OptionalMessageCheckbox(
  * Same as the other `OptionalMessageCheckbox`, suitable for being placed inside
  * a multipart version of `MessageForm` (see [MessageForm.MultipartContent]).
  *
- * @param text
- *         a checkbox's text.
+ * @param text A checkbox's text.
  */
 @Composable
 public fun <M : Message> MultipartFormScope<M>.OptionalMessageCheckbox(
     text: String
 ) {
     check(!form.valueRequired) {
-        "OptionalMessageCheckbox can only be used with forms whose valueRequired is false."
+        "`OptionalMessageCheckbox` can only be used with forms whose `valueRequired` is false."
     }
     CheckboxWithText(
         checked = form.enteringNonNullValue.value,
         onChange = { form.enteringNonNullValue.value = it },
-        text
+        text = text,
+        enabled = form.editorsEnabled.value
     )
 }

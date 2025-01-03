@@ -135,14 +135,13 @@ public class MoneyField : InputField<Money>() {
     override fun formatValue(value: Money): String = value.formatAmount()
 
     @Composable
-    @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
     override fun content() {
         val currentFocusManager = LocalFocusManager.current
 
         DropdownListBox<Currency> {
             items = filteredCurrencyItems
             selectedItem = selectedCurrency
-            onSelectItem = ::onSelectItem
+            onSelectItem = ::onSelectCurrencyItem
             expanded = this@MoneyField.expanded
             searchSelectionEnabled = true
             onSearchSelectionChange = { filteredCurrencyItems = getFilteredItems(it) }
@@ -234,10 +233,9 @@ public class MoneyField : InputField<Money>() {
     /**
      * Selects currency item from the drop-down menu.
      *
-     * @param item
-     *         a drop-down menu currency item to be selected.
+     * @param item A drop-down menu currency item to be selected.
      */
-    private fun onSelectItem(item: Currency?) {
+    private fun onSelectCurrencyItem(item: Currency?) {
         expanded.value = false
 
         if (item == null || selectedCurrency == item) {

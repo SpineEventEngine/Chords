@@ -31,7 +31,10 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
-import io.spine.chords.core.modal.ModalWindowConfig
+import io.spine.chords.core.layout.ConfirmationDialog
+import io.spine.chords.core.layout.Dialog
+import io.spine.chords.core.layout.DialogDisplayMode
+import io.spine.chords.core.layout.DialogSetup
 import io.spine.chords.core.writeOnce
 import java.awt.Dimension
 
@@ -41,7 +44,7 @@ import java.awt.Dimension
  * This property automatically obtains a reference to the application
  * when the [Application]'s [run][Application.run] method is invoked.
  */
-public var app: Application by writeOnce()
+public var app: Application by writeOnce(false)
 
 /**
  * A desktop client application.
@@ -70,11 +73,72 @@ public var app: Application by writeOnce()
  * this, the [signInScreenContent] method has to be implemented to render
  * the respective composable content, and invoke the sign-in callback as needed.
  *
+ * ## Customizing default values for different component types
+ *
+ * It is possible to customize default values for properties for all instances
+ * of any given component type(s). To do this, override the [componentDefaults]
+ * function, and use a [defaultsTo][ComponentDefaultsScope.defaultsTo] infix
+ * call per each component type whose default property values you need
+ * to customize.
+ *
+ * Here's an example:
+ * ```
+ *     override fun ComponentDefaultsScope.componentDefaults() {
+ *         Dialog::class defaultsTo {
+ *             displayMode = DesktopWindow
+ *             look = Look(
+ *                 buttonsPanelPadding = 20.pt
+ *             }
+ *         }
+ *         ConfirmationDialog::class defaultsTo {
+ *             displayMode = Lightweight
+ *         }
+ *     }
+ * ```
+ *
+ * If you then have a usage of `MyCustomDialog` component that extends [Dialog]
+ * like this in your application:
+ * ```
+ *     MyCustomDialog.open {
+ *         dialogWidth = 600.dp
+ *         dialogHeight = 400.dp
+ *     }
+ * ```
+ *
+ * Then the dialog instance that will actually be created will implicitly have
+ * all of these property values:
+ * ```
+ * {
+ *     displayMode = DesktopWindow
+ *     look = Look(
+ *         buttonsPanelPadding = 20.pt
+ *     }
+ *     dialogWidth = 600.dp
+ *     dialogHeight = 400.dp
+ * }
+ * ```
+ *
+ * Property values specified for the actual component instance declaration
+ * always have a priority over respective default values, so this way you can
+ * override default property values whenever needed in their specific usages.
+ *
+ * Note that for any given component, all default property values specified in
+ * all of its base classes will be applied as well (if any such declarations
+ * for parent classes have been defined in the `componentDefaults` method).
+ *
+ * If there are any conflicts in property declarations across multiple
+ * component's base classes, the declarations specified in child classes will
+ * override those found in base classes. In the example above, since
+ * [ConfirmationDialog] extends [Dialog], all instances of `ConfirmationDialog`
+ * declared within the application will get a value of
+ * [displayMode][ConfirmationDialog.displayMode] equal to
+ * [Lightweight][DialogDisplayMode.Lightweight].
+ *
  * @param name An application's name, which is in particular displayed in
  *   the application window's title.
  * @param views The list of application's views.
- * @param initialView Allows to specify a view from the list of [views], if any view other
- *   than the first one has to be displayed when the application starts.
+ * @param initialView Allows to specify a view from the list of [views], if any
+ *   view other than the first one has to be displayed when the application starts.
  * @param minWindowSize The minimal size of the application window.
  */
 public open class Application(
@@ -102,6 +166,11 @@ public open class Application(
             return _ui!!
         }
 
+    /**
+     * The registry of default property values for different component types.
+     */
+    internal val componentDefaults = ComponentDefaults()
+
     private var _ui: ApplicationUI? = null
 
     /**
@@ -122,6 +191,10 @@ public open class Application(
         }
         app = this
 
+        with(componentDefaults) {
+            componentDefaults()
+        }
+
         application(exitProcessOnExit = exitProcessOnClose) {
             val appWindow = remember {
                 val appWindow = createAppWindow(::exitApplication)
@@ -130,6 +203,29 @@ public open class Application(
             }
             appWindowContent(appWindow)
         }
+    }
+
+    /**
+     * An implementation of the application ([Application]'s subclass) can
+     * override this method to specify application-wide default property values
+     * for individual component types.
+     *
+     * Here's an example:
+     * ```
+     *     override fun ComponentDefaultsScope.componentDefaults() {
+     *         Dialog::class defaultsTo {
+     *             onBeforeCancel = {
+     *                 message = "Are you sure you want to close the dialog?"
+     *                 description = "Any entered data will be lost in this case."
+     *             }
+     *         }
+     *         ConfirmationDialog::class defaultsTo {
+     *             displayMode = Lightweight
+     *         }
+     *     }
+     * ```
+     */
+    protected open fun ComponentDefaultsScope.componentDefaults() {
     }
 
     private fun createAppWindow(onCloseRequest: () -> Unit): AppWindow {
@@ -171,57 +267,78 @@ public open class Application(
 /**
  * A top-level API that concerns the application's UI.
  *
- * @param appWindow
- *         main application's window.
+ * @param appWindow The main application's window.
  */
-public class ApplicationUI(public val appWindow: AppWindow) {
+public class ApplicationUI
+internal constructor(private val appWindow: AppWindow) {
 
     /**
-     * Displays a modal screen.
+     * Selects the given [appView] to be displayed on the [MainScreen].
      *
-     * This screen will be rendered using the entire area
-     * of the application window. No other components
-     * from other screens will be visible or interactable,
-     * so it acts like a modal screen.
-     *
-     * The hierarchy of modal screens is not supported,
-     * so it will be an illegal state when some modal screen
-     * display is requested while another screen is already displayed.
-     *
-     * @throws IllegalStateException
-     *         to indicate the illegal state when another modal screen
-     *         is already displayed.
+     * @param appView The view to be shown.
      */
-    public fun openModalScreen(screen: @Composable () -> Unit) {
-        appWindow.openModalScreen(screen)
+    public fun select(appView: AppView) {
+        appWindow.select(appView)
     }
 
     /**
-     * Closes the currently visible modal screen.
-     *
-     * @throws IllegalStateException
-     *         to indicate the illegal state when no modal screen to close.
+     * Returns the currently selected [AppView] on the [MainScreen].
      */
-    public fun closeCurrentModalScreen() {
-        appWindow.closeCurrentModalScreen()
-    }
+    public val currentView: AppView get() = appWindow.currentView
 
     /**
-     * Displays a modal window.
+     * Displays the given [Dialog] instance.
      *
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
-     * @param config The configuration of the modal window.
+     * It is designed to be used only as an internal low-level API, for dialog
+     * implementation to be able to display themselves. In regular application
+     * code though, the [Dialog]'s API should be used instead. For example,
+     * when needed to display a specific dialog `SomeDialog` in the application,
+     * the proper way to do this is like this:
+     *
+     * ```
+     *    SomeDialog.open()
+     *
+     *    // or like this if dialog' properties need to be specified as well:
+     *
+     *    SomeDialog.open {
+     *        prop1 = prop1Value
+     *        prop2 = prop2Value
+     *      ...
+     *    }
+     *
+     *    // or if you already have a dialog instance and need to display it:
+     *
+     *    val dialog: SomeDialog = ...
+     *    dialog.open()
+     * ```
+     *
+     * @param dialog The [Dialog] instance, which needs to be displayed.
+     *
+     * @see Dialog
+     * @see DialogSetup
+     * @see closeDialog
      */
-    public fun openModalWindow(config: ModalWindowConfig) {
-        appWindow.openModalWindow(config)
+    internal fun openDialog(dialog: Dialog) {
+        appWindow.openDialog(dialog)
     }
 
     /**
-     * Closes the currently displayed modal window.
+     * Closes the specified dialog if it doesn't have any nested
+     * dialogs displayed.
+     *
+     * Note that this method ignores any data that might have been entered
+     * in it.
+     *
+     * On a par with [openDialog], this is a part of an internal API for
+     * [Dialog]s to be able to control their display lifecycle.
+     *
+     * @param dialog The dialog that needs to be closed.
+     * @see openDialog
      */
-    public fun closeModalWindow() {
-        appWindow.closeModalWindow()
+    internal fun closeDialog(dialog: Dialog) {
+        appWindow.closeDialog(dialog)
     }
 }

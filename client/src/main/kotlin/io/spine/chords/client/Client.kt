@@ -30,8 +30,11 @@ import androidx.compose.runtime.MutableState
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
+import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
+import io.spine.client.CompositeEntityStateFilter
+import io.spine.client.CompositeQueryFilter
 import io.spine.core.UserId
 import java.util.concurrent.CompletableFuture
 
@@ -53,13 +56,34 @@ import java.util.concurrent.CompletableFuture
      * @param entityClass A class of entities that should be read and observed.
      * @param targetList A [MutableState] that contains a list whose content should be
      *   populated and kept up to date by this function.
-     * @param entityIdField Reads the value of the entity's field that can uniquely identify
-     *   an entity.
+     * @param extractId  A callback that should read the value of the entity's ID.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         targetList: MutableState<List<E>>,
-        entityIdField: (E) -> Any
+        extractId: (E) -> Any
+    )
+
+    /**
+     * Reads all entities of type [entityClass] that match the given [queryFilters] and invokes the
+     * [onNext] callback with the initial list of entities. Then sets up observation to receive
+     * future updates to the entities, filtering the observed updates using the provided [observeFilters].
+     * Each time any entity that matches the [observeFilters] changes, the [onNext] callback
+     * will be invoked again with the updated list of entities.
+     *
+     * @param entityClass A class of entities that should be read and observed.
+     * @param extractId A callback that should read the value of the entity's ID.
+     * @param queryFilters Filters to apply when querying the initial list of entities.
+     * @param observeFilters Filters to apply when observing updates to the entities.
+     * @param onNext A callback function that is called with the list of entities after the initial
+     *   query completes, and each time any of the observed entities is updated.
+     */
+    public fun <E : EntityState> readAndObserve(
+        entityClass: Class<E>,
+        extractId: (E) -> Any,
+        queryFilters: CompositeQueryFilter,
+        observeFilters: CompositeEntityStateFilter,
+        onNext: (List<E>) -> Unit
     )
 
     /**
@@ -77,6 +101,8 @@ import java.util.concurrent.CompletableFuture
      * Posts a command to the server.
      *
      * @param cmd A command that has to be posted.
+     * @throws CommandPostingError If some error has occurred during posting and
+     *   acknowledging the command on the server.
      */
     public fun command(cmd: CommandMessage)
 
@@ -132,9 +158,9 @@ import java.util.concurrent.CompletableFuture
      */
     public fun <E : EventMessage> observeEvent(
         event: Class<E>,
-        onEmit: (E) -> Unit,
         field: EventMessageField,
-        fieldValue: Message
+        fieldValue: Message,
+        onEmit: (E) -> Unit
     )
 }
 
@@ -157,4 +183,34 @@ public interface EventSubscription<E: EventMessage> {
      *   by the implementation.
      */
     public suspend fun awaitEvent(): E
+}
+
+/**
+ * Signifies an error that has occurred during the process of posting the
+ * command and acknowledging it on the server.
+ */
+public open class CommandPostingError(message: String? = null, cause: Throwable? = null) :
+    RuntimeException(message, cause)
+{
+    public companion object {
+        private const val serialVersionUID: Long = 3555883899622560720L
+    }
+}
+
+/**
+ * Signifies an error that has occurred when delivering events.
+ */
+public class StreamingError(error: Throwable) : CommandPostingError(cause = error) {
+    public companion object {
+        private const val serialVersionUID: Long = -5438430153458733051L
+    }
+}
+
+/**
+ * Signifies an error that has occurred on the server (e.g. a validation error).
+ */
+public class ServerError(public val error: Error) : CommandPostingError(error.message) {
+    public companion object {
+        private const val serialVersionUID: Long = -5438430153458733051L
+    }
 }
