@@ -26,6 +26,7 @@
 
 package io.spine.chords.core.appshell
 
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
@@ -199,15 +200,21 @@ public open class Application(
             val appWindow = remember {
                 val appWindow = createAppWindow(::exitApplication)
                 _ui = ApplicationUI(appWindow)
-                appWindow.mainScreen.topBar.actions = { headerActions() }
+                appWindow.mainScreen.topBar.actions = { topBarActions() }
                 appWindow
             }
             appWindowContent(appWindow)
         }
     }
 
+    /**
+     * Renders the actions in the right corner of the app window header.
+     *
+     * This should typically be [IconButton]s.
+     * The default layout here is a Row, so icons inside will be placed horizontally.
+     */
     @Composable
-    protected open fun headerActions() {
+    protected open fun topBarActions() {
     }
 
     /**
