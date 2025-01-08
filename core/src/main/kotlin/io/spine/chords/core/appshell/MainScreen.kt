@@ -51,6 +51,11 @@ public class MainScreen(
 ) : Screen {
 
     /**
+     * The TopBar, aka 'Header', of the main screen.
+     */
+    internal val topBar: TopBar = TopBar()
+
+    /**
      * The instance of the view [Navigator] that is initialized
      * during the rendering of the screen.
      */
@@ -61,7 +66,7 @@ public class MainScreen(
         Navigator(initialView ?: appViews[0]) {
             viewNavigator = it
             Scaffold(
-                topBar = { TopBar() }
+                topBar = { topBar.Content() }
             ) {
                 val topPadding = it.calculateTopPadding()
                 NavigationDrawer(appViews, topPadding)

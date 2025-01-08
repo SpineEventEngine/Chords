@@ -199,10 +199,15 @@ public open class Application(
             val appWindow = remember {
                 val appWindow = createAppWindow(::exitApplication)
                 _ui = ApplicationUI(appWindow)
+                appWindow.mainScreen.topBar.actions = { headerActions() }
                 appWindow
             }
             appWindowContent(appWindow)
         }
+    }
+
+    @Composable
+    protected open fun headerActions() {
     }
 
     /**

@@ -50,14 +50,12 @@ import io.spine.chords.core.Component
 public class TopBar(private val modifier: Modifier = Modifier) : Component() {
 
     /**
-     * The right side content of the `TopBar` that typically contains
-     * actions like logout, notifications, etc.
+     * The actions displayed in the right corner of the top app bar.
      *
-     * The [TopAppBar] component is used to render the `TopBar` so it is recommended
-     * to use [IconButton]s for [rightSideContent] as it is passed to the
-     * `actions` property of the [TopAppBar].
+     * This should typically be [IconButton]s.
+     * The default layout here is a Row, so icons inside will be placed horizontally.
      */
-    public var rightSideContent: @Composable RowScope.() -> Unit = {}
+    internal var actions: @Composable RowScope.() -> Unit = {}
 
     @Composable
     protected override fun content() {
@@ -69,9 +67,7 @@ public class TopBar(private val modifier: Modifier = Modifier) : Component() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
-            actions = {
-                rightSideContent.invoke(this)
-            },
+            actions = actions,
             modifier = modifier
                 .padding(0.dp)
                 .fillMaxWidth(),
