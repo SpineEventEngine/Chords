@@ -51,7 +51,7 @@ public class MainScreen(
 ) : Screen {
 
     /**
-     * The TopBar, aka 'Header', of the main screen.
+     * The top app bar, as per [Material UI definition](https://m3.material.io/components/top-app-bar/overview).
      */
     internal val topBar: TopBar = TopBar()
 

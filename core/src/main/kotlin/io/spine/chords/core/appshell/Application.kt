@@ -215,6 +215,7 @@ public open class Application(
      */
     @Composable
     protected open fun topBarActions() {
+        // Do nothing by default.
     }
 
     /**
