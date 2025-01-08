@@ -71,7 +71,7 @@ public class TopBar(private val modifier: Modifier = Modifier) : Component() {
             modifier = modifier
                 .padding(0.dp)
                 .fillMaxWidth(),
-            windowInsets = WindowInsets(8.dp, 8.dp, 8.dp, 8.dp),
+            windowInsets = WindowInsets(8.dp),
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.background
             )
