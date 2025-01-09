@@ -51,6 +51,11 @@ public class MainScreen(
 ) : Screen {
 
     /**
+     * The top app bar, as per [Material UI definition](https://m3.material.io/components/top-app-bar/overview).
+     */
+    internal val topBar: TopBar = TopBar()
+
+    /**
      * The instance of the view [Navigator] that is initialized
      * during the rendering of the screen.
      */
@@ -61,7 +66,7 @@ public class MainScreen(
         Navigator(initialView ?: appViews[0]) {
             viewNavigator = it
             Scaffold(
-                topBar = { TopBar() }
+                topBar = { topBar.Content() }
             ) {
                 val topPadding = it.calculateTopPadding()
                 NavigationDrawer(appViews, topPadding)

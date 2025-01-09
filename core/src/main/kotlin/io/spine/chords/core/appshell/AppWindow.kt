@@ -79,7 +79,7 @@ public class AppWindow(
     /**
      * The main screen of the application.
      */
-    private val mainScreen: MainScreen = MainScreen(views, initialView)
+    internal val mainScreen: MainScreen = MainScreen(views, initialView)
 
     /**
      * The sign-in screen of the application.

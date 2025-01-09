@@ -199,10 +199,21 @@ public open class Application(
             val appWindow = remember {
                 val appWindow = createAppWindow(::exitApplication)
                 _ui = ApplicationUI(appWindow)
+                appWindow.mainScreen.topBar.actions = { topBarActions() }
                 appWindow
             }
             appWindowContent(appWindow)
         }
+    }
+
+    /**
+     * Renders the [TopBar.actions] of the top app bar.
+     *
+     * Typically, these actions are login/logout, notifications, settings, etc.
+     */
+    @Composable
+    protected open fun topBarActions() {
+        // Do nothing by default.
     }
 
     /**
