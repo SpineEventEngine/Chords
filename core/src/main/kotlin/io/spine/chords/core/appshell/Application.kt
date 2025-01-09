@@ -207,7 +207,9 @@ public open class Application(
     }
 
     /**
-     * Renders the actions of the [TopBar].
+     * Renders the [TopBar.actions] of the top app bar.
+     *
+     * Typically, these actions are login/logout, notifications, settings, etc.
      */
     @Composable
     protected open fun topBarActions() {
