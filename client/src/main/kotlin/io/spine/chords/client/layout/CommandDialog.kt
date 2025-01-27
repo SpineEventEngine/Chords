@@ -33,7 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import io.spine.base.CommandMessage
-import io.spine.chords.client.CommandLifecycle
+import io.spine.chords.client.CommandRun
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.SubmitOrCancelDialog
@@ -69,7 +69,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
             onBeforeBuild = ::beforeBuild,
             props = {
                 validationDisplayMode = MANUAL
-                commandLifecycle = ::commandLifecycle
+                commandRun = ::commandLifecycle
             }
         ) {
             Column(
@@ -104,13 +104,13 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
 
     /**
      * A function, which, given a command message that is about to be posted,
-     * should provide the [CommandLifecycle] object that defines how the
+     * should provide the [CommandRun] object that defines how the
      * command's outcomes should be handled.
      *
      * @param command A command, which is going to be posted.
-     * @return A respectively configured [CommandLifecycle] instance.
+     * @return A respectively configured [CommandRun] instance.
      */
-    protected abstract fun commandLifecycle(command: C): CommandLifecycle<C>
+    protected abstract fun commandLifecycle(command: C): CommandRun<C>
 
     /**
      * Allows to programmatically amend the command message builder before

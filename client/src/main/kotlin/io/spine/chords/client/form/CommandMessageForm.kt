@@ -34,7 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import io.spine.base.CommandMessage
-import io.spine.chords.client.CommandLifecycle
+import io.spine.chords.client.CommandRun
 import io.spine.chords.client.post
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.proto.form.FormPartScope
@@ -297,10 +297,10 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
 
     /**
      * A function, which, given a command message that is about to be posted,
-     * should provide the [CommandLifecycle] object that defines how the
+     * should provide the [CommandRun] object that defines how the
      * command's outcomes should be handled.
      */
-    public lateinit var commandLifecycle: (C) -> CommandLifecycle<C>
+    public lateinit var commandRun: (C) -> CommandRun<C>
 
     /**
      * A state, which reports whether the form is currently in progress of
@@ -337,7 +337,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
 
     override fun initialize() {
         super.initialize()
-        requireProperty(this::commandLifecycle.isInitialized, "commandOutcomeHandler")
+        requireProperty(this::commandRun.isInitialized, "commandOutcomeHandler")
     }
 
     @Composable
@@ -358,7 +358,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   errors to be displayed.
      * - Posts the command that was validated and built.
      * - Awaits for an event that should arrive upon successful handling of
-     *   the command, as defined by the [commandLifecycle]
+     *   the command, as defined by the [commandRun]
      *   constructor's parameters.
      * - If the event doesn't arrive in a predefined timeout that is considered
      *   an adequate delay from user's perspective, this method
@@ -389,7 +389,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "checked to be valid within postCommand."
         }
 
-        val commandOutcomeHandler = commandLifecycle(command)
+        val commandOutcomeHandler = commandRun(command)
         return try {
             posting = true
             command.post(commandOutcomeHandler)

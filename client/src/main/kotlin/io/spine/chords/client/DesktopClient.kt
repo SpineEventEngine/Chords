@@ -181,6 +181,9 @@ public class DesktopClient(
             .onStreamingError { err: Throwable ->
                 error = StreamingError(err)
             }
+            .onConsumingError {
+                error = ServerError(err)
+            }
             .postAndForget()
         if (error != null) {
             throw error!!

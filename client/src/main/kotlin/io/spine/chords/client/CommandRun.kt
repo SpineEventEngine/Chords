@@ -51,14 +51,14 @@ import kotlinx.coroutines.withTimeout
  * This function makes the [lifecycle] object to handle the outcomes or error
  * conditions that have occurred after posting the command.
  *
- * @param lifecycle A [CommandLifecycle] instance whose configuration defines
+ * @param lifecycle A [CommandRun] instance whose configuration defines
  *   how the command's possible outcomes should be handled.
  * @return `true`, if either of the non-rejection events configured in
  *   [lifecycle] was received before the timeout period elapses, and
  *   `false` otherwise.
  *
  */
-public suspend fun <C: CommandMessage> C.post(lifecycle: CommandLifecycle<C>): Boolean =
+public suspend fun <C: CommandMessage> C.post(lifecycle: CommandRun<C>): Boolean =
     lifecycle.post(this)
 
 /**
@@ -240,25 +240,10 @@ public suspend fun <C: CommandMessage> C.post(lifecycle: CommandLifecycle<C>): B
  *   either of configured non-rejection events was emitted before the [timeout]
  *   period elapses), and `false` otherwise.
  */
-public open class CommandLifecycle<C : CommandMessage>(
+public open class CommandRun<C : CommandMessage>(
     private val outcomeSubscriptions: OutcomeSubscriptionScope<C>.() -> Unit,
-    private var onEvent: (suspend (C, EventMessage) -> Unit)? = null,
-    private var onRejection: (suspend (C, RejectionMessage) -> Unit)? = null,
     private var onPostingError: (suspend (C, CommandPostingError) -> Unit)? = null,
     private var onTimeout: (suspend (C) -> Unit)? = null,
-    private var eventMessage: (C, EventMessage) -> String? = { command, event -> null },
-    private var rejectionMessage: (C, RejectionMessage) -> String? = { command, rejection ->
-        "Rejection ${rejection.javaClass.simpleName} was emitted in response to " +
-                "the command ${command.javaClass.simpleName}"
-    },
-    private var timeoutMessage: (C) -> String? = { command ->
-        "Timed out waiting for an event in response to " +
-                "the command ${command.javaClass.simpleName}"
-    },
-    private var postingErrorMessage: (C, CommandPostingError) -> String? = { command, error ->
-        "An error has occurred when posting or acknowledging " +
-                "the command ${command.javaClass.simpleName}: ${error.message}"
-    },
     private var timeout: Duration = 20.seconds
 ) {
 
@@ -389,13 +374,9 @@ public open class CommandLifecycle<C : CommandMessage>(
      *   the [command].
      */
     protected open suspend fun handleEvent(command: C, event: EventMessage) {
-        if (onEvent != null) {
-            onEvent!!(command, event)
-        } else {
-            val message = eventMessage(command, event)
-            if (message != null) {
-                showMessage(message)
-            }
+        val message = eventMessage(command, event)
+        if (message != null) {
+            showMessage(message)
         }
     }
 
@@ -407,13 +388,9 @@ public open class CommandLifecycle<C : CommandMessage>(
      *   the [command].
      */
     protected open suspend fun handleRejection(command: C, rejection: RejectionMessage) {
-        if (onRejection != null) {
-            onRejection!!(command, rejection)
-        } else {
-            val message = rejectionMessage(command, rejection)
-            if (message != null) {
-                showMessage(message)
-            }
+        val message = rejectionMessage(command, rejection)
+        if (message != null) {
+            showMessage(message)
         }
     }
 
@@ -428,11 +405,6 @@ public open class CommandLifecycle<C : CommandMessage>(
     protected open suspend fun handlePostingError(command: C, error: CommandPostingError) {
         if (onPostingError != null) {
             onPostingError!!(command, error)
-        } else {
-            val message = postingErrorMessage(command, error)
-            if (message != null) {
-                showMessage(message)
-            }
         }
     }
 
@@ -445,18 +417,13 @@ public open class CommandLifecycle<C : CommandMessage>(
     protected open suspend fun handleTimeout(command: C) {
         if (onTimeout != null) {
             onTimeout!!(command)
-        } else {
-            val message = timeoutMessage(command)
-            if (message != null) {
-                showMessage(message)
-            }
         }
     }
 }
 
 /**
- * Defines a DSL available in scope of the [CommandLifecycle]'s
- * [outcomeSubscriptions][CommandLifecycle.outcomeSubscriptions] callback.
+ * Defines a DSL available in scope of the [CommandRun]'s
+ * [outcomeSubscriptions][CommandRun.outcomeSubscriptions] callback.
  */
 public interface OutcomeSubscriptionScope<C: CommandMessage> {
 
@@ -512,8 +479,8 @@ public interface OutcomeSubscriptionScope<C: CommandMessage> {
      *
      * Specifying such an individual event/rejection handler associates the
      * provided [handler] with this particular event/rejection subscription, and
-     * doing so prevents the [CommandLifecycle]'s default
-     * [CommandLifecycle.onEvent]/[CommandLifecycle.onRejection] functions to be
+     * doing so prevents the [CommandRun]'s default
+     * [CommandRun.onEvent]/[CommandRun.onRejection] functions to be
      * called for this specific event/rejection subscription in favor of
      * this [handler].
      *
