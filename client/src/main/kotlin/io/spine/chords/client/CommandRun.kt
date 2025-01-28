@@ -33,7 +33,6 @@ import io.spine.base.EventMessageField
 import io.spine.base.RejectionMessage
 import io.spine.chords.client.appshell.client
 import io.spine.chords.core.appshell.app
-import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
 import io.spine.chords.core.writeOnce
 import java.util.concurrent.CompletableFuture
 import kotlin.time.Duration
@@ -73,7 +72,7 @@ public suspend fun <C: CommandMessage> C.post(lifecycle: CommandRun<C>): Boolean
  *   or using the respective `CommandMessage.post` extension function.
  *
  *   This call will wait until either of the events or rejections specified
- *   within [outcomeSubscriptions] is emitted, or until the [timeout]
+ *   within [outcomeSubscriptions] is emitted, or until the [defaultEventTimeout]
  *   period elapses.
  *
  *   If either of the specified non-rejection events is emitted during this
@@ -82,7 +81,7 @@ public suspend fun <C: CommandMessage> C.post(lifecycle: CommandRun<C>): Boolean
  *
  *   Otherwise (if either of the specified rejections is emitted, or if an error
  *   is identified during the command's posting, or when no events or rejections
- *   are emitted during the [timeout] period), the respective condition is first
+ *   are emitted during the [defaultEventTimeout] period), the respective condition is first
  *   handled accordingly (see below), and then `false` is returned to signify
  *   the "negative" command posting outcome.
  *
@@ -103,7 +102,7 @@ public suspend fun <C: CommandMessage> C.post(lifecycle: CommandRun<C>): Boolean
  *   displayed if the callback is not specified).
  *
  * - Analogously, when the timeout condition is identified (if neither of the
- *   configured events/rejections are received during the [timeout] period), the
+ *   configured events/rejections are received during the [defaultEventTimeout] period), the
  *   [onTimeout] callback is invoked (or the [timeoutMessage] text is displayed
  *   if the callback is not specified).
  *
@@ -113,7 +112,7 @@ public suspend fun <C: CommandMessage> C.post(lifecycle: CommandRun<C>): Boolean
  * [OutcomeSubscriptionScope] object, which provides the
  * [command][OutcomeSubscriptionScope.command], which is going to be posted, and
  * some functions that can be used to declare the list of expected command
- * outcomes. See the [event][OutcomeSubscriptionScope.event],
+ * outcomes. See the [event][OutcomeSubscriptionScope.on],
  * [rejection][OutcomeSubscriptionScope.rejection], and
  * [handledAs][OutcomeSubscriptionScope.handledAs] functions.
  *
@@ -203,7 +202,7 @@ public suspend fun <C: CommandMessage> C.post(lifecycle: CommandRun<C>): Boolean
  *
  * @param outcomeSubscriptions A lambda, which defines the set of events and
  *   rejections, which can be emitted as an outcome of command [C]. This lambda
- *   should use the [event][OutcomeSubscriptionScope.event] and
+ *   should use the [event][OutcomeSubscriptionScope.on] and
  *   [rejection][OutcomeSubscriptionScope.rejection] functions to set up
  *   expected positive/negative command outcomes respectively. Besides, each
  *   event/command subscriptions can optionally be accompanied with the
@@ -220,7 +219,7 @@ public suspend fun <C: CommandMessage> C.post(lifecycle: CommandRun<C>): Boolean
  *   which displays a respective message dialog by default.
  * @param onTimeout An optional callback, which will be invoked when neither of
  *   the events/rejections configured with [outcomeSubscriptions] were received
- *   during the [timeout] period.
+ *   during the [defaultEventTimeout] period.
  * @param eventMessage A callback, which can return a non-null value to specify
  *   the text message that needs to be displayed when either of the expected
  *   non-rejection events is received.
@@ -233,25 +232,19 @@ public suspend fun <C: CommandMessage> C.post(lifecycle: CommandRun<C>): Boolean
  * @param postingErrorMessage A callback, which provides a message that should
  *   be displayed upon a posting error by default (if no [onPostingError]
  *   parameter is specified).
- * @param timeout A maximum period of time starting from the moment the command
+ * @param defaultEventTimeout A maximum period of time starting from the moment the command
  *   was posted that the configured outcomes are being waited for by
  *   this object.
  * @return `true`, to signify the positive command posting outcome (e.g., when
- *   either of configured non-rejection events was emitted before the [timeout]
+ *   either of configured non-rejection events was emitted before the [defaultEventTimeout]
  *   period elapses), and `false` otherwise.
  */
 public open class CommandRun<C : CommandMessage>(
     private val outcomeSubscriptions: OutcomeSubscriptionScope<C>.() -> Unit,
     private var onPostingError: (suspend (C, CommandPostingError) -> Unit)? = null,
     private var onTimeout: (suspend (C) -> Unit)? = null,
-    private var timeout: Duration = 20.seconds
+    private var defaultEventTimeout: Duration = 20.seconds
 ) {
-
-    /**
-     * Subscriptions, which should be waited for before the [post]
-     * method returns.
-     */
-    private val subscriptions: MutableSet<EventSubscription<out EventMessage>> = HashSet()
 
     /**
      * The handlers that were attached to subscriptions.
@@ -263,42 +256,29 @@ public open class CommandRun<C : CommandMessage>(
             suspend (EventMessage) -> Unit
             > = HashMap()
 
-    private inner class OutcomeSubscriptionScopeImpl(
+    private inner class EventSubscriptionsScopeImpl(
         override val command: C
     ) : OutcomeSubscriptionScope<C> {
-        override fun event(
+        override fun on(
             eventType: Class<out EventMessage>,
             field: EventMessageField,
-            fieldValue: Message
-        ): EventSubscription<out EventMessage> = subscribe(eventType, field, fieldValue)
+            fieldValue: Message,
+            timeout: Duration = 20.seconds,
+            onTimeout: (suspend (C) -> Unit)? = null,
+            handler: suspend (EventMessage) -> Unit
+        ): EventSubscription<out EventMessage> {
+            val eventSubscription = app.client.subscribeToEvent(eventType, field, fieldValue)
+            on(eventSubscription, handler)
+        }
 
-        override fun rejection(
-            rejectionType: Class<out RejectionMessage>,
-            field: EventMessageField,
-            fieldValue: Message
-        ): EventSubscription<out RejectionMessage> = subscribe(rejectionType, field, fieldValue)
-
-        override fun EventSubscription<out EventMessage>.handledAs(
+        override fun on(
+            eventSubscription: EventSubscription<out EventMessage>,
+            timeout: Duration = 20.seconds,
+            onTimeout: (suspend (C) -> Unit)? = null,
             handler: suspend (EventMessage) -> Unit
         ) {
-            subscriptions += this
-            subscriptionHandlers[this] = handler
+            subscriptionHandlers[eventSubscription] = handler
         }
-    }
-
-    /**
-     * Subscribes to the specified type of event according to the specified
-     * field value, and registers this subscription as the one that the [post]
-     * method should wait for.
-     */
-    protected fun <E : EventMessage> subscribe(
-        eventType: Class<out E>,
-        field: EventMessageField,
-        fieldValue: Message
-    ): EventSubscription<out E> {
-        val eventSubscription = app.client.subscribeToEvent(eventType, field, fieldValue)
-        subscriptions += eventSubscription
-        return eventSubscription
     }
 
     /**
@@ -308,7 +288,7 @@ public open class CommandRun<C : CommandMessage>(
      * [subscribe] method.
      */
     protected open fun makeSubscriptions(command: C) {
-        val scope = OutcomeSubscriptionScopeImpl(command)
+        val scope = EventSubscriptionsScopeImpl(command)
         scope.outcomeSubscriptions()
     }
 
@@ -320,9 +300,9 @@ public open class CommandRun<C : CommandMessage>(
      *
      * @param command The command that should be posted.
      * @return `true` if any of the expected non-rejection events were received
-     *   before the [timeout] period elapses, and `false` otherwise.
+     *   before the [defaultEventTimeout] period elapses, and `false` otherwise.
      */
-    public suspend fun post(command: C): Boolean {
+    public suspend fun post(command: C): Unit {
         makeSubscriptions(command)
 
         val futureCommandOutcome = CompletableFuture<EventMessage>()
@@ -337,17 +317,13 @@ public open class CommandRun<C : CommandMessage>(
         return try {
             app.client.command(command)
 
-            val event = withTimeout(timeout) { futureCommandOutcome.await() }
+            val event = withTimeout(defaultEventTimeout) { futureCommandOutcome.await() }
 
             val eventHandler = subscriptionHandlers[subscriptionTriggered]
             if (eventHandler != null) {
                 eventHandler(event)
             } else {
-                if (event is RejectionMessage) {
-                    handleRejection(command, event)
-                } else {
-                    handleEvent(command, event)
-                }
+                handleEvent(command, event)
             }
 
             event !is RejectionMessage
@@ -374,24 +350,6 @@ public open class CommandRun<C : CommandMessage>(
      *   the [command].
      */
     protected open suspend fun handleEvent(command: C, event: EventMessage) {
-        val message = eventMessage(command, event)
-        if (message != null) {
-            showMessage(message)
-        }
-    }
-
-    /**
-     * Invoked when any of the expected rejections was received.
-     *
-     * @param command The command that was posted.
-     * @param rejection The rejection that was received after posting
-     *   the [command].
-     */
-    protected open suspend fun handleRejection(command: C, rejection: RejectionMessage) {
-        val message = rejectionMessage(command, rejection)
-        if (message != null) {
-            showMessage(message)
-        }
     }
 
     /**
@@ -410,7 +368,7 @@ public open class CommandRun<C : CommandMessage>(
 
     /**
      * Invoked when neither of the expected events/rejections were received
-     * during the [timeout] period after the [command] was posted.
+     * during the [defaultEventTimeout] period after the [command] was posted.
      *
      * @param command The command that was posted.
      */
@@ -448,32 +406,17 @@ public interface OutcomeSubscriptionScope<C: CommandMessage> {
      * @return A subscription that was created.
      * @see rejection
      */
-    public fun event(
+    public fun on(
         eventType: Class<out EventMessage>,
         field: EventMessageField,
-        fieldValue: Message
-    ): EventSubscription<out EventMessage>
+        fieldValue: Message,
+        timeout: Duration = 20.seconds,
+        onTimeout: (suspend (C) -> Unit)? = null,
+        handler: suspend (EventMessage) -> Unit
+    )
 
     /**
-     * Subscribes to a rejection of type [rejectionType], which has its [field]
-     * equal to [fieldValue], and registers it as one of the possible outcomes.
-     *
-     * @param rejectionType A type of rejection that should be subscribed to.
-     * @param field A field whose value should identify a rejection being
-     *   subscribed to.
-     * @param fieldValue A value of event's [field] that identifies a rejection
-     *   being subscribed to.
-     * @return A subscription that was created.
-     * @see event
-     */
-    public fun rejection(
-        rejectionType: Class<out RejectionMessage>,
-        field: EventMessageField,
-        fieldValue: Message
-    ): EventSubscription<out RejectionMessage>
-
-    /**
-     * An infix function, which can be used alongside with [event] or
+     * An infix function, which can be used alongside with [on] or
      * [rejection] function call to specify how the respective outcome should
      * be handled.
      *
@@ -489,7 +432,10 @@ public interface OutcomeSubscriptionScope<C: CommandMessage> {
      * @param handler The callback, which will replace the default handler for
      *   this specific event/rejection subscription.
      */
-    public infix fun EventSubscription<out EventMessage>.handledAs(
+    public fun on(
+        eventSubscription: EventSubscription<out EventMessage>,
+        timeout: Duration = 20.seconds,
+        onTimeout: (suspend (C) -> Unit)? = null,
         handler: suspend (EventMessage) -> Unit
     )
 }
