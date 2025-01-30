@@ -302,37 +302,6 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      */
     public lateinit var commandRun: (C) -> CommandRun<C>
 
-    /**
-     * A state, which reports whether the form is currently in progress of
-     * posting the command.
-     *
-     * More precisely, it is set to `true`, if the command has been posted using
-     * the [postCommand] method, but no response or timeout error has been
-     * received yet, and `false` otherwise.
-     *
-     * This property is backed by a [State] object, so it can be used as part of
-     * a composition, which will be updated automatically when this property
-     * is changed. E.g. it can be used to disable the respective "Post" button
-     * to prevent making it possible to post command duplicates.
-     */
-    public var posting: Boolean by mutableStateOf(false)
-
-    /**
-     * Specifies whether field editors should be disabled when the command is
-     * being posted (when [posting] equals `true`).
-     */
-    public var disableOnPosting: Boolean = true
-
-    /**
-     * This overridden implementation ensures that the editors are disabled when
-     * the command is being posted (when [posting] is `true`).
-     *
-     * Note: if `disableOnPosting` is `false`, no automatic disabling is
-     * performed during posting the command.
-     */
-    override val shouldEnableEditors: Boolean
-        get() = super.shouldEnableEditors && (!posting || !disableOnPosting)
-
     private lateinit var coroutineScope: CoroutineScope
 
     override fun initialize() {
@@ -368,17 +337,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *   validation errors, and `false` if the command message could not be
      *   successfully built from the currently entered data (validation errors
      *   are displayed to the user in this case).
-     * @throws TimeoutCancellationException If the event doesn't arrive within
-     *   a reasonable timeout defined by the implementation.
-     * @throws IllegalStateException If the method is invoked while
-     *   the [postCommand] invocation is still being handled (when [posting] is
-     *   still `true`).
      */
-    public suspend fun postCommand(): Boolean {
-        if (posting) {
-            throw IllegalStateException("Cannot invoke `postCommand`, while" +
-                    "waiting for handling the previously posted command.")
-        }
+    public fun postCommand() {
         updateValidationDisplay(true)
         if (!valueValid.value) {
             return false
@@ -390,11 +350,6 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
         }
 
         val commandOutcomeHandler = commandRun(command)
-        return try {
-            posting = true
-            command.post(commandOutcomeHandler)
-        } finally {
-            posting = false
-        }
+        command.post(commandOutcomeHandler)
     }
 }

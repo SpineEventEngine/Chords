@@ -37,6 +37,8 @@ import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.core.UserId
 import java.util.concurrent.CompletableFuture
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Provides an API for interacting with the application server.
@@ -134,18 +136,43 @@ import java.util.concurrent.CompletableFuture
      * Subscribes to an event with a given class and a given field value (which
      * would typically be the event's unique identifier field).
      *
+     * The event subscription can be awaited for in two ways:
+     * - By specifying the [onEvent] parameter, which can be useful for cases
+     *   when receiving an asynchronous event is suitable.
+     * - By invoking the [awaitEvent][EventSubscription.awaitEvent] method on
+     *   the returned [EventSubscription] object, which can be useful if you
+     *   need waiting to be a part of sequential execution in
+     *   a suspending function.
+     *
+     * The maximum time that the event is being waited for after calling this
+     * method is defined by the [timeout] parameter. After this period elapses,
+     * the optional [onTimeout] callback is invoked.
+     *
+     *
      * @param event A class of event that has to be subscribed to.
      * @param field A field that should be used for identifying the event to be
      *   subscribed to.
      * @param fieldValue A value of the field that identifies the event to be
      *   subscribed to.
-     * @return A [CompletableFuture] instance that is completed when the event
-     *   specified by the parameters arrives.
+     * @param onEvent An optional callback, which will be invoked when the
+     *   specified event is emitted (as long as the event is emitted within
+     *   the [timeout] period after this method is called).
+     * @param onTimeout An optional callback, which will be invoked if event is
+     *   not emitted within the [timeout] period after this method is called.
+     * @return An [EventSubscription] object, which represents the subscription
+     *   that was made.
      */
+    @Suppress(
+        // Considering all parameters relevant, esp. considering optional ones.
+        "LongParameterList"
+    )
     public fun <E : EventMessage> subscribeToEvent(
         event: Class<E>,
         field: EventMessageField,
-        fieldValue: Message
+        fieldValue: Message,
+        onEvent: ((E) -> Unit)? = null,
+        onTimeout: (() -> Unit)? = null,
+        timeout: Duration = 60.seconds
     ): EventSubscription<E>
 
     /**
@@ -183,11 +210,6 @@ public interface EventSubscription<E: EventMessage> {
      *   by the implementation.
      */
     public suspend fun awaitEvent(): E
-
-    /**
-     * A callback, which is invoked when the subscribed event is emitted.
-     */
-    public var onEvent: ((E) -> Unit)?
 }
 
 /**

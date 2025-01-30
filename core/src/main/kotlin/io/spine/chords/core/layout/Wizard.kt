@@ -154,7 +154,7 @@ public abstract class Wizard : Component() {
      *   some validation errors were identified), and the wizard still needs to
      *   be kept open.
      */
-    protected abstract suspend fun submit(): Boolean
+    protected abstract suspend fun submit()
 
     @Composable
     override fun content() {

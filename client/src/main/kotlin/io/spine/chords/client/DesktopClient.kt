@@ -41,8 +41,13 @@ import io.spine.client.CompositeQueryFilter
 import io.spine.client.EventFilter.eq
 import io.spine.core.UserId
 import java.util.concurrent.CompletableFuture
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
 /**
@@ -218,31 +223,32 @@ public class DesktopClient(
         eventSubscription.awaitEvent()
     }
 
-    /**
-     * Subscribes to an event with a given class and a given field value (which
-     * would typically be the event's unique identifier field).
-     *
-     * @param event A class of event that has to be subscribed to.
-     * @param field A field that should be used for identifying the event to be
-     *   subscribed to.
-     * @param fieldValue A value of the field that identifies the event to be
-     *   subscribed to.
-     * @return A [CompletableFuture] instance that is completed when the event
-     *   specified by the parameters arrives.
-     */
     override fun <E : EventMessage> subscribeToEvent(
         event: Class<E>,
         field: EventMessageField,
-        fieldValue: Message
+        fieldValue: Message,
+        onEvent: ((E) -> Unit)?,
+        onTimeout: (() -> Unit)?,
+        timeout: Duration
     ): EventSubscription<E> {
         val eventReceival = CompletableFuture<E>()
+        System.currentTimeMillis()
         val futureEventSubscription = FutureEventSubscription(eventReceival)
+        GlobalScope.launch {
+            delay(timeout)
+            if (!eventReceival.isDone) {
+                onTimeout?.invoke()
+                eventReceival.cancel(false)
+            }
+        }
         observeEvent(
             event = event,
             field = field,
             fieldValue = fieldValue) { evt ->
-                eventReceival.complete(evt)
-                futureEventSubscription.onEvent?.invoke(evt)
+                if (!eventReceival.isDone) {
+                    eventReceival.complete(evt)
+                    futureEventSubscription.onEvent?.invoke(evt)
+                }
             }
         return futureEventSubscription
     }
@@ -325,12 +331,15 @@ public class DesktopClient(
  *   the respective event.
  */
 private class FutureEventSubscription<E: EventMessage>(
-    private val future: CompletableFuture<E>
+    private val future: CompletableFuture<E>,
+    /**
+     * A callback, which is invoked when the subscribed event is emitted.
+     */
+    internal val onEvent: ((E) -> Unit)? = null
 ) : EventSubscription<E> {
 
     override suspend fun awaitEvent(): E {
         return withTimeout(ReactionTimeoutMillis) { future.await() }
     }
 
-    override var onEvent: ((E) -> Unit)? = null
 }

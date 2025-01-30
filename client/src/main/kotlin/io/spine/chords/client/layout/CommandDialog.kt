@@ -126,7 +126,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     /**
      * Posts the command message [C] created in this dialog.
      */
-    protected override suspend fun submitContent(): Boolean {
-        return commandMessageForm.postCommand()
+    protected override suspend fun submitContent() {
+        commandMessageForm.postCommand()
     }
 }

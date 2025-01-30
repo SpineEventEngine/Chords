@@ -132,8 +132,8 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      */
     protected open fun beforeBuild(builder: B) {}
 
-    override suspend fun submit(): Boolean {
-        return commandMessageForm.postCommand()
+    override suspend fun submit() {
+        commandMessageForm.postCommand()
     }
 }
 
