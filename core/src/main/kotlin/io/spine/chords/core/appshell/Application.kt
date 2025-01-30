@@ -31,8 +31,8 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
-import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.ConfirmationDialog
+import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.DialogSetup
 import io.spine.chords.core.layout.WindowType
 import io.spine.chords.core.writeOnce
@@ -138,8 +138,7 @@ public var app: Application by writeOnce(false)
  *   the application window's title.
  * @param views The list of application's views.
  * @param initialView Allows to specify a view from the list of [views], if any
- *   view other than the first one has to be displayed when
- *   the application starts.
+ *   view other than the first one has to be displayed when the application starts.
  * @param minWindowSize The minimal size of the application window.
  */
 public open class Application(
@@ -200,10 +199,21 @@ public open class Application(
             val appWindow = remember {
                 val appWindow = createAppWindow(::exitApplication)
                 _ui = ApplicationUI(appWindow)
+                appWindow.mainScreen.topBar.actions = { topBarActions() }
                 appWindow
             }
             appWindowContent(appWindow)
         }
+    }
+
+    /**
+     * Renders the [TopBar.actions] of the top app bar.
+     *
+     * Typically, these actions are login/logout, notifications, settings, etc.
+     */
+    @Composable
+    protected open fun topBarActions() {
+        // Do nothing by default.
     }
 
     /**
@@ -268,40 +278,24 @@ public open class Application(
 /**
  * A top-level API that concerns the application's UI.
  *
- * @param appWindow
- *         main application's window.
+ * @param appWindow The main application's window.
  */
-public class ApplicationUI(private val appWindow: AppWindow) {
+public class ApplicationUI
+internal constructor(private val appWindow: AppWindow) {
 
     /**
-     * Displays a modal screen.
+     * Selects the given [appView] to be displayed on the [MainScreen].
      *
-     * This screen will be rendered using the entire area
-     * of the application window. No other components
-     * from other screens will be visible or interactable,
-     * so it acts like a modal screen.
-     *
-     * The hierarchy of modal screens is not supported,
-     * so it will be an illegal state when some modal screen
-     * display is requested while another screen is already displayed.
-     *
-     * @throws IllegalStateException
-     *         to indicate the illegal state when another modal screen
-     *         is already displayed.
+     * @param appView The view to be shown.
      */
-    public fun openModalScreen(screen: @Composable () -> Unit) {
-        appWindow.openModalScreen(screen)
+    public fun select(appView: AppView) {
+        appWindow.select(appView)
     }
 
     /**
-     * Closes the currently visible modal screen.
-     *
-     * @throws IllegalStateException
-     *         to indicate the illegal state when no modal screen to close.
+     * Returns the currently selected [AppView] on the [MainScreen].
      */
-    public fun closeCurrentModalScreen() {
-        appWindow.closeCurrentModalScreen()
-    }
+    public val currentView: AppView get() = appWindow.currentView
 
     /**
      * Displays the given [Dialog] instance.

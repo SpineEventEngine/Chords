@@ -36,12 +36,6 @@ object Spine {
     const val group = "io.spine"
     const val toolsGroup = "io.spine.tools"
 
-    /**
-     * The dependency on Spine 1.9 to allow access to
-     * `io.spine.protobuf.ValidatingBuilder` from the generated Kotlin code.
-     */
-    const val base_1_9 = "$group:spine-base:1.9.0"
-
     @Deprecated(message = "Please use `Base.lib`.", ReplaceWith("Base.lib"))
     const val base = Base.lib
 

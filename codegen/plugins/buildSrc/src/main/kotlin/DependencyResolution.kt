@@ -69,6 +69,7 @@ fun doForceVersions(configurations: ConfigurationContainer) {
     val base = io.spine.dependency.local.Base
     val toolBase = io.spine.dependency.local.ToolBase
     val coreJava = io.spine.dependency.local.CoreJava
+    val time = io.spine.dependency.local.Time
 
     configurations {
         all {
@@ -85,7 +86,9 @@ fun doForceVersions(configurations: ConfigurationContainer) {
                     protoData.lib,
                     logging.lib,
                     logging.middleware,
-                    validation.runtime
+                    time.lib,
+                    validation.runtime,
+                    validation.javaBundle
                 )
             }
         }
@@ -126,6 +129,8 @@ private fun ResolutionStrategy.forceProductionDependencies() {
         KotlinX.Coroutines.core,
         KotlinX.Coroutines.jvm,
         KotlinX.Coroutines.jdk8,
+        KotlinX.Coroutines.bom,
+        KotlinX.Coroutines.slf4j,
         Protobuf.GradlePlugin.lib,
         Protobuf.libs,
         Slf4J.lib

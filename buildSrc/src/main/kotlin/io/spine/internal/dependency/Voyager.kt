@@ -24,18 +24,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Kotest
-import io.spine.internal.dependency.Material3
-import io.spine.internal.dependency.Voyager
+package io.spine.internal.dependency
 
-plugins {
-    id("org.jetbrains.compose") version "1.5.12"
-}
+/**
+ * A multiplatform navigation [library](https://voyager.adriel.cafe/).
+ *
+ * @see <a href="https://github.com/adrielcafe/voyager">Voyager at GitHub</a>
+ */
+@Suppress("unused", "ConstPropertyName")
+object Voyager {
+    private const val version = "1.0.1"
+    private const val group = "cafe.adriel.voyager"
+    private const val name = "voyager"
 
-dependencies {
-    api(Voyager.navigator)
-    implementation(project(":runtime"))
-    implementation(compose.desktop.currentOs)
-    implementation(Material3.Desktop.lib)
-    testImplementation(Kotest.runnerJUnit5)
+    const val navigator = "$group:$name-navigator:$version"
+    const val screenModel = "$group:$name-screenmodel:$version"
 }
