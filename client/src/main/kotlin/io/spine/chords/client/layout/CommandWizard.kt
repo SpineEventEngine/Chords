@@ -30,7 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
-import io.spine.chords.client.CommandRun
+import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.AbstractWizardPage
 import io.spine.chords.core.layout.Wizard
@@ -73,7 +73,8 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
             onBeforeBuild = { beforeBuild(it) }
         ) {
             validationDisplayMode = MANUAL
-            commandRun = ::commandLifecycle
+            commandConsequences = ::commandConsequences
+            enabled = submitting
         }
 
     /**
@@ -98,13 +99,19 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
 
     /**
      * A function, which, given a command message that is about to be posted,
-     * should provide the [CommandRun] object that defines how the
-     * command's outcomes should be handled.
+     * should provide the [CommandConsequences] object that defines how the
+     * command's consequences should be handled.
+     *
+     * Note that the provided [CommandConsequences] instance has to be
+     * configured to perform any side effects that should follow the posting of
+     * the wizard's command. The typical minimum implementation would ensure
+     * that some event that is emitted after posting the command would lead to
+     * closing the wizard (by invoking the [close] method upon that event).
      *
      * @param command A command, which is going to be posted.
-     * @return A respectively configured [CommandRun] instance.
+     * @return A respectively configured [CommandConsequences] instance.
      */
-    protected abstract fun commandLifecycle(command: C): CommandRun<C>
+    protected abstract fun commandConsequences(command: C): CommandConsequences<C>
 
     /**
      * Allows to programmatically amend the command message builder before
@@ -133,6 +140,10 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
     protected open fun beforeBuild(builder: B) {}
 
     override suspend fun submit() {
+        commandMessageForm.updateValidationDisplay(true)
+        if (!commandMessageForm.valueValid.value) {
+            return
+        }
         commandMessageForm.postCommand()
     }
 }

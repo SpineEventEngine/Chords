@@ -28,14 +28,10 @@ package io.spine.chords.client.form
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import io.spine.base.CommandMessage
-import io.spine.chords.client.CommandRun
-import io.spine.chords.client.post
+import io.spine.chords.client.CommandConsequences
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
@@ -43,7 +39,6 @@ import io.spine.chords.proto.form.MessageFormSetupBase
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.TimeoutCancellationException
 
 /**
  * A form that allows entering a value of a command message and posting
@@ -82,7 +77,11 @@ import kotlinx.coroutines.TimeoutCancellationException
  *          // that appears appropriate as long as the form's `postCommand`
  *          // method is invoked when the form needs to be posted.
  *          Button(
- *              onClick = { form.postCommand() }
+ *              onClick = {
+ *                  if (form.valueValid.value) {
+ *                      form.postCommand()
+ *                  }
+ *              }
  *          ) {
  *              Text("Login")
  *          }
@@ -140,7 +139,11 @@ import kotlinx.coroutines.TimeoutCancellationException
  *          }
  *
  *          Button(
- *              onClick = { form.postCommand() }
+ *              onClick = {
+ *                  if (form.valueValid.value) {
+ *                      form.postCommand()
+ *                  }
+ *              }
  *          ) {
  *              Text("Login")
  *          }
@@ -297,16 +300,16 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
 
     /**
      * A function, which, given a command message that is about to be posted,
-     * should provide the [CommandRun] object that defines how the
-     * command's outcomes should be handled.
+     * should provide the [CommandConsequences] object that defines how the
+     * command's consequences should be handled.
      */
-    public lateinit var commandRun: (C) -> CommandRun<C>
+    public lateinit var commandConsequences: (C) -> CommandConsequences<C>
 
     private lateinit var coroutineScope: CoroutineScope
 
     override fun initialize() {
         super.initialize()
-        requireProperty(this::commandRun.isInitialized, "commandOutcomeHandler")
+        requireProperty(this::commandConsequences.isInitialized, "commandOutcomeHandler")
     }
 
     @Composable
@@ -316,32 +319,38 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     }
 
     /**
-     * Posts the command based on all currently entered data and awaits
-     * the feedback upon processing the command.
+     * Posts the command based on all currently entered data.
      *
-     * Here's a more detailed description about the sequence of actions
-     * performed by this method:
-     * - Validates the data entered in the form and builds the respective
-     *   command message. In case if any validation errors are encountered, this
-     *   method skips further stages, and just makes the respective validation
-     *   errors to be displayed.
-     * - Posts the command that was validated and built.
-     * - Awaits for an event that should arrive upon successful handling of
-     *   the command, as defined by the [commandRun]
-     *   constructor's parameters.
-     * - If the event doesn't arrive in a predefined timeout that is considered
-     *   an adequate delay from user's perspective, this method
-     *   throws [TimeoutCancellationException].
+     * Note that this method can only be invoked when the data entered within
+     * the form is valid (when `valueValid.value == false`).
      *
-     * @return `true` if the command was successfully built without any
-     *   validation errors, and `false` if the command message could not be
-     *   successfully built from the currently entered data (validation errors
-     *   are displayed to the user in this case).
+     * Here's a typical usage example:
+     * ```
+     *     // Make sure that validation messages are up to date before submiting
+     *     // the form.
+     *     commandMessageForm.updateValidationDisplay(true)
+     *
+     *     // Submit the form if
+     *     if (commandMessageForm.valueValid.value) {
+     *         commandMessageForm.postCommand()
+     *     }
+     * ```
+     *
+     * Note that the [updateValidationDisplay] invocation is technically not
+     * required to check if the form is valid because the form is always
+     * validated on-the-fly automatically, and its [valueValid] property always
+     * contains an up-to-date value. Nevertheless, it would typically be useful
+     * to invoke it before [postCommand] to improve user's experience when the
+     * form's [validationDisplayMode] property has a value of
+     * [MANUAL][io.spine.chords.proto.form.ValidationDisplayMode.MANUAL].
+     *
+     * @throws IllegalStateException If the form is not valid when this method
+     *   is invoked (e.g. when `valueValid.value == false`).
      */
-    public fun postCommand() {
+    public suspend fun postCommand() {
         updateValidationDisplay(true)
-        if (!valueValid.value) {
-            return false
+        check(valueValid.value) {
+            "`postCommand` cannot be invoked on an invalid form`"
         }
         val command = value.value
         check(command != null) {
@@ -349,7 +358,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "checked to be valid within postCommand."
         }
 
-        val commandOutcomeHandler = commandRun(command)
-        command.post(commandOutcomeHandler)
+        val commandConsequencesObj = commandConsequences(command)
+        commandConsequencesObj.post(command)
     }
 }

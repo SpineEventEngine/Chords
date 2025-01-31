@@ -42,7 +42,6 @@ import io.spine.client.EventFilter.eq
 import io.spine.core.UserId
 import java.util.concurrent.CompletableFuture
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -186,8 +185,8 @@ public class DesktopClient(
             .onStreamingError { err: Throwable ->
                 error = StreamingError(err)
             }
-            .onConsumingError {
-                error = ServerError(err)
+            .onConsumingError { msg, err ->
+                throw err
             }
             .postAndForget()
         if (error != null) {

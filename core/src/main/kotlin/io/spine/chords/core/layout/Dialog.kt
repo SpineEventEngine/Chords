@@ -344,8 +344,14 @@ public abstract class Dialog : Component() {
      * Specifies whether the dialog is currently in progress of submission
      * (an asynchronous process upon pressing the "Submit" button has been
      * initiated but not completed yet).
+     *
+     * Depending on the dialog's implementation, this property can affect
+     * whether the Submit button and dialog's controls should be disabled
+     * or not. This property is not changed by the [Dialog] component
+     * automatically, and it should be maintained by the actual dialog's
+     * implementation as needed.
      */
-    internal var submissionInProgress: Boolean by mutableStateOf(false)
+    public var submitting: Boolean by mutableStateOf(false)
 
     /**
      * This property is automatically set to `true` by the application, if
@@ -418,20 +424,15 @@ public abstract class Dialog : Component() {
      * This in particular involves invoking the [onBeforeSubmit] callback before
      * performing the submission, and then invoking the [submitContent] method,
      * which actually performs a dialog-specific submission procedure.
+     *
+     * Note that this method does not perform enabling/disabling of dialog's
+     * controls and doesn't close the dialog. Any such effects should be a part
+     * of the actual dialog's implementation in its [submitContent] method.
      */
     public fun submit() {
         coroutineScope.launch {
             if (onBeforeSubmit()) {
-                submissionInProgress = true
-                val submittedSuccessfully = try {
-                    submitContent()
-                } finally {
-                    submissionInProgress = false
-                }
-
-                if (submittedSuccessfully) {
-                    close()
-                }
+                submitContent()
             }
         }
     }
@@ -441,22 +442,14 @@ public abstract class Dialog : Component() {
      * appropriate for the actual dialog's implementation, based on the content
      * entered by the user in the dialog.
      *
-     * This action is executed when the user completes the dialog
-     * by pressing the Submit button.
+     * This method is invoked when the user tries to complete the dialog
+     * by pressing the Submit button. The implementation of this method is
+     * responsible for deciding whether the dialog should be closed and/or for
+     * any other side effects that might need to accompany the dialog's
+     * submission process.
      *
-     * If this method returns `true` the dialog will be closed. As an example,
-     * this would be a typical case when the method has identified that the data
-     * entered in the dialog is complete and valid, and the respective dialog's
-     * action that it was designed for was performed successfully.
-     *
-     * On the other hand, this method can return `false` to prevent closing the
-     * dialog, which can in particular be useful when the user has entered
-     * incomplete or invalid data.
-     *
-     * @return `true` if the dialog should be closed after this method returns,
-     *   and `false` if it has to remain open.
      */
-    protected abstract suspend fun submitContent(): Boolean
+    protected abstract suspend fun submitContent()
 
     /**
      * Cancels the dialog, which is equivalent to pressing the "Cancel" button.
@@ -573,7 +566,7 @@ public abstract class Dialog : Component() {
             }
         }
         if (submitAvailable) {
-            DialogButton(submitButtonText, !submissionInProgress) {
+            DialogButton(submitButtonText, !submitting) {
                 submit()
             }
         }

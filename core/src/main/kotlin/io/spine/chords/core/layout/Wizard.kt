@@ -125,7 +125,7 @@ public abstract class Wizard : Component() {
      * Specifies whether the wizard is in the submission state, which means
      * that an asynchronous form submission has started, but not completed yet.
      */
-    private var submitting: Boolean by mutableStateOf(false)
+    protected var submitting: Boolean by mutableStateOf(false)
 
     private var currentPageIndex by mutableStateOf(0)
 
@@ -156,6 +156,13 @@ public abstract class Wizard : Component() {
      */
     protected abstract suspend fun submit()
 
+    /**
+     * Closes the wizard.
+     */
+    public fun close() {
+        onCloseRequest?.invoke()
+    }
+
     @Composable
     override fun content() {
         val coroutineScope = rememberCoroutineScope()
@@ -180,7 +187,7 @@ public abstract class Wizard : Component() {
                             submitPage(currentPage, coroutineScope)
                         }
                         .on(Alt(DirectionLeft.key).up) {
-                            goToPreviousPage()
+                            handlePreviousClick()
                         }
                         .on(Alt(DirectionRight.key).up) {
                             if (!isOnLastPage()) {
@@ -197,7 +204,7 @@ public abstract class Wizard : Component() {
                 }
                 NavigationPanel(
                     onNextClick = { handleNextClick(currentPage) },
-                    onBackClick = { goToPreviousPage() },
+                    onBackClick = { handlePreviousClick() },
                     onFinishClick = {
                         coroutineScope.launch {
                             handleFinishClick(currentPage)
@@ -228,36 +235,26 @@ public abstract class Wizard : Component() {
     private suspend fun Wizard.handleFinishClick(currentPage: WizardPage) {
         if (currentPage.validate()) {
             submitting = true
-            val submittedSuccessfully = try {
+            try {
                 submit()
             } finally {
                 submitting = false
-            }
-            if (submittedSuccessfully) {
-                onCloseRequest?.invoke()
             }
         }
     }
 
     private fun handleNextClick(currentPage: WizardPage) {
         if (currentPage.validate()) {
-            goToNextPage()
-        }
-    }
-
-    /**
-     * Navigates the wizard to the next page.
-     */
-    private fun goToNextPage() {
-        if (!isOnLastPage()) {
-            currentPageIndex += 1
+            if (!isOnLastPage()) {
+                currentPageIndex += 1
+            }
         }
     }
 
     /**
      * Navigates the wizard to the previous page.
      */
-    private fun goToPreviousPage() {
+    private fun handlePreviousClick() {
         if (!isOnFirstPage()) {
             currentPageIndex -= 1
         }
