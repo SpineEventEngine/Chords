@@ -35,6 +35,8 @@ import io.spine.base.EntityState
 import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
+import io.spine.chords.client.appshell.client
+import io.spine.chords.core.appshell.app
 import io.spine.client.ClientRequest
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
@@ -42,8 +44,8 @@ import io.spine.client.EventFilter.eq
 import io.spine.core.UserId
 import java.util.concurrent.CompletableFuture
 import kotlin.time.Duration
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
@@ -169,16 +171,16 @@ public class DesktopClient(
     }
 
     /**
-     * Posts a command to the server.
+     * Posts the given [command] to the server.
      *
-     * @param cmd A command that has to be posted.
+     * @param command A command that has to be posted.
      * @throws CommandPostingError If some error has occurred during posting and
      *   acknowledging the command on the server.
      */
-    override fun command(cmd: CommandMessage) {
+    override fun <C: CommandMessage> postCommand(command: C) {
         var error: CommandPostingError? = null
         clientRequest()
-            .command(cmd)
+            .command(command)
             .onServerError { msg, err: Error ->
                 error = ServerError(err)
             }
@@ -195,31 +197,42 @@ public class DesktopClient(
     }
 
     /**
-     * Posts a command to the server and awaits for the specified event
-     * to arrive.
+     * Posts the given [command], and runs handlers for any of the consequences
+     * registered in [consequenceHandlers].
      *
-     * @param cmd A command that has to be posted.
-     * @param event A class of event that has to be waited for after posting
-     *   the command.
-     * @param field A field that should be used for identifying the event to be
-     *   awaited for.
-     * @param fieldValue A value of the field that identifies the event to be
-     *   awaited for.
-     * @return An event specified in the parameters, which was emitted in
-     *   response to the command.
-     * @throws kotlinx.coroutines.TimeoutCancellationException
-     *   If the event doesn't arrive within a reasonable timeout defined
-     *   by the implementation.
+     * All registered command consequence handlers except event handlers are
+     * invoked synchronously before this suspending method returns. Event
+     * handlers are invoked in the provided [coroutineScope].
+     *
+     * @param command The command that should be posted.
+     * @param coroutineScope The coroutine scope in which event handlers are to
+     *   be invoked.
      */
-    override suspend fun <E : EventMessage> command(
-        cmd: CommandMessage,
-        event: Class<E>,
-        field: EventMessageField,
-        fieldValue: Message
-    ): E = coroutineScope {
-        val eventSubscription = subscribeToEvent(event, field, fieldValue)
-        command(cmd)
-        eventSubscription.awaitEvent()
+    public override suspend fun <C : CommandMessage> postCommand(
+        command: C,
+        coroutineScope: CoroutineScope,
+        consequenceHandlers: CommandConsequencesScope<C>.() -> Unit
+    ) {
+        val scope = CommandConsequencesScopeImpl(command, coroutineScope)
+        scope.consequenceHandlers()
+
+        try {
+            scope.beforePostHandlers.forEach { it(command) }
+            app.client.postCommand(command)
+            scope.acknowledgeHandlers.forEach { it(command) }
+        } catch (e: ServerError) {
+            check(scope.postServerErrorHandlers.isNotEmpty()) {
+                "No `onPostServerError` handlers are registered for command: " +
+                        command.javaClass.simpleName
+            }
+            scope.postServerErrorHandlers.forEach { it(command, e) }
+        } catch (e: StreamingError) {
+            check(scope.postStreamingErrorHandlers.isNotEmpty()) {
+                "No `onPostStreamingError` handlers are registered for command: " +
+                        command.javaClass.simpleName
+            }
+            scope.postStreamingErrorHandlers.forEach { it(command, e) }
+        }
     }
 
     override fun <E : EventMessage> subscribeToEvent(
@@ -334,7 +347,7 @@ private class FutureEventSubscription<E: EventMessage>(
     /**
      * A callback, which is invoked when the subscribed event is emitted.
      */
-    internal val onEvent: ((E) -> Unit)? = null
+    val onEvent: ((E) -> Unit)? = null
 ) : EventSubscription<E> {
 
     override suspend fun awaitEvent(): E {

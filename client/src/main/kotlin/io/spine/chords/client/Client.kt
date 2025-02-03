@@ -36,9 +36,9 @@ import io.spine.base.EventMessageField
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.core.UserId
-import java.util.concurrent.CompletableFuture
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CoroutineScope
 
 /**
  * Provides an API for interacting with the application server.
@@ -106,31 +106,25 @@ import kotlin.time.Duration.Companion.seconds
      * @throws CommandPostingError If some error has occurred during posting and
      *   acknowledging the command on the server.
      */
-    public fun command(cmd: CommandMessage)
+    public fun <C: CommandMessage> postCommand(cmd: C)
 
     /**
-     * Posts a command to the server and awaits for the specified event
-     * to arrive.
+     * Posts the given [command], and runs handlers for any of the consequences
+     * registered in [consequenceHandlers].
      *
-     * @param cmd A command that has to be posted.
-     * @param event A class of event that has to be waited for after posting
-     *   the command.
-     * @param field A field that should be used for identifying the event to be
-     *   awaited for.
-     * @param fieldValue A value of the field that identifies the event to be
-     *   awaited for.
-     * @return An event specified in the parameters, which was emitted in
-     *   response to the command.
-     * @throws kotlinx.coroutines.TimeoutCancellationException
-     *   If the event doesn't arrive within a reasonable timeout defined
-     *   by the implementation.
+     * All registered command consequence handlers except event handlers are
+     * invoked synchronously before this suspending method returns. Event
+     * handlers are invoked in the provided [coroutineScope].
+     *
+     * @param command The command that should be posted.
+     * @param coroutineScope The coroutine scope in which event handlers are to
+     *   be invoked.
      */
-    public suspend fun <E : EventMessage> command(
-        cmd: CommandMessage,
-        event: Class<E>,
-        field: EventMessageField,
-        fieldValue: Message
-    ): E
+    public suspend fun <C : CommandMessage> postCommand(
+        command: C,
+        coroutineScope: CoroutineScope,
+        consequenceHandlers: CommandConsequencesScope<C>.() -> Unit
+    )
 
     /**
      * Subscribes to an event with a given class and a given field value (which
@@ -236,7 +230,7 @@ public class StreamingError(error: Throwable) : CommandPostingError(cause = erro
 /**
  * Signifies an error that has occurred on the server (e.g. a validation error).
  */
-public class ServerError(public val error: Error) : CommandPostingError(error.message) {
+public class ServerError(error: Error) : CommandPostingError(error.message) {
     public companion object {
         private const val serialVersionUID: Long = -5438430153458733051L
     }

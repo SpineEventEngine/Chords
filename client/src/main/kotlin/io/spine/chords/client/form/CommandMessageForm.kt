@@ -31,8 +31,10 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import io.spine.base.CommandMessage
-import io.spine.chords.client.CommandConsequences
+import io.spine.chords.client.CommandConsequencesScope
+import io.spine.chords.client.appshell.client
 import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.app
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.MessageFormSetupBase
@@ -299,17 +301,23 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     }
 
     /**
-     * A function, which, given a command message that is about to be posted,
-     * should provide the [CommandConsequences] object that defines how the
-     * command's consequences should be handled.
+     * A function, which, should register handlers for consequences of
+     * command [C] posted by the form.
+     *
+     * The command, which is going to be posted and whose consequence handlers
+     * should be registered can be obtained from the
+     * [command][CommandConsequencesScope.command] property available in the
+     * function's scope, and handlers can be registered using the
+     * [`onXXX`][CommandConsequencesScope] functions available in the
+     * function's scope.
      */
-    public lateinit var commandConsequences: (C) -> CommandConsequences<C>
+    public lateinit var commandConsequences: CommandConsequencesScope<C>.() -> Unit
 
     private lateinit var coroutineScope: CoroutineScope
 
     override fun initialize() {
         super.initialize()
-        requireProperty(this::commandConsequences.isInitialized, "commandOutcomeHandler")
+        requireProperty(this::commandConsequences.isInitialized, "commandConsequences")
     }
 
     @Composable
@@ -358,7 +366,6 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "checked to be valid within postCommand."
         }
 
-        val commandConsequencesObj = commandConsequences(command)
-        commandConsequencesObj.post(command)
+        app.client.postCommand(command, coroutineScope, commandConsequences)
     }
 }

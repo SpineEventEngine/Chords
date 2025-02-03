@@ -33,7 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import io.spine.base.CommandMessage
-import io.spine.chords.client.CommandConsequences
+import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.SubmitOrCancelDialog
@@ -69,7 +69,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
             onBeforeBuild = ::beforeBuild,
             props = {
                 validationDisplayMode = MANUAL
-                commandConsequences = ::commandConsequences
+                commandConsequences = { commandConsequences() }
             }
         ) {
             Column(
@@ -103,20 +103,17 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     protected abstract fun createCommandBuilder(): B
 
     /**
-     * A function, which, given a command message that is about to be posted,
-     * should provide the [CommandConsequences] object that defines how the
-     * command's consequences should be handled.
+     * A function, which, should register handlers for consequences of
+     * command [C] posted by the dialog.
      *
-     * Note that the provided [CommandConsequences] instance has to be
-     * configured to perform any side effects that should follow posting of the
-     * dialog's command. The typical minimum implementation would ensure that
-     * some event that is emitted after posting the command would lead to
-     * closing the dialog (by invoking the [close] method upon that event).
-     *
-     * @param command A command, which is going to be posted.
-     * @return A respectively configured [CommandConsequences] instance.
+     * The command, which is going to be posted and whose consequence handlers
+     * should be registered can be obtained from the
+     * [command][CommandConsequencesScope.command] property available in the
+     * function's scope, and handlers can be registered using the
+     * [`onXXX`][CommandConsequencesScope] functions available in the
+     * function's scope.
      */
-    protected abstract fun commandConsequences(command: C): CommandConsequences<C>
+    protected abstract fun CommandConsequencesScope<C>.commandConsequences()
 
     /**
      * Allows to programmatically amend the command message builder before
