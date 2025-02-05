@@ -102,11 +102,11 @@ import kotlinx.coroutines.CoroutineScope
     /**
      * Posts a command to the server.
      *
-     * @param cmd A command that has to be posted.
+     * @param command A command that has to be posted.
      * @throws CommandPostingError If some error has occurred during posting and
      *   acknowledging the command on the server.
      */
-    public fun <C: CommandMessage> postCommand(cmd: C)
+    public fun <C: CommandMessage> postCommand(command: C)
 
     /**
      * Posts the given [command], and runs handlers for any of the consequences

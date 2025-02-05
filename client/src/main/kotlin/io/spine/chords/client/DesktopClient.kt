@@ -187,9 +187,6 @@ public class DesktopClient(
             .onStreamingError { err: Throwable ->
                 error = StreamingError(err)
             }
-            .onConsumingError { msg, err ->
-                throw err
-            }
             .postAndForget()
         if (error != null) {
             throw error!!
@@ -221,15 +218,22 @@ public class DesktopClient(
             app.client.postCommand(command)
             scope.acknowledgeHandlers.forEach { it(command) }
         } catch (e: ServerError) {
-            check(scope.postServerErrorHandlers.isNotEmpty()) {
-                "No `onPostServerError` handlers are registered for command: " +
-                        command.javaClass.simpleName
+            if (scope.postServerErrorHandlers.isEmpty()) {
+                throw IllegalStateException(
+                    "No `onPostServerError` handlers are registered for command: " +
+                            command.javaClass.simpleName,
+                    e
+                )
             }
             scope.postServerErrorHandlers.forEach { it(command, e) }
         } catch (e: StreamingError) {
-            check(scope.postStreamingErrorHandlers.isNotEmpty()) {
-                "No `onPostStreamingError` handlers are registered for command: " +
-                        command.javaClass.simpleName
+            if (scope.postStreamingErrorHandlers.isEmpty()) {
+                throw IllegalStateException(
+                    "No `onPostStreamingError` handlers are registered for command: " +
+                            command.javaClass.simpleName,
+                    e
+                )
+
             }
             scope.postStreamingErrorHandlers.forEach { it(command, e) }
         }
