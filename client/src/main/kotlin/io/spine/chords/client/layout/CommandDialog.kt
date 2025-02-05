@@ -70,6 +70,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
             props = {
                 validationDisplayMode = MANUAL
                 commandConsequences = { commandConsequences() }
+                enabled = !submitting
             }
         ) {
             Column(

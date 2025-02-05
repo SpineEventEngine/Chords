@@ -74,7 +74,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
         ) {
             validationDisplayMode = MANUAL
             commandConsequences = { commandConsequences() }
-            enabled = submitting
+            enabled = !submitting
         }
 
     /**

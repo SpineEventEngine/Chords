@@ -157,14 +157,14 @@ import kotlinx.coroutines.CoroutineScope
      *   that was made.
      */
     @Suppress(
-        // Considering all parameters relevant, esp. considering optional ones.
+        // All parameters are relevant, esp. considering default ones.
         "LongParameterList"
     )
     public fun <E : EventMessage> subscribeToEvent(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
-        onEvent: ((E) -> Unit)? = null,
+        onEvent: ((E) -> Unit),
         onTimeout: (() -> Unit)? = null,
         timeout: Duration = 60.seconds
     ): EventSubscription<E>

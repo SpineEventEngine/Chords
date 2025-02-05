@@ -40,63 +40,102 @@ import kotlinx.coroutines.launch
 /**
  * Defines a DSL for registering handlers of command consequencesю
  */
-public interface CommandConsequencesScope<C: CommandMessage> {
+public interface CommandConsequencesScope<out C: CommandMessage> {
 
     /**
-     * The command whose outcomes are being specified in this scope.
+     * The command whose consequences are being specified and processed in
+     * this scope.
      */
     public val command: C
 
-    public fun onBeforePost(handler: suspend (C) -> Unit)
-    public fun onPostStreamingError(handler: suspend (C, StreamingError) -> Unit)
-    public fun onPostServerError(handler: suspend (C, ServerError) -> Unit)
-    public fun onAcknowledge(handler: suspend (C) -> Unit)
+    /**
+     * Registers the callback, which is invoked before the command is posted.
+     *
+     * @param handler A callback, to be invoked before the command is posted.
+     */
+    public fun onBeforePost(handler: suspend () -> Unit)
 
+    /**
+     * Registers the callback, which is invoked if a streaming error
+     * (network-related failure) occurs when posting the command.
+     *
+     * The fact of invoking this callback doesn't signify whether the command
+     * has been acknowledged or not, and the handler should assume that either
+     * of these cases could have happened.
+     *
+     * @param handler A callback to be invoked, whose [StreamingError] parameter
+     *   holds the exception that has signaled the failure.
+     */
+    public fun onPostStreamingError(handler: suspend (StreamingError) -> Unit)
+
+    /**
+     * Registers the callback, which is invoked if an error occurred on the
+     * server before the command has been acknowledged.
+     *
+     * @param handler A callback to be invoked, whose [ServerError] parameter
+     *   holds the exception that has signaled the failure.
+     */
+    public fun onPostServerError(handler: suspend (ServerError) -> Unit)
+
+    /**
+     * Registers the callback, which is invoked when the server has acknowleged
+     * the command.
+     *
+     * @param handler A callback to be invoked, whose [StreamingError] parameter
+     *   holds the exception that has signaled the failure.
+     */
+    public fun onAcknowledge(handler: suspend () -> Unit)
 
     /**
      * Subscribes to an event of type [eventType], which has its [field] equal
-     * to [fieldValue], and registers it as one of the possible outcomes.
+     * to [fieldValue].
      *
      * @param eventType A type of event that should be subscribed to.
      * @param field A field whose value should identify an event being
      *   subscribed to.
      * @param fieldValue A value of event's [field] that identifies an event
      *   being subscribed to.
+     * @param timeout A maximum period of time that the event is waited since
+     *   invoking this function.
      */
+    @Suppress(
+        // All parameters are relevant, esp. having the default ones.
+        "LongParameterList"
+    )
     public fun onEvent(
         eventType: Class<out EventMessage>,
         field: EventMessageField,
         fieldValue: Message,
         timeout: Duration = 20.seconds,
-        timeoutHandler: (suspend (C) -> Unit)? = null,
+        timeoutHandler: (suspend () -> Unit)? = null,
         eventHandler: suspend (EventMessage) -> Unit
     )
 }
 
-internal class CommandConsequencesScopeImpl<C: CommandMessage>(
+internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override val command: C,
     private val coroutineScope: CoroutineScope
 ) : CommandConsequencesScope<C> {
 
-    var beforePostHandlers: List<suspend (C) -> Unit> = ArrayList()
-    var postStreamingErrorHandlers: List<suspend (C, StreamingError) -> Unit> =
+    var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
+    var postStreamingErrorHandlers: List<suspend (StreamingError) -> Unit> =
         ArrayList()
-    var postServerErrorHandlers: List<suspend (C, ServerError) -> Unit> = ArrayList()
-    var acknowledgeHandlers: List<suspend (C) -> Unit> = ArrayList()
+    var postServerErrorHandlers: List<suspend (ServerError) -> Unit> = ArrayList()
+    var acknowledgeHandlers: List<suspend () -> Unit> = ArrayList()
 
-    override fun onBeforePost(handler: suspend (C) -> Unit) {
+    override fun onBeforePost(handler: suspend () -> Unit) {
         beforePostHandlers += handler
     }
 
-    override fun onPostStreamingError(handler: suspend (C, StreamingError) -> Unit) {
+    override fun onPostStreamingError(handler: suspend (StreamingError) -> Unit) {
         postStreamingErrorHandlers += handler
     }
 
-    override fun onPostServerError(handler: suspend (C, ServerError) -> Unit) {
+    override fun onPostServerError(handler: suspend (ServerError) -> Unit) {
         postServerErrorHandlers += handler
     }
 
-    override fun onAcknowledge(handler: suspend (C) -> Unit) {
+    override fun onAcknowledge(handler: suspend () -> Unit) {
         acknowledgeHandlers += handler
     }
 
@@ -105,13 +144,13 @@ internal class CommandConsequencesScopeImpl<C: CommandMessage>(
         field: EventMessageField,
         fieldValue: Message,
         timeout: Duration,
-        timeoutHandler: (suspend (C) -> Unit)?,
+        timeoutHandler: (suspend () -> Unit)?,
         eventHandler: suspend (EventMessage) -> Unit
     ) {
         app.client.subscribeToEvent(eventType, field, fieldValue, { eventMessage ->
             coroutineScope.launch { eventHandler(eventMessage) }
         }, {
-            coroutineScope.launch { timeoutHandler?.invoke(command) }
+            coroutineScope.launch { timeoutHandler?.invoke() }
         }, timeout)
     }
 }

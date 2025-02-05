@@ -214,28 +214,25 @@ public class DesktopClient(
         scope.consequenceHandlers()
 
         try {
-            scope.beforePostHandlers.forEach { it(command) }
+            scope.beforePostHandlers.forEach { it() }
             app.client.postCommand(command)
-            scope.acknowledgeHandlers.forEach { it(command) }
+            scope.acknowledgeHandlers.forEach { it() }
         } catch (e: ServerError) {
             if (scope.postServerErrorHandlers.isEmpty()) {
                 throw IllegalStateException(
                     "No `onPostServerError` handlers are registered for command: " +
                             command.javaClass.simpleName,
-                    e
-                )
+                    e)
             }
-            scope.postServerErrorHandlers.forEach { it(command, e) }
+            scope.postServerErrorHandlers.forEach { it(e) }
         } catch (e: StreamingError) {
             if (scope.postStreamingErrorHandlers.isEmpty()) {
                 throw IllegalStateException(
                     "No `onPostStreamingError` handlers are registered for command: " +
                             command.javaClass.simpleName,
-                    e
-                )
-
+                    e)
             }
-            scope.postStreamingErrorHandlers.forEach { it(command, e) }
+            scope.postStreamingErrorHandlers.forEach { it(e) }
         }
     }
 
@@ -243,7 +240,7 @@ public class DesktopClient(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
-        onEvent: ((E) -> Unit)?,
+        onEvent: (E) -> Unit,
         onTimeout: (() -> Unit)?,
         timeout: Duration
     ): EventSubscription<E> {
@@ -263,7 +260,7 @@ public class DesktopClient(
             fieldValue = fieldValue) { evt ->
                 if (!eventReceival.isDone) {
                     eventReceival.complete(evt)
-                    futureEventSubscription.onEvent?.invoke(evt)
+                    onEvent(evt)
                 }
             }
         return futureEventSubscription
@@ -348,14 +345,8 @@ public class DesktopClient(
  */
 private class FutureEventSubscription<E: EventMessage>(
     private val future: CompletableFuture<E>,
-    /**
-     * A callback, which is invoked when the subscribed event is emitted.
-     */
-    val onEvent: ((E) -> Unit)? = null
 ) : EventSubscription<E> {
-
     override suspend fun awaitEvent(): E {
         return withTimeout(ReactionTimeoutMillis) { future.await() }
     }
-
 }
