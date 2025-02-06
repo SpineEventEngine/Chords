@@ -137,20 +137,13 @@ import kotlinx.coroutines.CoroutineScope
      *   need waiting to be a part of sequential execution in
      *   a suspending function.
      *
-     * The maximum time that the event is being waited for after calling this
-     * method is defined by the [timeout] parameter. After this period elapses,
-     * the optional [onTimeout] callback is invoked (if specified). If an event
-     * is emitted after this moment in time, the [onEvent] callback won't
-     * be invoked.
-     *
      * @param event A class of event that has to be subscribed to.
      * @param field A field that should be used for identifying the event to be
      *   subscribed to.
      * @param fieldValue A value of the field that identifies the event to be
      *   subscribed to.
      * @param onEvent An optional callback, which will be invoked when the
-     *   specified event is emitted (as long as the event is emitted within
-     *   the [timeout] period after this method is called).
+     *   specified event is emitted.
      * @return An [EventSubscription] object, which represents the subscription
      *   that was made.
      */
