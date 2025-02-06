@@ -234,12 +234,7 @@ public abstract class Wizard : Component() {
 
     private suspend fun Wizard.handleFinishClick(currentPage: WizardPage) {
         if (currentPage.validate()) {
-            submitting = true
-            try {
-                submit()
-            } finally {
-                submitting = false
-            }
+            submit()
         }
     }
 
