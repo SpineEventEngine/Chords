@@ -45,7 +45,6 @@ import io.spine.core.UserId
 import java.util.concurrent.CompletableFuture
 import kotlin.time.Duration
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
@@ -240,20 +239,10 @@ public class DesktopClient(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
-        onEvent: (E) -> Unit,
-        onTimeout: (() -> Unit)?,
-        timeout: Duration
+        onEvent: (E) -> Unit
     ): EventSubscription<E> {
         val eventReceival = CompletableFuture<E>()
-        System.currentTimeMillis()
         val futureEventSubscription = FutureEventSubscription(eventReceival)
-        GlobalScope.launch {
-            delay(timeout)
-            if (!eventReceival.isDone) {
-                onTimeout?.invoke()
-                eventReceival.cancel(false)
-            }
-        }
         observeEvent(
             event = event,
             field = field,
@@ -340,13 +329,34 @@ public class DesktopClient(
  * An [EventSubscription] implementation that is based on
  * a [CompletableFuture] instance.
  *
- * @param future A `CompletableFuture`, which is expected to provide
+ * @param eventReceival A `CompletableFuture`, which is expected to provide
  *   the respective event.
  */
 private class FutureEventSubscription<E: EventMessage>(
-    private val future: CompletableFuture<E>,
+    private val eventReceival: CompletableFuture<E>
 ) : EventSubscription<E> {
+    private var timeoutSpecified = false
+
     override suspend fun awaitEvent(): E {
-        return withTimeout(ReactionTimeoutMillis) { future.await() }
+        return withTimeout(ReactionTimeoutMillis) { eventReceival.await() }
+    }
+
+    override fun withTimeout(
+        timeout: Duration,
+        timeoutCoroutineScope: CoroutineScope,
+        onTimeout: suspend () -> Unit,
+    ) {
+        check(!timeoutSpecified) {
+            "`withTimeout` cannot be used more than once for" +
+                    "the same `EventSubscription`"
+        }
+        timeoutCoroutineScope.launch {
+            delay(timeout)
+            if (!eventReceival.isDone) {
+                eventReceival.cancel(false)
+                onTimeout()
+
+            }
+        }
     }
 }

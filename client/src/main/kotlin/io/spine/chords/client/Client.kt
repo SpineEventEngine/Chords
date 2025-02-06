@@ -37,7 +37,6 @@ import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.core.UserId
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 
 /**
@@ -140,8 +139,9 @@ import kotlinx.coroutines.CoroutineScope
      *
      * The maximum time that the event is being waited for after calling this
      * method is defined by the [timeout] parameter. After this period elapses,
-     * the optional [onTimeout] callback is invoked.
-     *
+     * the optional [onTimeout] callback is invoked (if specified). If an event
+     * is emitted after this moment in time, the [onEvent] callback won't
+     * be invoked.
      *
      * @param event A class of event that has to be subscribed to.
      * @param field A field that should be used for identifying the event to be
@@ -151,22 +151,14 @@ import kotlinx.coroutines.CoroutineScope
      * @param onEvent An optional callback, which will be invoked when the
      *   specified event is emitted (as long as the event is emitted within
      *   the [timeout] period after this method is called).
-     * @param onTimeout An optional callback, which will be invoked if event is
-     *   not emitted within the [timeout] period after this method is called.
      * @return An [EventSubscription] object, which represents the subscription
      *   that was made.
      */
-    @Suppress(
-        // All parameters are relevant, esp. considering default ones.
-        "LongParameterList"
-    )
     public fun <E : EventMessage> subscribeToEvent(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
-        onEvent: ((E) -> Unit),
-        onTimeout: (() -> Unit)? = null,
-        timeout: Duration = 60.seconds
+        onEvent: (E) -> Unit
     ): EventSubscription<E>
 
     /**
@@ -204,6 +196,30 @@ public interface EventSubscription<E: EventMessage> {
      *   by the implementation.
      */
     public suspend fun awaitEvent(): E
+
+    /**
+     * Specifies a timeout period for this event subscription.
+     *
+     * This method can be invoked only once on the same `EventSubscription`
+     * instance. Invoking it limits the period of time that the subscribed event
+     * is waited for using this subscription. If the [timeout] period elapses
+     * (as counted starting from invoking this method) and the event wasn't
+     * emitted before this moment yet, then the [onTimeout] callback is invoked
+     * and this subscription will no longer wait for the respective event.
+     *
+     * @param timeout A maximum period of time that the subscribed event should
+     *   be waited for.
+     * @param timeoutCoroutineScope A [CoroutineScope] used to launch
+     *   a coroutine for waiting a [timeout] period and invoking
+     *   the [onTimeout] callback.
+     * @param onTimeout An optional callback, which will be invoked if event is
+     *   not emitted within the [timeout] period after this method is called.
+     */
+    public fun withTimeout(
+        timeout: Duration,
+        timeoutCoroutineScope: CoroutineScope,
+        onTimeout: suspend () -> Unit
+    )
 }
 
 /**

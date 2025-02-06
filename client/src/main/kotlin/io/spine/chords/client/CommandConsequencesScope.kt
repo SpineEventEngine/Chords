@@ -38,7 +38,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * Defines a DSL for registering handlers of command consequencesю
+ * Defines a DSL for registering handlers of command consequences.
  */
 public interface CommandConsequencesScope<out C: CommandMessage> {
 
@@ -78,7 +78,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
     public fun onPostServerError(handler: suspend (ServerError) -> Unit)
 
     /**
-     * Registers the callback, which is invoked when the server has acknowleged
+     * Registers the callback, which is invoked when the server has acknowledged
      * the command.
      *
      * @param handler A callback to be invoked, whose [StreamingError] parameter
@@ -95,28 +95,34 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      *   subscribed to.
      * @param fieldValue A value of event's [field] that identifies an event
      *   being subscribed to.
-     * @param timeout A maximum period of time that the event is waited since
-     *   invoking this function.
      */
-    @Suppress(
-        // All parameters are relevant, esp. having the default ones.
-        "LongParameterList"
-    )
     public fun onEvent(
         eventType: Class<out EventMessage>,
         field: EventMessageField,
         fieldValue: Message,
-        timeout: Duration = 20.seconds,
-        timeoutHandler: (suspend () -> Unit)? = null,
         eventHandler: suspend (EventMessage) -> Unit
-    )
+    ): EventSubscription<out EventMessage>
+
+    /**
+     * Limits the time of waiting for the event to [timeout].
+     *
+     * If the event is not emitted during [timeout] since this method is invoked
+     * then [timeoutHandler] is invoked, and the event ceases to be waited for.
+     *
+     * @param timeout A maximum period of time that the event is waited since
+     *   invoking this function.
+     * @param timeoutHandler A callback, which should be invoked if an event
+     *   is not emitted within [timeout] after invoking this method.
+     */
+    public fun EventSubscription<out EventMessage>.withTimeout(
+        timeout: Duration = 20.seconds,
+        timeoutHandler: suspend () -> Unit)
 }
 
 internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override val command: C,
     private val coroutineScope: CoroutineScope
 ) : CommandConsequencesScope<C> {
-
     var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
     var postStreamingErrorHandlers: List<suspend (StreamingError) -> Unit> =
         ArrayList()
@@ -143,14 +149,15 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         eventType: Class<out EventMessage>,
         field: EventMessageField,
         fieldValue: Message,
-        timeout: Duration,
-        timeoutHandler: (suspend () -> Unit)?,
         eventHandler: suspend (EventMessage) -> Unit
+    ): EventSubscription<out EventMessage> = app.client.subscribeToEvent(
+        eventType, field, fieldValue
     ) {
-        app.client.subscribeToEvent(eventType, field, fieldValue, { eventMessage ->
-            coroutineScope.launch { eventHandler(eventMessage) }
-        }, {
-            coroutineScope.launch { timeoutHandler?.invoke() }
-        }, timeout)
+        coroutineScope.launch { eventHandler(it) }
     }
+
+    override fun EventSubscription<out EventMessage>.withTimeout(
+        timeout: Duration,
+        timeoutHandler: suspend () -> Unit
+    ) = withTimeout(timeout, coroutineScope, timeoutHandler)
 }
