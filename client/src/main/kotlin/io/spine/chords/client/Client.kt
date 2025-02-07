@@ -37,7 +37,14 @@ import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.core.UserId
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
+
+/**
+ * A period during which a server should provide a reaction in a normally
+ * functioning system (e.g., emit an event in response to a command).
+ */
+private val DefaultReactionTimeout = 30.seconds
 
 /**
  * Provides an API for interacting with the application server.
@@ -102,8 +109,10 @@ import kotlinx.coroutines.CoroutineScope
      * Posts a command to the server.
      *
      * @param command A command that has to be posted.
-     * @throws CommandPostingError If some error has occurred during posting and
-     *   acknowledging the command on the server.
+     * @throws ServerCommunicationException If a net work error has occurred
+     *   when posting a command.
+     * @throws ServerError If the command couldn't be acknowledged due to an
+     *   error on the server.
      */
     public fun <C: CommandMessage> postCommand(command: C)
 
@@ -188,7 +197,7 @@ public interface EventSubscription<E: EventMessage> {
      *   If the event doesn't arrive within a reasonable timeout defined
      *   by the implementation.
      */
-    public suspend fun awaitEvent(): E
+    public suspend fun awaitEvent(timeout: Duration = DefaultReactionTimeout): E
 
     /**
      * Specifies a timeout period for this event subscription.
@@ -216,21 +225,9 @@ public interface EventSubscription<E: EventMessage> {
 }
 
 /**
- * Signifies an error that has occurred during the process of posting the
- * command and acknowledging it on the server.
+ * Signifies a failure that has occurred while communicating with the server.
  */
-public open class CommandPostingError(message: String? = null, cause: Throwable? = null) :
-    RuntimeException(message, cause)
-{
-    public companion object {
-        private const val serialVersionUID: Long = 3555883899622560720L
-    }
-}
-
-/**
- * Signifies an error that has occurred when delivering events.
- */
-public class StreamingError(error: Throwable) : CommandPostingError(cause = error) {
+public class ServerCommunicationException(cause: Throwable) : RuntimeException(cause) {
     public companion object {
         private const val serialVersionUID: Long = -5438430153458733051L
     }
@@ -238,8 +235,10 @@ public class StreamingError(error: Throwable) : CommandPostingError(cause = erro
 
 /**
  * Signifies an error that has occurred on the server (e.g. a validation error).
+ *
+ * @property error Information about the error that has occurred on the server.
  */
-public class ServerError(error: Error) : CommandPostingError(error.message) {
+public class ServerError(public val error: Error) : RuntimeException(error.message) {
     public companion object {
         private const val serialVersionUID: Long = -5438430153458733051L
     }

@@ -56,17 +56,17 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
     public fun onBeforePost(handler: suspend () -> Unit)
 
     /**
-     * Registers the callback, which is invoked if a streaming error
-     * (network-related failure) occurs when posting the command.
+     * Registers the callback, which is invoked if a network communication
+     * failure occurs when posting the command.
      *
      * The fact of invoking this callback doesn't signify whether the command
      * has been acknowledged or not, and the handler should assume that either
      * of these cases could have happened.
      *
-     * @param handler A callback to be invoked, whose [StreamingError] parameter
+     * @param handler A callback to be invoked, whose [ServerCommunicationException] parameter
      *   holds the exception that has signaled the failure.
      */
-    public fun onPostStreamingError(handler: suspend (StreamingError) -> Unit)
+    public fun onNetworkError(handler: suspend (ServerCommunicationException) -> Unit)
 
     /**
      * Registers the callback, which is invoked if an error occurred on the
@@ -81,7 +81,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      * Registers the callback, which is invoked when the server has acknowledged
      * the command.
      *
-     * @param handler A callback to be invoked, whose [StreamingError] parameter
+     * @param handler A callback to be invoked, whose [ServerCommunicationException] parameter
      *   holds the exception that has signaled the failure.
      */
     public fun onAcknowledge(handler: suspend () -> Unit)
@@ -124,7 +124,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     private val coroutineScope: CoroutineScope
 ) : CommandConsequencesScope<C> {
     var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
-    var postStreamingErrorHandlers: List<suspend (StreamingError) -> Unit> =
+    var postNetworkErrorHandlers: List<suspend (ServerCommunicationException) -> Unit> =
         ArrayList()
     var postServerErrorHandlers: List<suspend (ServerError) -> Unit> = ArrayList()
     var acknowledgeHandlers: List<suspend () -> Unit> = ArrayList()
@@ -133,8 +133,8 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         beforePostHandlers += handler
     }
 
-    override fun onPostStreamingError(handler: suspend (StreamingError) -> Unit) {
-        postStreamingErrorHandlers += handler
+    override fun onNetworkError(handler: suspend (ServerCommunicationException) -> Unit) {
+        postNetworkErrorHandlers += handler
     }
 
     override fun onPostServerError(handler: suspend (ServerError) -> Unit) {

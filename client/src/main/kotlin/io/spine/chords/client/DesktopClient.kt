@@ -30,6 +30,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.google.protobuf.Message
 import io.grpc.ManagedChannelBuilder
+import io.grpc.Status
+import io.grpc.StatusRuntimeException
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
 import io.spine.base.Error
@@ -49,12 +51,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
-
-/**
- * A period during which a server should provide a reaction in a normally
- * functioning system (e.g., emit an event in response to a command).
- */
-private const val ReactionTimeoutMillis = 15_000L
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -173,20 +169,31 @@ public class DesktopClient(
      * Posts the given [command] to the server.
      *
      * @param command A command that has to be posted.
-     * @throws CommandPostingError If some error has occurred during posting and
-     *   acknowledging the command on the server.
+     * @throws ServerError If the command could not be acknowledged due to an
+     *   error on the server.
+     * @throws ServerCommunicationException In case of a network communication
+     *   failure that has occurred during posting of the command. It is unknown
+     *   whether the command has been acknowledged or no in this case.
      */
     override fun <C: CommandMessage> postCommand(command: C) {
-        var error: CommandPostingError? = null
-        clientRequest()
-            .command(command)
-            .onServerError { msg, err: Error ->
-                error = ServerError(err)
+        var error: Throwable? = null
+        try {
+            clientRequest()
+                .command(command)
+                .onServerError { msg, err: Error ->
+                    error = ServerError(err)
+                }
+                .onStreamingError { err: Throwable ->
+                    error = ServerCommunicationException(err)
+                }
+                .postAndForget()
+        } catch (e: StatusRuntimeException) {
+            if (e.status.code == Status.Code.UNAVAILABLE) {
+                throw ServerCommunicationException(e)
+            } else {
+                throw e
             }
-            .onStreamingError { err: Throwable ->
-                error = StreamingError(err)
-            }
-            .postAndForget()
+        }
         if (error != null) {
             throw error!!
         }
@@ -203,6 +210,9 @@ public class DesktopClient(
      * @param command The command that should be posted.
      * @param coroutineScope The coroutine scope in which event handlers are to
      *   be invoked.
+     * @param consequenceHandlers A lambda, which sets up handlers for command's
+     *   consequences using the API in [CommandConsequencesScope] on which it
+     *   is invoked.
      */
     public override suspend fun <C : CommandMessage> postCommand(
         command: C,
@@ -210,9 +220,9 @@ public class DesktopClient(
         consequenceHandlers: CommandConsequencesScope<C>.() -> Unit
     ) {
         val scope = CommandConsequencesScopeImpl(command, coroutineScope)
-        scope.consequenceHandlers()
 
         try {
+            scope.consequenceHandlers()
             scope.beforePostHandlers.forEach { it() }
             app.client.postCommand(command)
             scope.acknowledgeHandlers.forEach { it() }
@@ -224,14 +234,14 @@ public class DesktopClient(
                     e)
             }
             scope.postServerErrorHandlers.forEach { it(e) }
-        } catch (e: StreamingError) {
-            if (scope.postStreamingErrorHandlers.isEmpty()) {
+        } catch (e: ServerCommunicationException) {
+            if (scope.postNetworkErrorHandlers.isEmpty()) {
                 throw IllegalStateException(
                     "No `onPostStreamingError` handlers are registered for command: " +
                             command.javaClass.simpleName,
                     e)
             }
-            scope.postStreamingErrorHandlers.forEach { it(e) }
+            scope.postNetworkErrorHandlers.forEach { it(e) }
         }
     }
 
@@ -262,20 +272,30 @@ public class DesktopClient(
      * @param onEmit A callback triggered when the desired event is emitted.
      * @param field A field used for identifying the observed event.
      * @param fieldValue An identifying field value of the observed event.
+     * @throws ServerCommunicationException If a network communication failure
+     *   has occurred when making the respective subscription.
      */
-    override fun <E : EventMessage> observeEvent(
+    public override fun <E : EventMessage> observeEvent(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
         onEmit: (E) -> Unit
     ) {
-        clientRequest()
-            .subscribeToEvent(event)
-            .where(eq(field, fieldValue))
-            .observe { evt ->
-                onEmit(evt)
+        try {
+            clientRequest()
+                .subscribeToEvent(event)
+                .where(eq(field, fieldValue))
+                .observe { evt ->
+                    onEmit(evt)
+                }
+                .post()
+        } catch (e: StatusRuntimeException) {
+            if (e.status.code == Status.Code.UNAVAILABLE) {
+                throw ServerCommunicationException(e)
+            } else {
+                throw e
             }
-            .post()
+        }
     }
 
     /**
@@ -337,8 +357,8 @@ private class FutureEventSubscription<E: EventMessage>(
 ) : EventSubscription<E> {
     private var timeoutSpecified = false
 
-    override suspend fun awaitEvent(): E {
-        return withTimeout(ReactionTimeoutMillis) { eventReceival.await() }
+    override suspend fun awaitEvent(timeout: Duration): E {
+        return withTimeout(timeout) { eventReceival.await() }
     }
 
     override fun withTimeout(
@@ -355,7 +375,6 @@ private class FutureEventSubscription<E: EventMessage>(
             if (!eventReceival.isDone) {
                 eventReceival.cancel(false)
                 onTimeout()
-
             }
         }
     }
