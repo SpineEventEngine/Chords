@@ -160,6 +160,7 @@ private val DefaultReactionTimeout = 30.seconds
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
+        onCommunicationError: (Throwable) -> Unit,
         onEvent: (E) -> Unit
     ): EventSubscription<E>
 
@@ -167,14 +168,17 @@ private val DefaultReactionTimeout = 30.seconds
      * Observes the provided event.
      *
      * @param event A class of event to observe.
-     * @param onEmit A callback triggered when the desired event is emitted.
      * @param field A field used for identifying the observed event.
      * @param fieldValue An identifying field value of the observed event.
+     * @param onCommunicationError A callback triggered if communication error
+     *   occurs during subscribing or waiting for events.
+     * @param onEmit A callback triggered when the desired event is emitted.
      */
     public fun <E : EventMessage> observeEvent(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
+        onCommunicationError: (Throwable) -> Unit = {},
         onEmit: (E) -> Unit
     )
 }

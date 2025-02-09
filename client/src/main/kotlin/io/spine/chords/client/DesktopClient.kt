@@ -220,28 +220,17 @@ public class DesktopClient(
         consequenceHandlers: CommandConsequencesScope<C>.() -> Unit
     ) {
         val scope = CommandConsequencesScopeImpl(command, coroutineScope)
-
         try {
             scope.consequenceHandlers()
-            scope.beforePostHandlers.forEach { it() }
+            scope.triggerBeforePostHandlers()
+
             app.client.postCommand(command)
-            scope.acknowledgeHandlers.forEach { it() }
+
+            scope.triggerAcknowledgeHandlers()
         } catch (e: ServerError) {
-            if (scope.postServerErrorHandlers.isEmpty()) {
-                throw IllegalStateException(
-                    "No `onPostServerError` handlers are registered for command: " +
-                            command.javaClass.simpleName,
-                    e)
-            }
-            scope.postServerErrorHandlers.forEach { it(e) }
+            scope.triggerServerErrorHandlers(e)
         } catch (e: ServerCommunicationException) {
-            if (scope.postNetworkErrorHandlers.isEmpty()) {
-                throw IllegalStateException(
-                    "No `onPostStreamingError` handlers are registered for command: " +
-                            command.javaClass.simpleName,
-                    e)
-            }
-            scope.postNetworkErrorHandlers.forEach { it(e) }
+            scope.triggerNetworkErrorHandlers(e)
         }
     }
 
@@ -249,19 +238,17 @@ public class DesktopClient(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
+        onCommunicationError: (Throwable) -> Unit,
         onEvent: (E) -> Unit
     ): EventSubscription<E> {
         val eventReceival = CompletableFuture<E>()
         val futureEventSubscription = FutureEventSubscription(eventReceival)
-        observeEvent(
-            event = event,
-            field = field,
-            fieldValue = fieldValue) { evt ->
-                if (!eventReceival.isDone) {
-                    eventReceival.complete(evt)
-                    onEvent(evt)
-                }
+        observeEvent(event, field, fieldValue, onCommunicationError) { evt ->
+            if (!eventReceival.isDone) {
+                eventReceival.complete(evt)
+                onEvent(evt)
             }
+        }
         return futureEventSubscription
     }
 
@@ -269,32 +256,28 @@ public class DesktopClient(
      * Observes the provided event.
      *
      * @param event A class of event to observe.
-     * @param onEmit A callback triggered when the desired event is emitted.
      * @param field A field used for identifying the observed event.
      * @param fieldValue An identifying field value of the observed event.
-     * @throws ServerCommunicationException If a network communication failure
-     *   has occurred when making the respective subscription.
+     * @param onCommunicationError A callback triggered if communication error
+     *   occurs during subscribing or waiting for events.
+     * @param onEmit A callback triggered when the desired event is emitted.
      */
     public override fun <E : EventMessage> observeEvent(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
+        onCommunicationError: (Throwable) -> Unit,
         onEmit: (E) -> Unit
     ) {
         try {
             clientRequest()
                 .subscribeToEvent(event)
                 .where(eq(field, fieldValue))
-                .observe { evt ->
-                    onEmit(evt)
-                }
+                .observe(onEmit)
+                .onStreamingError(onCommunicationError)
                 .post()
         } catch (e: StatusRuntimeException) {
-            if (e.status.code == Status.Code.UNAVAILABLE) {
-                throw ServerCommunicationException(e)
-            } else {
-                throw e
-            }
+            onCommunicationError(e)
         }
     }
 

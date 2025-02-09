@@ -71,8 +71,8 @@ public class MessageDialog : Dialog() {
 
     init {
         submitAvailable = true
-        width = 430.dp
-        height = 210.dp
+        width = 550.dp
+        height = 205.dp
     }
 
     /**

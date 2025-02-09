@@ -123,11 +123,11 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override val command: C,
     private val coroutineScope: CoroutineScope
 ) : CommandConsequencesScope<C> {
-    var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
-    var postNetworkErrorHandlers: List<suspend (ServerCommunicationException) -> Unit> =
+    private var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
+    private var postNetworkErrorHandlers: List<suspend (ServerCommunicationException) -> Unit> =
         ArrayList()
-    var postServerErrorHandlers: List<suspend (ServerError) -> Unit> = ArrayList()
-    var acknowledgeHandlers: List<suspend () -> Unit> = ArrayList()
+    private var postServerErrorHandlers: List<suspend (ServerError) -> Unit> = ArrayList()
+    private var acknowledgeHandlers: List<suspend () -> Unit> = ArrayList()
 
     override fun onBeforePost(handler: suspend () -> Unit) {
         beforePostHandlers += handler
@@ -151,13 +151,46 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         fieldValue: Message,
         eventHandler: suspend (EventMessage) -> Unit
     ): EventSubscription<out EventMessage> = app.client.subscribeToEvent(
-        eventType, field, fieldValue
-    ) {
-        coroutineScope.launch { eventHandler(it) }
-    }
+        eventType, field, fieldValue, {
+            coroutineScope.launch {
+                triggerNetworkErrorHandlers(ServerCommunicationException(it))
+            }
+        }, {
+            coroutineScope.launch { eventHandler(it) }
+        })
 
     override fun EventSubscription<out EventMessage>.withTimeout(
         timeout: Duration,
         timeoutHandler: suspend () -> Unit
     ) = withTimeout(timeout, coroutineScope, timeoutHandler)
+
+    internal suspend fun triggerBeforePostHandlers() {
+        beforePostHandlers.forEach { it() }
+    }
+
+    internal suspend fun triggerAcknowledgeHandlers() {
+        acknowledgeHandlers.forEach { it() }
+    }
+
+    internal suspend fun triggerNetworkErrorHandlers(e: ServerCommunicationException) {
+        if (postNetworkErrorHandlers.isEmpty()) {
+            throw IllegalStateException(
+                "No `onNetworkError` handlers are registered for command: " +
+                        command.javaClass.simpleName,
+                e
+            )
+        }
+        postNetworkErrorHandlers.forEach { it(e) }
+    }
+
+    internal suspend fun triggerServerErrorHandlers(e: ServerError) {
+        if (postServerErrorHandlers.isEmpty()) {
+            throw IllegalStateException(
+                "No `onPostServerError` handlers are registered for command: " +
+                        command.javaClass.simpleName,
+                e
+            )
+        }
+        postServerErrorHandlers.forEach { it(e) }
+    }
 }
