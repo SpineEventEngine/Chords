@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,27 +30,25 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.google.protobuf.Message
 import io.grpc.ManagedChannelBuilder
-import io.grpc.Status
+import io.grpc.Status.Code.UNAVAILABLE
 import io.grpc.StatusRuntimeException
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
 import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
-import io.spine.chords.client.appshell.client
-import io.spine.chords.core.appshell.app
 import io.spine.client.ClientRequest
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.client.EventFilter.eq
+import io.spine.client.Subscription
 import io.spine.core.UserId
-import java.util.concurrent.CompletableFuture
 import kotlin.time.Duration
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -188,7 +186,7 @@ public class DesktopClient(
                 }
                 .postAndForget()
         } catch (e: StatusRuntimeException) {
-            if (e.status.code == Status.Code.UNAVAILABLE) {
+            if (e.status.code == UNAVAILABLE) {
                 throw ServerCommunicationException(e)
             } else {
                 throw e
@@ -218,13 +216,13 @@ public class DesktopClient(
         command: C,
         coroutineScope: CoroutineScope,
         consequenceHandlers: CommandConsequencesScope<C>.() -> Unit
-    ) {
+    ): EventSubscriptions {
         val scope = CommandConsequencesScopeImpl(command, coroutineScope)
         try {
             scope.consequenceHandlers()
             scope.triggerBeforePostHandlers()
 
-            app.client.postCommand(command)
+            postCommand(command)
 
             scope.triggerAcknowledgeHandlers()
         } catch (e: ServerError) {
@@ -232,53 +230,35 @@ public class DesktopClient(
         } catch (e: ServerCommunicationException) {
             scope.triggerNetworkErrorHandlers(e)
         }
+        return scope.subscriptions
     }
 
-    override fun <E : EventMessage> subscribeToEvent(
+    override fun <E : EventMessage> onEvent(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
-        onCommunicationError: (Throwable) -> Unit,
+        onCommunicationError: ((Throwable) -> Unit)?,
         onEvent: (E) -> Unit
     ): EventSubscription<E> {
-        val eventReceival = CompletableFuture<E>()
-        val futureEventSubscription = FutureEventSubscription(eventReceival)
-        observeEvent(event, field, fieldValue, onCommunicationError) { evt ->
-            if (!eventReceival.isDone) {
-                eventReceival.complete(evt)
-                onEvent(evt)
-            }
-        }
-        return futureEventSubscription
-    }
-
-    /**
-     * Observes the provided event.
-     *
-     * @param event A class of event to observe.
-     * @param field A field used for identifying the observed event.
-     * @param fieldValue An identifying field value of the observed event.
-     * @param onCommunicationError A callback triggered if communication error
-     *   occurs during subscribing or waiting for events.
-     * @param onEmit A callback triggered when the desired event is emitted.
-     */
-    public override fun <E : EventMessage> observeEvent(
-        event: Class<E>,
-        field: EventMessageField,
-        fieldValue: Message,
-        onCommunicationError: (Throwable) -> Unit,
-        onEmit: (E) -> Unit
-    ) {
+        val eventSubscription = EventSubscriptionImpl<E>(spineClient)
         try {
-            clientRequest()
+            val subscription: Subscription = clientRequest()
                 .subscribeToEvent(event)
                 .where(eq(field, fieldValue))
-                .observe(onEmit)
-                .onStreamingError(onCommunicationError)
+                .observe { evt: E ->
+                    eventSubscription.onEvent()
+                    onEvent(evt)
+                }
+                .onStreamingError({
+                    eventSubscription.cancel()
+                    onCommunicationError?.invoke(it)
+                })
                 .post()
+            eventSubscription.subscription = subscription
         } catch (e: StatusRuntimeException) {
-            onCommunicationError(e)
+            onCommunicationError?.invoke(e)
         }
+        return eventSubscription
     }
 
     /**
@@ -329,36 +309,57 @@ public class DesktopClient(
 }
 
 /**
- * An [EventSubscription] implementation that is based on
- * a [CompletableFuture] instance.
+ * An [EventSubscription] implementation.
  *
- * @param eventReceival A `CompletableFuture`, which is expected to provide
- *   the respective event.
+ * @param spineClient A [SpineClient] instance where the subscription
+ *   is being registered.
  */
-private class FutureEventSubscription<E: EventMessage>(
-    private val eventReceival: CompletableFuture<E>
+private class EventSubscriptionImpl<E: EventMessage>(
+    private val spineClient: io.spine.client.Client
 ) : EventSubscription<E> {
-    private var timeoutSpecified = false
+    override val active: Boolean get() = subscription != null
 
-    override suspend fun awaitEvent(timeout: Duration): E {
-        return withTimeout(timeout) { eventReceival.await() }
-    }
+    /**
+     * A Spine [Subscription], which was made to supply events of type [E], or
+     * `null` if it either hasn't been made yet, or cancelled already.
+     */
+    var subscription: Subscription? = null
 
-    override fun withTimeout(
+    private var timeoutJob: Job? = null
+
+    override fun timeoutAfter(
         timeout: Duration,
         timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit,
     ) {
-        check(!timeoutSpecified) {
+        check(timeoutJob == null) {
             "`withTimeout` cannot be used more than once for" +
                     "the same `EventSubscription`"
         }
-        timeoutCoroutineScope.launch {
+        timeoutJob = timeoutCoroutineScope.launch {
             delay(timeout)
-            if (!eventReceival.isDone) {
-                eventReceival.cancel(false)
+            if (timeoutJob != null) {
+                cancel()
                 onTimeout()
             }
         }
+    }
+
+    /**
+     * Invoked internally for the subscirption to perform any operations, which
+     * have to be performed whenever an expected event [E] is emitted.
+     */
+    fun onEvent() {
+        timeoutJob?.cancel()
+        timeoutJob = null
+    }
+
+    override fun cancel(): Boolean {
+        if (subscription == null) {
+            return false
+        }
+        spineClient.subscriptions().cancel(subscription!!)
+        timeoutJob?.cancel()
+        return true
     }
 }

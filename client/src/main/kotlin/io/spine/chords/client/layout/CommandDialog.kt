@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,6 +113,16 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * function's scope, and handlers can be registered using the
      * [`onXXX`][CommandConsequencesScope] functions available in the
      * function's scope.
+     *
+     * Event subscriptions made by this function are automatically cancelled
+     * when the dialog is closed. They can also be cancelled explicitly by
+     * calling [cancelActiveSubscriptions] if they need to be canceled before
+     * the dialog is closed.
+     *
+     * @receiver [CommandConsequencesScope], which provides an API for
+     *   registering command's consequences.
+     * @see submitContent
+     * @see cancelActiveSubscriptions
      */
     protected abstract fun CommandConsequencesScope<C>.commandConsequences()
 
@@ -128,7 +138,22 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     protected open fun beforeBuild(builder: B) {}
 
     /**
-     * Posts the command message [C] created in this dialog.
+     * Cancels any active subscriptions made by [commandConsequences] and closes
+     * the wizard.
+     *
+     * @see submitContent
+     * @see commandConsequences
+     */
+    override fun close() {
+        cancelActiveSubscriptions()
+        super.close()
+    }
+
+    /**
+     * Posts the command message [C] created in this dialog, and processes
+     * the respective command's consequences specified in [commandConsequences].
+     *
+     * @see commandConsequences
      */
     protected override suspend fun submitContent() {
         commandMessageForm.updateValidationDisplay(true)
@@ -136,5 +161,16 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
             return
         }
         commandMessageForm.postCommand()
+    }
+
+    /**
+     * Cancels any active event subscriptions that have been made by this
+     * dialog's submission(s) up to now.
+     *
+     * @see submitContent
+     * @see commandConsequences
+     */
+    protected fun cancelActiveSubscriptions() {
+        commandMessageForm.cancelActiveSubscriptions()
     }
 }

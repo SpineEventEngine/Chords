@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,6 +107,17 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * function's scope, and handlers can be registered using the
      * [`onXXX`][CommandConsequencesScope] functions available in the
      * function's scope.
+     *
+     *
+     * Event subscriptions made by this function are automatically cancelled
+     * when the dialog is closed. They can also be cancelled explicitly by
+     * calling [cancelActiveSubscriptions] if they need to be canceled before
+     * the dialog is closed.
+     *
+     * @receiver [CommandConsequencesScope], which provides an API for
+     *   registering command's consequences.
+     * @see submit
+     * @see cancelActiveSubscriptions
      */
     protected abstract fun CommandConsequencesScope<C>.commandConsequences()
 
@@ -136,12 +147,48 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      */
     protected open fun beforeBuild(builder: B) {}
 
+    /**
+     * Posts the command that consists of data currently specified in the wizard
+     * if the wizard's form passes validation.
+     *
+     * This method also handles command posting consequences as specified by the
+     * [commandConsequences] method. Note that the wizard is not closed
+     * automatically, and it is the responsibility of [commandConsequences] to
+     * close the wizard when needed (typically when some completion event
+     * is emitted).
+     *
+     * @see commandConsequences
+     * @see cancelActiveSubscriptions
+     */
     override suspend fun submit() {
         commandMessageForm.updateValidationDisplay(true)
         if (!commandMessageForm.valueValid.value) {
             return
         }
         commandMessageForm.postCommand()
+    }
+
+    /**
+     * Cancels any active subscriptions made by [commandConsequences] and closes
+     * the wizard.
+     *
+     * @see submit
+     * @see commandConsequences
+     */
+    override fun close() {
+        cancelActiveSubscriptions()
+        super.close()
+    }
+
+    /**
+     * Cancels any active event subscriptions that have been made by this
+     * wizard's submission(s) up to now.
+     *
+     * @see submit
+     * @see commandConsequences
+     */
+    protected fun cancelActiveSubscriptions() {
+        commandMessageForm.cancelActiveSubscriptions()
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,7 @@ import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.core.UserId
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
-
-/**
- * A period during which a server should provide a reaction in a normally
- * functioning system (e.g., emit an event in response to a command).
- */
-private val DefaultReactionTimeout = 30.seconds
 
 /**
  * Provides an API for interacting with the application server.
@@ -52,7 +45,8 @@ private val DefaultReactionTimeout = 30.seconds
  public interface Client {
 
     /**
-     * The ID of the user on whose behalf this `Client` should send requests to the server.
+     * The ID of the user on whose behalf this `Client` should send requests to
+     * the server.
      */
     public val userId: UserId?
 
@@ -62,9 +56,10 @@ private val DefaultReactionTimeout = 30.seconds
      * as well.
      *
      * @param entityClass A class of entities that should be read and observed.
-     * @param targetList A [MutableState] that contains a list whose content should be
-     *   populated and kept up to date by this function.
-     * @param extractId  A callback that should read the value of the entity's ID.
+     * @param targetList A [MutableState] that contains a list whose content
+     *   should be populated and kept up to date by this function.
+     * @param extractId  A callback that should read the value of
+     *   the entity's ID.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
@@ -73,18 +68,23 @@ private val DefaultReactionTimeout = 30.seconds
     )
 
     /**
-     * Reads all entities of type [entityClass] that match the given [queryFilters] and invokes the
-     * [onNext] callback with the initial list of entities. Then sets up observation to receive
-     * future updates to the entities, filtering the observed updates using the provided [observeFilters].
-     * Each time any entity that matches the [observeFilters] changes, the [onNext] callback
-     * will be invoked again with the updated list of entities.
+     * Reads all entities of type [entityClass] that match the given
+     * [queryFilters] and invokes the [onNext] callback with the initial list of
+     * entities. Then sets up observation to receive future updates to the
+     * entities, filtering the observed updates using the provided
+     * [observeFilters]. Each time any entity that matches the [observeFilters]
+     * changes, the [onNext] callback will be invoked again with the updated
+     * list of entities.
      *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of the entity's ID.
-     * @param queryFilters Filters to apply when querying the initial list of entities.
-     * @param observeFilters Filters to apply when observing updates to the entities.
-     * @param onNext A callback function that is called with the list of entities after the initial
-     *   query completes, and each time any of the observed entities is updated.
+     * @param queryFilters Filters to apply when querying the initial list
+     *   of entities.
+     * @param observeFilters Filters to apply when observing updates to
+     *   the entities.
+     * @param onNext A callback function that is called with the list of
+     *   entities after the initial query completes, and each time any of the
+     *   observed entities is updated.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
@@ -127,60 +127,50 @@ private val DefaultReactionTimeout = 30.seconds
      * @param command The command that should be posted.
      * @param coroutineScope The coroutine scope in which event handlers are to
      *   be invoked.
+     * @param consequenceHandlers A lambda, which sets up handlers for command's
+     *   consequences using the API in [CommandConsequencesScope] on which it
+     *   is invoked.
+     * @return An object, which allows managing (e.g. cancelling) all
+     *   subscriptions made by this method.
      */
     public suspend fun <C : CommandMessage> postCommand(
         command: C,
         coroutineScope: CoroutineScope,
         consequenceHandlers: CommandConsequencesScope<C>.() -> Unit
-    )
+    ): EventSubscriptions
 
     /**
-     * Subscribes to an event with a given class and a given field value (which
+     * Subscribes to events with a given class and a given field value (which
      * would typically be the event's unique identifier field).
      *
-     * The event subscription can be awaited for in two ways:
-     * - By specifying the [onEvent] parameter, which can be useful for cases
-     *   when receiving an asynchronous event is suitable.
-     * - By invoking the [awaitEvent][EventSubscription.awaitEvent] method on
-     *   the returned [EventSubscription] object, which can be useful if you
-     *   need waiting to be a part of sequential execution in
-     *   a suspending function.
+     * The subscription remains active by waiting for events that satisfy the
+     * specified criteria until the [cancel][EventSubscription.cancel] method
+     * is invoked in the returned [EventSubscription] instance.
      *
-     * @param event A class of event that has to be subscribed to.
-     * @param field A field that should be used for identifying the event to be
+     * @param event A class of events that have to be subscribed to.
+     * @param field A field that should be used for identifying the events to be
      *   subscribed to.
-     * @param fieldValue A value of the field that identifies the event to be
+     * @param fieldValue A value of the field that identifies the events to be
      *   subscribed to.
+     * @param onCommunicationError A callback triggered if communication error
+     *   occurs during subscribing or waiting for events. This callback can
+     *   either be invoked synchronously communication fails while subscribing
+     *   to events, or asynchronously, if the communication error happens after
+     *   the subscription has been made. In either of these cases, the returned
+     *   `EventSubscription` is transitioned into an inactive state and stops
+     *   receiving events.
      * @param onEvent An optional callback, which will be invoked when the
      *   specified event is emitted.
      * @return An [EventSubscription] object, which represents the subscription
      *   that was made.
      */
-    public fun <E : EventMessage> subscribeToEvent(
+    public fun <E : EventMessage> onEvent(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
-        onCommunicationError: (Throwable) -> Unit,
+        onCommunicationError: ((Throwable) -> Unit)? = null,
         onEvent: (E) -> Unit
     ): EventSubscription<E>
-
-    /**
-     * Observes the provided event.
-     *
-     * @param event A class of event to observe.
-     * @param field A field used for identifying the observed event.
-     * @param fieldValue An identifying field value of the observed event.
-     * @param onCommunicationError A callback triggered if communication error
-     *   occurs during subscribing or waiting for events.
-     * @param onEmit A callback triggered when the desired event is emitted.
-     */
-    public fun <E : EventMessage> observeEvent(
-        event: Class<E>,
-        field: EventMessageField,
-        fieldValue: Message,
-        onCommunicationError: (Throwable) -> Unit = {},
-        onEmit: (E) -> Unit
-    )
 }
 
 /**
@@ -191,27 +181,16 @@ private val DefaultReactionTimeout = 30.seconds
 public interface EventSubscription<E: EventMessage> {
 
     /**
-     * Awaits for the event to arrive, and returns the respective event.
-     *
-     * If invoked after the event has already arrived, this method returns
-     * immediately with the respective event.
-     *
-     * @return An event that is expected to arrive with this subscription.
-     * @throws kotlinx.coroutines.TimeoutCancellationException
-     *   If the event doesn't arrive within a reasonable timeout defined
-     *   by the implementation.
+     * Returns `true`, if the subscription is active (waiting for event/s).
      */
-    public suspend fun awaitEvent(timeout: Duration = DefaultReactionTimeout): E
+    public val active: Boolean
 
     /**
-     * Specifies a timeout period for this event subscription.
+     * Starts the countdown period of waiting for the next event.
      *
-     * This method can be invoked only once on the same `EventSubscription`
-     * instance. Invoking it limits the period of time that the subscribed event
-     * is waited for using this subscription. If the [timeout] period elapses
-     * (as counted starting from invoking this method) and the event wasn't
-     * emitted before this moment yet, then the [onTimeout] callback is invoked
-     * and this subscription will no longer wait for the respective event.
+     * If an event that matches the subscription criteria is not emitted during
+     * the [timeout] period since this method is invoked, the [onTimeout]
+     * callback is invoked, and the subscription is cancelled.
      *
      * @param timeout A maximum period of time that the subscribed event should
      *   be waited for.
@@ -221,11 +200,34 @@ public interface EventSubscription<E: EventMessage> {
      * @param onTimeout An optional callback, which will be invoked if event is
      *   not emitted within the [timeout] period after this method is called.
      */
-    public fun withTimeout(
+    public fun timeoutAfter(
         timeout: Duration,
         timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit
     )
+
+    /**
+     * Cancels the subscription if it is active.
+     *
+     * After a subscription is canceled, it stops receiving notifications about
+     * emitted events.
+     *
+     * @return `true` if the subscription was active and was cancelled, and
+     *   `false` if the subscription wasn't active.
+     */
+    public fun cancel(): Boolean
+}
+
+/**
+ * Represents a set of related subscriptions, e.g. the ones made as a result of
+ * [Client.postCommand] method.
+ */
+public interface EventSubscriptions {
+
+    /**
+     * Cancels all subscriptions represented by this object.
+     */
+    public fun cancelAll()
 }
 
 /**

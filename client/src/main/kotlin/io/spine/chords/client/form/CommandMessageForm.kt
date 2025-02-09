@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import io.spine.base.CommandMessage
 import io.spine.chords.client.CommandConsequencesScope
+import io.spine.chords.client.EventSubscriptions
 import io.spine.chords.client.appshell.client
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.core.appshell.app
@@ -310,10 +311,25 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * function's scope, and handlers can be registered using the
      * [`onXXX`][CommandConsequencesScope] functions available in the
      * function's scope.
+     *
+     * @see postCommand
+     * @see cancelActiveSubscriptions
      */
     public lateinit var commandConsequences: CommandConsequencesScope<C>.() -> Unit
 
+    /**
+     * [CoroutineScope] owned by this form's composition used for running
+     * form-related suspending calls.
+     */
     private lateinit var coroutineScope: CoroutineScope
+
+    /**
+     * Event subscriptions, which were made by [commandConsequences] as a result
+     * of command posted during dialog form's submission.
+     */
+    private var activeSubscriptions: MutableList<EventSubscriptions> = ArrayList()
+
+
 
     override fun initialize() {
         super.initialize()
@@ -334,11 +350,11 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *
      * Here's a typical usage example:
      * ```
-     *     // Make sure that validation messages are up to date before submiting
-     *     // the form.
+     *     // Make sure that validation messages are up to date before
+     *     // submitting the form.
      *     commandMessageForm.updateValidationDisplay(true)
      *
-     *     // Submit the form if
+     *     // Submit the form if it is valid currently.
      *     if (commandMessageForm.valueValid.value) {
      *         commandMessageForm.postCommand()
      *     }
@@ -352,10 +368,15 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * form's [validationDisplayMode] property has a value of
      * [MANUAL][io.spine.chords.proto.form.ValidationDisplayMode.MANUAL].
      *
+     * @return An object, which allows managing (e.g. cancelling) all
+     *   subscriptions made by this method according submissions specified
+     *   within the [commandConsequences] callback.
      * @throws IllegalStateException If the form is not valid when this method
      *   is invoked (e.g. when `valueValid.value == false`).
+     * @see commandConsequences
+     * @see cancelActiveSubscriptions
      */
-    public suspend fun postCommand() {
+    public suspend fun postCommand(): EventSubscriptions {
         updateValidationDisplay(true)
         check(valueValid.value) {
             "`postCommand` cannot be invoked on an invalid form`"
@@ -366,6 +387,19 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "checked to be valid within postCommand."
         }
 
-        app.client.postCommand(command, coroutineScope, commandConsequences)
+        return app.client.postCommand(command, coroutineScope, commandConsequences)
     }
+
+    /**
+     * Cancels any active event subscriptions that have been made as a result of
+     * invoking this form's [postCommand] method.
+     *
+     * @see postCommand
+     * @see commandConsequences
+     */
+    public fun cancelActiveSubscriptions() {
+        activeSubscriptions.forEach { it.cancelAll() }
+        activeSubscriptions.clear()
+    }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -413,7 +413,7 @@ public abstract class Dialog : Component() {
      * Closes the dialog while ignoring any data that might have been
      * possibly entered in the dialog currently.
      */
-    public fun close() {
+    public open fun close() {
         app.ui.closeDialog(this)
     }
 

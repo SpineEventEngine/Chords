@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,6 +123,12 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override val command: C,
     private val coroutineScope: CoroutineScope
 ) : CommandConsequencesScope<C> {
+    val subscriptions: EventSubscriptions = object : EventSubscriptions {
+        override fun cancelAll() {
+            eventSubscriptions.forEach { it.cancel() }
+        }
+    }
+    private val eventSubscriptions: MutableList<EventSubscription<out EventMessage>> = ArrayList()
     private var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
     private var postNetworkErrorHandlers: List<suspend (ServerCommunicationException) -> Unit> =
         ArrayList()
@@ -150,19 +156,23 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         field: EventMessageField,
         fieldValue: Message,
         eventHandler: suspend (EventMessage) -> Unit
-    ): EventSubscription<out EventMessage> = app.client.subscribeToEvent(
-        eventType, field, fieldValue, {
-            coroutineScope.launch {
-                triggerNetworkErrorHandlers(ServerCommunicationException(it))
-            }
-        }, {
-            coroutineScope.launch { eventHandler(it) }
-        })
+    ): EventSubscription<out EventMessage> {
+        val subscription: EventSubscription<out EventMessage> = app.client.onEvent(
+            eventType, field, fieldValue, {
+                coroutineScope.launch {
+                    triggerNetworkErrorHandlers(ServerCommunicationException(it))
+                }
+            }, {
+                coroutineScope.launch { eventHandler(it) }
+            })
+        eventSubscriptions += subscription
+        return subscription
+    }
 
     override fun EventSubscription<out EventMessage>.withTimeout(
         timeout: Duration,
         timeoutHandler: suspend () -> Unit
-    ) = withTimeout(timeout, coroutineScope, timeoutHandler)
+    ) = timeoutAfter(timeout, coroutineScope, timeoutHandler)
 
     internal suspend fun triggerBeforePostHandlers() {
         beforePostHandlers.forEach { it() }
@@ -173,6 +183,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     }
 
     internal suspend fun triggerNetworkErrorHandlers(e: ServerCommunicationException) {
+        subscriptions.cancelAll()
         if (postNetworkErrorHandlers.isEmpty()) {
             throw IllegalStateException(
                 "No `onNetworkError` handlers are registered for command: " +
@@ -184,6 +195,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     }
 
     internal suspend fun triggerServerErrorHandlers(e: ServerError) {
+        subscriptions.cancelAll()
         if (postServerErrorHandlers.isEmpty()) {
             throw IllegalStateException(
                 "No `onPostServerError` handlers are registered for command: " +

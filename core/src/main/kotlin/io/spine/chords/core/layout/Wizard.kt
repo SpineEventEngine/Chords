@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,8 +146,9 @@ public abstract class Wizard : Component() {
      *
      * This action is executed when the user completes and submits the wizard.
      *
-     * `onCloseRequest` is triggerred right after the `submit` action,
-     * so it is not needed to configure it manually.
+     * Note, the wizard is not closed automatically when [submit] is invoked, so
+     * the implementation has to ensure that [close] is invoked as soon as the
+     * submission process succeeds.
      *
      * @return `true`, if submission was performed successfully, and the wizard
      *   can be closed now, and `false` if submission didn't succeed (e.g. if
@@ -159,7 +160,7 @@ public abstract class Wizard : Component() {
     /**
      * Closes the wizard.
      */
-    public fun close() {
+    public open fun close() {
         onCloseRequest?.invoke()
     }
 
