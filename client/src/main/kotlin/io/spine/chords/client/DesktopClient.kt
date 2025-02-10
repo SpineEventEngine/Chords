@@ -247,7 +247,7 @@ public class DesktopClient(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
-        onCommunicationError: ((Throwable) -> Unit)?,
+        onNetworkError: ((Throwable) -> Unit)?,
         onEvent: (E) -> Unit
     ): EventSubscription<E> {
         val eventSubscription = EventSubscriptionImpl<E>(spineClient)
@@ -261,11 +261,11 @@ public class DesktopClient(
                 }
                 .onStreamingError({ err ->
                     eventSubscription.cancel()
-                    onCommunicationError?.invoke(err)
+                    onNetworkError?.invoke(err)
                 })
                 .post()
         } catch (e: StatusRuntimeException) {
-            onCommunicationError?.invoke(e)
+            onNetworkError?.invoke(e)
         }
         return eventSubscription
     }

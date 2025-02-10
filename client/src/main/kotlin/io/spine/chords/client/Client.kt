@@ -152,7 +152,7 @@ import kotlinx.coroutines.CoroutineScope
      *   subscribed to.
      * @param fieldValue A value of the field that identifies the events to be
      *   subscribed to.
-     * @param onCommunicationError A callback triggered if communication error
+     * @param onNetworkError A callback triggered if network communication error
      *   occurs during subscribing or waiting for events. This callback can
      *   either be invoked synchronously communication fails while subscribing
      *   to events, or asynchronously, if the communication error happens after
@@ -168,7 +168,7 @@ import kotlinx.coroutines.CoroutineScope
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
-        onCommunicationError: ((Throwable) -> Unit)? = null,
+        onNetworkError: ((Throwable) -> Unit)? = null,
         onEvent: (E) -> Unit
     ): EventSubscription<E>
 }
