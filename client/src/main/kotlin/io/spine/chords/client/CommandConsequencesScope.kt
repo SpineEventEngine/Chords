@@ -119,15 +119,27 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
         timeoutHandler: suspend () -> Unit)
 }
 
+/**
+ * An implementation of [CommandConsequencesScope].
+ *
+ * @param command A command whose consequences are being configured.
+ * @param coroutineScope [CoroutineScope] that should be used for launching
+ *   suspending event handlers.
+ */
 internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override val command: C,
     private val coroutineScope: CoroutineScope
 ) : CommandConsequencesScope<C> {
+
+    /**
+     * Allows to manage subscriptions made in this scope.
+     */
     val subscriptions: EventSubscriptions = object : EventSubscriptions {
         override fun cancelAll() {
             eventSubscriptions.forEach { it.cancel() }
         }
     }
+
     private val eventSubscriptions: MutableList<EventSubscription<out EventMessage>> = ArrayList()
     private var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
     private var postNetworkErrorHandlers: List<suspend (ServerCommunicationException) -> Unit> =
@@ -157,7 +169,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         fieldValue: Message,
         eventHandler: suspend (EventMessage) -> Unit
     ): EventSubscription<out EventMessage> {
-        val subscription: EventSubscription<out EventMessage> = app.client.onEvent(
+        val subscription = app.client.onEvent(
             eventType, field, fieldValue, {
                 coroutineScope.launch {
                     triggerNetworkErrorHandlers(ServerCommunicationException(it))
@@ -172,11 +184,13 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override fun EventSubscription<out EventMessage>.withTimeout(
         timeout: Duration,
         timeoutHandler: suspend () -> Unit
-    ) = timeoutAfter(timeout, coroutineScope, timeoutHandler)
+    ) = withTimeout(timeout, coroutineScope, timeoutHandler)
 
     internal suspend fun triggerBeforePostHandlers() {
         beforePostHandlers.forEach { it() }
     }
+
+    internal val allActive: Boolean get() = eventSubscriptions.all { it.active }
 
     internal suspend fun triggerAcknowledgeHandlers() {
         acknowledgeHandlers.forEach { it() }

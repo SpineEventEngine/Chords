@@ -89,9 +89,10 @@ public class DesktopClient(
      * as well.
      *
      * @param entityClass A class of entities that should be read and observed.
-     * @param targetList A [MutableState] that contains a list whose content should be
-     *   populated and kept up to date by this function.
-     * @param extractId  A callback that should read the value of the entity's ID.
+     * @param targetList A [MutableState] that contains a list whose content
+     *   should be populated and kept up to date by this function.
+     * @param extractId  A callback that should read the value of
+     *   the entity's ID.
      */
     public override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
@@ -109,18 +110,24 @@ public class DesktopClient(
     }
 
     /**
-     * Reads all entities of type [entityClass] that match the given [queryFilters] and invokes the
-     * [onNext] callback with the initial list of entities. Then sets up observation to receive
-     * future updates to the entities, filtering the observed updates using the provided [observeFilters].
-     * Each time any entity that matches the [observeFilters] changes, the [onNext] callback
-     * will be invoked again with the updated list of entities.
+     * Reads all entities of type [entityClass] that match the given
+     * [queryFilters] and invokes the [onNext] callback with the initial list of
+     * entities. Then sets up observation to receive future updates to the
+     * entities, filtering the observed updates using the provided
+     * [observeFilters]. Each time any entity that matches the [observeFilters]
+     * changes, the [onNext] callback will be invoked again with the updated
+     * list of entities.
      *
      * @param entityClass A class of entities that should be read and observed.
-     * @param extractId A callback that should read the value of the entity's ID.
-     * @param queryFilters Filters to apply when querying the initial list of entities.
-     * @param observeFilters Filters to apply when observing updates to the entities.
-     * @param onNext A callback function that is called with the list of entities after the initial
-     *   query completes, and each time any of the observed entities is updated.
+     * @param extractId A callback that should read the value of the
+     *   entity's ID.
+     * @param queryFilters Filters to apply when querying the initial list
+     *   of entities.
+     * @param observeFilters Filters to apply when observing updates to
+     *   the entities.
+     * @param onNext A callback function that is called with the list of
+     *   entities after the initial query completes, and each time any of the
+     *   observed entities is updated.
      */
     public override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
@@ -199,7 +206,7 @@ public class DesktopClient(
 
     /**
      * Posts the given [command], and runs handlers for any of the consequences
-     * registered in [consequenceHandlers].
+     * registered in [setupConsequences].
      *
      * All registered command consequence handlers except event handlers are
      * invoked synchronously before this suspending method returns. Event
@@ -208,23 +215,26 @@ public class DesktopClient(
      * @param command The command that should be posted.
      * @param coroutineScope The coroutine scope in which event handlers are to
      *   be invoked.
-     * @param consequenceHandlers A lambda, which sets up handlers for command's
+     * @param setupConsequences A lambda, which sets up handlers for command's
      *   consequences using the API in [CommandConsequencesScope] on which it
      *   is invoked.
      */
     public override suspend fun <C : CommandMessage> postCommand(
         command: C,
         coroutineScope: CoroutineScope,
-        consequenceHandlers: CommandConsequencesScope<C>.() -> Unit
+        setupConsequences: CommandConsequencesScope<C>.() -> Unit
     ): EventSubscriptions {
         val scope = CommandConsequencesScopeImpl(command, coroutineScope)
         try {
-            scope.consequenceHandlers()
-            scope.triggerBeforePostHandlers()
-
-            postCommand(command)
-
-            scope.triggerAcknowledgeHandlers()
+            scope.setupConsequences()
+            val allSubscriptionsSuccessful = scope.allActive
+            if (allSubscriptionsSuccessful) {
+                scope.triggerBeforePostHandlers()
+                postCommand(command)
+                scope.triggerAcknowledgeHandlers()
+            } else {
+                scope.subscriptions.cancelAll()
+            }
         } catch (e: ServerError) {
             scope.triggerServerErrorHandlers(e)
         } catch (e: ServerCommunicationException) {
@@ -242,19 +252,18 @@ public class DesktopClient(
     ): EventSubscription<E> {
         val eventSubscription = EventSubscriptionImpl<E>(spineClient)
         try {
-            val subscription: Subscription = clientRequest()
+            eventSubscription.subscription = clientRequest()
                 .subscribeToEvent(event)
                 .where(eq(field, fieldValue))
-                .observe { evt: E ->
+                .observe { evt ->
                     eventSubscription.onEvent()
                     onEvent(evt)
                 }
-                .onStreamingError({
+                .onStreamingError({ err ->
                     eventSubscription.cancel()
-                    onCommunicationError?.invoke(it)
+                    onCommunicationError?.invoke(err)
                 })
                 .post()
-            eventSubscription.subscription = subscription
         } catch (e: StatusRuntimeException) {
             onCommunicationError?.invoke(e)
         }
@@ -283,8 +292,8 @@ public class DesktopClient(
      *
      * @param targetList A [MutableState] that contains a list to be updated.
      * @param entity An item that has to be merged into the list.
-     * @param extractId A function that, given a list item, or a value of [entity],
-     *   retrieves its ID.
+     * @param extractId A function that, given a list item, or a value of
+     *   [entity], retrieves its ID.
      */
     private fun <E : EntityState> updateList(
         targetList: MutableState<List<E>>,
@@ -327,7 +336,7 @@ private class EventSubscriptionImpl<E: EventMessage>(
 
     private var timeoutJob: Job? = null
 
-    override fun timeoutAfter(
+    override fun withTimeout(
         timeout: Duration,
         timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit,
@@ -346,7 +355,7 @@ private class EventSubscriptionImpl<E: EventMessage>(
     }
 
     /**
-     * Invoked internally for the subscirption to perform any operations, which
+     * Invoked internally for the subsctiption to perform any operations, which
      * have to be performed whenever an expected event [E] is emitted.
      */
     fun onEvent() {

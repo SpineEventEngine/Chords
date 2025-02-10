@@ -118,7 +118,7 @@ import kotlinx.coroutines.CoroutineScope
 
     /**
      * Posts the given [command], and runs handlers for any of the consequences
-     * registered in [consequenceHandlers].
+     * registered in [setupConsequences].
      *
      * All registered command consequence handlers except event handlers are
      * invoked synchronously before this suspending method returns. Event
@@ -127,7 +127,7 @@ import kotlinx.coroutines.CoroutineScope
      * @param command The command that should be posted.
      * @param coroutineScope The coroutine scope in which event handlers are to
      *   be invoked.
-     * @param consequenceHandlers A lambda, which sets up handlers for command's
+     * @param setupConsequences A lambda, which sets up handlers for command's
      *   consequences using the API in [CommandConsequencesScope] on which it
      *   is invoked.
      * @return An object, which allows managing (e.g. cancelling) all
@@ -136,7 +136,7 @@ import kotlinx.coroutines.CoroutineScope
     public suspend fun <C : CommandMessage> postCommand(
         command: C,
         coroutineScope: CoroutineScope,
-        consequenceHandlers: CommandConsequencesScope<C>.() -> Unit
+        setupConsequences: CommandConsequencesScope<C>.() -> Unit
     ): EventSubscriptions
 
     /**
@@ -200,7 +200,7 @@ public interface EventSubscription<E: EventMessage> {
      * @param onTimeout An optional callback, which will be invoked if event is
      *   not emitted within the [timeout] period after this method is called.
      */
-    public fun timeoutAfter(
+    public fun withTimeout(
         timeout: Duration,
         timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit
