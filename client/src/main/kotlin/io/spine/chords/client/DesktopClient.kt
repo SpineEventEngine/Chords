@@ -369,6 +369,8 @@ private class EventSubscriptionImpl<E: EventMessage>(
         }
         spineClient.subscriptions().cancel(subscription!!)
         timeoutJob?.cancel()
+        subscription = null
+        timeoutJob = null
         return true
     }
 }
