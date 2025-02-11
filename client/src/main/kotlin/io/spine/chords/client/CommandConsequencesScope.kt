@@ -56,7 +56,8 @@ import kotlinx.coroutines.launch
  *   the command could not be acknowledged due to an error on the server, and
  *   if the command has been acknowledged respectively.
  * - The [onEvent] function can be used to subscribe to certain events, which
- *   should or can be emitted as a consequence of posting the command [C].
+ *   should or can be emitted as a consequence of posting the command [C]. It
+ *   can in particular be used for subscribing to rejection events.
  * - [onNetworkError] registers a callback invoked if a network error occurs
  *   either when posting a command or when observing some of the subscribed
  *   events.
@@ -70,19 +71,19 @@ import kotlinx.coroutines.launch
  * ```
  * val command: ImportItem = createCommand()
  * val coroutineScope = rememberCoroutineScope()
- * val submitting: Boolean by remember { mutableStateOf(false) }
+ * val inProgress: Boolean by remember { mutableStateOf(false) }
  *
  * app.client.postCommand(command, coroutineScope, {
  *     onBeforePost {
- *         submitting = true
+ *         inProgress = true
  *     }
  *     onPostServerError {
  *         showMessage("Unexpected server error has occurred.")
- *         submitting = false
+ *         inProgress = false
  *     }
  *     onNetworkError {
  *         showMessage("Server connection failed.")
- *         submitting = false
+ *         inProgress = false
  *     }
  *     onEvent(
  *         ItemImported::class.java,
@@ -90,11 +91,11 @@ import kotlinx.coroutines.launch
  *         command.itemId
  *     ) {
  *         showMessage("Item imported")
- *         submitting = false
+ *         inProgress = false
  *     }.withTimeout(30.seconds) {
  *         showMessage("The operation takes unexpectedly long to process. " +
  *                 "Please check the status of its execution later.")
- *         submitting = false
+ *         inProgress = false
  *     }
  *     onEvent(
  *         ItemAlreadyExists::class.java,
@@ -102,7 +103,7 @@ import kotlinx.coroutines.launch
  *         command.itemId
  *     ) {
  *         showMessage("Item already exists: ${command.itemName.value}")
- *         submitting = false
+ *         inProgress = false
  *     }
  * })
  * ```

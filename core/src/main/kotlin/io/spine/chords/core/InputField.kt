@@ -245,7 +245,7 @@ public open class InputField<V> : InputComponent<V>() {
      * A callback, which is triggered after the value in the [MutableState] in
      * [value] has been updated with a newly edited value.
      */
-        public var onValueChange: ((V?) -> Unit)? = null
+    public var onValueChange: ((V?) -> Unit)? = null
 
     /**
      * A label for the component.
