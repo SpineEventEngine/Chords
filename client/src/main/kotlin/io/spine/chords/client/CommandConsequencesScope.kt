@@ -162,9 +162,9 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      * @param fieldValue A value of event's [field] that identifies an event
      *   being subscribed to.
      * @return An [EventSubscription] instance, which can be used to manage this
-     *   subscription, e.g. add a timeout to it using the
-     *   [withTimeout] function, or cancel the
-     *   subscription using the [cancel][EventSubscription.cancel] function.
+     *   subscription, e.g. add a timeout to it using the [withTimeout]
+     *   function, or cancel the subscription using the
+     *   [cancel][EventSubscription.cancel] function.
      */
     public fun <E: EventMessage> onEvent(
         eventType: Class<out E>,
