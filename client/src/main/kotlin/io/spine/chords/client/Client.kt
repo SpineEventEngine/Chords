@@ -214,15 +214,12 @@ public interface EventSubscription<E: EventMessage> {
     )
 
     /**
-     * Cancels the subscription if it is active.
+     * Cancels the subscription.
      *
      * After a subscription is canceled, it stops receiving notifications about
      * emitted events.
-     *
-     * @return `true` if the subscription was active and was cancelled, and
-     *   `false` if the subscription wasn't active.
      */
-    public fun cancel(): Boolean
+    public fun cancel()
 }
 
 /**

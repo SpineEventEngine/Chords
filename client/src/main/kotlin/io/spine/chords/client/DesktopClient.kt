@@ -363,14 +363,14 @@ private class EventSubscriptionImpl<E: EventMessage>(
         timeoutJob = null
     }
 
-    override fun cancel(): Boolean {
-        if (subscription == null) {
-            return false
+    override fun cancel() {
+        if (subscription != null) {
+            spineClient.subscriptions().cancel(subscription!!)
+            subscription = null
         }
-        spineClient.subscriptions().cancel(subscription!!)
-        timeoutJob?.cancel()
-        subscription = null
-        timeoutJob = null
-        return true
+        if (timeoutJob != null) {
+            timeoutJob?.cancel()
+            timeoutJob = null
+        }
     }
 }
