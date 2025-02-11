@@ -39,6 +39,75 @@ import kotlinx.coroutines.launch
 
 /**
  * Defines a DSL for registering handlers of command consequences.
+ *
+ * An instance of `CommandConsequencesScope` is typically expected to serve as
+ * a receiver of a function, which configures how certain consequences of a
+ * command that has been posted should be handled. Such a function is typically
+ * used with APIs that post a command, such as [Client.postCommand],
+ * [CommandMessageForm][io.spine.chords.client.form.CommandMessageForm],
+ * [CommandDialog][io.spine.chords.client.layout.CommandDialog], etc.
+ *
+ * `CommandConsequencesScope` exposes the following properties and functions:
+ * - The [command] property contains the command message, which is being posted
+ *   in this scope.
+ * - The [onBeforePost] function can be used to register a callback, which is
+ *   invoked before the command is posted, and the
+ *   [onPostServerError]/[onAcknowledge] functions register callbacks invoked if
+ *   the command could not be acknowledged due to an error on the server, and
+ *   if the command has been acknowledged respectively.
+ * - The [onEvent] function can be used to subscribe to certain events, which
+ *   should or can be emitted as a consequence of posting the command [C].
+ * - [onNetworkError] registers a callback invoked if a network error occurs
+ *   either when posting a command or when observing some of the subscribed
+ *   events.
+ *
+ *   Note that in case of identifying a network error all active event
+ *   subscriptions are cancelled and no further events are received.
+ *
+ * Here's an example of configuring `CommandConsequencesScope` when using
+ * the [Client.postCommand] function:
+ *
+ * ```
+ * val command: ImportExistingWsDomain = createCommand()
+ * val coroutineScope = rememberCoroutineScope()
+ * val submitting: Boolean by remember { mutableStateOf(false) }
+ *
+ * val subscriptions = app.client.postCommand(command, coroutineScope, {
+ *     onBeforePost {
+ *         submitting = true
+ *     }
+ *     onPostServerError {
+ *         showMessage("Unexpected server error has occurred.")
+ *         submitting = false
+ *     }
+ *     onNetworkError {
+ *         showMessage("Server connection failed.")
+ *         submitting = false
+ *     }
+ *     onEvent(
+ *         ExistingWsDomainImported::class.java,
+ *         ExistingWsDomainImported.Field.domain(),
+ *         command.domain
+ *     ) {
+ *         close()
+ *     }.withTimeout(30.seconds) {
+ *         showMessage("The operation takes unexpectedly long to process. " +
+ *                 "Please check the status of its execution later.")
+ *         close()
+ *     }
+ *     onEvent(
+ *         WsDomainAlreadyRegistered::class.java,
+ *         WsDomainAlreadyRegistered.Field.domain(),
+ *         command.domain
+ *     ) {
+ *         showMessage("Domain already exists: ${command.registrationInfo.domainName.value}")
+ *         submitting = false
+ *     }
+ * })
+ * ```
+ *
+ * @param C A type of command message, whose consequences are configured in
+ *   this scope.
  */
 public interface CommandConsequencesScope<out C: CommandMessage> {
 
@@ -63,8 +132,9 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      * has been acknowledged or not, and the handler should assume that either
      * of these cases could have happened.
      *
-     * @param handler A callback to be invoked, whose [ServerCommunicationException] parameter
-     *   holds the exception that has signaled the failure.
+     * @param handler A callback to be invoked, whose
+     *   [ServerCommunicationException] parameter holds the exception that has
+     *   signaled the failure.
      */
     public fun onNetworkError(handler: suspend (ServerCommunicationException) -> Unit)
 
@@ -95,6 +165,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      *   subscribed to.
      * @param fieldValue A value of event's [field] that identifies an event
      *   being subscribed to.
+     * @return
      */
     public fun onEvent(
         eventType: Class<out EventMessage>,
@@ -117,6 +188,12 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
     public fun EventSubscription<out EventMessage>.withTimeout(
         timeout: Duration = 20.seconds,
         timeoutHandler: suspend () -> Unit)
+
+    /**
+     * Cancels all active event subscriptions that have been made in
+     * this scope.
+     */
+    public fun cancelAllSubscriptions()
 }
 
 /**
@@ -126,6 +203,10 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
  * @param coroutineScope [CoroutineScope] that should be used for launching
  *   suspending event handlers.
  */
+@Suppress(
+    // Considering all functions to be appropriate.
+    "TooManyFunctions"
+)
 internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override val command: C,
     private val coroutineScope: CoroutineScope
@@ -139,6 +220,12 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
             eventSubscriptions.forEach { it.cancel() }
         }
     }
+
+    /**
+     * Returns `true` if all event subscriptions that have been made using the
+     * [onEvent] method are active.
+     */
+    internal val allSubscriptionsActive: Boolean get() = eventSubscriptions.all { it.active }
 
     private val eventSubscriptions: MutableList<EventSubscription<out EventMessage>> = ArrayList()
     private var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
@@ -190,14 +277,12 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         beforePostHandlers.forEach { it() }
     }
 
-    internal val allActive: Boolean get() = eventSubscriptions.all { it.active }
-
     internal suspend fun triggerAcknowledgeHandlers() {
         acknowledgeHandlers.forEach { it() }
     }
 
     internal suspend fun triggerNetworkErrorHandlers(e: ServerCommunicationException) {
-        subscriptions.cancelAll()
+        cancelAllSubscriptions()
         if (postNetworkErrorHandlers.isEmpty()) {
             throw IllegalStateException(
                 "No `onNetworkError` handlers are registered for command: " +
@@ -209,7 +294,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     }
 
     internal suspend fun triggerServerErrorHandlers(e: ServerError) {
-        subscriptions.cancelAll()
+        cancelAllSubscriptions()
         if (postServerErrorHandlers.isEmpty()) {
             throw IllegalStateException(
                 "No `onPostServerError` handlers are registered for command: " +
@@ -218,5 +303,9 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
             )
         }
         postServerErrorHandlers.forEach { it(e) }
+    }
+
+    override fun cancelAllSubscriptions() {
+        subscriptions.cancelAll()
     }
 }

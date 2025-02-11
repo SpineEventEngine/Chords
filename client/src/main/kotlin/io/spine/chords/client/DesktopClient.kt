@@ -227,7 +227,7 @@ public class DesktopClient(
         val scope = CommandConsequencesScopeImpl(command, coroutineScope)
         try {
             scope.setupConsequences()
-            val allSubscriptionsSuccessful = scope.allActive
+            val allSubscriptionsSuccessful = scope.allSubscriptionsActive
             if (allSubscriptionsSuccessful) {
                 scope.triggerBeforePostHandlers()
                 postCommand(command)
@@ -320,8 +320,8 @@ public class DesktopClient(
 /**
  * An [EventSubscription] implementation.
  *
- * @param spineClient A [SpineClient] instance where the subscription
- *   is being registered.
+ * @param spineClient A Spine Event Engine's [Client][io.spine.client.Client]
+ *   instance where the subscription is being registered.
  */
 private class EventSubscriptionImpl<E: EventMessage>(
     private val spineClient: io.spine.client.Client

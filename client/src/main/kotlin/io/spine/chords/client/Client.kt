@@ -124,14 +124,19 @@ import kotlinx.coroutines.CoroutineScope
      * invoked synchronously before this suspending method returns. Event
      * handlers are invoked in the provided [coroutineScope].
      *
+     * See the description and an example of specifying command consequence
+     * handlers in the [CommandConsequencesScope] documentation.
+     *
      * @param command The command that should be posted.
      * @param coroutineScope The coroutine scope in which event handlers are to
      *   be invoked.
      * @param setupConsequences A lambda, which sets up handlers for command's
      *   consequences using the API in [CommandConsequencesScope] on which it
      *   is invoked.
-     * @return An object, which allows managing (e.g. cancelling) all
-     *   subscriptions made by this method.
+     * @return An object, which allows managing (e.g. cancelling) all event
+     *   subscriptions made by this method as specified with the
+     *   [setupConsequences] parameter.
+     * @see CommandConsequencesScope
      */
     public suspend fun <C : CommandMessage> postCommand(
         command: C,
@@ -186,7 +191,9 @@ public interface EventSubscription<E: EventMessage> {
     public val active: Boolean
 
     /**
-     * Starts the countdown period of waiting for the next event.
+     * Starts the countdown period [timeout] of waiting for the next event, and
+     * invokes the provided [onTimeout] handler if the event is not emitted
+     * during this period of time.
      *
      * If an event that matches the subscription criteria is not emitted during
      * the [timeout] period since this method is invoked, the [onTimeout]
