@@ -83,10 +83,6 @@ import kotlinx.coroutines.launch
  *         showMessage("Unexpected server error has occurred.")
  *         inProgress = false
  *     }
- *     onNetworkError {
- *         showMessage("Server connection failed.")
- *         inProgress = false
- *     }
  *     onEvent(
  *         ItemImported::class.java,
  *         ItemImported.Field.itemId(),
@@ -105,6 +101,10 @@ import kotlinx.coroutines.launch
  *         command.itemId
  *     ) {
  *         showMessage("Item already exists: ${command.itemName.value}")
+ *         inProgress = false
+ *     }
+ *     onNetworkError {
+ *         showMessage("Server connection failed.")
  *         inProgress = false
  *     }
  * })
@@ -166,12 +166,12 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      *   [withTimeout] function, or cancel the
      *   subscription using the [cancel][EventSubscription.cancel] function.
      */
-    public fun onEvent(
-        eventType: Class<out EventMessage>,
+    public fun <E: EventMessage> onEvent(
+        eventType: Class<out E>,
         field: EventMessageField,
         fieldValue: Message,
-        eventHandler: suspend (EventMessage) -> Unit
-    ): EventSubscription<out EventMessage>
+        eventHandler: suspend (E) -> Unit
+    ): EventSubscription<out E>
 
     /**
      * Limits the time of waiting for the event to [timeout].
@@ -262,12 +262,12 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         acknowledgeHandlers += handler
     }
 
-    override fun onEvent(
-        eventType: Class<out EventMessage>,
+    override fun <E: EventMessage> onEvent(
+        eventType: Class<out E>,
         field: EventMessageField,
         fieldValue: Message,
-        eventHandler: suspend (EventMessage) -> Unit
-    ): EventSubscription<out EventMessage> {
+        eventHandler: suspend (E) -> Unit
+    ): EventSubscription<out E> {
         val subscription = app.client.onEvent(
             eventType, field, fieldValue, {
                 coroutineScope.launch {
