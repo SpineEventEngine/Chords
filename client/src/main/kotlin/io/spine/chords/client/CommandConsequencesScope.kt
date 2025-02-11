@@ -68,11 +68,11 @@ import kotlinx.coroutines.launch
  * the [Client.postCommand] function:
  *
  * ```
- * val command: ImportExistingWsDomain = createCommand()
+ * val command: ImportItem = createCommand()
  * val coroutineScope = rememberCoroutineScope()
  * val submitting: Boolean by remember { mutableStateOf(false) }
  *
- * val subscriptions = app.client.postCommand(command, coroutineScope, {
+ * app.client.postCommand(command, coroutineScope, {
  *     onBeforePost {
  *         submitting = true
  *     }
@@ -85,22 +85,23 @@ import kotlinx.coroutines.launch
  *         submitting = false
  *     }
  *     onEvent(
- *         ExistingWsDomainImported::class.java,
- *         ExistingWsDomainImported.Field.domain(),
- *         command.domain
+ *         ItemImported::class.java,
+ *         ItemImported.Field.itemId(),
+ *         command.itemId
  *     ) {
- *         close()
+ *         showMessage("Item imported")
+ *         submitting = false
  *     }.withTimeout(30.seconds) {
  *         showMessage("The operation takes unexpectedly long to process. " +
  *                 "Please check the status of its execution later.")
- *         close()
+ *         submitting = false
  *     }
  *     onEvent(
- *         WsDomainAlreadyRegistered::class.java,
- *         WsDomainAlreadyRegistered.Field.domain(),
- *         command.domain
+ *         ItemAlreadyExists::class.java,
+ *         ItemAlreadyExists.Field.itemId(),
+ *         command.itemId
  *     ) {
- *         showMessage("Domain already exists: ${command.registrationInfo.domainName.value}")
+ *         showMessage("Item already exists: ${command.itemName.value}")
  *         submitting = false
  *     }
  * })
