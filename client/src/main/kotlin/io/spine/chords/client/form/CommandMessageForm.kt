@@ -312,6 +312,10 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * [`onXXX`][CommandConsequencesScope] functions available in the
      * function's scope.
      *
+     * See [CommandConsequencesScope] for the description of API available
+     * within the scope of [commandConsequences] function.
+     *
+     * @see CommandConsequencesScope
      * @see postCommand
      * @see cancelActiveSubscriptions
      */
@@ -369,8 +373,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * [MANUAL][io.spine.chords.proto.form.ValidationDisplayMode.MANUAL].
      *
      * @return An object, which allows managing (e.g. cancelling) all
-     *   subscriptions made by this method according submissions specified
-     *   within the [commandConsequences] callback.
+     *   subscriptions made by the [commandConsequences] callback.
      * @throws IllegalStateException If the form is not valid when this method
      *   is invoked (e.g. when `valueValid.value == false`).
      * @see commandConsequences
@@ -391,7 +394,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     }
 
     /**
-     * Cancels any active event subscriptions that have been made as a result of
+     * Cancels all event subscriptions that have been made as a result of
      * invoking this form's [postCommand] method.
      *
      * @see postCommand

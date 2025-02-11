@@ -41,29 +41,31 @@ import kotlinx.coroutines.launch
  * Defines a DSL for registering handlers of command consequences.
  *
  * An instance of `CommandConsequencesScope` is typically expected to serve as
- * a receiver of a function, which configures how certain consequences of a
- * command that has been posted should be handled. Such a function is typically
- * used with APIs that post a command, such as [Client.postCommand],
+ * a receiver of a function, which configures command consequence handlers. Such
+ * a function is typically a part of APIs that post a command, such as
+ * [Client.postCommand],
  * [CommandMessageForm][io.spine.chords.client.form.CommandMessageForm],
  * [CommandDialog][io.spine.chords.client.layout.CommandDialog], etc.
  *
  * `CommandConsequencesScope` exposes the following properties and functions:
- * - The [command] property contains the command message, which is being posted
- *   in this scope.
- * - The [onBeforePost] function can be used to register a callback, which is
- *   invoked before the command is posted, and the
- *   [onPostServerError]/[onAcknowledge] functions register callbacks invoked if
- *   the command could not be acknowledged due to an error on the server, and
- *   if the command has been acknowledged respectively.
- * - The [onEvent] function can be used to subscribe to certain events, which
- *   should or can be emitted as a consequence of posting the command [C]. It
- *   can in particular be used for subscribing to rejection events.
- * - [onNetworkError] registers a callback invoked if a network error occurs
- *   either when posting a command or when observing some of the subscribed
- *   events.
+ *  - The [command] property contains the command message, which is being posted
+ *    in this scope.
+ *  - The [onBeforePost] function can be used to register a callback, which is
+ *    invoked before the command is posted, and the
+ *    [onPostServerError]/[onAcknowledge] functions register callbacks invoked
+ *    if the command could not be acknowledged due to an error on the server,
+ *    and if the command has been acknowledged respectively.
+ *  - The [onEvent] function can be used to subscribe to certain events, which
+ *    should or can be emitted as a consequence of posting the command [C]. It
+ *    can in particular be used for subscribing to rejection events.
+ *  - [onNetworkError] registers a callback invoked if a network error occurs
+ *    either when posting a command or when observing some of the subscribed
+ *    events.
  *
- *   Note that in case of identifying a network error all active event
- *   subscriptions are cancelled and no further events are received.
+ *    Note that in case of identifying a network error all active event
+ *    subscriptions are cancelled and no further events are received.
+ *  - [cancelAllSubscriptions] can be used to cancel all event subscriptions that
+ *    have been made with the [onEvent] function.
  *
  * Here's an example of configuring `CommandConsequencesScope` when using
  * the [Client.postCommand] function:
@@ -127,30 +129,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
     public fun onBeforePost(handler: suspend () -> Unit)
 
     /**
-     * Registers the callback, which is invoked if a network communication
-     * failure occurs when posting the command.
-     *
-     * The fact of invoking this callback doesn't signify whether the command
-     * has been acknowledged or not, and the handler should assume that either
-     * of these cases could have happened.
-     *
-     * @param handler A callback to be invoked, whose
-     *   [ServerCommunicationException] parameter holds the exception that has
-     *   signaled the failure.
-     */
-    public fun onNetworkError(handler: suspend (ServerCommunicationException) -> Unit)
-
-    /**
-     * Registers the callback, which is invoked if an error occurred on the
-     * server before the command has been acknowledged.
-     *
-     * @param handler A callback to be invoked, whose [ServerError] parameter
-     *   holds the exception that has signaled the failure.
-     */
-    public fun onPostServerError(handler: suspend (ServerError) -> Unit)
-
-    /**
-     * Registers the callback, which is invoked when the server has acknowledged
+     * Registers the callback, which is invoked if the server acknowledges
      * the command.
      *
      * @param handler A callback to be invoked, whose [ServerCommunicationException] parameter
@@ -159,15 +138,33 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
     public fun onAcknowledge(handler: suspend () -> Unit)
 
     /**
-     * Subscribes to an event of type [eventType], which has its [field] equal
+     * Registers the callback, which is invoked if an error occurs on the server
+     * while acknowledging the command.
+     *
+     * @param handler A callback to be invoked, whose [ServerError] parameter
+     *   receives the exception that has signaled the failure.
+     */
+    public fun onPostServerError(handler: suspend (ServerError) -> Unit)
+
+    /**
+     * Subscribes to events of type [eventType], which have its [field] equal
      * to [fieldValue].
+     *
+     * The subscription remains active by waiting for events that satisfy the
+     * specified criteria until the [cancel][EventSubscription.cancel] method
+     * is invoked in the returned [EventSubscription] instance, or until all
+     * subscriptions made within this instance are cancelled using the
+     * [cancelAllSubscriptions] function.
      *
      * @param eventType A type of event that should be subscribed to.
      * @param field A field whose value should identify an event being
      *   subscribed to.
      * @param fieldValue A value of event's [field] that identifies an event
      *   being subscribed to.
-     * @return
+     * @return An [EventSubscription] instance, which can be used to manage this
+     *   subscription, e.g. add a timeout to it using the
+     *   [withTimeout] function, or cancel the
+     *   subscription using the [cancel][EventSubscription.cancel] function.
      */
     public fun onEvent(
         eventType: Class<out EventMessage>,
@@ -180,16 +177,29 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      * Limits the time of waiting for the event to [timeout].
      *
      * If the event is not emitted during [timeout] since this method is invoked
-     * then [timeoutHandler] is invoked, and the event ceases to be waited for.
+     * then [timeoutHandler] is invoked, and the event subscription
+     * is cancelled.
      *
-     * @param timeout A maximum period of time that the event is waited since
-     *   invoking this function.
+     * @param timeout A maximum period of time that the event is waited for
+     *   since the moment of invoking this function.
      * @param timeoutHandler A callback, which should be invoked if an event
-     *   is not emitted within [timeout] after invoking this method.
+     *   is not emitted within the specified [timeout] period after invoking
+     *   this method.
      */
     public fun EventSubscription<out EventMessage>.withTimeout(
         timeout: Duration = 20.seconds,
         timeoutHandler: suspend () -> Unit)
+
+    /**
+     * Registers the callback, which is invoked if a network communication
+     * failure occurs while posting the command or waiting for
+     * subscribed events.
+     *
+     * @param handler A callback to be invoked, whose
+     *   [ServerCommunicationException] parameter holds the exception that has
+     *   signaled the failure.
+     */
+    public fun onNetworkError(handler: suspend (ServerCommunicationException) -> Unit)
 
     /**
      * Cancels all active event subscriptions that have been made in

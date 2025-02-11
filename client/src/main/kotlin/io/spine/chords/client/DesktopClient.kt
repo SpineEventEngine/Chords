@@ -218,6 +218,10 @@ public class DesktopClient(
      * @param setupConsequences A lambda, which sets up handlers for command's
      *   consequences using the API in [CommandConsequencesScope] on which it
      *   is invoked.
+     * @return An object, which allows managing (e.g. cancelling) all event
+     *   subscriptions made by this method as specified with the
+     *   [setupConsequences] parameter.
+     * @see CommandConsequencesScope
      */
     public override suspend fun <C : CommandMessage> postCommand(
         command: C,

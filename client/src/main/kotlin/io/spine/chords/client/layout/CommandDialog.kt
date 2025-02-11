@@ -139,7 +139,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
 
     /**
      * Cancels any active subscriptions made by [commandConsequences] and closes
-     * the wizard.
+     * the dialog.
      *
      * @see submitContent
      * @see commandConsequences

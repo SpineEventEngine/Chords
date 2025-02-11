@@ -108,7 +108,6 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * [`onXXX`][CommandConsequencesScope] functions available in the
      * function's scope.
      *
-     *
      * Event subscriptions made by this function are automatically cancelled
      * when the dialog is closed. They can also be cancelled explicitly by
      * calling [cancelActiveSubscriptions] if they need to be canceled before

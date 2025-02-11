@@ -186,7 +186,7 @@ import kotlinx.coroutines.CoroutineScope
 public interface EventSubscription<E: EventMessage> {
 
     /**
-     * Returns `true`, if the subscription is active (waiting for event/s).
+     * Returns `true`, if the subscription is active (waiting for events).
      */
     public val active: Boolean
 
@@ -195,7 +195,7 @@ public interface EventSubscription<E: EventMessage> {
      * invokes the provided [onTimeout] handler if the event is not emitted
      * during this period of time.
      *
-     * If an event that matches the subscription criteria is not emitted during
+     * If an event that matches the subscription criteria is not emitted a
      * the [timeout] period since this method is invoked, the [onTimeout]
      * callback is invoked, and the subscription is cancelled.
      *
@@ -204,8 +204,8 @@ public interface EventSubscription<E: EventMessage> {
      * @param timeoutCoroutineScope A [CoroutineScope] used to launch
      *   a coroutine for waiting a [timeout] period and invoking
      *   the [onTimeout] callback.
-     * @param onTimeout An optional callback, which will be invoked if event is
-     *   not emitted within the [timeout] period after this method is called.
+     * @param onTimeout A callback, which will be invoked if event is not
+     *   emitted within the [timeout] period after this method is called.
      */
     public fun withTimeout(
         timeout: Duration,
