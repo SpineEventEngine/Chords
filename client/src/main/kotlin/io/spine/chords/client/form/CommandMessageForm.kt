@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,26 +28,20 @@ package io.spine.chords.client.form
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import io.spine.base.CommandMessage
-import io.spine.base.EventMessage
-import io.spine.chords.client.CommandPostingError
-import io.spine.chords.client.EventSubscription
+import io.spine.chords.client.CommandConsequencesScope
+import io.spine.chords.client.EventSubscriptions
 import io.spine.chords.client.appshell.client
 import io.spine.chords.core.ComponentProps
 import io.spine.chords.core.appshell.app
-import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.MessageFormSetupBase
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.TimeoutCancellationException
 
 /**
  * A form that allows entering a value of a command message and posting
@@ -86,7 +80,11 @@ import kotlinx.coroutines.TimeoutCancellationException
  *          // that appears appropriate as long as the form's `postCommand`
  *          // method is invoked when the form needs to be posted.
  *          Button(
- *              onClick = { form.postCommand() }
+ *              onClick = {
+ *                  if (form.valueValid.value) {
+ *                      form.postCommand()
+ *                  }
+ *              }
  *          ) {
  *              Text("Login")
  *          }
@@ -144,7 +142,11 @@ import kotlinx.coroutines.TimeoutCancellationException
  *          }
  *
  *          Button(
- *              onClick = { form.postCommand() }
+ *              onClick = {
+ *                  if (form.valueValid.value) {
+ *                      form.postCommand()
+ *                  }
+ *              }
  *          ) {
  *              Text("Login")
  *          }
@@ -300,51 +302,42 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     }
 
     /**
-     * A function, which, given a command message that is about to be posted,
-     * should subscribe to a respective event that is expected to arrive in
-     * response to handling that command.
+     * A function, which, should register handlers for consequences of
+     * command [C] posted by the form.
+     *
+     * The command, which is going to be posted and whose consequence handlers
+     * should be registered can be obtained from the
+     * [command][CommandConsequencesScope.command] property available in the
+     * function's scope, and handlers can be registered using the
+     * [`onXXX`][CommandConsequencesScope] functions available in the
+     * function's scope.
+     *
+     * See [CommandConsequencesScope] for the description of API available
+     * within the scope of [commandConsequences] function.
+     *
+     * @see CommandConsequencesScope
+     * @see postCommand
+     * @see cancelActiveSubscriptions
      */
-    public lateinit var eventSubscription: (C) -> EventSubscription<out EventMessage>
+    public lateinit var commandConsequences: CommandConsequencesScope<C>.() -> Unit
 
     /**
-     * A state, which reports whether the form is currently in progress of
-     * posting the command.
-     *
-     * More precisely, it is set to `true`, if the command has been posted using
-     * the [postCommand] method, but no response or timeout error has been
-     * received yet, and `false` otherwise.
-     *
-     * This property is backed by a [State] object, so it can be used as part of
-     * a composition, which will be updated automatically when this property
-     * is changed. E.g. it can be used to disable the respective "Post" button
-     * to prevent making it possible to post command duplicates.
+     * [CoroutineScope] owned by this form's composition used for running
+     * form-related suspending calls.
      */
-    public var posting: Boolean by mutableStateOf(false)
-
-    /**
-     * Specifies whether field editors should be disabled when the command is
-     * being posted (when [posting] equals `true`).
-     */
-    public var disableOnPosting: Boolean = true
-
-    /**
-     * This overridden implementation ensures that the editors are disabled when
-     * the command is being posted (when [posting] is `true`).
-     *
-     * Note: if `disableOnPosting` is `false`, no automatic disabling is
-     * performed during posting the command.
-     */
-    override val shouldEnableEditors: Boolean
-        get() = super.shouldEnableEditors && (!posting || !disableOnPosting)
-
     private lateinit var coroutineScope: CoroutineScope
+
+    /**
+     * Event subscriptions, which were made by [commandConsequences] as a result
+     * of command posted during dialog form's submission.
+     */
+    private var activeSubscriptions: MutableList<EventSubscriptions> = ArrayList()
+
+
 
     override fun initialize() {
         super.initialize()
-        check(this::eventSubscription.isInitialized) {
-            "CommandMessageForm's `eventSubscription` property must " +
-            "be specified."
-        }
+        requireProperty(this::commandConsequences.isInitialized, "commandConsequences")
     }
 
     @Composable
@@ -354,142 +347,62 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     }
 
     /**
-     * Posts the command based on all currently entered data and awaits
-     * the feedback upon processing the command.
+     * Posts the command based on all currently entered data.
      *
-     * Here's a more detailed description about the sequence of actions
-     * performed by this method:
-     * - Validates the data entered in the form and builds the respective
-     *   command message. In case if any validation errors are encountered, this
-     *   method skips further stages, and just makes the respective validation
-     *   errors to be displayed.
-     * - Posts the command that was validated and built.
-     * - Awaits for an event that should arrive upon successful handling of
-     *   the command, as defined by the [eventSubscription]
-     *   constructor's parameters.
-     * - If the event doesn't arrive in a predefined timeout that is considered
-     *   an adequate delay from user's perspective, this method
-     *   throws [TimeoutCancellationException].
+     * Note that this method can only be invoked when the data entered within
+     * the form is valid (when `valueValid.value == false`).
      *
-     * @param outcomeHandler Specifies the way that command outcome is
-     *   handled, e.g. the way how unexpected outcomes are processed.
-     * @return `true` if the command was successfully built without any
-     *   validation errors, and `false` if the command message could not be
-     *   successfully built from the currently entered data (validation errors
-     *   are displayed to the user in this case).
-     * @throws TimeoutCancellationException If the event doesn't arrive within
-     *   a reasonable timeout defined by the implementation.
-     * @throws IllegalStateException If the method is invoked while
-     *   the [postCommand] invocation is still being handled (when [posting] is
-     *   still `true`).
+     * Here's a typical usage example:
+     * ```
+     *     // Make sure that validation messages are up to date before
+     *     // submitting the form.
+     *     commandMessageForm.updateValidationDisplay(true)
+     *
+     *     // Submit the form if it is valid currently.
+     *     if (commandMessageForm.valueValid.value) {
+     *         commandMessageForm.postCommand()
+     *     }
+     * ```
+     *
+     * Note that the [updateValidationDisplay] invocation is technically not
+     * required to check if the form is valid because the form is always
+     * validated on-the-fly automatically, and its [valueValid] property always
+     * contains an up-to-date value. Nevertheless, it would typically be useful
+     * to invoke it before [postCommand] to improve user's experience when the
+     * form's [validationDisplayMode] property has a value of
+     * [MANUAL][io.spine.chords.proto.form.ValidationDisplayMode.MANUAL].
+     *
+     * @return An object, which allows managing (e.g. cancelling) all
+     *   subscriptions made by the [commandConsequences] callback.
+     * @throws IllegalStateException If the form is not valid when this method
+     *   is invoked (e.g. when `valueValid.value == false`).
+     * @see commandConsequences
+     * @see cancelActiveSubscriptions
      */
-    public suspend fun postCommand(
-        outcomeHandler: CommandOutcomeHandler<C> = DefaultOutcomeHandler()
-    ): Boolean {
-        if (posting) {
-            throw IllegalStateException("Cannot invoke `postCommand`, while" +
-                    "waiting for handling the previously posted command.")
-        }
+    public suspend fun postCommand(): EventSubscriptions {
         updateValidationDisplay(true)
-        if (!valueValid.value) {
-            return false
+        check(valueValid.value) {
+            "`postCommand` cannot be invoked on an invalid form`"
         }
         val command = value.value
         check(command != null) {
             "CommandMessageForm's value should be not null since it was just " +
             "checked to be valid within postCommand."
         }
-        val subscription = eventSubscription(command)
-        return try {
-            posting = true
-            try {
-                app.client.command(command)
-                val event = subscription.awaitEvent()
-                outcomeHandler.onEvent(event)
-                true
-            } catch (e: CommandPostingError) {
-                outcomeHandler.onPostingError(e)
-                false
-            }
-        } catch (
-            @Suppress(
-                // A timeout condition is handled by `outcomeHandler`.
-                "SwallowedException"
-            )
-            e: TimeoutCancellationException
-        ) {
-            outcomeHandler.onTimeout(command)
-            false
-        } finally {
-            posting = false
-        }
+
+        return app.client.postCommand(command, coroutineScope, commandConsequences)
     }
-}
-
-/**
- * An object, which is capable of handling different kinds of outcomes that can
- * follow as a result of posting a command.
- */
-public interface CommandOutcomeHandler<C : CommandMessage> {
 
     /**
-     * Invoked upon receiving an event that has
-     * the command [C].
-     */
-    public fun onEvent(event: EventMessage)
-
-    /**
-     * Invoked if no event has been received in response to the command [C]
-     * in a reasonable period of time defined by the implementation.
-     */
-    public suspend fun onTimeout(command: C)
-
-    /**
-     * Invoked if an error has occurred during posting and acknowledging
-     * the command on the server.
+     * Cancels all event subscriptions that have been made as a result of
+     * invoking this form's [postCommand] method.
      *
-     * @param error The exception that signifies the error that has occurred.
-     * @see io.spine.chords.client.Client.command
+     * @see postCommand
+     * @see commandConsequences
      */
-    public suspend fun onPostingError(error: CommandPostingError)
-}
-
-/**
- * A default implementation for [CommandOutcomeHandler], which is expected to
- * be suitable in most typical cases.
- *
- * @param eventHandler An optional callback, which will be invoked when
- *   an event that is expected as an outcome of the command [C] is emitted.
- * @param timeoutMessage A lambda, which, given a command that was posted with
- *   no subsequent response received in time, should provide a message that
- *   should be displayed to the user in this case. If not specified, a default
- *   message is displayed.
- * @param postingErrorMessage A lambda, which, given a [CommandPostingError]
- *   that has occurred when posting the command, returns the text that should
- *   be displayed to the user.
- */
-public class DefaultOutcomeHandler<C : CommandMessage>(
-    private val eventHandler: ((EventMessage) -> Unit)? = null,
-    private val timeoutMessage: ((C) -> String)? = null,
-    private val postingErrorMessage: ((CommandPostingError) -> String)? = null
-) : CommandOutcomeHandler<C> {
-    override fun onEvent(event: EventMessage) {
-        eventHandler?.invoke(event)
+    public fun cancelActiveSubscriptions() {
+        activeSubscriptions.forEach { it.cancelAll() }
+        activeSubscriptions.clear()
     }
 
-    override suspend fun onTimeout(command: C) {
-        val message = timeoutMessage?.invoke(command) ?: (
-                "Timed out waiting for an event in response to " +
-                        "the command ${command.javaClass.simpleName}"
-                )
-        showMessage(message)
-    }
-
-    override suspend fun onPostingError(error: CommandPostingError) {
-        val message = postingErrorMessage?.invoke(error) ?: (
-                "An error has occurred when posting or acknowledging " +
-                        "the command ${error.message}"
-                )
-        showMessage(message)
-    }
 }

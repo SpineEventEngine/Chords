@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,8 +71,8 @@ public class MessageDialog : Dialog() {
 
     init {
         submitAvailable = true
-        dialogWidth = 430.dp
-        dialogHeight = 210.dp
+        width = 550.dp
+        height = 205.dp
     }
 
     /**
@@ -101,10 +101,8 @@ public class MessageDialog : Dialog() {
         dialogClosure.await()
     }
 
-    override suspend fun submitContent(): Boolean {
-        // No custom logic is required when the user acknowledges
-        // the displayed message.
-        return true
+    override suspend fun submitContent() {
+        close()
     }
 
     /**

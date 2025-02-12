@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.google.protobuf.Message
 import io.grpc.ManagedChannelBuilder
+import io.grpc.Status.Code.UNAVAILABLE
+import io.grpc.StatusRuntimeException
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
 import io.spine.base.Error
@@ -39,17 +41,14 @@ import io.spine.client.ClientRequest
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.client.EventFilter.eq
+import io.spine.client.Subscription
 import io.spine.core.UserId
-import java.util.concurrent.CompletableFuture
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.future.await
-import kotlinx.coroutines.withTimeout
-
-/**
- * A period during which a server should provide a reaction in a normally
- * functioning system (e.g., emit an event in response to a command).
- */
-private const val ReactionTimeoutMillis = 15_000L
+import kotlin.time.Duration
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -90,9 +89,10 @@ public class DesktopClient(
      * as well.
      *
      * @param entityClass A class of entities that should be read and observed.
-     * @param targetList A [MutableState] that contains a list whose content should be
-     *   populated and kept up to date by this function.
-     * @param extractId  A callback that should read the value of the entity's ID.
+     * @param targetList A [MutableState] that contains a list whose content
+     *   should be populated and kept up to date by this function.
+     * @param extractId  A callback that should read the value of
+     *   the entity's ID.
      */
     public override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
@@ -110,18 +110,24 @@ public class DesktopClient(
     }
 
     /**
-     * Reads all entities of type [entityClass] that match the given [queryFilters] and invokes the
-     * [onNext] callback with the initial list of entities. Then sets up observation to receive
-     * future updates to the entities, filtering the observed updates using the provided [observeFilters].
-     * Each time any entity that matches the [observeFilters] changes, the [onNext] callback
-     * will be invoked again with the updated list of entities.
+     * Reads all entities of type [entityClass] that match the given
+     * [queryFilters] and invokes the [onNext] callback with the initial list of
+     * entities. Then sets up observation to receive future updates to the
+     * entities, filtering the observed updates using the provided
+     * [observeFilters]. Each time any entity that matches the [observeFilters]
+     * changes, the [onNext] callback will be invoked again with the updated
+     * list of entities.
      *
      * @param entityClass A class of entities that should be read and observed.
-     * @param extractId A callback that should read the value of the entity's ID.
-     * @param queryFilters Filters to apply when querying the initial list of entities.
-     * @param observeFilters Filters to apply when observing updates to the entities.
-     * @param onNext A callback function that is called with the list of entities after the initial
-     *   query completes, and each time any of the observed entities is updated.
+     * @param extractId A callback that should read the value of the
+     *   entity's ID.
+     * @param queryFilters Filters to apply when querying the initial list
+     *   of entities.
+     * @param observeFilters Filters to apply when observing updates to
+     *   the entities.
+     * @param onNext A callback function that is called with the list of
+     *   entities after the initial query completes, and each time any of the
+     *   observed entities is updated.
      */
     public override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
@@ -165,104 +171,107 @@ public class DesktopClient(
     }
 
     /**
-     * Posts a command to the server.
+     * Posts the given [command] to the server.
      *
-     * @param cmd A command that has to be posted.
-     * @throws CommandPostingError If some error has occurred during posting and
-     *   acknowledging the command on the server.
+     * @param command A command that has to be posted.
+     * @throws ServerError If the command could not be acknowledged due to an
+     *   error on the server.
+     * @throws ServerCommunicationException In case of a network communication
+     *   failure that has occurred during posting of the command. It is unknown
+     *   whether the command has been acknowledged or no in this case.
      */
-    override fun command(cmd: CommandMessage) {
-        var error: CommandPostingError? = null
-        clientRequest()
-            .command(cmd)
-            .onServerError { msg, err: Error ->
-                error = ServerError(err)
+    override fun <C: CommandMessage> postCommand(command: C) {
+        var error: Throwable? = null
+        try {
+            clientRequest()
+                .command(command)
+                .onServerError { msg, err: Error ->
+                    error = ServerError(err)
+                }
+                .onStreamingError { err: Throwable ->
+                    error = ServerCommunicationException(err)
+                }
+                .postAndForget()
+        } catch (e: StatusRuntimeException) {
+            if (e.status.code == UNAVAILABLE) {
+                throw ServerCommunicationException(e)
+            } else {
+                throw e
             }
-            .onStreamingError { err: Throwable ->
-                error = StreamingError(err)
-            }
-            .postAndForget()
+        }
         if (error != null) {
             throw error!!
         }
     }
 
     /**
-     * Posts a command to the server and awaits for the specified event
-     * to arrive.
+     * Posts the given [command], and runs handlers for any of the consequences
+     * registered in [setupConsequences].
      *
-     * @param cmd A command that has to be posted.
-     * @param event A class of event that has to be waited for after posting
-     *   the command.
-     * @param field A field that should be used for identifying the event to be
-     *   awaited for.
-     * @param fieldValue A value of the field that identifies the event to be
-     *   awaited for.
-     * @return An event specified in the parameters, which was emitted in
-     *   response to the command.
-     * @throws kotlinx.coroutines.TimeoutCancellationException
-     *   If the event doesn't arrive within a reasonable timeout defined
-     *   by the implementation.
-     */
-    override suspend fun <E : EventMessage> command(
-        cmd: CommandMessage,
-        event: Class<E>,
-        field: EventMessageField,
-        fieldValue: Message
-    ): E = coroutineScope {
-        val eventSubscription = subscribeToEvent(event, field, fieldValue)
-        command(cmd)
-        eventSubscription.awaitEvent()
-    }
-
-    /**
-     * Subscribes to an event with a given class and a given field value (which
-     * would typically be the event's unique identifier field).
+     * All registered command consequence handlers except event handlers are
+     * invoked synchronously before this suspending method returns. Event
+     * handlers are invoked in the provided [coroutineScope].
      *
-     * @param event A class of event that has to be subscribed to.
-     * @param field A field that should be used for identifying the event to be
-     *   subscribed to.
-     * @param fieldValue A value of the field that identifies the event to be
-     *   subscribed to.
-     * @return A [CompletableFuture] instance that is completed when the event
-     *   specified by the parameters arrives.
+     * @param command The command that should be posted.
+     * @param coroutineScope The coroutine scope in which event handlers are to
+     *   be invoked.
+     * @param setupConsequences A lambda, which sets up handlers for command's
+     *   consequences using the API in [CommandConsequencesScope] on which it
+     *   is invoked.
+     * @return An object, which allows managing (e.g. cancelling) all event
+     *   subscriptions made by this method as specified with the
+     *   [setupConsequences] parameter.
+     * @see CommandConsequencesScope
      */
-    override fun <E : EventMessage> subscribeToEvent(
-        event: Class<E>,
-        field: EventMessageField,
-        fieldValue: Message
-    ): EventSubscription<E> {
-        val eventReceival = CompletableFuture<E>()
-        observeEvent(
-            event = event,
-            field = field,
-            fieldValue = fieldValue) { evt ->
-                eventReceival.complete(evt)
+    public override suspend fun <C : CommandMessage> postCommand(
+        command: C,
+        coroutineScope: CoroutineScope,
+        setupConsequences: CommandConsequencesScope<C>.() -> Unit
+    ): EventSubscriptions {
+        val scope = CommandConsequencesScopeImpl(command, coroutineScope)
+        try {
+            scope.setupConsequences()
+            val allSubscriptionsSuccessful = scope.allSubscriptionsActive
+            if (allSubscriptionsSuccessful) {
+                scope.triggerBeforePostHandlers()
+                postCommand(command)
+                scope.triggerAcknowledgeHandlers()
+            } else {
+                scope.subscriptions.cancelAll()
             }
-        return FutureEventSubscription(eventReceival)
+        } catch (e: ServerError) {
+            scope.triggerServerErrorHandlers(e)
+        } catch (e: ServerCommunicationException) {
+            scope.triggerNetworkErrorHandlers(e)
+        }
+        return scope.subscriptions
     }
 
-    /**
-     * Observes the provided event.
-     *
-     * @param event A class of event to observe.
-     * @param onEmit A callback triggered when the desired event is emitted.
-     * @param field A field used for identifying the observed event.
-     * @param fieldValue An identifying field value of the observed event.
-     */
-    override fun <E : EventMessage> observeEvent(
+    override fun <E : EventMessage> onEvent(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
-        onEmit: (E) -> Unit
-    ) {
-        clientRequest()
-            .subscribeToEvent(event)
-            .where(eq(field, fieldValue))
-            .observe { evt ->
-                onEmit(evt)
-            }
-            .post()
+        onNetworkError: ((Throwable) -> Unit)?,
+        onEvent: (E) -> Unit
+    ): EventSubscription<E> {
+        val eventSubscription = EventSubscriptionImpl<E>(spineClient)
+        try {
+            eventSubscription.subscription = clientRequest()
+                .subscribeToEvent(event)
+                .where(eq(field, fieldValue))
+                .observe { evt ->
+                    eventSubscription.onEvent()
+                    onEvent(evt)
+                }
+                .onStreamingError({ err ->
+                    eventSubscription.cancel()
+                    onNetworkError?.invoke(err)
+                })
+                .post()
+        } catch (e: StatusRuntimeException) {
+            onNetworkError?.invoke(e)
+        }
+        return eventSubscription
     }
 
     /**
@@ -287,8 +296,8 @@ public class DesktopClient(
      *
      * @param targetList A [MutableState] that contains a list to be updated.
      * @param entity An item that has to be merged into the list.
-     * @param extractId A function that, given a list item, or a value of [entity],
-     *   retrieves its ID.
+     * @param extractId A function that, given a list item, or a value of
+     *   [entity], retrieves its ID.
      */
     private fun <E : EntityState> updateList(
         targetList: MutableState<List<E>>,
@@ -313,17 +322,59 @@ public class DesktopClient(
 }
 
 /**
- * An [EventSubscription] implementation that is based on
- * a [CompletableFuture] instance.
+ * An [EventSubscription] implementation.
  *
- * @param future A `CompletableFuture`, which is expected to provide
- *   the respective event.
+ * @param spineClient A Spine Event Engine's [Client][io.spine.client.Client]
+ *   instance where the subscription is being registered.
  */
-private class FutureEventSubscription<E: EventMessage>(
-    private val future: CompletableFuture<E>
+private class EventSubscriptionImpl<E: EventMessage>(
+    private val spineClient: io.spine.client.Client
 ) : EventSubscription<E> {
+    override val active: Boolean get() = subscription != null
 
-    override suspend fun awaitEvent(): E {
-        return withTimeout(ReactionTimeoutMillis) { future.await() }
+    /**
+     * A Spine [Subscription], which was made to supply events of type [E], or
+     * `null` if it either hasn't been made yet, or cancelled already.
+     */
+    var subscription: Subscription? = null
+
+    private var timeoutJob: Job? = null
+
+    override fun withTimeout(
+        timeout: Duration,
+        timeoutCoroutineScope: CoroutineScope,
+        onTimeout: suspend () -> Unit,
+    ) {
+        check(timeoutJob == null) {
+            "`withTimeout` cannot be used more than once for" +
+                    "the same `EventSubscription`"
+        }
+        timeoutJob = timeoutCoroutineScope.launch {
+            delay(timeout)
+            if (timeoutJob != null) {
+                cancel()
+                onTimeout()
+            }
+        }
+    }
+
+    /**
+     * Invoked internally for the subsctiption to perform any operations, which
+     * have to be performed whenever an expected event [E] is emitted.
+     */
+    fun onEvent() {
+        timeoutJob?.cancel()
+        timeoutJob = null
+    }
+
+    override fun cancel() {
+        if (subscription != null) {
+            spineClient.subscriptions().cancel(subscription!!)
+            subscription = null
+        }
+        if (timeoutJob != null) {
+            timeoutJob?.cancel()
+            timeoutJob = null
+        }
     }
 }

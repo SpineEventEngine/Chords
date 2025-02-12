@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -318,26 +318,26 @@ import io.spine.chords.core.appshell.app
  * declares a component's instance specifies property value explicitly), one way
  * to do it is like this:
  *
- * - Declare the respective property as a `lateinit` one without any
- *   default value.
+ *  - Declare the respective property as a `lateinit` one without any
+ *    default value.
  *
- * - Override the [initialize] method, and invoke the [requireProperty] method
- *   to ensure that a component throws an exception with a descriptive message
- *   if the property value is not specified when the component is declared.
+ *  - Override the [initialize] method, and invoke the [requireProperty] method
+ *    to ensure that a component throws an exception with a descriptive message
+ *    if the property value is not specified when the component is declared.
  *
- *   The `requireProperty` call must contain the explicit [isInitialized]
- *   property access expression for the respective property literal (see
- *   an example below). Note that currently it is technically
- *   [not possible][kotlin.internal.AccessibleLateinitPropertyLiteral] in
- *   Kotlin to embed the [isInitialized] access into the `requireProperty`
- *   implementation, and thus it has to be written literally like this.
+ *    The `requireProperty` call must contain the explicit [isInitialized]
+ *    property access expression for the respective property literal (see
+ *    an example below). Note that currently it is technically
+ *    [not possible][kotlin.internal.AccessibleLateinitPropertyLiteral] in
+ *    Kotlin to embed the [isInitialized] access into the `requireProperty`
+ *    implementation, and thus it has to be written literally like this.
  *
- *   This second point is technically optional but is recommended to make
- *   the exception message descriptive, and make the actual component's usage
- *   more clear.
+ *    This second point is technically optional but is recommended to make
+ *    the exception message descriptive, and make the actual component's usage
+ *    more clear.
  *
- *   Note: make sure to invoke `super.initialize()` when overriding
- *   the `initialize` method.
+ *    Note: make sure to invoke `super.initialize()` when overriding
+ *    the `initialize` method.
  *
  * Here's an example:
  * ```
@@ -463,8 +463,8 @@ import io.spine.chords.core.appshell.app
  *
  *      - Then, the component's [initialize] method is called.
  *
- * -  Each time the component is rendered (composed or recomposed,
- *    see [Content]):
+ * - Each time the component is rendered (composed or recomposed,
+ *   see [Content]):
  *
  *    - **Properties update** (see [updateProps]). This consists of two parts:
  *
@@ -489,49 +489,51 @@ import io.spine.chords.core.appshell.app
  * function-based components to class-based ones. This can also be helpful for
  * understanding the differences between the two component writing paradigms.
  *
- * - A class should be created instead of a composable function. Its name is
- *   generally expected to be the same as the function that is being converted.
+ *  - A class should be created instead of a composable function. Its name is
+ *    generally expected to be the same as the function that is being converted.
  *
- * - This class should extend the [Component] class (or some of its subclasses).
+ *  - This class should extend the [Component] class (or some of
+ *    its subclasses).
  *
- * - Each parameter of a component (which would be passed as a parameter to
- *   a function-based component), should be declared as a mutable public
- *   property `public var ...`.
+ *  - Each parameter of a component (which would be passed as a parameter to
+ *    a function-based component), should be declared as a mutable public
+ *    property `public var ...`.
  *
- * - The actual composable content of the component (content of the composable
- *   function that is being transformed into a class-based component) is
- *   placed inside an overridden [content] method (which is declared as
- *   a `@Composable` one as well).
+ *  - The actual composable content of the component (content of the composable
+ *    function that is being transformed into a class-based component) is
+ *    placed inside an overridden [content] method, which is declared as
+ *    a `@Composable` one as well.
  *
- * - Class-based components are typically never instantiated directly via their
- *   constructor (see "Using class-based components")! Instead, they are
- *   technically "invoked" via an `invoke` operator on their companion object.
- *   To ensure this usage syntax, the following should be done:
+ *  - Class-based components are typically never instantiated directly via their
+ *    constructor (see "Using class-based components")! Instead, they are
+ *    technically "invoked" via an `invoke` operator on their companion object.
+ *    To ensure this usage syntax, the following should be done:
  *
- *   - Add a public companion object that extends `ComponentCompanion` (or its
- *     subclass, e.g. if you're extending a subclass of `Component`).
+ *    - Add a public companion object that extends `ComponentCompanion` (or its
+ *      subclass, e.g. if you're extending a subclass of `Component`).
  *
- *   See the details in the "Implementing class-based components" section above.
+ *    See the details in the "Implementing class-based components"
+ *    section above.
  *
- * - Consider transforming variables whose values are cached with [remember]
- *   in a function-based component to be private or protected class's
- *   properties instead.
+ *  - Consider transforming variables whose values are cached with [remember]
+ *    in a function-based component to be private or protected class's
+ *    properties instead.
  *
- *   You can still use `remember` if needed, but please note that the whole
- *   component's instance is already automatically `remember`-ed, which means
- *   that you can often just store such data in its properties in such cases.
+ *    You can still use `remember` if needed, but please note that the whole
+ *    component's instance is already automatically `remember`-ed, which means
+ *    that you can often just store such data in its properties in such cases.
  *
- * - If your composable components has some nested functions and/or big lambdas,
- *   consider transforming them into methods of the component's class.
+ *  - If your composable components have some nested functions and/or big
+ *    lambdas, consider transforming them into methods of the component's class.
  *
- * - Likewise, if there are any additional functions that you consider to be
- *   a part of the component, consider making them to be methods of
- *   the component's class.
+ *  - Likewise, if there are any additional functions that you consider to be
+ *    a part of the component, consider making them to be methods of
+ *    the component's class.
  *
- *   This can especially be appropriate if you had to pass some of the variables
- *   with `remember`-ed values into such functions. Transforming such functions
- *   into class methods would make respective class's properties to be available
- *   to such methods implicitly.
+ *    This can especially be appropriate if you had to pass some of the
+ *    variables with `remember`-ed values into such functions. Transforming such
+ *    functions into class methods would make respective class's properties to
+ *    be available to such methods implicitly.
  *
  * # Optimizing performance
  *
@@ -564,24 +566,24 @@ import io.spine.chords.core.appshell.app
  *
  * Here are some considerations that might be helpful for adapting an unstable
  * component's implementation to be a stable one:
- * - Any component that has any `var` property or any `val` property whose type
- *   is unstable and not immutable is considered as an unstable type by
- *   Compose by default.
- * - Since such properties are naturally required by many component's
- *   implementations, making a component stable would require adding
- *   a [Stable] annotation to the component's class.
- * - If any component (as well as any other type) has a [Stable] annotation, its
- *   implementation has to adhere to the contract of stable types (see the
- *   [Stable] annotation's description). In practice this might require such
- *   techniques as:
- *   - Ensuring that a component doesn't have any public unstable properties.
- *   - Making sure that public `var` properties are backed by `MutableState` to
- *     ensure that changing the property triggers the component's recomposition,
- *     e.g. like this:
- *     ```
- *        public var name: String by mutableStateOf("")
- *     ```
- * - Primitive types and lambdas are considered stable.
+ *  - Any component that has any `var` property or any `val` property whose type
+ *    is unstable and not immutable is considered as an unstable type by
+ *    Compose by default.
+ *  - Since such properties are naturally required by many component's
+ *    implementations, making a component stable would require adding
+ *    a [Stable] annotation to the component's class.
+ *  - If any component (as well as any other type) has a [Stable] annotation,
+ *    its implementation has to adhere to the contract of stable types (see the
+ *    [Stable] annotation's description). In practice this might require such
+ *    techniques as:
+ *    - Ensuring that a component doesn't have any public unstable properties.
+ *    - Making sure that public `var` properties are backed by `MutableState` to
+ *      ensure that changing the property triggers the component's
+ *      recomposition, e.g. like this:
+ *      ```
+ *         public var name: String by mutableStateOf("")
+ *      ```
+ *  - Primitive types and lambdas are considered stable.
  *
  * See the [Stability in Compose](https://developer.android.com/develop/ui/compose/performance/stability#types)
  * documentation for details.

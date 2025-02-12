@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import io.spine.base.CommandMessage
-import io.spine.base.EventMessage
-import io.spine.chords.client.EventSubscription
+import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.SubmitOrCancelDialog
@@ -70,7 +69,8 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
             onBeforeBuild = ::beforeBuild,
             props = {
                 validationDisplayMode = MANUAL
-                eventSubscription = ::subscribeToEvent
+                commandConsequences = { commandConsequences() }
+                enabled = !submitting
             }
         ) {
             Column(
@@ -104,16 +104,27 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     protected abstract fun createCommandBuilder(): B
 
     /**
-     * A function, which, given a command message that is about to be posted,
-     * should subscribe to a respective event that is expected to arrive in
-     * response to handling that command.
+     * A function, which, should register handlers for consequences of
+     * command [C] posted by the dialog.
      *
-     * @param command A command, which is going to be posted.
-     * @return A subscription to the event that is expected to arrive in
-     *   response to handling [command].
+     * The command, which is going to be posted and whose consequence handlers
+     * should be registered can be obtained from the
+     * [command][CommandConsequencesScope.command] property available in the
+     * function's scope, and handlers can be registered using the
+     * [`onXXX`][CommandConsequencesScope] functions available in the
+     * function's scope.
+     *
+     * Event subscriptions made by this function are automatically cancelled
+     * when the dialog is closed. They can also be cancelled explicitly by
+     * calling [cancelActiveSubscriptions] if they need to be canceled before
+     * the dialog is closed.
+     *
+     * @receiver [CommandConsequencesScope], which provides an API for
+     *   registering command's consequences.
+     * @see submitContent
+     * @see cancelActiveSubscriptions
      */
-    protected abstract fun subscribeToEvent(command: C):
-            EventSubscription<out EventMessage>
+    protected abstract fun CommandConsequencesScope<C>.commandConsequences()
 
     /**
      * Allows to programmatically amend the command message builder before
@@ -127,9 +138,39 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     protected open fun beforeBuild(builder: B) {}
 
     /**
-     * Posts the command message [C] created in this dialog.
+     * Cancels any active subscriptions made by [commandConsequences] and closes
+     * the dialog.
+     *
+     * @see submitContent
+     * @see commandConsequences
      */
-    protected override suspend fun submitContent(): Boolean {
-        return commandMessageForm.postCommand()
+    override fun close() {
+        cancelActiveSubscriptions()
+        super.close()
+    }
+
+    /**
+     * Posts the command message [C] created in this dialog, and processes
+     * the respective command's consequences specified in [commandConsequences].
+     *
+     * @see commandConsequences
+     */
+    protected override suspend fun submitContent() {
+        commandMessageForm.updateValidationDisplay(true)
+        if (!commandMessageForm.valueValid.value) {
+            return
+        }
+        commandMessageForm.postCommand()
+    }
+
+    /**
+     * Cancels any active event subscriptions that have been made by this
+     * dialog's submission(s) up to now.
+     *
+     * @see submitContent
+     * @see commandConsequences
+     */
+    protected fun cancelActiveSubscriptions() {
+        commandMessageForm.cancelActiveSubscriptions()
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 TeamDev. All rights reserved.
+ * Copyright (c) 2025 TeamDev. All rights reserved.
  * TeamDev PROPRIETARY and CONFIDENTIAL.
  * Use is subject to license terms.
  */
@@ -103,8 +103,8 @@ public class ConfirmationDialog : Dialog() {
 
         yesButtonText = "Yes"
         noButtonText = "No"
-        dialogWidth = 430.dp
-        dialogHeight = 210.dp
+        width = 430.dp
+        height = 210.dp
     }
 
     /**
@@ -135,8 +135,8 @@ public class ConfirmationDialog : Dialog() {
     /**
      * Just returns `true` on form submission since there is no data to submit.
      */
-    protected override suspend fun submitContent(): Boolean {
-        return true
+    protected override suspend fun submitContent() {
+        close()
     }
 
     /**

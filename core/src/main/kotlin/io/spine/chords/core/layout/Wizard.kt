@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ private object WizardContentSize {
 }
 
 /**
- * The base class for creating multi-step form component known as wizard.
+ * The base class for creating a multi-step form component known as a wizard.
  *
  * To create a concrete wizard you need to extend the class
  * and override all abstract methods that configure the data needed for the wizard.
@@ -99,9 +99,10 @@ private object WizardContentSize {
 public abstract class Wizard : Component() {
 
     /**
-     * The text to be the title of the wizard.
+     * The text to be the title of the wizard, or `null`, if the wizard's title
+     * shouldn't be displayed at all.
      */
-    protected abstract val title: String
+    protected abstract val title: String?
 
     /**
      * A callback that should be handled to close the wizard (exclude it from
@@ -124,10 +125,14 @@ public abstract class Wizard : Component() {
      * Specifies whether the wizard is in the submission state, which means
      * that an asynchronous form submission has started, but not completed yet.
      */
-    private var submitting: Boolean by mutableStateOf(false)
+    protected var submitting: Boolean by mutableStateOf(false)
 
     private var currentPageIndex by mutableStateOf(0)
-    private val pages by lazy { createPages() }
+
+    /**
+     * A list of pages present in the wizard.
+     */
+    protected val pages: List<WizardPage> by lazy { createPages() }
 
     /**
      * Creates the list of pages of which the wizard consists.
@@ -141,15 +146,23 @@ public abstract class Wizard : Component() {
      *
      * This action is executed when the user completes and submits the wizard.
      *
-     * `onCloseRequest` is triggerred right after the `submit` action,
-     * so it is not needed to configure it manually.
+     * Note, the wizard is not closed automatically when [submit] is invoked, so
+     * the implementation has to ensure that [close] is invoked as soon as the
+     * submission process succeeds.
      *
      * @return `true`, if submission was performed successfully, and the wizard
      *   can be closed now, and `false` if submission didn't succeed (e.g. if
      *   some validation errors were identified), and the wizard still needs to
      *   be kept open.
      */
-    protected abstract suspend fun submit(): Boolean
+    protected abstract suspend fun submit()
+
+    /**
+     * Closes the wizard.
+     */
+    public open fun close() {
+        onCloseRequest?.invoke()
+    }
 
     @Composable
     override fun content() {
@@ -165,7 +178,9 @@ public abstract class Wizard : Component() {
                     .padding(32.dp),
                 verticalArrangement = spacedBy(16.dp)
             ) {
-                Title(title)
+                if (title != null) {
+                    Title(title!!)
+                }
                 Column(
                     Modifier
                         .weight(1F)
@@ -173,7 +188,7 @@ public abstract class Wizard : Component() {
                             submitPage(currentPage, coroutineScope)
                         }
                         .on(Alt(DirectionLeft.key).up) {
-                            goToPreviousPage()
+                            handlePreviousClick()
                         }
                         .on(Alt(DirectionRight.key).up) {
                             if (!isOnLastPage()) {
@@ -190,7 +205,7 @@ public abstract class Wizard : Component() {
                 }
                 NavigationPanel(
                     onNextClick = { handleNextClick(currentPage) },
-                    onBackClick = { goToPreviousPage() },
+                    onBackClick = { handlePreviousClick() },
                     onFinishClick = {
                         coroutineScope.launch {
                             handleFinishClick(currentPage)
@@ -220,37 +235,22 @@ public abstract class Wizard : Component() {
 
     private suspend fun Wizard.handleFinishClick(currentPage: WizardPage) {
         if (currentPage.validate()) {
-            submitting = true
-            val submittedSuccessfully = try {
-                submit()
-            } finally {
-                submitting = false
-            }
-            if (submittedSuccessfully) {
-                onCloseRequest?.invoke()
-            }
+            submit()
         }
     }
 
     private fun handleNextClick(currentPage: WizardPage) {
         if (currentPage.validate()) {
-            goToNextPage()
-        }
-    }
-
-    /**
-     * Navigates the wizard to the next page.
-     */
-    private fun goToNextPage() {
-        if (!isOnLastPage()) {
-            currentPageIndex += 1
+            if (!isOnLastPage()) {
+                currentPageIndex += 1
+            }
         }
     }
 
     /**
      * Navigates the wizard to the previous page.
      */
-    private fun goToPreviousPage() {
+    private fun handlePreviousClick() {
         if (!isOnFirstPage()) {
             currentPageIndex -= 1
         }
@@ -289,19 +289,20 @@ private fun Title(text: String) {
 /**
  * The panel with control buttons of the wizard.
  *
- * @param onNextClick
- *         a callback triggered when the user clicks on the "Next" button.
- * @param onBackClick
- *         a callback triggered when the user clicks on the "Back" button.
- * @param onFinishClick
- *         a callback triggered when the user clicks on the "Finish" button.
- *         this callback triggers in a separate coroutine.
- * @param onCancelClick
- *         a callback triggered when the user clicks on the "Cancel" button.
- * @param isOnFirstPage
- *         is a wizard's currently displayed page the first one.
- * @param isOnLastPage
- *         is a wizard's currently displayed page the last one.
+ * @param onNextClick A callback triggered when the user clicks on
+ *   the "Next" button.
+ * @param onBackClick A callback triggered when the user clicks on
+ *   the "Back" button.
+ * @param onFinishClick A callback triggered when the user clicks on
+ *   the "Finish" button. This callback is triggered in a separate coroutine.
+ * @param onCancelClick A callback triggered when the user clicks on
+ *   the "Cancel" button.
+ * @param isOnFirstPage Specifies whether the wizard's currently displayed page
+ *   is the first one.
+ * @param isOnLastPage Specifies whether the wizard's currently displayed page
+ *   is the last one.
+ * @param submitting Specifies whether wizard's submission is currently
+ *   in progress.
  */
 @Composable
 private fun NavigationPanel(
