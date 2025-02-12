@@ -171,7 +171,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
         field: EventMessageField,
         fieldValue: Message,
         eventHandler: suspend (E) -> Unit
-    ): EventSubscription<out E>
+    ): EventSubscription
 
     /**
      * Limits the time of waiting for the event to [timeout].
@@ -186,7 +186,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      *   is not emitted within the specified [timeout] period after invoking
      *   this method.
      */
-    public fun EventSubscription<out EventMessage>.withTimeout(
+    public fun EventSubscription.withTimeout(
         timeout: Duration = 20.seconds,
         timeoutHandler: suspend () -> Unit)
 
@@ -239,7 +239,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
      */
     internal val allSubscriptionsActive: Boolean get() = eventSubscriptions.all { it.active }
 
-    private val eventSubscriptions: MutableList<EventSubscription<out EventMessage>> = ArrayList()
+    private val eventSubscriptions: MutableList<EventSubscription> = ArrayList()
     private var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
     private var postNetworkErrorHandlers: List<suspend (ServerCommunicationException) -> Unit> =
         ArrayList()
@@ -267,7 +267,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         field: EventMessageField,
         fieldValue: Message,
         eventHandler: suspend (E) -> Unit
-    ): EventSubscription<out E> {
+    ): EventSubscription {
         val subscription = app.client.onEvent(
             eventType, field, fieldValue, {
                 coroutineScope.launch {
@@ -280,7 +280,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         return subscription
     }
 
-    override fun EventSubscription<out EventMessage>.withTimeout(
+    override fun EventSubscription.withTimeout(
         timeout: Duration,
         timeoutHandler: suspend () -> Unit
     ) = withTimeout(timeout, coroutineScope, timeoutHandler)

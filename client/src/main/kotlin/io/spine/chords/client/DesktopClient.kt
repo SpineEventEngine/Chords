@@ -253,8 +253,8 @@ public class DesktopClient(
         fieldValue: Message,
         onNetworkError: ((Throwable) -> Unit)?,
         onEvent: (E) -> Unit
-    ): EventSubscription<E> {
-        val eventSubscription = EventSubscriptionImpl<E>(spineClient)
+    ): EventSubscription {
+        val eventSubscription = EventSubscriptionImpl(spineClient)
         try {
             eventSubscription.subscription = clientRequest()
                 .subscribeToEvent(event)
@@ -327,9 +327,9 @@ public class DesktopClient(
  * @param spineClient A Spine Event Engine's [Client][io.spine.client.Client]
  *   instance where the subscription is being registered.
  */
-private class EventSubscriptionImpl<E: EventMessage>(
+private class EventSubscriptionImpl(
     private val spineClient: io.spine.client.Client
-) : EventSubscription<E> {
+) : EventSubscription {
     override val active: Boolean get() = subscription != null
 
     /**

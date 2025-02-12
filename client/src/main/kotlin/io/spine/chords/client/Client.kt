@@ -175,15 +175,13 @@ import kotlinx.coroutines.CoroutineScope
         fieldValue: Message,
         onNetworkError: ((Throwable) -> Unit)? = null,
         onEvent: (E) -> Unit
-    ): EventSubscription<E>
+    ): EventSubscription
 }
 
 /**
  * A subscription for an event.
- *
- * @param E Type of subscribed event message.
  */
-public interface EventSubscription<E: EventMessage> {
+public interface EventSubscription {
 
     /**
      * Returns `true`, if the subscription is active (waiting for events).

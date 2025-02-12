@@ -36,6 +36,7 @@ import io.spine.base.CommandMessage
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.Dialog
+import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
 import io.spine.chords.core.layout.SubmitOrCancelDialog
 import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.FormPartScope
@@ -124,7 +125,9 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * @see submitContent
      * @see cancelActiveSubscriptions
      */
-    protected abstract fun CommandConsequencesScope<C>.commandConsequences()
+    protected open fun CommandConsequencesScope<C>.commandConsequences() {
+
+    }
 
     /**
      * Allows to programmatically amend the command message builder before
@@ -172,5 +175,19 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      */
     protected fun cancelActiveSubscriptions() {
         commandMessageForm.cancelActiveSubscriptions()
+    }
+}
+
+public fun CommandConsequencesScope<CommandMessage>.dialogCommandConsequences(dialog: Dialog) {
+    onBeforePost {
+        dialog.submitting = true
+    }
+    onPostServerError {
+        showMessage("Unexpected server error has occurred.")
+        dialog.submitting = false
+    }
+    onNetworkError {
+        showMessage("Server connection failed.")
+        dialog.submitting = false
     }
 }
