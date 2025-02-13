@@ -141,7 +141,9 @@ import kotlinx.coroutines.CoroutineScope
     public suspend fun <C : CommandMessage> postCommand(
         command: C,
         coroutineScope: CoroutineScope,
-        setupConsequences: CommandConsequencesScope<C>.() -> Unit
+        setupConsequences: CommandConsequencesScope<C>.() -> Unit,
+        createConsequencesScope:
+            ((command: C, coroutineScope: CoroutineScope) -> CommandConsequencesScope<C>)? = null
     ): EventSubscriptions
 
     /**
@@ -193,9 +195,13 @@ public interface EventSubscription {
      * invokes the provided [onTimeout] handler if the event is not emitted
      * during this period of time.
      *
-     * If an event that matches the subscription criteria is not emitted a
+     * If an event that matches the subscription criteria is not emitted in
      * the [timeout] period since this method is invoked, the [onTimeout]
      * callback is invoked, and the subscription is cancelled.
+     *
+     * Invoking [withTimeout] repeatedly before the [timeout] of the previous
+     * `withTimeout` call has expired cancels the previous timeout period and
+     * starts the countdown period specified with the [timeout] parameter anew.
      *
      * @param timeout A maximum period of time that the subscribed event should
      *   be waited for.

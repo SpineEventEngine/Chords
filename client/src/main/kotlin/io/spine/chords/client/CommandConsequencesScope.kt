@@ -121,6 +121,12 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      */
     public val command: C
 
+
+    /**
+     * A timeout period that the [withTimeout] function uses by default.
+     */
+    public val defaultTimeout: Duration
+
     /**
      * Registers the callback, which is invoked before the command is posted.
      *
@@ -187,7 +193,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      *   this method.
      */
     public fun EventSubscription.withTimeout(
-        timeout: Duration = 20.seconds,
+        timeout: Duration = defaultTimeout,
         timeoutHandler: suspend () -> Unit)
 
     /**
@@ -219,15 +225,16 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
     // Considering all functions to be appropriate.
     "TooManyFunctions"
 )
-internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
+public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override val command: C,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    public override val defaultTimeout: Duration = 30.seconds
 ) : CommandConsequencesScope<C> {
 
     /**
      * Allows to manage subscriptions made in this scope.
      */
-    val subscriptions: EventSubscriptions = object : EventSubscriptions {
+    internal val subscriptions: EventSubscriptions = object : EventSubscriptions {
         override fun cancelAll() {
             eventSubscriptions.forEach { it.cancel() }
         }
@@ -283,7 +290,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override fun EventSubscription.withTimeout(
         timeout: Duration,
         timeoutHandler: suspend () -> Unit
-    ) = withTimeout(timeout, coroutineScope, timeoutHandler)
+    ): Unit = withTimeout(timeout, coroutineScope, timeoutHandler)
 
     internal suspend fun triggerBeforePostHandlers() {
         beforePostHandlers.forEach { it() }

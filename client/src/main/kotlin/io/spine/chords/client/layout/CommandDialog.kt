@@ -30,10 +30,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
+import com.google.protobuf.Message
 import io.spine.base.CommandMessage
+import io.spine.base.EventMessage
+import io.spine.base.EventMessageField
 import io.spine.chords.client.CommandConsequencesScope
+import io.spine.chords.client.CommandConsequencesScopeImpl
+import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
@@ -42,6 +49,7 @@ import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.protobuf.ValidatingBuilder
+import kotlinx.coroutines.CoroutineScope
 
 /**
  * A [Dialog] designed to create or modify a command message,
@@ -190,4 +198,64 @@ public fun CommandConsequencesScope<CommandMessage>.dialogCommandConsequences(di
         showMessage("Server connection failed.")
         dialog.submitting = false
     }
+}
+
+public class ModalCommandConsequencesScope<C : CommandMessage>(
+    command: C,
+    coroutineScope: CoroutineScope,
+    public val close: () -> Unit,
+) : CommandConsequencesScopeImpl<C>(command, coroutineScope) {
+
+    init {
+        setupScope()
+    }
+
+    public val posting: MutableState<Boolean> = mutableStateOf(false)
+    public var onTimeout: suspend () -> Unit = {
+        showMessage("The operation takes unexpectedly long to process. " +
+                "Please check the status of its execution later.")
+        close()
+    }
+
+    protected fun setupScope() {
+        onBeforePost {
+            posting.value = true
+        }
+        onPostServerError {
+            showMessage("Unexpected server error has occurred.")
+            posting.value = false
+        }
+        onNetworkError {
+            showMessage("Server connection failed.")
+            posting.value = false
+        }
+    }
+
+    override fun <E : EventMessage> onEvent(
+        eventType: Class<out E>,
+        field: EventMessageField,
+        fieldValue: Message,
+        eventHandler: suspend (E) -> Unit
+    ): EventSubscription {
+        val subscription = super.onEvent(eventType, field, fieldValue, eventHandler)
+        subscription.withTimeout {
+            onTimeout()
+        }
+        return subscription
+    }
+
+    /**
+     * An alternative to the [onEvent] function, which closes the modal
+     * component after invoking the optional [eventHandler].
+     */
+    public fun <E : EventMessage> closeOnEvent(
+        eventType: Class<out E>,
+        field: EventMessageField,
+        fieldValue: Message,
+        eventHandler: suspend (E) -> Unit = {}
+    ): EventSubscription = onEvent(eventType, field, fieldValue) {
+        eventHandler(it)
+        close()
+    }
+
 }

@@ -226,9 +226,14 @@ public class DesktopClient(
     public override suspend fun <C : CommandMessage> postCommand(
         command: C,
         coroutineScope: CoroutineScope,
-        setupConsequences: CommandConsequencesScope<C>.() -> Unit
+        setupConsequences: CommandConsequencesScope<C>.() -> Unit,
+        createConsequencesScope: ((command: C, coroutineScope: CoroutineScope) -> CommandConsequencesScope<C>)?
     ): EventSubscriptions {
-        val scope = CommandConsequencesScopeImpl(command, coroutineScope)
+        val scope = if (createConsequencesScope != null) {
+            createConsequencesScope(command, coroutineScope)
+        } else {
+            CommandConsequencesScopeImpl(command, coroutineScope)
+        }
         try {
             scope.setupConsequences()
             val allSubscriptionsSuccessful = scope.allSubscriptionsActive
@@ -345,10 +350,7 @@ private class EventSubscriptionImpl(
         timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit,
     ) {
-        check(timeoutJob == null) {
-            "`withTimeout` cannot be used more than once for" +
-                    "the same `EventSubscription`"
-        }
+        cancelTimeout()
         timeoutJob = timeoutCoroutineScope.launch {
             delay(timeout)
             if (timeoutJob != null) {
@@ -372,6 +374,10 @@ private class EventSubscriptionImpl(
             spineClient.subscriptions().cancel(subscription!!)
             subscription = null
         }
+        cancelTimeout()
+    }
+
+    private fun cancelTimeout() {
         if (timeoutJob != null) {
             timeoutJob?.cancel()
             timeoutJob = null
