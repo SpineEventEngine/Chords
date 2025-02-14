@@ -61,6 +61,16 @@ import kotlinx.coroutines.CoroutineScope
 public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>>
     : SubmitOrCancelDialog() {
 
+    public var createConsequencesScope:
+            ((command: C, coroutineScope: CoroutineScope) -> ModalCommandConsequencesScope<C>)? =
+        { command, coroutineScope ->
+            val scope =
+                ModalCommandConsequencesScope(command, coroutineScope, ::close)
+            postingState.value = scope.posting
+            scope
+        }
+    private var postingState = mutableStateOf<MutableState<Boolean>?>(null)
+
     /**
      * The [CommandMessageForm] used as a container for the message
      * field editors.
@@ -73,13 +83,19 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      */
     @Composable
     protected final override fun contentSection() {
+        submitting = postingState.value?.value ?: false
         commandMessageForm = CommandMessageForm(
             ::createCommandBuilder,
             onBeforeBuild = ::beforeBuild,
             props = {
                 validationDisplayMode = MANUAL
-                commandConsequences = { commandConsequences() }
+                commandConsequences = {
+                    (this as ModalCommandConsequencesScope<C>).run {
+                        commandConsequences()
+                    }
+                }
                 enabled = !submitting
+                createConsequencesScope = this@CommandDialog.createConsequencesScope
             }
         ) {
             Column(
@@ -133,9 +149,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * @see submitContent
      * @see cancelActiveSubscriptions
      */
-    protected open fun CommandConsequencesScope<C>.commandConsequences() {
-
-    }
+    protected abstract fun ModalCommandConsequencesScope<C>.commandConsequences()
 
     /**
      * Allows to programmatically amend the command message builder before
@@ -200,7 +214,7 @@ public fun CommandConsequencesScope<CommandMessage>.dialogCommandConsequences(di
     }
 }
 
-public class ModalCommandConsequencesScope<C : CommandMessage>(
+public open class ModalCommandConsequencesScope<C : CommandMessage>(
     command: C,
     coroutineScope: CoroutineScope,
     public val close: () -> Unit,
@@ -223,11 +237,11 @@ public class ModalCommandConsequencesScope<C : CommandMessage>(
         }
         onPostServerError {
             showMessage("Unexpected server error has occurred.")
-            posting.value = false
+            close()
         }
         onNetworkError {
             showMessage("Server connection failed.")
-            posting.value = false
+            close()
         }
     }
 

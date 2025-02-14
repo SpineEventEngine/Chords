@@ -321,6 +321,9 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      */
     public lateinit var commandConsequences: CommandConsequencesScope<C>.() -> Unit
 
+    public var createConsequencesScope:
+            ((command: C, coroutineScope: CoroutineScope) -> CommandConsequencesScope<C>)? = null
+
     /**
      * [CoroutineScope] owned by this form's composition used for running
      * form-related suspending calls.
@@ -390,7 +393,12 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "checked to be valid within postCommand."
         }
 
-        return app.client.postCommand(command, coroutineScope, commandConsequences)
+        return app.client.postCommand(
+            command,
+            coroutineScope,
+            commandConsequences,
+            createConsequencesScope
+        )
     }
 
     /**
@@ -404,5 +412,4 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
         activeSubscriptions.forEach { it.cancelAll() }
         activeSubscriptions.clear()
     }
-
 }

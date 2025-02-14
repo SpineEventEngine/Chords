@@ -185,7 +185,7 @@ public class DesktopClient(
         try {
             clientRequest()
                 .command(command)
-                .onServerError { msg, err: Error ->
+                .onServerError { _, err: Error ->
                     error = ServerError(err)
                 }
                 .onStreamingError { err: Throwable ->
@@ -227,10 +227,11 @@ public class DesktopClient(
         command: C,
         coroutineScope: CoroutineScope,
         setupConsequences: CommandConsequencesScope<C>.() -> Unit,
-        createConsequencesScope: ((command: C, coroutineScope: CoroutineScope) -> CommandConsequencesScope<C>)?
+        createConsequencesScope:
+                ((command: C, coroutineScope: CoroutineScope) -> CommandConsequencesScope<C>)?
     ): EventSubscriptions {
         val scope = if (createConsequencesScope != null) {
-            createConsequencesScope(command, coroutineScope)
+            createConsequencesScope(command, coroutineScope) as CommandConsequencesScopeImpl<C>
         } else {
             CommandConsequencesScopeImpl(command, coroutineScope)
         }
@@ -338,8 +339,8 @@ private class EventSubscriptionImpl(
     override val active: Boolean get() = subscription != null
 
     /**
-     * A Spine [Subscription], which was made to supply events of type [E], or
-     * `null` if it either hasn't been made yet, or cancelled already.
+     * A Spine [Subscription], which was made, or `null` if it either hasn't
+     * been made yet, or cancelled already.
      */
     var subscription: Subscription? = null
 
@@ -361,8 +362,8 @@ private class EventSubscriptionImpl(
     }
 
     /**
-     * Invoked internally for the subsctiption to perform any operations, which
-     * have to be performed whenever an expected event [E] is emitted.
+     * Invoked internally for the subscription to perform any operations, which
+     * have to be performed whenever an expected event is emitted.
      */
     fun onEvent() {
         timeoutJob?.cancel()

@@ -328,3 +328,6 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         subscriptions.cancelAll()
     }
 }
+//
+//
+//public class CommandConsequences()
