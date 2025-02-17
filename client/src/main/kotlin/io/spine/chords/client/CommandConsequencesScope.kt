@@ -328,6 +328,41 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         subscriptions.cancelAll()
     }
 }
-//
-//
-//public class CommandConsequences()
+
+public open class CommandConsequences<C: CommandMessage>(
+    public val command: C,
+    public val consequences: CommandConsequencesScope<C>.() -> Unit,
+    public val coroutineScope: CoroutineScope
+) {
+    protected open val consequencesScope: CommandConsequencesScopeImpl<C> =
+        createConsequencesScope()
+
+    protected open fun createConsequencesScope(): CommandConsequencesScopeImpl<C> =
+        CommandConsequencesScopeImpl(command, coroutineScope)
+
+    internal suspend fun post() {
+        try {
+            configConsequences()
+            val allSubscriptionsSuccessful = consequencesScope.allSubscriptionsActive
+            if (allSubscriptionsSuccessful) {
+                consequencesScope.triggerBeforePostHandlers()
+                app.client.postCommand(command)
+                consequencesScope.triggerAcknowledgeHandlers()
+            } else {
+                consequencesScope.subscriptions.cancelAll()
+            }
+        } catch (e: ServerError) {
+            consequencesScope.triggerServerErrorHandlers(e)
+        } catch (e: ServerCommunicationException) {
+            consequencesScope.triggerNetworkErrorHandlers(e)
+        }
+    }
+
+    protected open fun configConsequences() {
+        consequences(consequencesScope)
+    }
+
+    public fun cancelAllSubscriptions() {
+        consequencesScope.cancelAllSubscriptions()
+    }
+}

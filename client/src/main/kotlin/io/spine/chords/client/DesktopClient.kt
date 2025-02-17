@@ -206,7 +206,7 @@ public class DesktopClient(
 
     /**
      * Posts the given [command], and runs handlers for any of the consequences
-     * registered in [setupConsequences].
+     * registered in [consequences].
      *
      * All registered command consequence handlers except event handlers are
      * invoked synchronously before this suspending method returns. Event
@@ -215,42 +215,20 @@ public class DesktopClient(
      * @param command The command that should be posted.
      * @param coroutineScope The coroutine scope in which event handlers are to
      *   be invoked.
-     * @param setupConsequences A lambda, which sets up handlers for command's
+     * @param consequences A lambda, which sets up handlers for command's
      *   consequences using the API in [CommandConsequencesScope] on which it
      *   is invoked.
      * @return An object, which allows managing (e.g. cancelling) all event
      *   subscriptions made by this method as specified with the
-     *   [setupConsequences] parameter.
+     *   [consequences] parameter.
      * @see CommandConsequencesScope
      */
     public override suspend fun <C : CommandMessage> postCommand(
         command: C,
-        coroutineScope: CoroutineScope,
-        setupConsequences: CommandConsequencesScope<C>.() -> Unit,
-        createConsequencesScope:
-                ((command: C, coroutineScope: CoroutineScope) -> CommandConsequencesScope<C>)?
-    ): EventSubscriptions {
-        val scope = if (createConsequencesScope != null) {
-            createConsequencesScope(command, coroutineScope) as CommandConsequencesScopeImpl<C>
-        } else {
-            CommandConsequencesScopeImpl(command, coroutineScope)
-        }
-        try {
-            scope.setupConsequences()
-            val allSubscriptionsSuccessful = scope.allSubscriptionsActive
-            if (allSubscriptionsSuccessful) {
-                scope.triggerBeforePostHandlers()
-                postCommand(command)
-                scope.triggerAcknowledgeHandlers()
-            } else {
-                scope.subscriptions.cancelAll()
-            }
-        } catch (e: ServerError) {
-            scope.triggerServerErrorHandlers(e)
-        } catch (e: ServerCommunicationException) {
-            scope.triggerNetworkErrorHandlers(e)
-        }
-        return scope.subscriptions
+        consequences: (C) -> CommandConsequences<C>
+    ) {
+        val commandConseqences = consequences(command)
+        commandConseqences.post()
     }
 
     override fun <E : EventMessage> onEvent(

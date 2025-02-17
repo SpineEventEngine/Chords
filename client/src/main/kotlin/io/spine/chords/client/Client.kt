@@ -140,11 +140,8 @@ import kotlinx.coroutines.CoroutineScope
      */
     public suspend fun <C : CommandMessage> postCommand(
         command: C,
-        coroutineScope: CoroutineScope,
-        setupConsequences: CommandConsequencesScope<C>.() -> Unit,
-        createConsequencesScope:
-            ((command: C, coroutineScope: CoroutineScope) -> CommandConsequencesScope<C>)? = null
-    ): EventSubscriptions
+        consequences: (C) -> CommandConsequences<C>
+    )
 
     /**
      * Subscribes to events with a given class and a given field value (which

@@ -31,6 +31,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import io.spine.base.CommandMessage
+import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.EventSubscriptions
 import io.spine.chords.client.appshell.client
@@ -321,8 +322,12 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      */
     public lateinit var commandConsequences: CommandConsequencesScope<C>.() -> Unit
 
-    public var createConsequencesScope:
-            ((command: C, coroutineScope: CoroutineScope) -> CommandConsequencesScope<C>)? = null
+    public var createCommandConsequences:
+            ((C, CommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
+            CommandConsequences<C>) =
+        { command, consequences, coroutineScope ->
+            CommandConsequences(command, consequences, coroutineScope)
+        }
 
     /**
      * [CoroutineScope] owned by this form's composition used for running
@@ -382,7 +387,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * @see commandConsequences
      * @see cancelActiveSubscriptions
      */
-    public suspend fun postCommand(): EventSubscriptions {
+    public suspend fun postCommand() {
         updateValidationDisplay(true)
         check(valueValid.value) {
             "`postCommand` cannot be invoked on an invalid form`"
@@ -393,11 +398,10 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "checked to be valid within postCommand."
         }
 
-        return app.client.postCommand(
+
+        app.client.postCommand(
             command,
-            coroutineScope,
-            commandConsequences,
-            createConsequencesScope
+            { createCommandConsequences(it, commandConsequences, coroutineScope) }
         )
     }
 

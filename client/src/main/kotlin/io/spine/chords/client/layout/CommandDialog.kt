@@ -38,6 +38,7 @@ import com.google.protobuf.Message
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
+import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.CommandConsequencesScopeImpl
 import io.spine.chords.client.EventSubscription
@@ -60,6 +61,16 @@ import kotlinx.coroutines.CoroutineScope
  */
 public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>>
     : SubmitOrCancelDialog() {
+
+    public var createCommandConsequences:
+            ((C, CommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
+            CommandConsequences<C>) =
+        { command, consequences, coroutineScope ->
+            val modalCommandConsequences =
+                ModalCommandConsequences(command, consequences, coroutineScope, ::close)
+            postingState.value = modalCommandConsequences.posting
+            modalCommandConsequences
+        }
 
     public var createConsequencesScope:
             ((command: C, coroutineScope: CoroutineScope) -> ModalCommandConsequencesScope<C>)? =
@@ -95,7 +106,11 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
                     }
                 }
                 enabled = !submitting
-                createConsequencesScope = this@CommandDialog.createConsequencesScope
+                @Suppress("UNCHECKED_CAST")
+                createCommandConsequences =
+                    this@CommandDialog.createConsequencesScope as
+                            ((C, CommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
+                            CommandConsequences<C>)
             }
         ) {
             Column(
@@ -214,24 +229,24 @@ public fun CommandConsequencesScope<CommandMessage>.dialogCommandConsequences(di
     }
 }
 
-public open class ModalCommandConsequencesScope<C : CommandMessage>(
+@Suppress("UNCHECKED_CAST")
+public open class ModalCommandConsequences<C : CommandMessage>(
     command: C,
+    consequences: ModalCommandConsequencesScope<C>.() -> Unit,
     coroutineScope: CoroutineScope,
     public val close: () -> Unit,
-) : CommandConsequencesScopeImpl<C>(command, coroutineScope) {
+) : CommandConsequences<C>(
+    command, consequences as CommandConsequencesScope<C>.() -> Unit, coroutineScope
+) {
+    override fun createConsequencesScope(): ModalCommandConsequencesScope<C> =
+        ModalCommandConsequencesScope(command, coroutineScope, close)
 
-    init {
-        setupScope()
-    }
+    protected override val consequencesScope: ModalCommandConsequencesScope<C> get() =
+        super.consequencesScope as ModalCommandConsequencesScope<C>
 
-    public val posting: MutableState<Boolean> = mutableStateOf(false)
-    public var onTimeout: suspend () -> Unit = {
-        showMessage("The operation takes unexpectedly long to process. " +
-                "Please check the status of its execution later.")
-        close()
-    }
+    public val posting: MutableState<Boolean> get() = consequencesScope.posting
 
-    protected fun setupScope() {
+    private val predefinedConsequences: ModalCommandConsequencesScope<C>.() -> Unit = {
         onBeforePost {
             posting.value = true
         }
@@ -243,6 +258,44 @@ public open class ModalCommandConsequencesScope<C : CommandMessage>(
             showMessage("Server connection failed.")
             close()
         }
+        onDefaultTimeout {
+            showMessage("The operation takes unexpectedly long to process. " +
+                    "Please check the status of its execution later.")
+            close()
+        }
+    }
+
+    override fun configConsequences() {
+        predefinedConsequences(consequencesScope)
+        super.configConsequences()
+
+    }
+}
+
+/**
+ * A [CommandConsequencesScope] variant, which provides an extended API that
+ * simplifies implementing typical scenarios of handling consequences
+ * of commands posted by modal components (such as a dialog or wizard).
+ */
+public open class ModalCommandConsequencesScope<C : CommandMessage>(
+    command: C,
+    coroutineScope: CoroutineScope,
+    public val close: () -> Unit,
+) : CommandConsequencesScopeImpl<C>(command, coroutineScope) {
+
+    public val posting: MutableState<Boolean> = mutableStateOf(false)
+
+    private var defaultTimeoutHandlers: List<suspend () -> Unit> = ArrayList()
+
+    /**
+     * Adds a handler that will be invoked when the default event waiting period
+     * [defaultTimeout] expires for any event declared in this scope.
+     *
+     * This handler is not invoked for event subscriptions that have custom
+     * timeout handlers specified using the [withTimeout] function.
+     */
+    public fun onDefaultTimeout(handler: suspend () -> Unit) {
+        defaultTimeoutHandlers += handler
     }
 
     override fun <E : EventMessage> onEvent(
@@ -253,9 +306,13 @@ public open class ModalCommandConsequencesScope<C : CommandMessage>(
     ): EventSubscription {
         val subscription = super.onEvent(eventType, field, fieldValue, eventHandler)
         subscription.withTimeout {
-            onTimeout()
+            triggerDefaultTimeoutHandlers()
         }
         return subscription
+    }
+
+    private suspend fun triggerDefaultTimeoutHandlers() {
+        defaultTimeoutHandlers.forEach { it() }
     }
 
     /**
@@ -271,5 +328,4 @@ public open class ModalCommandConsequencesScope<C : CommandMessage>(
         eventHandler(it)
         close()
     }
-
 }
