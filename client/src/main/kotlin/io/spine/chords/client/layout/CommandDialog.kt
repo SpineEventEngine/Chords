@@ -238,10 +238,6 @@ public open class ModalCommandConsequences<C : CommandMessage>(
 
     public val posting: MutableState<Boolean> get() = consequencesScope.posting
 
-    init {
-        setDefaultProps()
-    }
-
     public var predefinedConsequences: ModalCommandConsequencesScope<C>.() -> Unit = {
         onBeforePost {
             posting.value = true
@@ -259,6 +255,10 @@ public open class ModalCommandConsequences<C : CommandMessage>(
                     "Please check the status of its execution later.")
             close()
         }
+    }
+
+    init {
+        setDefaultProps()
     }
 
     override fun configConsequences() {
