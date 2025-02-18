@@ -67,19 +67,11 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
             CommandConsequences<C>) =
         { command, consequences, coroutineScope ->
             val modalCommandConsequences =
-                ModalCommandConsequences(command, consequences, coroutineScope, ::close)
+                ModalCommandConsequences(command, consequences, coroutineScope, { close() })
             postingState.value = modalCommandConsequences.posting
             modalCommandConsequences
         }
 
-    public var createConsequencesScope:
-            ((command: C, coroutineScope: CoroutineScope) -> ModalCommandConsequencesScope<C>)? =
-        { command, coroutineScope ->
-            val scope =
-                ModalCommandConsequencesScope(command, coroutineScope, ::close)
-            postingState.value = scope.posting
-            scope
-        }
     private var postingState = mutableStateOf<MutableState<Boolean>?>(null)
 
     /**
@@ -88,29 +80,29 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      */
     private lateinit var commandMessageForm: CommandMessageForm<C>
 
+    override fun updateProps() {
+        super.updateProps()
+        submitting = postingState.value?.value ?: false
+    }
+
     /**
      * Creates and renders the [commandMessageForm], and then delegates the
      * rendering of the actual form's content to the [content] method.
      */
     @Composable
     protected final override fun contentSection() {
-        submitting = postingState.value?.value ?: false
         commandMessageForm = CommandMessageForm(
             ::createCommandBuilder,
             onBeforeBuild = ::beforeBuild,
             props = {
                 validationDisplayMode = MANUAL
+                createCommandConsequences = this@CommandDialog.createCommandConsequences
                 commandConsequences = {
                     (this as ModalCommandConsequencesScope<C>).run {
                         commandConsequences()
                     }
                 }
                 enabled = !submitting
-                @Suppress("UNCHECKED_CAST")
-                createCommandConsequences =
-                    this@CommandDialog.createConsequencesScope as
-                            ((C, CommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
-                            CommandConsequences<C>)
             }
         ) {
             Column(
@@ -239,7 +231,7 @@ public open class ModalCommandConsequences<C : CommandMessage>(
     command, consequences as CommandConsequencesScope<C>.() -> Unit, coroutineScope
 ) {
     override fun createConsequencesScope(): ModalCommandConsequencesScope<C> =
-        ModalCommandConsequencesScope(command, coroutineScope, close)
+        ModalCommandConsequencesScope(command, coroutineScope, { close() })
 
     protected override val consequencesScope: ModalCommandConsequencesScope<C> get() =
         super.consequencesScope as ModalCommandConsequencesScope<C>

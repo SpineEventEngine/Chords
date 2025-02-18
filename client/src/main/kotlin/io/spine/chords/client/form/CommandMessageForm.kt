@@ -397,11 +397,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "CommandMessageForm's value should be not null since it was just " +
             "checked to be valid within postCommand."
         }
-
-
         app.client.postCommand(
-            command,
-            { createCommandConsequences(it, commandConsequences, coroutineScope) }
+            command, { createCommandConsequences(it, commandConsequences, coroutineScope) }
         )
     }
 
