@@ -35,7 +35,7 @@ import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.EventSubscriptions
 import io.spine.chords.client.appshell.client
-import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.appshell.app
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
@@ -195,12 +195,12 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
-            props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
+            props: Props<CommandMessageForm<C>> = Props {},
             content: @Composable FormPartScope<C>.() -> Unit
         ): CommandMessageForm<C> = declareInstance(
             value as MutableState<CommandMessage?>,
             builder,
-            props as ComponentProps<CommandMessageForm<CommandMessage>>,
+            props as Props<CommandMessageForm<CommandMessage>>,
             onBeforeBuild
         ) {
             content(this as FormPartScope<C>)
@@ -240,12 +240,12 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
-            props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
+            props: Props<CommandMessageForm<C>> = Props {},
             content: @Composable MultipartFormScope<C>.() -> Unit
         ): CommandMessageForm<C> = declareMultipartInstance(
             value as MutableState<CommandMessage?>,
             builder,
-            props as ComponentProps<CommandMessageForm<CommandMessage>>,
+            props as Props<CommandMessageForm<CommandMessage>>,
             onBeforeBuild
         ) {
             content(this as MultipartFormScope<C>)
@@ -293,12 +293,12 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
-            props: ComponentProps<CommandMessageForm<C>> = ComponentProps {}
+            props: Props<CommandMessageForm<C>> = Props {}
         ): CommandMessageForm<C> = createInstance(
             value as MutableState<CommandMessage?>,
             builder,
             onBeforeBuild,
-            props as ComponentProps<CommandMessageForm<CommandMessage>>
+            props as Props<CommandMessageForm<CommandMessage>>
         ) as CommandMessageForm<C>
     }
 

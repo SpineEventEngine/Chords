@@ -238,7 +238,11 @@ public open class ModalCommandConsequences<C : CommandMessage>(
 
     public val posting: MutableState<Boolean> get() = consequencesScope.posting
 
-    private val predefinedConsequences: ModalCommandConsequencesScope<C>.() -> Unit = {
+    init {
+        setDefaultProps()
+    }
+
+    public var predefinedConsequences: ModalCommandConsequencesScope<C>.() -> Unit = {
         onBeforePost {
             posting.value = true
         }
@@ -260,7 +264,6 @@ public open class ModalCommandConsequences<C : CommandMessage>(
     override fun configConsequences() {
         predefinedConsequences(consequencesScope)
         super.configConsequences()
-
     }
 }
 

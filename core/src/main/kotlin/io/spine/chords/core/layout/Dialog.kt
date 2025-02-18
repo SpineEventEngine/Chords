@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.Component
-import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.appshell.app
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
@@ -660,7 +660,7 @@ public open class DialogSetup<D: Dialog>(
      * @param props A lambda, which configures (assigns)
      *   the dialog's properties.
      */
-    public fun open(props: ComponentProps<D>? = null): D {
+    public fun open(props: Props<D>? = null): D {
         val dialog = create(config = props)
         dialog.open()
         return dialog

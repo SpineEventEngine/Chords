@@ -31,6 +31,7 @@ import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.chords.client.appshell.client
+import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -333,7 +334,7 @@ public open class CommandConsequences<C: CommandMessage>(
     public val command: C,
     public val consequences: CommandConsequencesScope<C>.() -> Unit,
     public val coroutineScope: CoroutineScope
-) {
+) : DefaultPropsOwnerBase() {
     protected open val consequencesScope: CommandConsequencesScopeImpl<C> =
         createConsequencesScope()
 

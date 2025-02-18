@@ -30,7 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import com.google.protobuf.Message
 import io.spine.chords.core.AbstractComponentSetup
-import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.ValidatingBuilder
 
@@ -75,7 +75,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
     protected fun <B : ValidatingBuilder<out M>> declareInstance(
         value: MutableState<M?>,
         builder: () -> B,
-        props: ComponentProps<F> = ComponentProps {},
+        props: Props<F> = Props {},
         onBeforeBuild: (B) -> Unit = {},
         content: @Composable FormPartScope<M>.() -> Unit
     ): F = declareMultipartInstance(value, builder, props, onBeforeBuild) {
@@ -116,7 +116,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
     > declareInstance(
         field: MessageField<PM, M>,
         builder: () -> B,
-        props: ComponentProps<F> = ComponentProps {},
+        props: Props<F> = Props {},
         defaultValue: M? = null,
         onBeforeBuild: (B) -> Unit = {},
         content: @Composable FormPartScope<M>.() -> Unit
@@ -151,7 +151,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
     protected fun <B : ValidatingBuilder<out M>> declareMultipartInstance(
         value: MutableState<M?>,
         builder: () -> B,
-        props: ComponentProps<F> = ComponentProps {},
+        props: Props<F> = Props {},
         onBeforeBuild: (B) -> Unit = {},
         content: @Composable MultipartFormScope<M>.() -> Unit
     ): F = createAndRender({
@@ -207,7 +207,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
     > declareMultipartInstance(
         field: MessageField<PM, M>,
         builder: () -> B,
-        props: ComponentProps<F> = ComponentProps {},
+        props: Props<F> = Props {},
         defaultValue: M? = null,
         onBeforeBuild: (B) -> Unit = {},
         content: @Composable MultipartFormScope<M>.() -> Unit
@@ -261,7 +261,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
         value: MutableState<M?>,
         builder: () -> B,
         onBeforeBuild: (B) -> Unit = {},
-        props: ComponentProps<F> = ComponentProps {}
+        props: Props<F> = Props {}
     ): F =
         super.create(null) {
             this.value = value

@@ -32,8 +32,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.MutableState
-import io.spine.chords.core.appshell.Application
-import io.spine.chords.core.appshell.app
+import io.spine.chords.core.appshell.Props
 
 /**
  * A base class for class-based component implementations.
@@ -599,7 +598,7 @@ import io.spine.chords.core.appshell.app
  * @see io.spine.chords.core.appshell.AppView
  */
 @Stable
-public abstract class Component {
+public abstract class Component : DefaultPropsOwnerBase() {
 
     /**
      * A callback, which configures component's properties according to the
@@ -610,23 +609,13 @@ public abstract class Component {
      * [ComponentSetup.invoke] or an analogous component
      * declaration function.
      */
-    internal var props: ComponentProps<Component>? = null
+    internal var props: Props<Component>? = null
 
     /**
      * A state variable which specifies whether the component's [initialize]
      * method has been called.
      */
     private val initialized = mutableStateOf(false)
-
-    /**
-     * A lambda that assigns default property values that are applicable for
-     * this component according to the application-wide configuration.
-     *
-     * @see Application.componentDefaults
-     */
-    private val setDefaultProps: ((Component) -> Unit)? by lazy {
-        app.componentDefaults.componentDefaultsInitializer(javaClass)
-    }
 
     /**
      * A component's lifecycle method, which is invoked right after the
@@ -729,13 +718,13 @@ public abstract class Component {
      *
      * This includes both assigning the default property values applicable
      * to this component from application-wide component customizations (see
-     * [Application.componentDefaults][io.spine.chords.core.appshell.Application.componentDefaults]),
+     * [Application.componentDefaults][io.spine.chords.core.appshell.Application.sharedDefaults]),
      * and setting instance-specific properties. If there are conflicts between
      * these two sources of property values, instance-specific property
      * declarations override application-wide property declarations.
      */
     protected open fun updateProps() {
-        setDefaultProps?.invoke(this)
+        setDefaultProps()
         props?.run { configure() }
     }
 
@@ -767,32 +756,6 @@ public abstract class Component {
      */
     @Composable
     protected abstract fun content()
-}
-
-/**
- * A functional interface that defines the signature for user-provided
- * component's property configuration functions.
- *
- * It generally doesn't need to be used directly when using the components,
- * since it would be implicitly created by a lambda that is passed to the
- * [ComponentSetup.invoke] function.
- * It is a part of an internal implementation of [Component], and, in case of
- * some advanced components, can also be used when creating new components.
- *
- * @See Component
- * @see ComponentSetup.invoke
- * @see Component.props
- */
-public fun interface ComponentProps <C: Component> {
-
-    /**
-     * The function that, given a component's instance in its receiver, is
-     * expected to contain component instance property value
-     * declarations (assignments).
-     *
-     * @receiver a component whose properties are to be configured.
-     */
-    public fun C.configure()
 }
 
 /**
@@ -830,7 +793,7 @@ public abstract class AbstractComponentSetup(
      */
     @Composable
     public fun <C : Component> createAndRender(
-        props: ComponentProps<C>? = null,
+        props: Props<C>? = null,
         createInstance: (() -> C)? = null,
         content: @Composable C.() -> Unit
     ): C {
@@ -840,14 +803,14 @@ public abstract class AbstractComponentSetup(
            refer to itself to simplify the component authoring experience,
            hence we're doing an explicit typecast here as a compromise */
         @Suppress("UNCHECKED_CAST")
-        instance.props = props as ComponentProps<Component>?
+        instance.props = props as Props<Component>?
         content(instance)
         return instance
     }
 
     protected fun <C : Component> create(
         createInstance: (() -> C)? = null,
-        config: ComponentProps<C>? = null
+        config: Props<C>? = null
     ): C {
         lateinit var instance: C
 
@@ -865,7 +828,7 @@ public abstract class AbstractComponentSetup(
            refer to itself to simplify the component authoring experience,
            hence we're doing an explicit typecast here as a compromise */
         @Suppress("UNCHECKED_CAST")
-        instance.props = config as ComponentProps<Component>?
+        instance.props = config as Props<Component>?
         return instance
     }
 }
@@ -949,7 +912,7 @@ public open class ComponentSetup<C: Component>(
      */
     @Composable
     public operator fun invoke(
-        props: ComponentProps<C>
+        props: Props<C>
     ): C = createAndRender(props) {
         Content()
     }

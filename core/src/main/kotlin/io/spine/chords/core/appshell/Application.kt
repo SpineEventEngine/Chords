@@ -76,8 +76,8 @@ public var app: Application by writeOnce(false)
  * ## Customizing default values for different component types
  *
  * It is possible to customize default values for properties for all instances
- * of any given component type(s). To do this, override the [componentDefaults]
- * function, and use a [defaultsTo][ComponentDefaultsScope.defaultsTo] infix
+ * of any given component type(s). To do this, override the [sharedDefaults]
+ * function, and use a [defaultsTo][SharedDefaultsScope.defaultsTo] infix
  * call per each component type whose default property values you need
  * to customize.
  *
@@ -169,7 +169,7 @@ public open class Application(
     /**
      * The registry of default property values for different component types.
      */
-    internal val componentDefaults = ComponentDefaults()
+    internal val componentDefaults = SharedDefaults()
 
     private var _ui: ApplicationUI? = null
 
@@ -192,7 +192,7 @@ public open class Application(
         app = this
 
         with(componentDefaults) {
-            componentDefaults()
+            sharedDefaults()
         }
 
         application(exitProcessOnExit = exitProcessOnClose) {
@@ -223,7 +223,7 @@ public open class Application(
      *
      * Here's an example:
      * ```
-     *     override fun ComponentDefaultsScope.componentDefaults() {
+     *     override fun ComponentDefaultsScope.sharedDefaults() {
      *         Dialog::class defaultsTo {
      *             onBeforeCancel = {
      *                 message = "Are you sure you want to close the dialog?"
@@ -236,7 +236,7 @@ public open class Application(
      *     }
      * ```
      */
-    protected open fun ComponentDefaultsScope.componentDefaults() {
+    protected open fun SharedDefaultsScope.sharedDefaults() {
     }
 
     private fun createAppWindow(onCloseRequest: () -> Unit): AppWindow {

@@ -106,6 +106,7 @@ import androidx.compose.ui.unit.round
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProviderAtPosition
 import androidx.compose.ui.window.PopupProperties
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Alt
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Shift
@@ -172,7 +173,7 @@ public class DropdownListBox<I> : Component() {
          */
         @Composable
         public operator fun <I> invoke(
-            props: ComponentProps<DropdownListBox<I>>
+            props: Props<DropdownListBox<I>>
         ): DropdownListBox<I> = createAndRender(props, { DropdownListBox() }) {
             Content()
         }

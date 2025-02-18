@@ -43,7 +43,7 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.text.TextStyle
 import com.google.protobuf.Message
 import io.spine.base.FieldPath
-import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
@@ -466,13 +466,13 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         public operator fun <M : Message, B : ValidatingBuilder<out M>> invoke(
             value: MutableState<M?>,
             builder: () -> B,
-            props: ComponentProps<MessageForm<M>> = ComponentProps {},
+            props: Props<MessageForm<M>> = Props {},
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = declareInstance(
             value as MutableState<Message?>,
             builder,
-            props as ComponentProps<MessageForm<Message>>,
+            props as Props<MessageForm<Message>>,
             onBeforeBuild
         ) {
             content(this as FormPartScope<M>)
@@ -519,14 +519,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         > invoke(
             field: MessageField<PM, M>,
             builder: () -> B,
-            props: ComponentProps<MessageForm<M>> = ComponentProps {},
+            props: Props<MessageForm<M>> = Props {},
             defaultValue: M? = null,
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = declareInstance(
             field as MessageField<PM, Message>,
             builder,
-            props as ComponentProps<MessageForm<Message>>,
+            props as Props<MessageForm<Message>>,
             defaultValue,
             onBeforeBuild
         ) {
@@ -565,13 +565,13 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         public fun <M : Message, B: ValidatingBuilder<out M>> Multipart(
             value: MutableState<M?>,
             builder: () -> B,
-            props: ComponentProps<MessageForm<M>> = ComponentProps {},
+            props: Props<MessageForm<M>> = Props {},
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = declareMultipartInstance(
             value as MutableState<Message?>,
             builder,
-            props as ComponentProps<MessageForm<Message>>,
+            props as Props<MessageForm<Message>>,
             onBeforeBuild
         ) {
             content(this as MultipartFormScope<M>)
@@ -620,14 +620,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         > Multipart(
             field: MessageField<PM, M>,
             builder: () -> B,
-            props: ComponentProps<MessageForm<M>> = ComponentProps {},
+            props: Props<MessageForm<M>> = Props {},
             defaultValue: M? = null,
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = declareMultipartInstance(
             field as MessageField<PM, Message>,
             builder,
-            props as ComponentProps<MessageForm<Message>>,
+            props as Props<MessageForm<Message>>,
             defaultValue,
             onBeforeBuild
         ) {
@@ -674,12 +674,12 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             value: MutableState<M?>,
             builder: () -> B,
             onBeforeBuild: (B) -> Unit = {},
-            props: ComponentProps<MessageForm<M>> = ComponentProps {}
+            props: Props<MessageForm<M>> = Props {}
         ): MessageForm<M> = createInstance(
             value as MutableState<Message?>,
             builder,
             onBeforeBuild,
-            props as ComponentProps<MessageForm<Message>>
+            props as Props<MessageForm<Message>>
         ) as MessageForm<M>
     }
 

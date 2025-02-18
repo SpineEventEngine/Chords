@@ -35,7 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
-import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.Props
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.future.await
 
@@ -75,7 +75,7 @@ public class ConfirmationDialog : Dialog() {
          *   (presses the Cancel button).
          */
         public suspend fun showConfirmation(
-            props: ComponentProps<ConfirmationDialog>? = null
+            props: Props<ConfirmationDialog>? = null
         ): Boolean {
             val dialog = create(config = props)
             return dialog.showConfirmation()
