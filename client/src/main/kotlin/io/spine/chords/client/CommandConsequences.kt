@@ -33,25 +33,86 @@ import io.spine.base.EventMessageField
 import io.spine.chords.client.appshell.client
 import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
+import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+/**
+ * Constitutes consequences, which can be expected after posting a command of
+ * type [C], along with respective handlers.
+ *
+ * Consequences specified within a [CommandConsequences] object are handled by
+ * passing this object to the [app.client.postCommand][Client.postCommand]
+ * function.
+ *
+ * The consequences, which are expected along with respective handlers,
+ * including callbacks for specific events, rejections, network errors, event
+ * timeout conditions, etc. are all declared within the [consequences] lambda,
+ * using the API exposed via its [CommandConsequencesScope] receiver.
+ *
+ * Here's an example of posting a command and handling some possible
+ * consequences:
+ * ```
+ * val command: ImportItem = createCommand()
+ * val coroutineScope = rememberCoroutineScope()
+ * val inProgress: Boolean by remember { mutableStateOf(false) }
+ *
+ * app.client.postCommand(command, coroutineScope, {
+ *     onBeforePost {
+ *         inProgress = true
+ *     }
+ *     onPostServerError {
+ *         showMessage("Unexpected server error has occurred.")
+ *         inProgress = false
+ *     }
+ *     onEvent(
+ *         ItemImported::class.java,
+ *         ItemImported.Field.itemId(),
+ *         command.itemId
+ *     ) {
+ *         showMessage("Item imported")
+ *         inProgress = false
+ *     }.withTimeout(30.seconds) {
+ *         showMessage("The operation takes unexpectedly long to process. " +
+ *                 "Please check the status of its execution later.")
+ *         inProgress = false
+ *     }
+ *     onEvent(
+ *         ItemAlreadyExists::class.java,
+ *         ItemAlreadyExists.Field.itemId(),
+ *         command.itemId
+ *     ) {
+ *         showMessage("Item already exists: ${command.itemName.value}")
+ *         inProgress = false
+ *     }
+ *     onNetworkError {
+ *         showMessage("Server connection failed.")
+ *         inProgress = false
+ *     }
+ * })
+ * ```
+ *
+ * @param C A type of commands being posted.
+ *
+ * @param consequences A lambda, which declares expected consequences along with
+ *   their handlers.
+ *
+ * @see Client.postCommand
+ * @see CommandConsequencesScope
+ */
 public open class CommandConsequences<C: CommandMessage>(
-    public val command: C,
-    public val consequences: CommandConsequencesScope<C>.() -> Unit,
-    public val coroutineScope: CoroutineScope
+    private val consequences: CommandConsequencesScope<C>.() -> Unit
 ) : DefaultPropsOwnerBase() {
-    protected open val consequencesScope: CommandConsequencesScopeImpl<C> =
-        createConsequencesScope()
+    protected open fun createConsequencesScope(command: C): CommandConsequencesScopeImpl<C> =
+        CommandConsequencesScopeImpl(command)
 
-    protected open fun createConsequencesScope(): CommandConsequencesScopeImpl<C> =
-        CommandConsequencesScopeImpl(command, coroutineScope)
-
-    internal suspend fun post() {
+    internal suspend fun post(command: C): EventSubscriptions {
+        val consequencesScope: CommandConsequencesScopeImpl<C> = createConsequencesScope(command)
+        consequencesScope.coroutineScope = CoroutineScope(coroutineContext)
         try {
-            configConsequences()
+            registerConsequences(consequencesScope)
             val allSubscriptionsSuccessful = consequencesScope.allSubscriptionsActive
             if (allSubscriptionsSuccessful) {
                 consequencesScope.triggerBeforePostHandlers()
@@ -65,14 +126,19 @@ public open class CommandConsequences<C: CommandMessage>(
         } catch (e: ServerCommunicationException) {
             consequencesScope.triggerNetworkErrorHandlers(e)
         }
+        return consequencesScope.subscriptions
     }
 
-    protected open fun configConsequences() {
+    /**
+     * Registers consequences implied by this instance in the
+     * provided [consequencesScope].
+     *
+     * By default, this just registers consequences as defined by the
+     * [consequences] lambda, but subclasses can extend this behavior with
+     * registering some extra consequences.
+     */
+    protected open fun registerConsequences(consequencesScope: CommandConsequencesScope<C>) {
         consequences(consequencesScope)
-    }
-
-    public fun cancelAllSubscriptions() {
-        consequencesScope.cancelAllSubscriptions()
     }
 }
 
@@ -266,9 +332,9 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
 )
 public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override val command: C,
-    private val coroutineScope: CoroutineScope,
     public override val defaultTimeout: Duration = 30.seconds
 ) : CommandConsequencesScope<C> {
+    internal lateinit var coroutineScope: CoroutineScope
 
     /**
      * Allows to manage subscriptions made in this scope.

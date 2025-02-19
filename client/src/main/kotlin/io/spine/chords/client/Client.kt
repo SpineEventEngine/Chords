@@ -118,30 +118,28 @@ import kotlinx.coroutines.CoroutineScope
 
     /**
      * Posts the given [command], and runs handlers for any of the consequences
-     * registered in [setupConsequences].
+     * registered in [consequences].
      *
      * All registered command consequence handlers except event handlers are
      * invoked synchronously before this suspending method returns. Event
-     * handlers are invoked in the provided [coroutineScope].
+     * handlers are invoked in same coroutine scope as this suspending function.
      *
      * See the description and an example of specifying command consequence
      * handlers in the [CommandConsequencesScope] documentation.
      *
      * @param command The command that should be posted.
-     * @param coroutineScope The coroutine scope in which event handlers are to
-     *   be invoked.
-     * @param setupConsequences A lambda, which sets up handlers for command's
+     * @param consequences A lambda, which sets up handlers for command's
      *   consequences using the API in [CommandConsequencesScope] on which it
      *   is invoked.
      * @return An object, which allows managing (e.g. cancelling) all event
      *   subscriptions made by this method as specified with the
-     *   [setupConsequences] parameter.
+     *   [consequences] parameter.
      * @see CommandConsequencesScope
      */
     public suspend fun <C : CommandMessage> postCommand(
         command: C,
-        consequences: (C) -> CommandConsequences<C>
-    )
+        consequences: CommandConsequences<C>
+    ): EventSubscriptions
 
     /**
      * Subscribes to events with a given class and a given field value (which

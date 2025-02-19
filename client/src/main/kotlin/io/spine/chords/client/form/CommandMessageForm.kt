@@ -323,11 +323,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     public lateinit var commandConsequences: CommandConsequencesScope<C>.() -> Unit
 
     public var createCommandConsequences:
-            ((C, CommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
-            CommandConsequences<C>) =
-        { command, consequences, coroutineScope ->
-            CommandConsequences(command, consequences, coroutineScope)
-        }
+                (CommandConsequencesScope<C>.() -> Unit) -> CommandConsequences<C> =
+        { CommandConsequences(it) }
 
     /**
      * [CoroutineScope] owned by this form's composition used for running
@@ -397,9 +394,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "CommandMessageForm's value should be not null since it was just " +
             "checked to be valid within postCommand."
         }
-        app.client.postCommand(
-            command, { createCommandConsequences(it, commandConsequences, coroutineScope) }
-        )
+        val consequences = createCommandConsequences(commandConsequences)
+        app.client.postCommand(command, consequences)
     }
 
     /**

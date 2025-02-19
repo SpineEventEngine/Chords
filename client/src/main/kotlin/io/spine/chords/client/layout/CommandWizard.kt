@@ -27,12 +27,10 @@
 package io.spine.chords.client.layout
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
-import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.core.layout.AbstractWizardPage
@@ -43,7 +41,6 @@ import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.ValidatingBuilder
-import kotlinx.coroutines.CoroutineScope
 
 /**
  * A kind of [Wizard], which allows creating a command message and posting
@@ -72,16 +69,10 @@ import kotlinx.coroutines.CoroutineScope
 public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<out C>> : Wizard() {
 
     public var createCommandConsequences:
-            ((C, ModalCommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
-            ModalCommandConsequences<C>) =
-        { command, consequences, coroutineScope ->
-            val modalCommandConsequences =
-                ModalCommandConsequences(command, consequences, coroutineScope, { close() })
-            postingState.value = modalCommandConsequences.posting
-            modalCommandConsequences
-        }
+                (ModalCommandConsequencesScope<C>.() -> Unit) -> ModalCommandConsequences<C> =
+        { ModalCommandConsequences(it, postingState, { close() }) }
 
-    private var postingState = mutableStateOf<MutableState<Boolean>?>(null)
+    private var postingState = mutableStateOf(false)
 
     internal val commandMessageForm: CommandMessageForm<C> =
         CommandMessageForm.create(
@@ -104,7 +95,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
 
     override fun updateProps() {
         super.updateProps()
-        submitting = postingState.value?.value ?: false
+        submitting = postingState.value
     }
 
     /**

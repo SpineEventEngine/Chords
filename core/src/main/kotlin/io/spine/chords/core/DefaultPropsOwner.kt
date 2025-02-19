@@ -57,10 +57,6 @@ public abstract class DefaultPropsOwnerBase : DefaultPropsOwner {
         app.sharedDefaults.defaultsInitializer(javaClass)
     }
 
-    init {
-        setDefaultProps()
-    }
-
     /**
      * Runs any shared property initializers that might have been specified for
      * this type on the application level (see [Application.sharedDefaults]).

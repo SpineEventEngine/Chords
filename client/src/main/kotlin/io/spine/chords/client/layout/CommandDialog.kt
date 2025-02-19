@@ -31,7 +31,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import com.google.protobuf.Message
@@ -50,7 +52,6 @@ import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.protobuf.ValidatingBuilder
-import kotlinx.coroutines.CoroutineScope
 
 /**
  * A [Dialog] designed to create or modify a command message,
@@ -70,16 +71,10 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * Before considering customizing this property
      */
     public var createCommandConsequences:
-            ((C, ModalCommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
-            ModalCommandConsequences<C>) =
-        { command, consequences, coroutineScope ->
-            val modalCommandConsequences =
-                ModalCommandConsequences(command, consequences, coroutineScope, { close() })
-            postingState.value = modalCommandConsequences.posting
-            modalCommandConsequences
-        }
+                (ModalCommandConsequencesScope<C>.() -> Unit) -> ModalCommandConsequences<C> =
+        { ModalCommandConsequences(it, postingState, { close() }) }
 
-    private var postingState = mutableStateOf<MutableState<Boolean>?>(null)
+    private var postingState = mutableStateOf(false)
 
     /**
      * The [CommandMessageForm] used as a container for the message
@@ -89,7 +84,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
 
     override fun updateProps() {
         super.updateProps()
-        submitting = postingState.value?.value ?: false
+        submitting = postingState.value
     }
 
     /**
@@ -230,24 +225,18 @@ public fun CommandConsequencesScope<CommandMessage>.dialogCommandConsequences(di
 
 @Suppress("UNCHECKED_CAST")
 public open class ModalCommandConsequences<C : CommandMessage>(
-    command: C,
     consequences: ModalCommandConsequencesScope<C>.() -> Unit,
-    coroutineScope: CoroutineScope,
+    private val postingState: MutableState<Boolean>,
     public val close: () -> Unit,
 ) : CommandConsequences<C>(
-    command, consequences as CommandConsequencesScope<C>.() -> Unit, coroutineScope
+    consequences as CommandConsequencesScope<C>.() -> Unit
 ) {
-    override fun createConsequencesScope(): ModalCommandConsequencesScope<C> =
-        ModalCommandConsequencesScope(command, coroutineScope, { close() })
-
-    protected override val consequencesScope: ModalCommandConsequencesScope<C> get() =
-        super.consequencesScope as ModalCommandConsequencesScope<C>
-
-    public val posting: MutableState<Boolean> get() = consequencesScope.posting
+    override fun createConsequencesScope(command: C): ModalCommandConsequencesScope<C> =
+        ModalCommandConsequencesScope(command, postingState, close)
 
     public var predefinedConsequences: ModalCommandConsequencesScope<C>.() -> Unit = {
         onBeforePost {
-            posting.value = true
+            posting = true
         }
         onPostServerError {
             showMessage("Unexpected server error has occurred.")
@@ -268,24 +257,46 @@ public open class ModalCommandConsequences<C : CommandMessage>(
         setDefaultProps()
     }
 
-    override fun configConsequences() {
-        predefinedConsequences(consequencesScope)
-        super.configConsequences()
+    override fun registerConsequences(consequencesScope: CommandConsequencesScope<C>) {
+        predefinedConsequences(consequencesScope as ModalCommandConsequencesScope<C>)
+        super.registerConsequences(consequencesScope)
     }
 }
 
 /**
- * A [CommandConsequencesScope] variant, which provides an extended API that
- * simplifies implementing typical scenarios of handling consequences
- * of commands posted by modal components (such as a dialog or wizard).
+ * A [CommandConsequencesScope] variant, which provides an extended API to
+ * simplify implementing typical scenarios of handling consequences
+ * of commands posted by modal components (such as a dialog or a wizard).
+ *
+ * Differences from [CommandConsequences]:
+ *  - Exposes additional attributes and operations pertaining to the
+ *    modal component:
+ *    - [close] — closes the modal component that has initiated posting of
+ *      the command.
+ *    - [posting] — controls the command component's "posting" flag (which, can
+ *      mean disabling the respective form or displaying a graphic
+ *      "posting" indicator).
+ *  - Adds a [closeOnEvent] function, which is addresses a common scenario in
+ *    modal components where they should be closed upon emitting of a
+ *    certain event.
+ *  - All event subscriptions (created with [onEvent] or [closeOnEvent]) have
+ *    timeout periods set up by default with a duration of [defaultTimeout].
  */
 public open class ModalCommandConsequencesScope<C : CommandMessage>(
     command: C,
-    coroutineScope: CoroutineScope,
+    private val postingState: MutableState<Boolean>,
     public val close: () -> Unit,
-) : CommandConsequencesScopeImpl<C>(command, coroutineScope) {
+) : CommandConsequencesScopeImpl<C>(command) {
 
-    public val posting: MutableState<Boolean> = mutableStateOf(false)
+    /**
+     * Controls the "posting" state of the modal component behind this scope.
+     *
+     * Depending on how the respective [ModalCommandConsequences] is integrated
+     * within the modal component, and how the modal component is implemented
+     * this can affect whether the modal component's form is enabled or whether
+     * some graphic "posting" progress is displayed.
+     */
+    public var posting: Boolean by postingState
 
     private var defaultTimeoutHandlers: List<suspend () -> Unit> = ArrayList()
 
@@ -318,8 +329,11 @@ public open class ModalCommandConsequencesScope<C : CommandMessage>(
     }
 
     /**
-     * An alternative to the [onEvent] function, which closes the modal
-     * component after invoking the optional [eventHandler].
+     * Same as [onEvent] function, which ensures a common scenario of calling
+     * the [close] function upon emitting the respective event.
+     *
+     * The [eventHandler] parameter is optional, and if specified, it is invoked
+     * before [close] is called.
      */
     public fun <E : EventMessage> closeOnEvent(
         eventType: Class<out E>,

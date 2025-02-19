@@ -210,11 +210,9 @@ public class DesktopClient(
      *
      * All registered command consequence handlers except event handlers are
      * invoked synchronously before this suspending method returns. Event
-     * handlers are invoked in the provided [coroutineScope].
+     * handlers are invoked in same coroutine scope as this suspending function.
      *
      * @param command The command that should be posted.
-     * @param coroutineScope The coroutine scope in which event handlers are to
-     *   be invoked.
      * @param consequences A lambda, which sets up handlers for command's
      *   consequences using the API in [CommandConsequencesScope] on which it
      *   is invoked.
@@ -225,11 +223,8 @@ public class DesktopClient(
      */
     public override suspend fun <C : CommandMessage> postCommand(
         command: C,
-        consequences: (C) -> CommandConsequences<C>
-    ) {
-        val commandConseqences = consequences(command)
-        commandConseqences.post()
-    }
+        consequences: CommandConsequences<C>
+    ): EventSubscriptions = consequences.post(command)
 
     override fun <E : EventMessage> onEvent(
         event: Class<E>,
