@@ -62,9 +62,16 @@ import kotlinx.coroutines.CoroutineScope
 public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>>
     : SubmitOrCancelDialog() {
 
+    /**
+     * A lambda, which can optionally be specified to customize the way how
+     * [ModalCommandConsequences] instance is created for each command which is about
+     * to be posted.
+     *
+     * Before considering customizing this property
+     */
     public var createCommandConsequences:
-            ((C, CommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
-            CommandConsequences<C>) =
+            ((C, ModalCommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
+            ModalCommandConsequences<C>) =
         { command, consequences, coroutineScope ->
             val modalCommandConsequences =
                 ModalCommandConsequences(command, consequences, coroutineScope, { close() })

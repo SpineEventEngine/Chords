@@ -169,7 +169,7 @@ public open class Application(
     /**
      * The registry of default property values for different component types.
      */
-    internal val componentDefaults = SharedDefaults()
+    internal val sharedDefaults = SharedDefaults()
 
     private var _ui: ApplicationUI? = null
 
@@ -191,7 +191,7 @@ public open class Application(
         }
         app = this
 
-        with(componentDefaults) {
+        with(sharedDefaults) {
             sharedDefaults()
         }
 

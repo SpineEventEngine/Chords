@@ -28,13 +28,15 @@ package io.spine.chords.core
 
 import io.spine.chords.core.appshell.Application
 import io.spine.chords.core.appshell.app
+import io.spine.chords.core.appshell.SharedDefaults
 
 /**
  * A marker interface, which signifies types whose default property values can
  * be configured on the application level (see [Application.sharedDefaults]).
  *
  * Implementations of this interface have an obligation to obtain property
- * initializers for the respective type using [Application.defaultsInitializer]
+ * initializers for the respective type using
+ * [app.sharedDefaults.defaultsInitializer][SharedDefaults.defaultsInitializer]
  * and run them to apply default property configurations for the
  * respective instance. The simplest way to do this is to extend
  * [DefaultPropsOwnerBase] with the respective [DefaultPropsOwner]
@@ -52,7 +54,7 @@ public abstract class DefaultPropsOwnerBase : DefaultPropsOwner {
      * @see Application.sharedDefaults
      */
     private val defaultsInitializer: ((DefaultPropsOwner) -> Unit)? by lazy {
-        app.componentDefaults.defaultsInitializer(javaClass)
+        app.sharedDefaults.defaultsInitializer(javaClass)
     }
 
     init {

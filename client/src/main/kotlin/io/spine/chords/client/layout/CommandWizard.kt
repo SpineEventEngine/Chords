@@ -72,8 +72,8 @@ import kotlinx.coroutines.CoroutineScope
 public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<out C>> : Wizard() {
 
     public var createCommandConsequences:
-            ((C, CommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
-            CommandConsequences<C>) =
+            ((C, ModalCommandConsequencesScope<C>.() -> Unit, CoroutineScope) ->
+            ModalCommandConsequences<C>) =
         { command, consequences, coroutineScope ->
             val modalCommandConsequences =
                 ModalCommandConsequences(command, consequences, coroutineScope, { close() })
