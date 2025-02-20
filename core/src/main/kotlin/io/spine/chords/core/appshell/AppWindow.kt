@@ -142,6 +142,18 @@ public class AppWindow(
     }
 
     /**
+     * Navigates the application to the sign-in screen.
+     *
+     * This function clears the current navigation stack by removing the active screen
+     * and then pushes the sign-in screen onto the stack, ensuring that the user is
+     * redirected to the authentication flow.
+     */
+    internal fun switchToSignIn() {
+        screenNavigator.pop()
+        screenNavigator.push(signInScreen)
+    }
+
+    /**
      * Selects the given [appView].
      */
     internal fun select(appView: AppView) {

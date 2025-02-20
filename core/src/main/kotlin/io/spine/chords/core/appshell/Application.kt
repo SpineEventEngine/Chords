@@ -293,6 +293,16 @@ internal constructor(private val appWindow: AppWindow) {
     }
 
     /**
+     * Navigates the application to the sign-in screen.
+     *
+     * This function removes the previously displayed screen from the history,
+     * so backward navigation is not possible after using this method.
+     */
+    public fun switchToSignIn() {
+        appWindow.switchToSignIn()
+    }
+
+    /**
      * Returns the currently selected [AppView] on the [MainScreen].
      */
     public val currentView: AppView get() = appWindow.currentView
