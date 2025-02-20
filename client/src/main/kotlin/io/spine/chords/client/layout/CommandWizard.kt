@@ -174,7 +174,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * @see ModalCommandConsequences
      * @see createCommandConsequences
      */
-    protected abstract fun CommandConsequencesScope<C>.commandConsequences()
+    protected abstract fun ModalCommandConsequencesScope<C>.commandConsequences()
 
     /**
      * Allows to programmatically amend the command message builder before
