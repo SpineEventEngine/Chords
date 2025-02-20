@@ -167,7 +167,7 @@ import kotlinx.coroutines.CoroutineScope
      *     onBeforePost {
      *         inProgress = true
      *     }
-     *     onPostServerError {
+     *     onServerError {
      *         showMessage("Unexpected server error has occurred.")
      *         inProgress = false
      *     }

@@ -125,7 +125,7 @@ public open class CommandConsequences<C: CommandMessage>(
  *    in this scope.
  *  - The [onBeforePost] function can be used to register a callback, which is
  *    invoked before the command is posted, and the
- *    [onPostServerError]/[onAcknowledge] functions register callbacks invoked
+ *    [onServerError]/[onAcknowledge] functions register callbacks invoked
  *    if the command could not be acknowledged due to an error on the server,
  *    and if the command has been acknowledged respectively.
  *  - The [onEvent] function can be used to subscribe to certain events, which
@@ -184,7 +184,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      * @param handler A callback to be invoked, whose [ServerError] parameter
      *   receives the exception that has signaled the failure.
      */
-    public fun onPostServerError(handler: suspend (ServerError) -> Unit)
+    public fun onServerError(handler: suspend (ServerError) -> Unit)
 
     /**
      * Subscribes to events of type [eventType], which have its [field] equal
@@ -302,7 +302,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         postNetworkErrorHandlers += handler
     }
 
-    override fun onPostServerError(handler: suspend (ServerError) -> Unit) {
+    override fun onServerError(handler: suspend (ServerError) -> Unit) {
         postServerErrorHandlers += handler
     }
 
@@ -357,7 +357,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         cancelAllSubscriptions()
         if (postServerErrorHandlers.isEmpty()) {
             throw IllegalStateException(
-                "No `onPostServerError` handlers are registered for command: " +
+                "No `onServerError` handlers are registered for command: " +
                         command.javaClass.simpleName,
                 e
             )

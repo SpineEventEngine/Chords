@@ -104,8 +104,8 @@ import kotlin.time.Duration.Companion.seconds
  *                     // Custom `onBeforePost` handler.
  *                     posting = true
  *                 }
- *                 onPostServerError {
- *                     // Custom `onPostServerError` handler.
+ *                 onServerError {
+ *                     // Custom `onServerError` handler.
  *                     showMessage("Unexpected server error has occurred.")
  *                     close()
  *                 }
@@ -152,7 +152,7 @@ public open class ModalCommandConsequences<C : CommandMessage>(
         onBeforePost {
             posting = true
         }
-        onPostServerError {
+        onServerError {
             showMessage("Unexpected server error has occurred.")
             close()
         }
