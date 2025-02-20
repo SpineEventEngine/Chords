@@ -205,27 +205,21 @@ public class DesktopClient(
     }
 
     /**
-     * Posts the given [command], and runs handlers for any of the consequences
-     * registered in [consequences].
+     * Posts the specified [command] and handles the respective [consequences].
      *
-     * All registered command consequence handlers except event handlers are
-     * invoked synchronously before this suspending method returns. Event
-     * handlers are invoked in same coroutine scope as this suspending function.
-     *
-     * @param command The command that should be posted.
-     * @param consequences A lambda, which sets up handlers for command's
-     *   consequences using the API in [CommandConsequencesScope] on which it
-     *   is invoked.
-     * @return An object, which allows managing (e.g. cancelling) all event
-     *   subscriptions made by this method as specified with the
-     *   [consequences] parameter.
-     * @see CommandConsequencesScope
+     * See the [Client.postCommand] documentation for details.
      */
     public override suspend fun <C : CommandMessage> postCommand(
         command: C,
         consequences: CommandConsequences<C>
-    ): EventSubscriptions = consequences.post(command)
+    ): EventSubscriptions = consequences.postAndProcessConsequences(command)
 
+    /**
+     * Subscribes to an event of type [E] whose given [field]
+     * equals [fieldValue].
+     *
+     * See the [Client.onEvent] documentation for details.
+     */
     override fun <E : EventMessage> onEvent(
         event: Class<E>,
         field: EventMessageField,

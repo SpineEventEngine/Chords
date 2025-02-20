@@ -118,21 +118,94 @@ import kotlinx.coroutines.CoroutineScope
 
     /**
      * Posts the given [command], and runs handlers for any of the consequences
-     * registered in [consequences].
+     * specified with [consequences].
      *
      * All registered command consequence handlers except event handlers are
      * invoked synchronously before this suspending method returns. Event
      * handlers are invoked in same coroutine scope as this suspending function.
      *
-     * See the description and an example of specifying command consequence
-     * handlers in the [CommandConsequencesScope] documentation.
+     * Here's a simple usage example, which just includes a subscription to an
+     * event expected to be emitted as a consequence of posting
+     * the given command:
+     * ```
+     *     val command: ImportItem = createCommand()
+     *     val eventSubscriptions = app.client.postCommand(command, CommandConsequences({
+     *
+     *         // Subscribe to an event that is expected to be emitted as
+     *         // a consequence of this specific command.
+     *         onEvent(
+     *             ItemImported::class.java,
+     *             ItemImported.Field.itemId(),
+     *             command.itemId
+     *         ) {
+     *             showMessage("Item imported")
+     *         }
+     *     })
+     * ```
+     * Note that the `ItemImported` event with the given `itemId` field value is
+     * expected indefinitely in this example, and it's also possible to specify
+     * an event waiting timeout period as shown in the example below. If the
+     * event of the specified type and specified field value is emitted several
+     * times, then the respective handler will be invoked several times as well,
+     * until the respective subscription is
+     * [cancelled][EventSubscription.cancel]. All subscriptions made by the
+     * given `CommandConsequences` instance can be cancelled by invoking the
+     * [cancelAll][EventSubscriptions.cancelAll] method on the
+     * [EventSubscriptions] instance returned by the `postCommand` function.
+     *
+     * Similarly, you can subscribe to any number of events, including
+     * rejection events according to any respective consequences expected.
+     *
+     * Here's a more complex example, which involves also demonstrates tracking
+     * the command posting progress as well as handling various errors and
+     * timeout conditions:
+     * ```
+     * val command: ImportItem = createCommand()
+     * val inProgress: Boolean by remember { mutableStateOf(false) }
+     *
+     * app.client.postCommand(command, CommandConsequences({
+     *     onBeforePost {
+     *         inProgress = true
+     *     }
+     *     onPostServerError {
+     *         showMessage("Unexpected server error has occurred.")
+     *         inProgress = false
+     *     }
+     *     onEvent(
+     *         ItemImported::class.java,
+     *         ItemImported.Field.itemId(),
+     *         command.itemId
+     *     ) {
+     *         showMessage("Item imported")
+     *         inProgress = false
+     *     }.withTimeout(30.seconds) {
+     *         showMessage("The operation takes unexpectedly long to process. " +
+     *                 "Please check the status of its execution later.")
+     *         inProgress = false
+     *     }
+     *     onEvent(
+     *         ItemAlreadyExists::class.java,
+     *         ItemAlreadyExists.Field.itemId(),
+     *         command.itemId
+     *     ) {
+     *         showMessage("Item already exists: ${command.itemName.value}")
+     *         inProgress = false
+     *     }
+     *     onNetworkError {
+     *         showMessage("Server connection failed.")
+     *         inProgress = false
+     *     }
+     * }))
+     * ```
+     *
+     * See the [CommandConsequencesScope] documentation for the description of
+     * declarations supported when creating a [CommandConsequences] instance.
      *
      * @param command The command that should be posted.
-     * @param consequences A lambda, which sets up handlers for command's
-     *   consequences using the API in [CommandConsequencesScope] on which it
-     *   is invoked.
+     * @param consequences A configuration of possible consequences and their
+     *   respective  handlers.
      * @return An object, which allows managing (e.g. cancelling) all event
-     *   subscriptions made by this method as specified with the
+     *   subscriptions made by this method according to the
      *   [consequences] parameter.
      * @see CommandConsequencesScope
      */
