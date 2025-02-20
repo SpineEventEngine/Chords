@@ -137,8 +137,8 @@ public open class CommandConsequences<C: CommandMessage>(
  *
  *    Note that in case of identifying a network error all active event
  *    subscriptions are cancelled and no further events are received.
- *  - [cancelAllSubscriptions] can be used to cancel all event subscriptions that
- *    have been made with the [onEvent] function.
+ *  - [cancelAllSubscriptions] can be used to cancel all event subscriptions
+ *    that have been made with the [onEvent] function.
  *
  * See usage examples in the
  * [app.client.postCommand][Client.postCommand] documentation.
