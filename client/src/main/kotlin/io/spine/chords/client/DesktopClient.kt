@@ -185,7 +185,7 @@ public class DesktopClient(
         try {
             clientRequest()
                 .command(command)
-                .onServerError { msg, err: Error ->
+                .onServerError { _, err: Error ->
                     error = ServerError(err)
                 }
                 .onStreamingError { err: Throwable ->
@@ -205,56 +205,29 @@ public class DesktopClient(
     }
 
     /**
-     * Posts the given [command], and runs handlers for any of the consequences
-     * registered in [setupConsequences].
+     * Posts the specified [command] and handles the respective [consequences].
      *
-     * All registered command consequence handlers except event handlers are
-     * invoked synchronously before this suspending method returns. Event
-     * handlers are invoked in the provided [coroutineScope].
-     *
-     * @param command The command that should be posted.
-     * @param coroutineScope The coroutine scope in which event handlers are to
-     *   be invoked.
-     * @param setupConsequences A lambda, which sets up handlers for command's
-     *   consequences using the API in [CommandConsequencesScope] on which it
-     *   is invoked.
-     * @return An object, which allows managing (e.g. cancelling) all event
-     *   subscriptions made by this method as specified with the
-     *   [setupConsequences] parameter.
-     * @see CommandConsequencesScope
+     * See the [Client.postCommand] documentation for details.
      */
     public override suspend fun <C : CommandMessage> postCommand(
         command: C,
-        coroutineScope: CoroutineScope,
-        setupConsequences: CommandConsequencesScope<C>.() -> Unit
-    ): EventSubscriptions {
-        val scope = CommandConsequencesScopeImpl(command, coroutineScope)
-        try {
-            scope.setupConsequences()
-            val allSubscriptionsSuccessful = scope.allSubscriptionsActive
-            if (allSubscriptionsSuccessful) {
-                scope.triggerBeforePostHandlers()
-                postCommand(command)
-                scope.triggerAcknowledgeHandlers()
-            } else {
-                scope.subscriptions.cancelAll()
-            }
-        } catch (e: ServerError) {
-            scope.triggerServerErrorHandlers(e)
-        } catch (e: ServerCommunicationException) {
-            scope.triggerNetworkErrorHandlers(e)
-        }
-        return scope.subscriptions
-    }
+        consequences: CommandConsequences<C>
+    ): EventSubscriptions = consequences.postAndProcessConsequences(command)
 
+    /**
+     * Subscribes to an event of type [E] whose given [field]
+     * equals [fieldValue].
+     *
+     * See the [Client.onEvent] documentation for details.
+     */
     override fun <E : EventMessage> onEvent(
         event: Class<E>,
         field: EventMessageField,
         fieldValue: Message,
         onNetworkError: ((Throwable) -> Unit)?,
         onEvent: (E) -> Unit
-    ): EventSubscription<E> {
-        val eventSubscription = EventSubscriptionImpl<E>(spineClient)
+    ): EventSubscription {
+        val eventSubscription = EventSubscriptionImpl(spineClient)
         try {
             eventSubscription.subscription = clientRequest()
                 .subscribeToEvent(event)
@@ -327,14 +300,14 @@ public class DesktopClient(
  * @param spineClient A Spine Event Engine's [Client][io.spine.client.Client]
  *   instance where the subscription is being registered.
  */
-private class EventSubscriptionImpl<E: EventMessage>(
+private class EventSubscriptionImpl(
     private val spineClient: io.spine.client.Client
-) : EventSubscription<E> {
+) : EventSubscription {
     override val active: Boolean get() = subscription != null
 
     /**
-     * A Spine [Subscription], which was made to supply events of type [E], or
-     * `null` if it either hasn't been made yet, or cancelled already.
+     * A Spine [Subscription], which was made, or `null` if it either hasn't
+     * been made yet, or cancelled already.
      */
     var subscription: Subscription? = null
 
@@ -345,10 +318,7 @@ private class EventSubscriptionImpl<E: EventMessage>(
         timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit,
     ) {
-        check(timeoutJob == null) {
-            "`withTimeout` cannot be used more than once for" +
-                    "the same `EventSubscription`"
-        }
+        cancelTimeout()
         timeoutJob = timeoutCoroutineScope.launch {
             delay(timeout)
             if (timeoutJob != null) {
@@ -359,8 +329,8 @@ private class EventSubscriptionImpl<E: EventMessage>(
     }
 
     /**
-     * Invoked internally for the subsctiption to perform any operations, which
-     * have to be performed whenever an expected event [E] is emitted.
+     * Invoked internally for the subscription to perform any operations, which
+     * have to be performed whenever an expected event is emitted.
      */
     fun onEvent() {
         timeoutJob?.cancel()
@@ -372,6 +342,10 @@ private class EventSubscriptionImpl<E: EventMessage>(
             spineClient.subscriptions().cancel(subscription!!)
             subscription = null
         }
+        cancelTimeout()
+    }
+
+    private fun cancelTimeout() {
         if (timeoutJob != null) {
             timeoutJob?.cancel()
             timeoutJob = null

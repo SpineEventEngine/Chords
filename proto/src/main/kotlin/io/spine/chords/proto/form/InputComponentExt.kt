@@ -28,9 +28,9 @@ package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
-import io.spine.chords.core.ComponentProps
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputComponent
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 
@@ -127,7 +127,7 @@ public operator fun <
         V : MessageFieldValue
 > ComponentSetup<C>.invoke(
     field: MessageField<M, V>,
-    props: ComponentProps<C>? = null
+    props: Props<C>? = null
 ): C {
     return createAndRender(props) {
         ContentWithinField(field)

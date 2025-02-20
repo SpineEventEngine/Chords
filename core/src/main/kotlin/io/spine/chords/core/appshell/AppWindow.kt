@@ -194,8 +194,10 @@ public class AppWindow(
     internal fun closeDialog(dialog: Dialog) {
         checkNotNull(bottomDialog) { "No dialogs are displayed currently." }
         if (dialog == bottomDialog) {
-            check(bottomDialog!!.nestedDialog == null) {
-                "Cannot close a dialog while it has a nested dialog open."
+            val nestedDialog = bottomDialog!!.nestedDialog
+            check(nestedDialog == null) {
+                "Cannot close a dialog ${dialog.javaClass.simpleName} while it has a " +
+                        "nested dialog open ${nestedDialog!!.javaClass.simpleName}."
             }
             bottomDialog = null
         } else {

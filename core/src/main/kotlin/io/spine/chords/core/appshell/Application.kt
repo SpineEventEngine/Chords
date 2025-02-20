@@ -73,17 +73,18 @@ public var app: Application by writeOnce(false)
  * this, the [signInScreenContent] method has to be implemented to render
  * the respective composable content, and invoke the sign-in callback as needed.
  *
- * ## Customizing default values for different component types
+ * ## Customizing default values for different component types and other objects
  *
  * It is possible to customize default values for properties for all instances
- * of any given component type(s). To do this, override the [componentDefaults]
- * function, and use a [defaultsTo][ComponentDefaultsScope.defaultsTo] infix
- * call per each component type whose default property values you need
- * to customize.
+ * of any given component type(s), as well as some other objects, which [support
+ * this][io.spine.chords.core.DefaultPropsOwner]. To do this, override the
+ * [sharedDefaults] function, and use a
+ * [defaultsTo][SharedDefaultsScope.defaultsTo] infix call per each component
+ * type whose default property values you need to customize.
  *
  * Here's an example:
  * ```
- *     override fun ComponentDefaultsScope.componentDefaults() {
+ *     override fun SharedDefaultsScope.sharedDefaults() {
  *         Dialog::class defaultsTo {
  *             windowType = DesktopWindow
  *             look = Look(
@@ -124,7 +125,7 @@ public var app: Application by writeOnce(false)
  *
  * Note that for any given component, all default property values specified in
  * all of its base classes will be applied as well (if any such declarations
- * for parent classes have been defined in the `componentDefaults` method).
+ * for parent classes have been defined in the [sharedDefaults]` method).
  *
  * If there are any conflicts in property declarations across multiple
  * component's base classes, the declarations specified in child classes will
@@ -169,7 +170,7 @@ public open class Application(
     /**
      * The registry of default property values for different component types.
      */
-    internal val componentDefaults = ComponentDefaults()
+    internal val sharedDefaults = SharedDefaults()
 
     private var _ui: ApplicationUI? = null
 
@@ -191,8 +192,8 @@ public open class Application(
         }
         app = this
 
-        with(componentDefaults) {
-            componentDefaults()
+        with(sharedDefaults) {
+            sharedDefaults()
         }
 
         application(exitProcessOnExit = exitProcessOnClose) {
@@ -219,11 +220,12 @@ public open class Application(
     /**
      * An implementation of the application ([Application]'s subclass) can
      * override this method to specify application-wide default property values
-     * for individual component types.
+     * for individual component types or other
+     * [supported object types][io.spine.chords.core.DefaultPropsOwner].
      *
      * Here's an example:
      * ```
-     *     override fun ComponentDefaultsScope.componentDefaults() {
+     *     override fun SharedDefaultsScope.sharedDefaults() {
      *         Dialog::class defaultsTo {
      *             onBeforeCancel = {
      *                 message = "Are you sure you want to close the dialog?"
@@ -236,7 +238,7 @@ public open class Application(
      *     }
      * ```
      */
-    protected open fun ComponentDefaultsScope.componentDefaults() {
+    protected open fun SharedDefaultsScope.sharedDefaults() {
     }
 
     private fun createAppWindow(onCloseRequest: () -> Unit): AppWindow {

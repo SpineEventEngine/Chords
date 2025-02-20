@@ -31,10 +31,11 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import io.spine.base.CommandMessage
+import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.EventSubscriptions
 import io.spine.chords.client.appshell.client
-import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.appshell.app
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
@@ -194,12 +195,12 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
-            props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
+            props: Props<CommandMessageForm<C>> = Props {},
             content: @Composable FormPartScope<C>.() -> Unit
         ): CommandMessageForm<C> = declareInstance(
             value as MutableState<CommandMessage?>,
             builder,
-            props as ComponentProps<CommandMessageForm<CommandMessage>>,
+            props as Props<CommandMessageForm<CommandMessage>>,
             onBeforeBuild
         ) {
             content(this as FormPartScope<C>)
@@ -239,12 +240,12 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
-            props: ComponentProps<CommandMessageForm<C>> = ComponentProps {},
+            props: Props<CommandMessageForm<C>> = Props {},
             content: @Composable MultipartFormScope<C>.() -> Unit
         ): CommandMessageForm<C> = declareMultipartInstance(
             value as MutableState<CommandMessage?>,
             builder,
-            props as ComponentProps<CommandMessageForm<CommandMessage>>,
+            props as Props<CommandMessageForm<CommandMessage>>,
             onBeforeBuild
         ) {
             content(this as MultipartFormScope<C>)
@@ -292,17 +293,17 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             builder: () -> B,
             value: MutableState<C?> = mutableStateOf(null),
             onBeforeBuild: (B) -> Unit = {},
-            props: ComponentProps<CommandMessageForm<C>> = ComponentProps {}
+            props: Props<CommandMessageForm<C>> = Props {}
         ): CommandMessageForm<C> = createInstance(
             value as MutableState<CommandMessage?>,
             builder,
             onBeforeBuild,
-            props as ComponentProps<CommandMessageForm<CommandMessage>>
+            props as Props<CommandMessageForm<CommandMessage>>
         ) as CommandMessageForm<C>
     }
 
     /**
-     * A function, which, should register handlers for consequences of
+     * A function, which, should register handlers for possible consequences of
      * command [C] posted by the form.
      *
      * The command, which is going to be posted and whose consequence handlers
@@ -320,6 +321,24 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * @see cancelActiveSubscriptions
      */
     public lateinit var commandConsequences: CommandConsequencesScope<C>.() -> Unit
+
+    /**
+     * A lambda, which can be used to customize the creation of
+     * [CommandConsequences] instance.
+     *
+     * In most cases, specifying the [commandConsequences] property should be
+     * enough for defining the set of expected command posting consequences and
+     * their handlers. By default, the [commandConsequences] lambda will be used
+     * to create a [CommandConsequences] instance, which will be used when
+     * posting the command.
+     *
+     * This property can be used in cases when it might be useful to also
+     * customize instantiation of [CommandConsequences], e.g. when a subclass of
+     * [CommandConsequences] needs to be used.
+     */
+    public var createCommandConsequences:
+                (CommandConsequencesScope<C>.() -> Unit) -> CommandConsequences<C> =
+        { CommandConsequences(it) }
 
     /**
      * [CoroutineScope] owned by this form's composition used for running
@@ -389,8 +408,8 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "CommandMessageForm's value should be not null since it was just " +
             "checked to be valid within postCommand."
         }
-
-        return app.client.postCommand(command, coroutineScope, commandConsequences)
+        val consequences = createCommandConsequences(commandConsequences)
+        return app.client.postCommand(command, consequences)
     }
 
     /**
@@ -404,5 +423,4 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
         activeSubscriptions.forEach { it.cancelAll() }
         activeSubscriptions.clear()
     }
-
 }

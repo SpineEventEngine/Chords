@@ -30,11 +30,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import io.spine.base.CommandMessage
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.form.CommandMessageForm
+import io.spine.chords.client.layout.ModalCommandConsequences.Companion.consequences
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.SubmitOrCancelDialog
 import io.spine.chords.proto.form.FormFieldsScope
@@ -53,10 +55,42 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     : SubmitOrCancelDialog() {
 
     /**
+     * A lambda, which can optionally be specified to customize the way how
+     * [ModalCommandConsequences] instance is created.
+     *
+     * In most cases this property would not need to be customized:
+     *  - The dialog-specific command consequences should be specified by
+     *    implementing the [commandConsequences] method.
+     *  - If you need to customize the
+     *    [predefined consequences][ModalCommandConsequences.predefinedConsequences],
+     *    which are implied by [ModalCommandConsequences] (for common things
+     *    like handling errors or displaying command posting progress), you can
+     *    customize this on an application level using the
+     *    ["shared defaults"][Application.sharedDefaults] feature.
+     *
+     *  In cases when the above cases are not enough, and you need to customize
+     *  how `ModelCommandConsequences` is instantiated or configured on a
+     *  per-dialog basis, you can do this by specifying a respective lambda in
+     *  this property. The lambda accepts a consequences configuration function
+     *  and returns the respective [ModalCommandConsequences] created from that
+     *  configuration function.
+     */
+    public var createCommandConsequences:
+                (ModalCommandConsequencesScope<C>.() -> Unit) -> ModalCommandConsequences<C> =
+        { consequences(postingState, { close() }, it) }
+
+    private var postingState = mutableStateOf(false)
+
+    /**
      * The [CommandMessageForm] used as a container for the message
      * field editors.
      */
     private lateinit var commandMessageForm: CommandMessageForm<C>
+
+    override fun updateProps() {
+        super.updateProps()
+        submitting = postingState.value
+    }
 
     /**
      * Creates and renders the [commandMessageForm], and then delegates the
@@ -69,7 +103,12 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
             onBeforeBuild = ::beforeBuild,
             props = {
                 validationDisplayMode = MANUAL
-                commandConsequences = { commandConsequences() }
+                createCommandConsequences = this@CommandDialog.createCommandConsequences
+                commandConsequences = {
+                    (this as ModalCommandConsequencesScope<C>).run {
+                        commandConsequences()
+                    }
+                }
                 enabled = !submitting
             }
         ) {
@@ -114,17 +153,40 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * [`onXXX`][CommandConsequencesScope] functions available in the
      * function's scope.
      *
+     * Here's an example of a typical simplest impmelemntation:
+     * ```
+     *     override fun ModalCommandConsequencesScope<ImportItem>.commandConsequences() {
+     *         closeOnEvent(
+     *             ItemImported::class.java,
+     *             ItemImported.Field.itemId(),
+     *             command.itemId
+     *         )
+     *     }
+     * ```
+     *
      * Event subscriptions made by this function are automatically cancelled
      * when the dialog is closed. They can also be cancelled explicitly by
      * calling [cancelActiveSubscriptions] if they need to be canceled before
      * the dialog is closed.
      *
-     * @receiver [CommandConsequencesScope], which provides an API for
+     * NOTE: the implementation of this function typically doesn't have to
+     * define handlers for consequences, which are needed for displaying of the
+     * "posting" state or handling posting errors, since these consequences are
+     * handled by predefined consequences specified in the
+     * [predefinedConsequences][ModalCommandConsequences.predefinedConsequences]
+     * property of [ModalCommandConsequences] instance provided by the
+     * [createCommandConsequences] lambda. You can customize this behavior on
+     * a per-instance or application-wide level. See [ModalCommandConsequences]
+     * and [createCommandConsequences].
+     *
+     * @receiver [ModalCommandConsequencesScope], which provides an API for
      *   registering command's consequences.
      * @see submitContent
      * @see cancelActiveSubscriptions
+     * @see ModalCommandConsequences
+     * @see createCommandConsequences
      */
-    protected abstract fun CommandConsequencesScope<C>.commandConsequences()
+    protected abstract fun ModalCommandConsequencesScope<C>.commandConsequences()
 
     /**
      * Allows to programmatically amend the command message builder before

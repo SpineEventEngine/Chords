@@ -35,7 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
-import io.spine.chords.core.ComponentProps
+import io.spine.chords.core.appshell.Props
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.future.await
 
@@ -61,7 +61,7 @@ public class MessageDialog : Dialog() {
          */
         public suspend fun showMessage(
             message: String,
-            props: ComponentProps<MessageDialog>? = null
+            props: Props<MessageDialog>? = null
         ) {
             val dialog = create(config = props)
             dialog.message = message

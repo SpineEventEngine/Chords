@@ -31,11 +31,84 @@ import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.chords.client.appshell.client
+import io.spine.chords.client.layout.ModalCommandConsequences
+import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
+import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+
+/**
+ * Constitutes consequences, which can be expected after posting a command of
+ * type [C], along with respective handlers.
+ *
+ * Consequences specified within a [CommandConsequences] object are handled by
+ * passing this object to the [app.client.postCommand][Client.postCommand]
+ * function.
+ *
+ * The consequences, which are expected along with respective handlers,
+ * including callbacks for specific events, rejections, network errors, event
+ * timeout conditions, etc. are all declared within the [consequences] lambda,
+ * using the API exposed via its [CommandConsequencesScope] receiver.
+ * See [CommandConsequencesScope] documentation for the details on API for
+ * declaring the expected command's consequences. See also the documentation for
+ * the [app.client.postCommand][Client.postCommand] function for
+ * usage examples.
+ *
+ * @param C A type of commands being posted.
+ *
+ * @property consequences A lambda, which declares expected consequences along
+ *   with their handlers.
+ *
+ * @see Client.postCommand
+ * @see CommandConsequencesScope
+ */
+public open class CommandConsequences<C: CommandMessage>(
+    private val consequences: CommandConsequencesScope<C>.() -> Unit
+) : DefaultPropsOwnerBase() {
+    protected open fun createConsequencesScope(command: C): CommandConsequencesScopeImpl<C> =
+        CommandConsequencesScopeImpl(command, defaultTimeout)
+
+    /**
+     * A default value for event timeouts if a respective parameter is omitted
+     * in the [withTimeout][CommandConsequencesScope.withTimeout] function.
+     */
+    public val defaultTimeout: Duration = 30.seconds
+
+    /**
+     * An internal method, which posts the given command and handles respective
+     * consequences, which are registered with the [consequences] lambda.
+     *
+     * Applications should use the
+     * [app.client.postCommand][Client.postCommand] method instead.
+     */
+    internal suspend fun postAndProcessConsequences(command: C): EventSubscriptions {
+        val consequencesScope: CommandConsequencesScopeImpl<C> = createConsequencesScope(command)
+
+        // NOTE: the `coroutineScope` property is not passed to the constructor,
+        //       but assigned separately intentionally in order to simplify the
+        //       constructor of CommandConsequencesScopeImpl and leave only the
+        //       essential data that cannot be inferred automatically there.
+        consequencesScope.coroutineScope = CoroutineScope(coroutineContext)
+        return consequencesScope.postAndProcessConsequences {
+            registerConsequences(consequencesScope)
+        }
+    }
+
+    /**
+     * Registers consequences implied by this instance in the
+     * provided [consequencesScope].
+     *
+     * By default, this just registers consequences as defined by the
+     * [consequences] lambda, but subclasses can extend this behavior with
+     * registering some extra consequences.
+     */
+    protected open fun registerConsequences(consequencesScope: CommandConsequencesScope<C>) {
+        consequences(consequencesScope)
+    }
+}
 
 /**
  * Defines a DSL for registering handlers of command consequences.
@@ -52,7 +125,7 @@ import kotlinx.coroutines.launch
  *    in this scope.
  *  - The [onBeforePost] function can be used to register a callback, which is
  *    invoked before the command is posted, and the
- *    [onPostServerError]/[onAcknowledge] functions register callbacks invoked
+ *    [onServerError]/[onAcknowledge] functions register callbacks invoked
  *    if the command could not be acknowledged due to an error on the server,
  *    and if the command has been acknowledged respectively.
  *  - The [onEvent] function can be used to subscribe to certain events, which
@@ -64,54 +137,16 @@ import kotlinx.coroutines.launch
  *
  *    Note that in case of identifying a network error all active event
  *    subscriptions are cancelled and no further events are received.
- *  - [cancelAllSubscriptions] can be used to cancel all event subscriptions that
- *    have been made with the [onEvent] function.
+ *  - [cancelAllSubscriptions] can be used to cancel all event subscriptions
+ *    that have been made with the [onEvent] function.
  *
- * Here's an example of configuring `CommandConsequencesScope` when using
- * the [Client.postCommand] function:
- *
- * ```
- * val command: ImportItem = createCommand()
- * val coroutineScope = rememberCoroutineScope()
- * val inProgress: Boolean by remember { mutableStateOf(false) }
- *
- * app.client.postCommand(command, coroutineScope, {
- *     onBeforePost {
- *         inProgress = true
- *     }
- *     onPostServerError {
- *         showMessage("Unexpected server error has occurred.")
- *         inProgress = false
- *     }
- *     onEvent(
- *         ItemImported::class.java,
- *         ItemImported.Field.itemId(),
- *         command.itemId
- *     ) {
- *         showMessage("Item imported")
- *         inProgress = false
- *     }.withTimeout(30.seconds) {
- *         showMessage("The operation takes unexpectedly long to process. " +
- *                 "Please check the status of its execution later.")
- *         inProgress = false
- *     }
- *     onEvent(
- *         ItemAlreadyExists::class.java,
- *         ItemAlreadyExists.Field.itemId(),
- *         command.itemId
- *     ) {
- *         showMessage("Item already exists: ${command.itemName.value}")
- *         inProgress = false
- *     }
- *     onNetworkError {
- *         showMessage("Server connection failed.")
- *         inProgress = false
- *     }
- * })
- * ```
+ * See usage examples in the
+ * [app.client.postCommand][Client.postCommand] documentation.
  *
  * @param C A type of command message, whose consequences are configured in
  *   this scope.
+ *
+ * @see Client.postCommand
  */
 public interface CommandConsequencesScope<out C: CommandMessage> {
 
@@ -120,6 +155,11 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      * this scope.
      */
     public val command: C
+
+    /**
+     * A timeout period that the [withTimeout] function uses by default.
+     */
+    public val defaultTimeout: Duration
 
     /**
      * Registers the callback, which is invoked before the command is posted.
@@ -144,7 +184,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      * @param handler A callback to be invoked, whose [ServerError] parameter
      *   receives the exception that has signaled the failure.
      */
-    public fun onPostServerError(handler: suspend (ServerError) -> Unit)
+    public fun onServerError(handler: suspend (ServerError) -> Unit)
 
     /**
      * Subscribes to events of type [eventType], which have its [field] equal
@@ -171,7 +211,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
         field: EventMessageField,
         fieldValue: Message,
         eventHandler: suspend (E) -> Unit
-    ): EventSubscription<out E>
+    ): EventSubscription
 
     /**
      * Limits the time of waiting for the event to [timeout].
@@ -186,8 +226,8 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      *   is not emitted within the specified [timeout] period after invoking
      *   this method.
      */
-    public fun EventSubscription<out EventMessage>.withTimeout(
-        timeout: Duration = 20.seconds,
+    public fun EventSubscription.withTimeout(
+        timeout: Duration = defaultTimeout,
         timeoutHandler: suspend () -> Unit)
 
     /**
@@ -211,23 +251,31 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
 /**
  * An implementation of [CommandConsequencesScope].
  *
- * @param command A command whose consequences are being configured.
- * @param coroutineScope [CoroutineScope] that should be used for launching
- *   suspending event handlers.
+ * @property command A command whose consequences are being configured.
+ * @property defaultTimeout A default event waiting timeout that will be used if
+ *   the respective parameter of [withTimeout] is omitted.
  */
 @Suppress(
     // Considering all functions to be appropriate.
     "TooManyFunctions"
 )
-internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
+public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override val command: C,
-    private val coroutineScope: CoroutineScope
+    public override val defaultTimeout: Duration = 30.seconds
 ) : CommandConsequencesScope<C> {
+
+    /**
+     * A [CoroutineScope] used to invoke consequence handlers.
+     *
+     * This property is automatically initialized by the internal
+     * [CommandConsequences.postAndProcessConsequences] method.
+     */
+    internal lateinit var coroutineScope: CoroutineScope
 
     /**
      * Allows to manage subscriptions made in this scope.
      */
-    val subscriptions: EventSubscriptions = object : EventSubscriptions {
+    private val subscriptions: EventSubscriptions = object : EventSubscriptions {
         override fun cancelAll() {
             eventSubscriptions.forEach { it.cancel() }
         }
@@ -237,9 +285,9 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
      * Returns `true` if all event subscriptions that have been made using the
      * [onEvent] method are active.
      */
-    internal val allSubscriptionsActive: Boolean get() = eventSubscriptions.all { it.active }
+    private val allSubscriptionsActive: Boolean get() = eventSubscriptions.all { it.active }
 
-    private val eventSubscriptions: MutableList<EventSubscription<out EventMessage>> = ArrayList()
+    private val eventSubscriptions: MutableList<EventSubscription> = ArrayList()
     private var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
     private var postNetworkErrorHandlers: List<suspend (ServerCommunicationException) -> Unit> =
         ArrayList()
@@ -254,7 +302,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         postNetworkErrorHandlers += handler
     }
 
-    override fun onPostServerError(handler: suspend (ServerError) -> Unit) {
+    override fun onServerError(handler: suspend (ServerError) -> Unit) {
         postServerErrorHandlers += handler
     }
 
@@ -267,7 +315,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         field: EventMessageField,
         fieldValue: Message,
         eventHandler: suspend (E) -> Unit
-    ): EventSubscription<out E> {
+    ): EventSubscription {
         val subscription = app.client.onEvent(
             eventType, field, fieldValue, {
                 coroutineScope.launch {
@@ -280,12 +328,12 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         return subscription
     }
 
-    override fun EventSubscription<out EventMessage>.withTimeout(
+    override fun EventSubscription.withTimeout(
         timeout: Duration,
         timeoutHandler: suspend () -> Unit
-    ) = withTimeout(timeout, coroutineScope, timeoutHandler)
+    ): Unit = withTimeout(timeout, coroutineScope, timeoutHandler)
 
-    internal suspend fun triggerBeforePostHandlers() {
+    private suspend fun triggerBeforePostHandlers() {
         beforePostHandlers.forEach { it() }
     }
 
@@ -293,7 +341,7 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         acknowledgeHandlers.forEach { it() }
     }
 
-    internal suspend fun triggerNetworkErrorHandlers(e: ServerCommunicationException) {
+    private suspend fun triggerNetworkErrorHandlers(e: ServerCommunicationException) {
         cancelAllSubscriptions()
         if (postNetworkErrorHandlers.isEmpty()) {
             throw IllegalStateException(
@@ -305,11 +353,11 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
         postNetworkErrorHandlers.forEach { it(e) }
     }
 
-    internal suspend fun triggerServerErrorHandlers(e: ServerError) {
+    private suspend fun triggerServerErrorHandlers(e: ServerError) {
         cancelAllSubscriptions()
         if (postServerErrorHandlers.isEmpty()) {
             throw IllegalStateException(
-                "No `onPostServerError` handlers are registered for command: " +
+                "No `onServerError` handlers are registered for command: " +
                         command.javaClass.simpleName,
                 e
             )
@@ -319,5 +367,70 @@ internal class CommandConsequencesScopeImpl<out C: CommandMessage>(
 
     override fun cancelAllSubscriptions() {
         subscriptions.cancelAll()
+    }
+
+    /**
+     * An internal method, which posts the given command and handles respective
+     * consequences, which are registered with the
+     * [registerConsequences] lambda.
+     *
+     * Applications should use the
+     * [app.client.postCommand][Client.postCommand] method instead.
+     *
+     * @param registerConsequences A function, which should register
+     *   consequences, which are relevant within this scope.
+     */
+    internal suspend fun postAndProcessConsequences(
+        registerConsequences: () -> Unit
+    ): EventSubscriptions {
+        try {
+            registerConsequences()
+            val allSubscriptionsSuccessful = allSubscriptionsActive
+            if (allSubscriptionsSuccessful) {
+                triggerBeforePostHandlers()
+                app.client.postCommand(command)
+                triggerAcknowledgeHandlers()
+            } else {
+                subscriptions.cancelAll()
+            }
+        } catch (e: ServerError) {
+            triggerServerErrorHandlers(e)
+        } catch (e: ServerCommunicationException) {
+            triggerNetworkErrorHandlers(e)
+        }
+        return subscriptions
+    }
+
+    public companion object {
+
+        /**
+         * A shortcut for the [CommandConsequences] constructor, which can be
+         * used to make [app.client.postCommand][Client.postCommand] calls
+         * more concise.
+         *
+         * As a result `postCommand` usage can look like this:
+         * ```
+         *     app.client.postCommand(command, consequences {
+         *         onEvent(
+         *             ItemImported::class.java,
+         *             ItemImported.Field.itemId(),
+         *             command.itemId
+         *         ) {
+         *             showMessage("Item imported")
+         *         }
+         *     })
+         * ```
+         *
+         * @param C A type of commands whose consequences are specified.
+         *
+         * @property consequences A lambda, which declares expected consequences
+         *   along with their handlers.
+         * @return The [ModalCommandConsequences] instance that was created.
+         */
+        public fun <C: CommandMessage> consequences(
+            consequences: CommandConsequencesScope<C>.() -> Unit
+        ): CommandConsequences<C> {
+            return CommandConsequences(consequences)
+        }
     }
 }
