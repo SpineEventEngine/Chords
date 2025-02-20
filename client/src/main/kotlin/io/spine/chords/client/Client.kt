@@ -129,7 +129,7 @@ import kotlinx.coroutines.CoroutineScope
      * the given command:
      * ```
      *     val command: ImportItem = createCommand()
-     *     val eventSubscriptions = app.client.postCommand(command, CommandConsequences({
+     *     val eventSubscriptions = app.client.postCommand(command, consequences {
      *
      *         // Subscribe to an event that is expected to be emitted as
      *         // a consequence of this specific command.
@@ -163,7 +163,7 @@ import kotlinx.coroutines.CoroutineScope
      * val command: ImportItem = createCommand()
      * val inProgress: Boolean by remember { mutableStateOf(false) }
      *
-     * app.client.postCommand(command, CommandConsequences({
+     * app.client.postCommand(command, consequences {
      *     onBeforePost {
      *         inProgress = true
      *     }
@@ -195,7 +195,7 @@ import kotlinx.coroutines.CoroutineScope
      *         showMessage("Server connection failed.")
      *         inProgress = false
      *     }
-     * }))
+     * })
      * ```
      *
      * See the [CommandConsequencesScope] documentation for the description of

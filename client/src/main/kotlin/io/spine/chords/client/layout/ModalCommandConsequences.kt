@@ -33,6 +33,7 @@ import com.google.protobuf.Message
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
+import io.spine.chords.client.Client
 import io.spine.chords.core.appshell.Application
 import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.CommandConsequencesScope
@@ -130,17 +131,17 @@ import kotlin.time.Duration.Companion.seconds
  *
  * @param C A type of commands whose consequences are specified.
  *
- * @param consequences A lambda, which uses the [ModalCommandConsequencesScope]
- *   API to define consequences which are possible as a result of posting
- *   commands of tyhpe [C] along with respective handlers.
  * @param postingState A "posting" state of the UI that backs this object.
  * @param close A lambda that closes the UI that backs this object.
+ * @param consequences A lambda, which uses the [ModalCommandConsequencesScope]
+ *   API to define consequences which are possible as a result of posting
+ *   commands of type [C] along with respective handlers.
  */
 @Suppress("UNCHECKED_CAST")
 public open class ModalCommandConsequences<C : CommandMessage>(
-    consequences: ModalCommandConsequencesScope<C>.() -> Unit,
     private val postingState: MutableState<Boolean>,
     public val close: () -> Unit,
+    consequences: ModalCommandConsequencesScope<C>.() -> Unit,
 ) : CommandConsequences<C>(
     consequences as CommandConsequencesScope<C>.() -> Unit
 ) {
@@ -174,6 +175,47 @@ public open class ModalCommandConsequences<C : CommandMessage>(
         predefinedConsequences(consequencesScope as ModalCommandConsequencesScope<C>)
         super.registerConsequences(consequencesScope)
     }
+
+    public companion object {
+
+        /**
+         * A shortcut for the [ModalCommandConsequences] constructor, which can
+         * be used to make [app.client.postCommand][Client.postCommand] calls
+         * (or other cases when [ModalCommandConsequences] should be
+         * instantiated) to be more concise.
+         *
+         * As a result `postCommand` usage can look like this:
+         * ```
+         *     app.client.postCommand(command, consequences(postingState, close) {
+         *         onEvent(
+         *             ItemImported::class.java,
+         *             ItemImported.Field.itemId(),
+         *             command.itemId
+         *         ) {
+         *             showMessage("Item imported")
+         *         }
+         *     })
+         * ```
+         *
+         * @param C A type of commands whose consequences are specified.
+         *
+         * @param postingState A "posting" state of the UI that backs this object.
+         * @param close A lambda that closes the UI that backs this object.
+         * @param consequences A lambda, which uses the
+         *   [ModalCommandConsequencesScope] API to define consequences which
+         *   are possible as a result of posting commands of type [C] along with
+         *   respective handlers.
+         * @return The [ModalCommandConsequences] instance that was created.
+         */
+        public fun <C: CommandMessage> consequences(
+            postingState: MutableState<Boolean>,
+            close: () -> Unit,
+            consequences: ModalCommandConsequencesScope<C>.() -> Unit,
+        ): ModalCommandConsequences<C> {
+            return ModalCommandConsequences(postingState, close, consequences)
+        }
+    }
+
 }
 
 /**

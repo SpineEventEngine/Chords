@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import io.spine.base.CommandMessage
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.form.CommandMessageForm
+import io.spine.chords.client.layout.ModalCommandConsequences.Companion.consequences
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.SubmitOrCancelDialog
 import io.spine.chords.proto.form.FormFieldsScope
@@ -76,7 +77,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      */
     public var createCommandConsequences:
                 (ModalCommandConsequencesScope<C>.() -> Unit) -> ModalCommandConsequences<C> =
-        { ModalCommandConsequences(it, postingState, { close() }) }
+        { consequences(postingState, { close() }, it) }
 
     private var postingState = mutableStateOf(false)
 

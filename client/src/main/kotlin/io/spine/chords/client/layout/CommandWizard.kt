@@ -33,6 +33,7 @@ import com.google.protobuf.Message
 import io.spine.base.CommandMessage
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.form.CommandMessageForm
+import io.spine.chords.client.layout.ModalCommandConsequences.Companion.consequences
 import io.spine.chords.core.layout.AbstractWizardPage
 import io.spine.chords.core.layout.Wizard
 import io.spine.chords.proto.form.FormFieldsScope
@@ -91,7 +92,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      */
     public var createCommandConsequences:
                 (ModalCommandConsequencesScope<C>.() -> Unit) -> ModalCommandConsequences<C> =
-        { ModalCommandConsequences(it, postingState, { close() }) }
+        { consequences(postingState, { close() }, it) }
 
     private var postingState = mutableStateOf(false)
 

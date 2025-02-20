@@ -31,6 +31,7 @@ import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.chords.client.appshell.client
+import io.spine.chords.client.layout.ModalCommandConsequences
 import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
 import kotlin.coroutines.coroutineContext
@@ -53,7 +54,7 @@ import kotlinx.coroutines.launch
  * using the API exposed via its [CommandConsequencesScope] receiver.
  * See [CommandConsequencesScope] documentation for the details on API for
  * declaring the expected command's consequences. See also the documentation for
- * the [app.client.postCommand][Client.postCommand] function] for
+ * the [app.client.postCommand][Client.postCommand] function for
  * usage examples.
  *
  * @param C A type of commands being posted.
@@ -398,5 +399,38 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
             triggerNetworkErrorHandlers(e)
         }
         return subscriptions
+    }
+
+    public companion object {
+
+        /**
+         * A shortcut for the [CommandConsequences] constructor, which can be
+         * used to make [app.client.postCommand][Client.postCommand] calls
+         * more concise.
+         *
+         * As a result `postCommand` usage can look like this:
+         * ```
+         *     app.client.postCommand(command, consequences {
+         *         onEvent(
+         *             ItemImported::class.java,
+         *             ItemImported.Field.itemId(),
+         *             command.itemId
+         *         ) {
+         *             showMessage("Item imported")
+         *         }
+         *     })
+         * ```
+         *
+         * @param C A type of commands whose consequences are specified.
+         *
+         * @property consequences A lambda, which declares expected consequences
+         *   along with their handlers.
+         * @return The [ModalCommandConsequences] instance that was created.
+         */
+        public fun <C: CommandMessage> consequences(
+            consequences: CommandConsequencesScope<C>.() -> Unit
+        ): CommandConsequences<C> {
+            return CommandConsequences(consequences)
+        }
     }
 }
