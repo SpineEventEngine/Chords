@@ -48,8 +48,8 @@ import kotlin.time.Duration.Companion.seconds
  * or wizards).
  *
  * Unlike [CommandConsequences], `ModalCommandConsequences` adds the following:
- *  - Contains a set of predefined consequences disable the form while the
- *    command is being posted, and specifies default error handlers.
+ *  - Contains a set of predefined consequences that disable the form while the
+ *    command is being posted, and specify default error handlers.
  *    See the implementation of default value for the [predefinedConsequences]
  *    property.
  *
@@ -179,26 +179,24 @@ public open class ModalCommandConsequences<C : CommandMessage>(
 /**
  * A [CommandConsequencesScope] variant, which provides an extended API to
  * simplify implementing typical scenarios of handling consequences
- * of commands posted by modal components (such as a dialog or a wizard).
+ * of commands posted by modal UIs (such as a dialog or a wizard).
  *
  * Differences from [CommandConsequences]:
  *  - Exposes additional attributes and operations pertaining to the
- *    modal component:
- *    - [close] — closes the modal component that has initiated posting of
- *      the command.
- *    - [posting] — controls the command component's "posting" flag (which, can
+ *    modal UIs:
+ *    - [close] — closes the modal UI that has initiated posting of the command.
+ *    - [posting] — controls the modal UI's "posting" flag (which, can
  *      mean disabling the respective form or displaying a graphic
  *      "posting" indicator).
- *  - Adds a [closeOnEvent] function, which is addresses a common scenario in
- *    modal components where they should be closed upon emitting of a
- *    certain event.
+ *  - Adds a [closeOnEvent] function, which addresses a common scenario in modal
+ *    UIs where they should be closed upon emitting of a certain event.
  *  - All event subscriptions (created with [onEvent] or [closeOnEvent]) have
  *    timeout periods set up by default with a duration of [defaultTimeout].
  *
  * @param C A type of command whose consequences being specified within
  *   this scope.
  *
- * @param command A command whose consequences are bineg specified and handled.
+ * @param command A command whose consequences are being specified and handled.
  * @param postingState A [MutableState] that will back the [posting] property.
  * @property close A lambda that closes the modal UI (e.g. a dialog or
  *   a wizard).

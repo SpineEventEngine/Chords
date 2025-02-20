@@ -375,6 +375,9 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      *
      * Applications should use the
      * [app.client.postCommand][Client.postCommand] method instead.
+     *
+     * @param registerConsequences A function, which should register
+     *   consequences, which are relevant within this scope.
      */
     internal suspend fun postAndProcessConsequences(
         registerConsequences: () -> Unit

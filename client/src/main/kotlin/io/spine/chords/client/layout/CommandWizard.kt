@@ -73,7 +73,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * [ModalCommandConsequences] instance is created.
      *
      * In most cases this property would not need to be customized:
-     *  - The dialog-specific command consequences should be specified by
+     *  - The wizard-specific command consequences should be specified by
      *    implementing the [commandConsequences] method.
      *  - If you need to customize the
      *    [predefined consequences][ModalCommandConsequences.predefinedConsequences],
@@ -84,7 +84,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      *
      *  In cases when the above cases are not enough, and you need to customize
      *  how `ModelCommandConsequences` is instantiated or configured on a
-     *  per-dialog basis, you can do this by specifying a respective lambda in
+     *  per-wizard basis, you can do this by specifying a respective lambda in
      *  this property. The lambda accepts a consequences configuration function
      *  and returns the respective [ModalCommandConsequences] created from that
      *  configuration function.
@@ -152,9 +152,9 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * ```
      *
      * Event subscriptions made by this function are automatically cancelled
-     * when the dialog is closed. They can also be cancelled explicitly by
+     * when the wizard is closed. They can also be cancelled explicitly by
      * calling [cancelActiveSubscriptions] if they need to be canceled before
-     * the dialog is closed.
+     * the wizard is closed.
      *
      * NOTE: the implementation of this function typically doesn't have to
      * define handlers for consequences, which are needed for displaying of the

@@ -398,7 +398,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * @see commandConsequences
      * @see cancelActiveSubscriptions
      */
-    public suspend fun postCommand() {
+    public suspend fun postCommand(): EventSubscriptions {
         updateValidationDisplay(true)
         check(valueValid.value) {
             "`postCommand` cannot be invoked on an invalid form`"
@@ -409,7 +409,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "checked to be valid within postCommand."
         }
         val consequences = createCommandConsequences(commandConsequences)
-        app.client.postCommand(command, consequences)
+        return app.client.postCommand(command, consequences)
     }
 
     /**

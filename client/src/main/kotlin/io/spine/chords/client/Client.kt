@@ -156,8 +156,8 @@ import kotlinx.coroutines.CoroutineScope
      * Similarly, you can subscribe to any number of events, including
      * rejection events according to any respective consequences expected.
      *
-     * Here's a more complex example, which involves also demonstrates tracking
-     * the command posting progress as well as handling various errors and
+     * Here's a more complex example, which also demonstrates tracking the
+     * command's posting progress as well as handling various errors and
      * timeout conditions:
      * ```
      * val command: ImportItem = createCommand()
