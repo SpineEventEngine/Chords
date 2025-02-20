@@ -68,6 +68,27 @@ import io.spine.protobuf.ValidatingBuilder
 @Stable
 public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<out C>> : Wizard() {
 
+    /**
+     * A lambda, which can optionally be specified to customize the way how
+     * [ModalCommandConsequences] instance is created.
+     *
+     * In most cases this property would not need to be customized:
+     *  - The dialog-specific command consequences should be specified by
+     *    implementing the [commandConsequences] method.
+     *  - If you need to customize the
+     *    [predefined consequences][ModalCommandConsequences.predefinedConsequences],
+     *    which are implied by [ModalCommandConsequences] (for common things
+     *    like handling errors or displaying command posting progress), you can
+     *    customize this on an application level using the
+     *    ["shared defaults"][Application.sharedDefaults] feature.
+     *
+     *  In cases when the above cases are not enough, and you need to customize
+     *  how `ModelCommandConsequences` is instantiated or configured on a
+     *  per-dialog basis, you can do this by specifying a respective lambda in
+     *  this property. The lambda accepts a consequences configuration function
+     *  and returns the respective [ModalCommandConsequences] created from that
+     *  configuration function.
+     */
     public var createCommandConsequences:
                 (ModalCommandConsequencesScope<C>.() -> Unit) -> ModalCommandConsequences<C> =
         { ModalCommandConsequences(it, postingState, { close() }) }
@@ -119,15 +140,38 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * [`onXXX`][CommandConsequencesScope] functions available in the
      * function's scope.
      *
+     * Here's an example of a typical simplest impmelemntation:
+     * ```
+     *     override fun ModalCommandConsequencesScope<ImportItem>.commandConsequences() {
+     *         closeOnEvent(
+     *             ItemImported::class.java,
+     *             ItemImported.Field.itemId(),
+     *             command.itemId
+     *         )
+     *     }
+     * ```
+     *
      * Event subscriptions made by this function are automatically cancelled
      * when the dialog is closed. They can also be cancelled explicitly by
      * calling [cancelActiveSubscriptions] if they need to be canceled before
      * the dialog is closed.
      *
-     * @receiver [CommandConsequencesScope], which provides an API for
+     * NOTE: the implementation of this function typically doesn't have to
+     * define handlers for consequences, which are needed for displaying of the
+     * "posting" state or handling posting errors, since these consequences are
+     * handled by predefined consequences specified in the
+     * [predefinedConsequences][ModalCommandConsequences.predefinedConsequences]
+     * property of [ModalCommandConsequences] instance provided by the
+     * [createCommandConsequences] lambda. You can customize this behavior on
+     * a per-instance or application-wide level. See [ModalCommandConsequences]
+     * and [createCommandConsequences].
+     *
+     * @receiver [ModalCommandConsequencesScope], which provides an API for
      *   registering command's consequences.
      * @see submit
      * @see cancelActiveSubscriptions
+     * @see ModalCommandConsequences
+     * @see createCommandConsequences
      */
     protected abstract fun CommandConsequencesScope<C>.commandConsequences()
 

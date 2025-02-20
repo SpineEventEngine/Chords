@@ -303,7 +303,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     }
 
     /**
-     * A function, which, should register handlers for consequences of
+     * A function, which, should register handlers for possible consequences of
      * command [C] posted by the form.
      *
      * The command, which is going to be posted and whose consequence handlers
@@ -322,6 +322,20 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      */
     public lateinit var commandConsequences: CommandConsequencesScope<C>.() -> Unit
 
+    /**
+     * A lambda, which can be used to customize the creation of
+     * [CommandConsequences] instance.
+     *
+     * In most cases, specifying the [commandConsequences] property should be
+     * enough for defining the set of expected command posting consequences and
+     * their handlers. By default, the [commandConsequences] lambda will be used
+     * to create a [CommandConsequences] instance, which will be used when
+     * posting the command.
+     *
+     * This property can be used in cases when it might be useful to also
+     * customize instantiation of [CommandConsequences], e.g. when a subclass of
+     * [CommandConsequences] needs to be used.
+     */
     public var createCommandConsequences:
                 (CommandConsequencesScope<C>.() -> Unit) -> CommandConsequences<C> =
         { CommandConsequences(it) }

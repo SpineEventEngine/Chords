@@ -33,12 +33,109 @@ import com.google.protobuf.Message
 import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
+import io.spine.chords.core.appshell.Application
 import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.CommandConsequencesScopeImpl
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
+/**
+ * A specialized type of [CommandConsequences] which simplify specifying
+ * command consequences for commands posted by model UIs (such as dialogs
+ * or wizards).
+ *
+ * Unlike [CommandConsequences], `ModalCommandConsequences` adds the following:
+ *  - Contains a set of predefined consequences disable the form while the
+ *    command is being posted, and specifies default error handlers.
+ *    See the implementation of default value for the [predefinedConsequences]
+ *    property.
+ *
+ *    You can change these default command consequences by customizing the
+ *    [predefinedConsequences] property.
+ *
+ *  - Extends the API for declaring consequences (see
+ *    [ModalCommandConsequences]) to include such things as an ability to close
+ *    the modal UI (e.g., dialog or wizard), change the "posting" state, which
+ *    typically affects how the posting status is displayed in the modal UI
+ *    (e.g. disables the respective form), and add a commonly useful
+ *    [closeOnEvent] function.
+ *
+ *  - Adds the default timeout of periods equalling [defaultTimeout] for all
+ *    event subscriptions automatically. They still can be customized using the
+ *    [withTimeout][ModalCommandConsequencesScope.withTimeout] function
+ *    if needed.
+ *
+ * This greatly simplifies how typical consequences are defined for modal UIs,
+ * while implicitly supporting all edge cases such as displaying posting
+ * progress, and closing of the UI as needed.
+ *
+ * A typical implementation of command consequences (e.g. for [CommandDialog]
+ * and [CommandWizard] components) can be as simple as this:
+ * ```
+ *     override fun ModalCommandConsequencesScope<ImportItem>.commandConsequences() {
+ *         closeOnEvent(
+ *             ItemImported::class.java,
+ *             ItemImported.Field.itemId(),
+ *             command.itemId
+ *         )
+ *     }
+ * ```
+ *
+ * Technically, the final configuration of command consequences passed to the
+ * [Client.postCommand][io.spine.chords.client.Client.postCommand] function will
+ * consist of first invoking [predefinedConsequences] followed by
+ * invoking the [consequences] lambda.
+ *
+ * If you need to change [predefinedConsequences] for all
+ * [ModalCommandConsequences] instances in the application (and thus change the
+ * way how errors and posting progress display is implemented in all modal UIs),
+ * you can do this using the [Application]'s
+ * [shared defaults][Application.sharedDefaults] feature like this:
+ *
+ * ```
+ *     override fun SharedDefaultsScope.sharedDefaults() {
+ *         ModalCommandConsequences::class defaultsTo {
+ *             predefinedConsequences = {
+ *                 onBeforePost {
+ *                     // Custom `onBeforePost` handler.
+ *                     posting = true
+ *                 }
+ *                 onPostServerError {
+ *                     // Custom `onPostServerError` handler.
+ *                     showMessage("Unexpected server error has occurred.")
+ *                     close()
+ *                 }
+ *                 onNetworkError {
+ *                     // Custom `onNetworkError` handler.
+ *                     showMessage("Server connection failed.")
+ *                     close()
+ *                 }
+ *                 onDefaultTimeout {
+ *                     // Custom `onDefaultTimeout` handler.
+ *                     showMessage("The operation takes unexpectedly long to process. " +
+ *                             "Please check the status of its execution later.")
+ *                     close()
+ *                 }
+ *             }
+ *         }
+ *     }
+ * ```
+ * Note that this way you replace the whole [predefinedConsequences] handler for
+ * predefined consequences for all [ModalCommandConsequences] in the
+ * application, so a new set of consequences should be sufficient to replace the
+ * default one.
+ *
+ * @param C A type of commands whose consequences are specified.
+ *
+ * @param consequences A lambda, which uses the [ModalCommandConsequencesScope]
+ *   API to define consequences which are possible as a result of posting
+ *   commands of tyhpe [C] along with respective handlers.
+ * @param postingState A "posting" state of the UI that backs this object.
+ * @param close A lambda that closes the UI that backs this object.
+ */
 @Suppress("UNCHECKED_CAST")
 public open class ModalCommandConsequences<C : CommandMessage>(
     consequences: ModalCommandConsequencesScope<C>.() -> Unit,
@@ -97,12 +194,23 @@ public open class ModalCommandConsequences<C : CommandMessage>(
  *    certain event.
  *  - All event subscriptions (created with [onEvent] or [closeOnEvent]) have
  *    timeout periods set up by default with a duration of [defaultTimeout].
+ *
+ * @param C A type of command whose consequences being specified within
+ *   this scope.
+ *
+ * @param command A command whose consequences are bineg specified and handled.
+ * @param postingState A [MutableState] that will back the [posting] property.
+ * @property close A lambda that closes the modal UI (e.g. a dialog or
+ *   a wizard).
+ * @property defaultTimeout A default event waiting timeout that will be used if
+ *   the respective parameter of [withTimeout] is omitted.
  */
 public open class ModalCommandConsequencesScope<C : CommandMessage>(
     command: C,
-    private val postingState: MutableState<Boolean>,
+    postingState: MutableState<Boolean>,
     public val close: () -> Unit,
-) : CommandConsequencesScopeImpl<C>(command) {
+    public override val defaultTimeout: Duration = 30.seconds
+) : CommandConsequencesScopeImpl<C>(command, defaultTimeout) {
 
     /**
      * Controls the "posting" state of the modal component behind this scope.

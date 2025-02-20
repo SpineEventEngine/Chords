@@ -68,7 +68,13 @@ public open class CommandConsequences<C: CommandMessage>(
     private val consequences: CommandConsequencesScope<C>.() -> Unit
 ) : DefaultPropsOwnerBase() {
     protected open fun createConsequencesScope(command: C): CommandConsequencesScopeImpl<C> =
-        CommandConsequencesScopeImpl(command)
+        CommandConsequencesScopeImpl(command, defaultTimeout)
+
+    /**
+     * A default value for event timeouts if a respective parameter is omitted
+     * in the [withTimeout][CommandConsequencesScope.withTimeout] function.
+     */
+    public val defaultTimeout: Duration = 30.seconds
 
     /**
      * An internal method, which posts the given command and handles respective
@@ -138,6 +144,8 @@ public open class CommandConsequences<C: CommandMessage>(
  *
  * @param C A type of command message, whose consequences are configured in
  *   this scope.
+ *
+ * @see Client.postCommand
  */
 public interface CommandConsequencesScope<out C: CommandMessage> {
 
@@ -146,7 +154,6 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      * this scope.
      */
     public val command: C
-
 
     /**
      * A timeout period that the [withTimeout] function uses by default.
@@ -243,9 +250,9 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
 /**
  * An implementation of [CommandConsequencesScope].
  *
- * @param command A command whose consequences are being configured.
- * @param coroutineScope [CoroutineScope] that should be used for launching
- *   suspending event handlers.
+ * @property command A command whose consequences are being configured.
+ * @property defaultTimeout A default event waiting timeout that will be used if
+ *   the respective parameter of [withTimeout] is omitted.
  */
 @Suppress(
     // Considering all functions to be appropriate.
@@ -369,7 +376,9 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      * Applications should use the
      * [app.client.postCommand][Client.postCommand] method instead.
      */
-    internal suspend fun postAndProcessConsequences(registerConsequences: () -> Unit): EventSubscriptions {
+    internal suspend fun postAndProcessConsequences(
+        registerConsequences: () -> Unit
+    ): EventSubscriptions {
         try {
             registerConsequences()
             val allSubscriptionsSuccessful = allSubscriptionsActive

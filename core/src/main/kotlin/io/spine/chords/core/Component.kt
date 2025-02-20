@@ -718,7 +718,7 @@ public abstract class Component : DefaultPropsOwnerBase() {
      *
      * This includes both assigning the default property values applicable
      * to this component from application-wide component customizations (see
-     * [Application.componentDefaults][io.spine.chords.core.appshell.Application.sharedDefaults]),
+     * [Application.sharedDefaults][io.spine.chords.core.appshell.Application.sharedDefaults]),
      * and setting instance-specific properties. If there are conflicts between
      * these two sources of property values, instance-specific property
      * declarations override application-wide property declarations.
