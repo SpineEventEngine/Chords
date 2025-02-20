@@ -102,7 +102,12 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
             onBeforeBuild = { beforeBuild(it) }
         ) {
             validationDisplayMode = MANUAL
-            commandConsequences = { commandConsequences() }
+            createCommandConsequences = this@CommandWizard.createCommandConsequences
+            commandConsequences = {
+                (this as ModalCommandConsequencesScope<C>).run {
+                    commandConsequences()
+                }
+            }
             enabled = !submitting
         }
 
