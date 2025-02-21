@@ -31,6 +31,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement.Center
 import androidx.compose.foundation.layout.Arrangement.Horizontal
+import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize.Min
@@ -41,14 +42,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollbarAdapter
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
@@ -82,11 +91,12 @@ public fun <E> Table(
     entities: List<E>,
     onRowClick: (E) -> Unit = {},
     rowModifier: (E) -> Modifier = { Modifier },
-    columns: List<TableColumn<E>>
+    columns: List<TableColumn<E>>,
+    onActions: (() -> Unit)? = null
 ) {
     Column {
         HeaderTableRow(columns)
-        ContentList(entities, columns, onRowClick, rowModifier)
+        ContentList(entities, columns, onRowClick, rowModifier, onActions)
     }
 }
 
@@ -134,9 +144,11 @@ private fun <E> ContentList(
     entities: List<E>,
     columns: List<TableColumn<E>>,
     onRowClick: (E) -> Unit,
-    rowModifier: (E) -> Modifier
+    rowModifier: (E) -> Modifier,
+    onActions: (() -> Unit)?,
 ) {
     val listState = rememberLazyListState()
+    val selectedItem: MutableState<E?> = remember { mutableStateOf(null) }
     Box(
         modifier = Modifier.fillMaxHeight(),
     ) {
@@ -146,7 +158,8 @@ private fun <E> ContentList(
         ) {
             entities.forEach { value ->
                 item {
-                    ContentTableRow(value, columns, rowModifier(value)) {
+                    ContentTableRow(value, columns, rowModifier(value), onActions = onActions) {
+                        selectedItem.value = value
                         onRowClick(value)
                     }
                 }
@@ -211,6 +224,7 @@ private fun <E> ContentTableRow(
     entity: E,
     columns: List<TableColumn<E>>,
     modifier: Modifier,
+    onActions: (() -> Unit)?,
     onClick: () -> Unit
 ) {
     TableRow(
@@ -221,6 +235,7 @@ private fun <E> ContentTableRow(
                 interactionSource = MutableInteractionSource(),
                 indication = null,
             ) { onClick() },
+        onActions = onActions
     ) { column -> column.cellContent(entity) }
 }
 
@@ -241,6 +256,7 @@ private fun <E> ContentTableRow(
 private fun <E> TableRow(
     columns: List<TableColumn<E>>,
     modifier: Modifier = Modifier,
+    onActions: (() -> Unit)? = null,
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
     Row(
@@ -248,7 +264,9 @@ private fun <E> TableRow(
             .fillMaxWidth()
             .requiredHeightIn(70.dp, 100.dp)
             .height(Min)
-            .then(modifier)
+            .then(modifier),
+        horizontalArrangement = SpaceBetween,
+        verticalAlignment = CenterVertically
     ) {
         columns.forEach {column ->
             Row(
@@ -259,6 +277,15 @@ private fun <E> TableRow(
                 horizontalArrangement = column.horizontalArrangement,
                 verticalAlignment = CenterVertically
             ) { cellContent(column) }
+        }
+        if (onActions != null) {
+            IconButton(onActions) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
     Divider(
