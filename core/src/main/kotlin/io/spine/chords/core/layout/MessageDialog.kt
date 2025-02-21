@@ -36,8 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.appshell.Props
-import java.util.concurrent.CompletableFuture
-import kotlinx.coroutines.future.await
+import kotlinx.coroutines.CompletableDeferred
 
 /**
  * A dialog that displays the specified text message for the user.
@@ -91,7 +90,7 @@ public class MessageDialog : Dialog() {
     }
 
     public suspend fun showMessage() {
-        val dialogClosure = CompletableFuture<Unit>()
+        val dialogClosure = CompletableDeferred<Unit>()
         onBeforeSubmit = {
             dialogClosure.complete(Unit)
             true

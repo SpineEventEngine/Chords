@@ -34,10 +34,10 @@ import io.spine.chords.client.appshell.client
 import io.spine.chords.client.layout.ModalCommandConsequences
 import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
-import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -75,7 +75,7 @@ public open class CommandConsequences<C: CommandMessage>(
      * A default value for event timeouts if a respective parameter is omitted
      * in the [withTimeout][CommandConsequencesScope.withTimeout] function.
      */
-    public val defaultTimeout: Duration = 30.seconds
+    public var defaultTimeout: Duration = 30.seconds
 
     /**
      * An internal method, which posts the given command and handles respective
@@ -83,16 +83,22 @@ public open class CommandConsequences<C: CommandMessage>(
      *
      * Applications should use the
      * [app.client.postCommand][Client.postCommand] method instead.
+     *
+     * @param command The command that should be posted.
+     * @return An object, which allows managing (e.g. cancelling) all event
+     *   subscriptions made by this method according to [consequences].
      */
-    internal suspend fun postAndProcessConsequences(command: C): EventSubscriptions {
+    internal suspend fun postAndProcessConsequences(
+        command: C
+    ): EventSubscriptions = coroutineScope {
         val consequencesScope: CommandConsequencesScopeImpl<C> = createConsequencesScope(command)
 
-        // NOTE: the `coroutineScope` property is not passed to the constructor,
+        // NOTE: The `coroutineScope` property is not passed to the constructor,
         //       but assigned separately intentionally in order to simplify the
         //       constructor of CommandConsequencesScopeImpl and leave only the
         //       essential data that cannot be inferred automatically there.
-        consequencesScope.coroutineScope = CoroutineScope(coroutineContext)
-        return consequencesScope.postAndProcessConsequences {
+        consequencesScope.coroutineScope = this
+        consequencesScope.postAndProcessConsequences {
             registerConsequences(consequencesScope)
         }
     }
@@ -104,6 +110,9 @@ public open class CommandConsequences<C: CommandMessage>(
      * By default, this just registers consequences as defined by the
      * [consequences] lambda, but subclasses can extend this behavior with
      * registering some extra consequences.
+     *
+     * @param consequencesScope The scope to be used for registering
+     *   command's consequences.
      */
     protected open fun registerConsequences(consequencesScope: CommandConsequencesScope<C>) {
         consequences(consequencesScope)
@@ -261,7 +270,7 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
 )
 public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override val command: C,
-    public override val defaultTimeout: Duration = 30.seconds
+    public override val defaultTimeout: Duration
 ) : CommandConsequencesScope<C> {
 
     /**
@@ -379,6 +388,8 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      *
      * @param registerConsequences A function, which should register
      *   consequences, which are relevant within this scope.
+     * @return An object, which allows managing (e.g. cancelling) all event
+     *   subscriptions made by [registerConsequences].
      */
     internal suspend fun postAndProcessConsequences(
         registerConsequences: () -> Unit

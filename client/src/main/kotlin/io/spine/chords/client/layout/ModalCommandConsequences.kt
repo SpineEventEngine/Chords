@@ -34,14 +34,13 @@ import io.spine.base.CommandMessage
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.chords.client.Client
-import io.spine.chords.core.appshell.Application
 import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.CommandConsequencesScopeImpl
 import io.spine.chords.client.EventSubscription
+import io.spine.chords.core.appshell.Application
 import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * A specialized type of [CommandConsequences] which simplify specifying
@@ -146,7 +145,7 @@ public open class ModalCommandConsequences<C : CommandMessage>(
     consequences as CommandConsequencesScope<C>.() -> Unit
 ) {
     override fun createConsequencesScope(command: C): ModalCommandConsequencesScope<C> =
-        ModalCommandConsequencesScope(command, postingState, close)
+        ModalCommandConsequencesScope(command, postingState, close, defaultTimeout)
 
     public var predefinedConsequences: ModalCommandConsequencesScope<C>.() -> Unit = {
         onBeforePost {
@@ -199,7 +198,8 @@ public open class ModalCommandConsequences<C : CommandMessage>(
          *
          * @param C A type of commands whose consequences are specified.
          *
-         * @param postingState A "posting" state of the UI that backs this object.
+         * @param postingState A "posting" state of the UI that backs
+         *   this object.
          * @param close A lambda that closes the UI that backs this object.
          * @param consequences A lambda, which uses the
          *   [ModalCommandConsequencesScope] API to define consequences which
@@ -215,7 +215,6 @@ public open class ModalCommandConsequences<C : CommandMessage>(
             return ModalCommandConsequences(postingState, close, consequences)
         }
     }
-
 }
 
 /**
@@ -249,7 +248,7 @@ public open class ModalCommandConsequencesScope<C : CommandMessage>(
     command: C,
     postingState: MutableState<Boolean>,
     public val close: () -> Unit,
-    public override val defaultTimeout: Duration = 30.seconds
+    public override val defaultTimeout: Duration
 ) : CommandConsequencesScopeImpl<C>(command, defaultTimeout) {
 
     /**
@@ -298,6 +297,18 @@ public open class ModalCommandConsequencesScope<C : CommandMessage>(
      *
      * The [eventHandler] parameter is optional, and if specified, it is invoked
      * before [close] is called.
+     *
+     * @param E A type of event being subscribed to.
+     *
+     * @param eventType A type of event that should be subscribed to.
+     * @param field A field whose value should identify an event being
+     *   subscribed to.
+     * @param fieldValue A value of event's [field] that identifies an event
+     *   being subscribed to.
+     * @return An [EventSubscription] instance, which can be used to manage this
+     *   subscription, e.g. customize its timeout using the [withTimeout]
+     *   function, or cancel the subscription using the
+     *   [cancel][EventSubscription.cancel] function.
      */
     public fun <E : EventMessage> closeOnEvent(
         eventType: Class<out E>,
