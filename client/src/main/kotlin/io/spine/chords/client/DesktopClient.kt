@@ -49,6 +49,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -300,7 +301,7 @@ public class DesktopClient(
  * @param spineClient A Spine Event Engine's [Client][io.spine.client.Client]
  *   instance where the subscription is being registered.
  */
-private class EventSubscriptionImpl(
+internal open class EventSubscriptionImpl(
     private val spineClient: io.spine.client.Client
 ) : EventSubscription {
     override val active: Boolean get() = subscription != null
@@ -329,6 +330,7 @@ private class EventSubscriptionImpl(
                 cancelSubscription()
 
                 onTimeout()
+                yield()
 
                 // Timeout job should be canceled AFTER invoking a callback
                 // to ensure that `onTimeout` callback's coroutine scope still

@@ -35,10 +35,13 @@ import io.spine.chords.client.layout.ModalCommandConsequences
 import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 
 /**
  * Constitutes consequences, which can be expected after posting a command of
@@ -56,6 +59,11 @@ import kotlinx.coroutines.launch
  * declaring the expected command's consequences. See also the documentation for
  * the [app.client.postCommand][Client.postCommand] function for
  * usage examples.
+ *
+ * Note: the same [CommandConsequences] instance can be reused for posting
+ * commands of its respective type [C] as many times as needed. At the same
+ * time, each posting of a command results in creating a new
+ * [CommandConsequencesScope] instance, which is not reused across postings.
  *
  * @param C A type of commands being posted.
  *
@@ -171,9 +179,20 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
     public val defaultTimeout: Duration
 
     /**
-     * Registers the callback, which is invoked before the command is posted.
+     * Registers the callback, which is invoked before the command is posted
+     * (and before any time-consuming preparation for posting a command
+     * is made).
+     *
+     * More precisely, if there are any [onEvent] handlers defined, "before
+     * post" callbacks will be run before the first [onEvent] call, since it is
+     * considered to be an operation that needs to be done in preparation for
+     * posting a command and can be time-consuming due to network communication.
+     * If no [onEvent] handlers are defined, "before post" callbacks will be
+     * run before the command is posted.
      *
      * @param handler A callback, to be invoked before the command is posted.
+     * @throws IllegalStateException If this function is called after [onEvent]
+     *   (see the description above).
      */
     public fun onBeforePost(handler: suspend () -> Unit)
 
@@ -291,11 +310,23 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
     }
 
     /**
+     * [onEvent] subscriptions are deferred until after all consequences are
+     * registered, and this flag kept `false` until such deferred subscriptions
+     * are actually fulfilled, after which this flag is set to `true`.
+     */
+    private var initialSubscriptionsMade = false
+
+    /**
      * Returns `true` if all event subscriptions that have been made using the
      * [onEvent] method are active.
      */
     private val allSubscriptionsActive: Boolean get() = eventSubscriptions.all { it.active }
 
+    /**
+     * Specifies whether this instance has already been used by
+     * invoking [postAndProcessConsequences].
+     */
+    private var used = false
     private val eventSubscriptions: MutableList<EventSubscription> = ArrayList()
     private var beforePostHandlers: List<suspend () -> Unit> = ArrayList()
     private var postNetworkErrorHandlers: List<suspend (ServerCommunicationException) -> Unit> =
@@ -325,14 +356,23 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         fieldValue: Message,
         eventHandler: suspend (E) -> Unit
     ): EventSubscription {
-        val subscription = app.client.onEvent(
-            eventType, field, fieldValue, {
-                coroutineScope.launch {
-                    triggerNetworkErrorHandlers(ServerCommunicationException(it))
-                }
-            }, {
-                coroutineScope.launch { eventHandler(it) }
-            })
+        val onNetworkError: (Throwable) -> Unit = {
+            coroutineScope.launch {
+                triggerNetworkErrorHandlers(ServerCommunicationException(it))
+                yield()
+            }
+        }
+        val onEvent: (E) -> Unit = {
+            coroutineScope.launch {
+                eventHandler(it)
+                yield()
+            }
+        }
+        val subscription = if (!initialSubscriptionsMade) {
+            DeferredEventSubscription(eventType, field, fieldValue, onNetworkError, onEvent)
+        } else {
+            app.client.onEvent(eventType, field, fieldValue, onNetworkError, onEvent)
+        }
         eventSubscriptions += subscription
         return subscription
     }
@@ -344,10 +384,12 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
 
     private suspend fun triggerBeforePostHandlers() {
         beforePostHandlers.forEach { it() }
+        yield()
     }
 
     internal suspend fun triggerAcknowledgeHandlers() {
         acknowledgeHandlers.forEach { it() }
+        yield()
     }
 
     private suspend fun triggerNetworkErrorHandlers(e: ServerCommunicationException) {
@@ -360,6 +402,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
             )
         }
         postNetworkErrorHandlers.forEach { it(e) }
+        yield()
     }
 
     private suspend fun triggerServerErrorHandlers(e: ServerError) {
@@ -372,6 +415,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
             )
         }
         postServerErrorHandlers.forEach { it(e) }
+        yield()
     }
 
     override fun cancelAllSubscriptions() {
@@ -394,15 +438,36 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
     internal suspend fun postAndProcessConsequences(
         registerConsequences: () -> Unit
     ): EventSubscriptions {
+        check(!used) {
+            "`postAndProcessConsequences` cannot be invoked more than once " +
+                    "on the same `CommandConsequencesScopeImpl` instance."
+        }
+        used = true
+
+        registerConsequences()
+
         try {
-            registerConsequences()
+            // "Before post" handlers should be triggered before making
+            // subscriptions, since subscriptions require a notably continuous
+            // network operation, and are considered a part of preparation for
+            // posting of a command.
+            triggerBeforePostHandlers()
+
+            delay(1.milliseconds)
+
+            eventSubscriptions.forEach {
+                if (it is DeferredEventSubscription<*>) {
+                    it.subscribe()
+                }
+                initialSubscriptionsMade = true
+            }
+
             val allSubscriptionsSuccessful = allSubscriptionsActive
             if (allSubscriptionsSuccessful) {
-                triggerBeforePostHandlers()
                 app.client.postCommand(command)
                 triggerAcknowledgeHandlers()
             } else {
-                subscriptions.cancelAll()
+                cancelAllSubscriptions()
             }
         } catch (e: ServerError) {
             triggerServerErrorHandlers(e)
@@ -442,6 +507,82 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
             consequences: CommandConsequencesScope<C>.() -> Unit
         ): CommandConsequences<C> {
             return CommandConsequences(consequences)
+        }
+    }
+}
+
+/**
+ * An implementation of `EventSubscription`, which makes the respective
+ * subscription after the instsance was created (see the [subscribe] method).
+ */
+private class DeferredEventSubscription<E : EventMessage>(
+    event: Class<E>,
+    field: EventMessageField,
+    fieldValue: Message,
+    onNetworkError: ((Throwable) -> Unit)? = null,
+    onEvent: (E) -> Unit
+) : EventSubscription {
+    private class  SubscriptionParams<E : EventMessage>(
+        val event: Class<E>,
+        val field: EventMessageField,
+        val fieldValue: Message,
+        val onNetworkError: ((Throwable) -> Unit)? = null,
+        val onEvent: (E) -> Unit
+    )
+
+    private class TimeoutParams(
+        val timeout: Duration,
+        val timeoutCoroutineScope: CoroutineScope,
+        val onTimeout: suspend () -> Unit
+    )
+
+    private var subscriptionParams: SubscriptionParams<E>? =
+        SubscriptionParams(event, field, fieldValue, onNetworkError, onEvent)
+
+    private var timeoutParams: TimeoutParams? = null
+    private var actualSubscription: EventSubscription? = null
+
+    override val active: Boolean get() = actualSubscription?.active ?: true
+
+    /**
+     * Makes the subscription according to the parameters passed to the
+     * class's constructor.
+     */
+    fun subscribe() {
+        check(actualSubscription == null) {
+            "Subscription has already been made: `subscribe()` should be invoked only once."
+        }
+        if (subscriptionParams == null) {
+            // Subscription has been cancelled.
+            return
+        }
+        actualSubscription = with(subscriptionParams!!) {
+            app.client.onEvent(event, field, fieldValue, onNetworkError, onEvent)
+        }
+        if (timeoutParams != null) {
+            with(timeoutParams!!) {
+                actualSubscription!!.withTimeout(timeout, timeoutCoroutineScope, onTimeout)
+            }
+        }
+    }
+
+    override fun withTimeout(
+        timeout: Duration,
+        timeoutCoroutineScope: CoroutineScope,
+        onTimeout: suspend () -> Unit
+    ) {
+        if (actualSubscription == null) {
+            timeoutParams = TimeoutParams(timeout, timeoutCoroutineScope, onTimeout)
+        } else {
+            actualSubscription!!.withTimeout(timeout, timeoutCoroutineScope, onTimeout)
+        }
+    }
+
+    override fun cancel() {
+        if (actualSubscription == null) {
+            subscriptionParams = null
+        } else {
+            actualSubscription!!.cancel()
         }
     }
 }
