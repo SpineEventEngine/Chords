@@ -287,7 +287,7 @@ public open class ModalCommandConsequencesScope<C : CommandMessage>(
         return subscription
     }
 
-    private suspend fun triggerDefaultTimeoutHandlers() {
+    private fun triggerDefaultTimeoutHandlers() = callbacks {
         defaultTimeoutHandlers.forEach { it() }
     }
 
