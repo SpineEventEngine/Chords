@@ -249,7 +249,8 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      * is cancelled.
      *
      * @param timeout A maximum period of time that the event is waited for
-     *   since the moment of invoking this function.
+     *   since the moment of invoking this function. Defaults to
+     *   [defaultTimeout] property value.
      * @param timeoutHandler A callback, which should be invoked if an event
      *   is not emitted within the specified [timeout] period after invoking
      *   this method.
