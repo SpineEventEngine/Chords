@@ -36,8 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.appshell.Props
-import java.util.concurrent.CompletableFuture
-import kotlinx.coroutines.future.await
+import kotlinx.coroutines.CompletableDeferred
 
 /**
  * A dialog that prompts the user either to make a boolean decision
@@ -165,7 +164,7 @@ public class ConfirmationDialog : Dialog() {
      */
     public suspend fun showConfirmation(): Boolean {
         var confirmed = false
-        val dialogClosure = CompletableFuture<Unit>()
+        val dialogClosure = CompletableDeferred<Unit>()
         onBeforeSubmit = {
             confirmed = true
             dialogClosure.complete(Unit)
