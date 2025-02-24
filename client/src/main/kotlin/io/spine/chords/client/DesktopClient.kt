@@ -44,11 +44,12 @@ import io.spine.client.EventFilter.eq
 import io.spine.client.Subscription
 import io.spine.core.UserId
 import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -300,7 +301,7 @@ public class DesktopClient(
  * @param spineClient A Spine Event Engine's [Client][io.spine.client.Client]
  *   instance where the subscription is being registered.
  */
-private class EventSubscriptionImpl(
+internal open class EventSubscriptionImpl(
     private val spineClient: io.spine.client.Client
 ) : EventSubscription {
     override val active: Boolean get() = subscription != null
@@ -313,6 +314,7 @@ private class EventSubscriptionImpl(
 
     private var timeoutJob: Job? = null
 
+    @OptIn(ExperimentalTime::class)
     override fun withTimeout(
         timeout: Duration,
         timeoutCoroutineScope: CoroutineScope,
@@ -322,8 +324,18 @@ private class EventSubscriptionImpl(
         timeoutJob = timeoutCoroutineScope.launch {
             delay(timeout)
             if (timeoutJob != null) {
-                cancel()
+                // Event subscription should be cancelled BEFORE calling the
+                // timeout callback to prevent a condition when both an event
+                // callback and its timeout callback have been invoked.
+                cancelSubscription()
+
                 onTimeout()
+                yield()
+
+                // Timeout job should be canceled AFTER invoking a callback
+                // to ensure that `onTimeout` callback's coroutine scope still
+                // works normally.
+                cancelTimeout()
             }
         }
     }
@@ -333,16 +345,19 @@ private class EventSubscriptionImpl(
      * have to be performed whenever an expected event is emitted.
      */
     fun onEvent() {
-        timeoutJob?.cancel()
-        timeoutJob = null
+        cancelTimeout()
     }
 
     override fun cancel() {
+        cancelSubscription()
+        cancelTimeout()
+    }
+
+    private fun cancelSubscription() {
         if (subscription != null) {
             spineClient.subscriptions().cancel(subscription!!)
             subscription = null
         }
-        cancelTimeout()
     }
 
     private fun cancelTimeout() {
