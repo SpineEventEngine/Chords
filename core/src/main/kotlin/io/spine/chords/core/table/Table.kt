@@ -52,7 +52,10 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -92,11 +95,11 @@ public fun <E> Table(
     onRowClick: (E) -> Unit = {},
     rowModifier: (E) -> Modifier = { Modifier },
     columns: List<TableColumn<E>>,
-    onActions: (() -> Unit)? = null
+    rowActionsConfig: (RowActionsConfig<E>)? = null
 ) {
     Column {
         HeaderTableRow(columns)
-        ContentList(entities, columns, onRowClick, rowModifier, onActions)
+        ContentList(entities, columns, onRowClick, rowModifier, rowActionsConfig)
     }
 }
 
@@ -145,7 +148,7 @@ private fun <E> ContentList(
     columns: List<TableColumn<E>>,
     onRowClick: (E) -> Unit,
     rowModifier: (E) -> Modifier,
-    onActions: (() -> Unit)?,
+    rowActionsConfig: (RowActionsConfig<E>)?,
 ) {
     val listState = rememberLazyListState()
     val selectedItem: MutableState<E?> = remember { mutableStateOf(null) }
@@ -158,7 +161,12 @@ private fun <E> ContentList(
         ) {
             entities.forEach { value ->
                 item {
-                    ContentTableRow(value, columns, rowModifier(value), onActions = onActions) {
+                    ContentTableRow(
+                        value,
+                        columns,
+                        rowModifier(value),
+                        rowActionsConfig = rowActionsConfig
+                    ) {
                         selectedItem.value = value
                         onRowClick(value)
                     }
@@ -224,7 +232,7 @@ private fun <E> ContentTableRow(
     entity: E,
     columns: List<TableColumn<E>>,
     modifier: Modifier,
-    onActions: (() -> Unit)?,
+    rowActionsConfig: (RowActionsConfig<E>)?,
     onClick: () -> Unit
 ) {
     TableRow(
@@ -235,7 +243,8 @@ private fun <E> ContentTableRow(
                 interactionSource = MutableInteractionSource(),
                 indication = null,
             ) { onClick() },
-        onActions = onActions
+        rowActions = rowActionsConfig,
+        value = entity
     ) { column -> column.cellContent(entity) }
 }
 
@@ -256,9 +265,11 @@ private fun <E> ContentTableRow(
 private fun <E> TableRow(
     columns: List<TableColumn<E>>,
     modifier: Modifier = Modifier,
-    onActions: (() -> Unit)? = null,
+    rowActions: (RowActionsConfig<E>)? = null,
+    value: E? = null,
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
+    val rowActionsVisible = remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -278,13 +289,20 @@ private fun <E> TableRow(
                 verticalAlignment = CenterVertically
             ) { cellContent(column) }
         }
-        if (onActions != null) {
-            IconButton(onActions) {
+        if (rowActions != null && value != null) {
+            IconButton({
+                rowActionsVisible.value = true
+            }) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp)
                 )
+                if (rowActionsVisible.value) {
+                    RowActions(rowActionsVisible.value, rowActions, value) {
+                        rowActionsVisible.value = false
+                    }
+                }
             }
         }
     }
@@ -294,3 +312,46 @@ private fun <E> TableRow(
         color = MaterialTheme.colorScheme.outlineVariant
     )
 }
+
+@Composable
+private fun <E> RowActions(
+    visible: Boolean,
+    config: RowActionsConfig<E>,
+    value: E,
+    onCancel: () -> Unit
+) {
+    val items = config.items(value)
+    val look = config.itemsLook
+    DropdownMenu(
+        expanded = visible,
+        onDismissRequest = onCancel,
+    ) {
+        items.forEach {
+            DropdownMenuItem(
+                text = { Text(it.text) },
+                onClick = it.onClick,
+                enabled = it.enabled,
+                modifier = look.modifier,
+                colors = look.colors,
+                contentPadding = look.contentPadding
+            )
+        }
+    }
+}
+
+public data class RowActionsConfig<E>(
+    val items: (E) -> List<RowActionsItem>,
+    val itemsLook: RowActionsItemLook
+)
+
+public data class RowActionsItem(
+    val text: String,
+    val onClick: () -> Unit,
+    val enabled: Boolean
+)
+
+public data class RowActionsItemLook(
+    val colors: MenuItemColors,
+    val modifier: Modifier = Modifier,
+    val contentPadding: PaddingValues = PaddingValues()
+)
