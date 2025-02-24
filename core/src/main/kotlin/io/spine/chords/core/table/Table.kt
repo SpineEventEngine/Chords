@@ -29,11 +29,13 @@ package io.spine.chords.core.table
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.Center
 import androidx.compose.foundation.layout.Arrangement.Horizontal
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.IntrinsicSize.Min
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -65,6 +67,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.spine.chords.core.Component
 
 /**
  * A list of entities in a tabular format.
@@ -74,32 +77,92 @@ import androidx.compose.ui.unit.dp
  * Users can customize row behavior and style, as well as specify column
  * configurations for displaying the data.
  *
- * @param entities
- *         the list of entities with data that should be displayed in table rows.
- *         Each entity should represent a row in a table.
- * @param onRowClick
- *         a callback that configures the click action for any row;
- *         An entity displayed on a row comes as a parameter of the callback.
- * @param rowModifier
- *         a callback that allows to modify any row behaviour and style.
- *         An entity displayed on a row comes as a parameter of a callback.
- * @param columns
- *         a list of columns to be displayed in the table.
- *         They are displayed in the order they are passed.
  * @param E
  *         the type of entities represented in the table.
  */
-@Composable
-public fun <E> Table(
-    entities: List<E>,
-    onRowClick: (E) -> Unit = {},
-    rowModifier: (E) -> Modifier = { Modifier },
-    columns: List<TableColumn<E>>,
-    rowActionsConfig: (RowActionsConfig<E>)? = null
-) {
-    Column {
-        HeaderTableRow(columns)
-        ContentList(entities, columns, onRowClick, rowModifier, rowActionsConfig)
+public abstract class Table<E> : Component() {
+
+    /**
+     * The list of entities with data that should be displayed in table rows.
+     * Each entity should represent a row in a table.
+     */
+    public abstract val entities: List<E>
+
+    /**
+     * A list of columns to be displayed in the table.
+     * They are displayed in the order they are passed.
+     */
+    public abstract fun defineColumns(): List<TableColumn<E>>
+
+    /**
+     *  A callback that configures the click action for any row;
+     *  An entity displayed on a row comes as a parameter of the callback.
+     */
+    public abstract fun onRowClick(entity: E)
+
+    /**
+     * A callback that allows to modify any row behaviour and style.
+     * An entity displayed on a row comes as a parameter of a callback.
+     */
+    public open var rowModifier: (E) -> Modifier = { Modifier }
+
+    public open var rowActionsConfig: (RowActionsConfig<E>)? = null
+
+    @Composable
+    override fun content() {
+        val columns = defineColumns()
+        Column {
+            HeaderTableRow(columns)
+            ContentList(entities, columns, rowModifier, rowActionsConfig)
+        }
+    }
+
+    /**
+     * Displays a vertical list of table rows without header.
+     *
+     * @param entities
+     *         the list of entities with data that should be displayed in table rows.
+     * @param columns
+     *         a list of columns to be displayed in the table.
+     * @param onRowClick
+     *         a callback that configures the click action for any row;
+     *         An entity displayed on a row comes as a parameter of the callback.
+     * @param rowModifier
+     *         a callback that allows to modify any row behaviour and style.
+     *         An entity displayed on a row comes as a parameter of the callback.
+     */
+    @Composable
+    private fun ContentList(
+        entities: List<E>,
+        columns: List<TableColumn<E>>,
+        rowModifier: (E) -> Modifier,
+        rowActionsConfig: (RowActionsConfig<E>)?,
+    ) {
+        val listState = rememberLazyListState()
+        val selectedItem: MutableState<E?> = remember { mutableStateOf(null) }
+        Box(
+            modifier = Modifier.fillMaxHeight(),
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxHeight(),
+                state = listState
+            ) {
+                entities.forEach { value ->
+                    item {
+                        ContentTableRow(
+                            value,
+                            columns,
+                            rowModifier(value),
+                            rowActionsConfig = rowActionsConfig
+                        ) {
+                            selectedItem.value = value
+                            onRowClick(value)
+                        }
+                    }
+                }
+            }
+            VerticalScrollBar(listState) { Modifier.align(Alignment.CenterEnd) }
+        }
     }
 }
 
@@ -127,55 +190,6 @@ public data class TableColumn<E>(
     val padding: PaddingValues = PaddingValues(0.dp),
     val cellContent: @Composable (E) -> Unit
 )
-
-/**
- * A component that displays a vertical list of table rows without header.
- *
- * @param entities
- *         the list of entities with data that should be displayed in table rows.
- * @param columns
- *         a list of columns to be displayed in the table.
- * @param onRowClick
- *         a callback that configures the click action for any row;
- *         An entity displayed on a row comes as a parameter of the callback.
- * @param rowModifier
- *         a callback that allows to modify any row behaviour and style.
- *         An entity displayed on a row comes as a parameter of the callback.
- */
-@Composable
-private fun <E> ContentList(
-    entities: List<E>,
-    columns: List<TableColumn<E>>,
-    onRowClick: (E) -> Unit,
-    rowModifier: (E) -> Modifier,
-    rowActionsConfig: (RowActionsConfig<E>)?,
-) {
-    val listState = rememberLazyListState()
-    val selectedItem: MutableState<E?> = remember { mutableStateOf(null) }
-    Box(
-        modifier = Modifier.fillMaxHeight(),
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxHeight(),
-            state = listState
-        ) {
-            entities.forEach { value ->
-                item {
-                    ContentTableRow(
-                        value,
-                        columns,
-                        rowModifier(value),
-                        rowActionsConfig = rowActionsConfig
-                    ) {
-                        selectedItem.value = value
-                        onRowClick(value)
-                    }
-                }
-            }
-        }
-        VerticalScrollBar(listState) { Modifier.align(Alignment.CenterEnd) }
-    }
-}
 
 /**
  * Vertical scrollbar component.
