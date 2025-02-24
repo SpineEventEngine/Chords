@@ -62,9 +62,10 @@ import kotlinx.coroutines.yield
  * usage examples.
  *
  * Note: the same [CommandConsequences] instance can be reused for posting
- * commands of its respective type [C] as many times as needed. At the same
- * time, each posting of a command results in creating a new
- * [CommandConsequencesScope] instance, which is not reused across postings.
+ * commands of its respective type [C] as many times as needed. Each posting of
+ * a command results in creating a new [CommandConsequencesScope] instance
+ * (passed as a receiver for the [consequences] lambda), which is not reused
+ * across postings.
  *
  * @param C A type of commands being posted.
  *
@@ -192,8 +193,6 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      * run before the command is posted.
      *
      * @param handler A callback, to be invoked before the command is posted.
-     * @throws IllegalStateException If this function is called after [onEvent]
-     *   (see the description above).
      */
     public fun onBeforePost(handler: suspend () -> Unit)
 
@@ -312,8 +311,9 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
 
     /**
      * [onEvent] subscriptions are deferred until after all consequences are
-     * registered, and this flag kept `false` until such deferred subscriptions
-     * are actually fulfilled, after which this flag is set to `true`.
+     * registered, and this flag is kept `false` until such deferred
+     * subscriptions are actually fulfilled, after which this flag is set
+     * to `true`.
      */
     private var initialSubscriptionsMade = false
 
@@ -357,16 +357,16 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         fieldValue: Message,
         eventHandler: suspend (E) -> Unit
     ): EventSubscription {
-        val onNetworkError: (Throwable) -> Unit = {
-            triggerNetworkErrorHandlers(ServerCommunicationException(it))
-        }
-        val onEvent: (E) -> Unit = {
+        val handleEvent: (E) -> Unit = {
             callbacks { eventHandler(it) }
         }
+        val handleNetworkError: (Throwable) -> Unit = {
+            triggerNetworkErrorHandlers(ServerCommunicationException(it))
+        }
         val subscription = if (!initialSubscriptionsMade) {
-            DeferredEventSubscription(eventType, field, fieldValue, onNetworkError, onEvent)
+            DeferredEventSubscription(eventType, field, fieldValue, handleNetworkError, handleEvent)
         } else {
-            app.client.onEvent(eventType, field, fieldValue, onNetworkError, onEvent)
+            app.client.onEvent(eventType, field, fieldValue, handleNetworkError, handleEvent)
         }
         eventSubscriptions += subscription
         return subscription
@@ -395,7 +395,6 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
             )
         }
         networkErrorHandlers.forEach { it(e) }
-        yield()
     }
 
     private fun triggerServerErrorHandlers(e: ServerError) = callbacks {
@@ -438,7 +437,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         registerConsequences()
 
         // "Before post" handlers should be triggered before making
-        // subscriptions, since subscriptions require a  continuous network
+        // subscriptions, since subscriptions require a time-consuming network
         // operation, and are considered a part of preparation for posting
         // of a command.
         triggerBeforePostHandlers()
@@ -529,8 +528,8 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
  *   the subscription has been made. In either of these cases, the returned
  *   `EventSubscription` is transitioned into an inactive state and stops
  *   receiving events.
- * @param onEvent An optional callback, which will be invoked when the
- *   specified event is emitted.
+ * @param onEvent A callback, which will be invoked when the specified event
+ *   is emitted.
  */
 private class DeferredEventSubscription<E : EventMessage>(
     event: Class<E>,
@@ -539,7 +538,7 @@ private class DeferredEventSubscription<E : EventMessage>(
     onNetworkError: ((Throwable) -> Unit)? = null,
     onEvent: (E) -> Unit
 ) : EventSubscription {
-    private class  SubscriptionParams<E : EventMessage>(
+    private class SubscriptionParams<E : EventMessage>(
         val event: Class<E>,
         val field: EventMessageField,
         val fieldValue: Message,
@@ -562,8 +561,8 @@ private class DeferredEventSubscription<E : EventMessage>(
     override val active: Boolean get() = actualSubscription?.active ?: true
 
     /**
-     * Makes the subscription according to the parameters passed to the
-     * class's constructor.
+     * Subscribes to the event according to the parameters passed to the
+     * class constructor.
      *
      * This method can be invoked only once for the same
      * `DeferredEventSubscription` instance.

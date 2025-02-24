@@ -234,8 +234,8 @@ import kotlinx.coroutines.CoroutineScope
      *   the subscription has been made. In either of these cases, the returned
      *   `EventSubscription` is transitioned into an inactive state and stops
      *   receiving events.
-     * @param onEvent An optional callback, which will be invoked when the
-     *   specified event is emitted.
+     * @param onEvent A callback, which will be invoked when the specified event
+     *   is emitted.
      * @return An [EventSubscription] object, which represents the subscription
      *   that was made.
      */
