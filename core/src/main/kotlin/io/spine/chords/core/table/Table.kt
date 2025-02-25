@@ -27,19 +27,20 @@
 package io.spine.chords.core.table
 
 import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.Center
 import androidx.compose.foundation.layout.Arrangement.Horizontal
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize.Min
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -57,6 +58,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,8 +66,10 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
 
@@ -101,6 +105,12 @@ public abstract class Table<E> : Component() {
     public abstract fun onRowClick(entity: E)
 
     /**
+     * Specifies the content to be displayed when the table has no entities.
+     */
+    @Composable
+    public abstract fun ColumnScope.EmptyTableContent()
+
+    /**
      * A callback that allows to modify any row behaviour and style.
      * An entity displayed on a row comes as a parameter of a callback.
      */
@@ -118,12 +128,35 @@ public abstract class Table<E> : Component() {
      */
     public open var rowActions: RowActionsConfig<E>? = null
 
+    /**
+     * Specifies appearance-related parameters.
+     */
+    public var look: Look = Look()
+
+    /**
+     * An object allowing configuring the visual appearance parameters.
+     *
+     * @param padding The padding applied to the entire content of the table.
+     */
+    public data class Look(
+        public var padding: PaddingValues = PaddingValues(16.dp),
+        public var selectedItemColor: Color = Color.LightGray
+    )
+
     @Composable
     override fun content() {
         val columns = defineColumns()
-        Column {
+        Column(
+            modifier = Modifier.fillMaxSize()
+                .padding(look.padding),
+            verticalArrangement = Center,
+        ) {
             HeaderTableRow(columns)
-            ContentList(entities, columns, rowModifier, rowActionsConfig)
+            if (entities.isNotEmpty()) {
+                ListContent(entities, columns, rowModifier, rowActions)
+            } else {
+                EmptyListContent()
+            }
         }
     }
 
@@ -142,7 +175,7 @@ public abstract class Table<E> : Component() {
      *         An entity displayed on a row comes as a parameter of the callback.
      */
     @Composable
-    private fun ContentList(
+    private fun ListContent(
         entities: List<E>,
         columns: List<TableColumn<E>>,
         rowModifier: (E) -> Modifier,
@@ -160,9 +193,14 @@ public abstract class Table<E> : Component() {
                 entities.forEach { value ->
                     item {
                         ContentTableRow(
-                            value,
-                            columns,
-                            rowModifier(value),
+                            entity = value,
+                            columns = columns,
+                            modifier = if (selectedItem.value == value) {
+                                Modifier.background(look.selectedItemColor)
+                                    .then(rowModifier(value))
+                            } else {
+                                rowModifier(value)
+                            },
                             rowActionsConfig = rowActionsConfig
                         ) {
                             selectedItem.value = value
@@ -172,6 +210,20 @@ public abstract class Table<E> : Component() {
                 }
             }
             VerticalScrollBar(listState) { Modifier.align(Alignment.CenterEnd) }
+        }
+    }
+
+    /**
+     * Displays the empty state of the table.
+     */
+    @Composable
+    private fun EmptyListContent() {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Center,
+            horizontalAlignment = CenterHorizontally
+        ) {
+            EmptyTableContent()
         }
     }
 }
@@ -367,7 +419,7 @@ private fun <E> TableRow(
                     modifier = Modifier.size(20.dp)
                 )
                 if (rowActionsVisible.value) {
-                    RowActions(rowActionsVisible.value, rowActions, value) {
+                    RowActionsDropdown(value, rowActions, rowActionsVisible.value) {
                         rowActionsVisible.value = false
                     }
                 }
@@ -392,13 +444,13 @@ private fun <E> TableRow(
  * @param onCancel A callback invoked when the dropdown menu is dismissed.
  */
 @Composable
-private fun <E> RowActions(
-    visible: Boolean,
-    config: RowActionsConfig<E>,
+private fun <E> RowActionsDropdown(
     value: E,
+    config: RowActionsConfig<E>,
+    visible: Boolean,
     onCancel: () -> Unit
 ) {
-    val items = config.items(value)
+    val items = config.itemsProvider(value)
     val look = config.itemsLook
     DropdownMenu(
         expanded = visible,
@@ -407,8 +459,8 @@ private fun <E> RowActions(
         items.forEach {
             DropdownMenuItem(
                 text = { Text(it.text) },
-                onClick = it.onClick,
-                enabled = it.enabled,
+                onClick = { it.onClick(value) },
+                enabled = it.enabled(value),
                 modifier = look.modifier,
                 colors = look.colors,
                 contentPadding = look.contentPadding
@@ -416,20 +468,3 @@ private fun <E> RowActions(
         }
     }
 }
-
-public data class RowActionsConfig<E>(
-    val items: (E) -> List<RowActionsItem>,
-    val itemsLook: RowActionsItemLook
-)
-
-public data class RowActionsItem(
-    val text: String,
-    val onClick: () -> Unit,
-    val enabled: Boolean
-)
-
-public data class RowActionsItemLook(
-    val colors: MenuItemColors,
-    val modifier: Modifier = Modifier,
-    val contentPadding: PaddingValues = PaddingValues()
-)
