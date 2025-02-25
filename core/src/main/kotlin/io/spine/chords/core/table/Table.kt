@@ -58,13 +58,16 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
@@ -90,32 +93,32 @@ public abstract class Table<E> : Component() {
      * The list of entities with data that should be displayed in table rows.
      * Each entity should represent a row in a table.
      */
-    public open var entities: List<E> = listOf()
+    public var entities: List<E> by mutableStateOf(listOf())
 
     /**
      * A list of columns to be displayed in the table.
      */
-    public abstract fun defineColumns(): List<TableColumn<E>>
+    protected abstract fun defineColumns(): List<TableColumn<E>>
 
     /**
      *  A callback that configures the click action for any row.
      *
      *  An entity displayed on a row comes as a parameter of the callback.
      */
-    public abstract fun onRowClick(entity: E)
+    protected abstract fun onRowClick(entity: E)
 
     /**
      * Specifies the content to be displayed when the table has no entities.
      */
     @Composable
-    public abstract fun ColumnScope.EmptyTableContent()
+    protected abstract fun ColumnScope.EmptyTableContent()
 
     /**
      * A callback that allows to modify any row behaviour and style.
      *
      * An entity displayed on a row comes as a parameter of a callback.
      */
-    public open var rowModifier: (E) -> Modifier = { Modifier }
+    protected var rowModifier: (E) -> Modifier = { Modifier }
 
     /**
      * Specifies the row actions available in the table.
@@ -125,37 +128,33 @@ public abstract class Table<E> : Component() {
      *
      * If this property is `null`, no "More" button will be shown in the table rows.
      */
-    public open var rowActions: RowActionsConfig<E>? = null
+    protected var rowActions: RowActionsConfig<E>? = null
 
     /**
      * Defines the sorting logic for the entities displayed in the table.
      *
      * By default, entities are displayed in their original order.
      */
-    public open var sortBy: (List<E>) -> List<E> = { it }
+    protected var sortBy: (List<E>) -> List<E> = { it }
 
     /**
-     * Specifies appearance-related parameters.
+     * The padding applied to the entire content of the table.
      */
-    public var look: Look = Look()
+    protected var contentPadding: PaddingValues = PaddingValues(16.dp)
 
     /**
-     * An object allowing configuring the visual appearance parameters.
+     * The color of the selected row.
      *
-     * @param padding The padding applied to the entire content of the table.
-     * @param selectedItemColor The color of the selected item.
+     * The default value is `MaterialTheme.colorScheme.surfaceVariant`.
      */
-    public data class Look(
-        public var padding: PaddingValues = PaddingValues(16.dp),
-        public var selectedItemColor: Color = Color.LightGray
-    )
+    protected var selectedRowColor: Color? = null
 
     @Composable
     override fun content() {
         val columns = defineColumns()
         Column(
             modifier = Modifier.fillMaxSize()
-                .padding(look.padding),
+                .padding(contentPadding),
             verticalArrangement = Center,
         ) {
             HeaderTableRow(columns)
@@ -190,6 +189,9 @@ public abstract class Table<E> : Component() {
     ) {
         val listState = rememberLazyListState()
         val selectedItem: MutableState<E?> = remember { mutableStateOf(null) }
+        if (selectedRowColor == null) {
+            selectedRowColor = colorScheme.surfaceVariant
+        }
         Box(
             modifier = Modifier.fillMaxHeight(),
         ) {
@@ -203,7 +205,7 @@ public abstract class Table<E> : Component() {
                             entity = value,
                             columns = columns,
                             modifier = if (selectedItem.value == value) {
-                                Modifier.background(look.selectedItemColor)
+                                Modifier.background(selectedRowColor!!)
                                     .then(rowModifier(value))
                             } else {
                                 rowModifier(value)
@@ -436,7 +438,7 @@ private fun <E> TableRow(
     Divider(
         modifier = Modifier.fillMaxWidth(),
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant
+        color = colorScheme.outlineVariant
     )
 }
 
