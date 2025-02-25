@@ -106,7 +106,17 @@ public abstract class Table<E> : Component() {
      */
     public open var rowModifier: (E) -> Modifier = { Modifier }
 
-    public open var rowActionsConfig: (RowActionsConfig<E>)? = null
+    /**
+     * Specifies the row actions available in the table.
+     *
+     * Row actions are displayed as a dropdown menu when the "More" button is clicked
+     * at the end of each row.
+     *
+     * If `rowActionsConfig` is `null`, no "More" button will be shown in the table rows.
+     *
+     * @see RowActionsConfig for configuring the actions.
+     */
+    public open var rowActions: RowActionsConfig<E>? = null
 
     @Composable
     override fun content() {
@@ -189,6 +199,50 @@ public data class TableColumn<E>(
     val weight: Float = 1F,
     val padding: PaddingValues = PaddingValues(0.dp),
     val cellContent: @Composable (E) -> Unit
+)
+
+/**
+ * Configuration object for row actions in a table.
+ *
+ * It defines how row actions should be generated and displayed for a given entity type.
+ *
+ * @param E The type of entity for which the actions are defined.
+ * @param itemsProvider A function that dynamically generates a list of actions
+ *   based on the given entity.
+ * @param itemsLook The styling configuration applied to all row actions in this table.
+ */
+public data class RowActionsConfig<E>(
+    val itemsProvider: (E) -> List<RowActionsItem<E>>,
+    val itemsLook: RowActionsItemLook
+)
+
+/**
+ * Configuration object for an item in a row action menu.
+ *
+ * @param E The type of entity to which this action applies.
+ * @param text The label of the action.
+ * @param onClick A function executed when the action is clicked,
+ *   receiving the corresponding entity as a parameter.
+ * @param enabled A function that determines whether the action should be enabled,
+ *   based on the given entity's state. By default, it is always enabled.
+ */
+public data class RowActionsItem<E>(
+    val text: String,
+    val onClick: (E) -> Unit,
+    val enabled: (E) -> Boolean = { true }
+)
+
+/**
+ * An object allowing adjustments of row action item visual appearance parameters.
+ *
+ * @param colors The color scheme applied to the dropdown menu items.
+ * @param modifier A modifier to apply additional styling to the items.
+ * @param contentPadding The padding applied inside each dropdown menu item.
+ */
+public data class RowActionsItemLook(
+    val colors: MenuItemColors,
+    val modifier: Modifier = Modifier,
+    val contentPadding: PaddingValues = MenuDefaults.DropdownMenuItemContentPadding
 )
 
 /**
@@ -327,6 +381,16 @@ private fun <E> TableRow(
     )
 }
 
+/**
+ * Displays the dropdown menu with row actions.
+ *
+ * @param E The type of entity for which the actions are provided.
+ * @param value The entity for which the actions should be displayed.
+ * @param config The configuration object specifying the available row actions
+ *   and their appearance.
+ * @param visible Whether the dropdown menu is currently visible.
+ * @param onCancel A callback invoked when the dropdown menu is dismissed.
+ */
 @Composable
 private fun <E> RowActions(
     visible: Boolean,
