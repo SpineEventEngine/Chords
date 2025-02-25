@@ -90,7 +90,7 @@ public abstract class Table<E> : Component() {
      * The list of entities with data that should be displayed in table rows.
      * Each entity should represent a row in a table.
      */
-    public abstract val entities: List<E>
+    public open var entities: List<E> = listOf()
 
     /**
      * A list of columns to be displayed in the table.
@@ -129,6 +129,13 @@ public abstract class Table<E> : Component() {
     public open var rowActions: RowActionsConfig<E>? = null
 
     /**
+     * Defines the sorting logic for the entities displayed in the table.
+     *
+     * By default, entities are displayed in their original order.
+     */
+    public open var sortBy: (List<E>) -> List<E> = { it }
+
+    /**
      * Specifies appearance-related parameters.
      */
     public var look: Look = Look()
@@ -153,7 +160,7 @@ public abstract class Table<E> : Component() {
         ) {
             HeaderTableRow(columns)
             if (entities.isNotEmpty()) {
-                ListContent(entities, columns, rowModifier, rowActions)
+                ListContent(sortBy(entities), columns, rowModifier, rowActions)
             } else {
                 EmptyListContent()
             }
