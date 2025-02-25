@@ -91,6 +91,7 @@ public abstract class Table<E> : Component() {
 
     /**
      * The list of entities with data that should be displayed in table rows.
+     *
      * Each entity should represent a row in a table.
      */
     public var entities: List<E> by mutableStateOf(listOf())
@@ -101,9 +102,9 @@ public abstract class Table<E> : Component() {
     protected abstract fun defineColumns(): List<TableColumn<E>>
 
     /**
-     *  A callback that configures the click action for any row.
+     * A callback that configures the click action for any row.
      *
-     *  An entity displayed on a row comes as a parameter of the callback.
+     * An entity displayed on a row comes as a parameter of the callback.
      */
     protected abstract fun onRowClick(entity: E)
 
@@ -170,23 +171,17 @@ public abstract class Table<E> : Component() {
     /**
      * Displays a vertical list of table rows without header.
      *
-     * @param entities
-     *         the list of entities with data that should be displayed in table rows.
-     * @param columns
-     *         a list of columns to be displayed in the table.
-     * @param onRowClick
-     *         a callback that configures the click action for any row;
-     *         An entity displayed on a row comes as a parameter of the callback.
-     * @param rowModifier
-     *         a callback that allows to modify any row behaviour and style.
-     *         An entity displayed on a row comes as a parameter of the callback.
+     * @param entities The list of entities with data that should be displayed in table rows.
+     * @param columns A list of columns to be displayed in the table.
+     * @param rowModifier A callback that allows to modify any row behaviour and style.
+     * @param rowActionsConfig Configuration for row actions.
      */
     @Composable
     private fun ListContent(
         entities: List<E>,
         columns: List<TableColumn<E>>,
         rowModifier: (E) -> Modifier,
-        rowActionsConfig: (RowActionsConfig<E>)?,
+        rowActionsConfig: RowActionsConfig<E>?,
     ) {
         val listState = rememberLazyListState()
         val selectedItem: MutableState<E?> = remember { mutableStateOf(null) }
@@ -241,19 +236,13 @@ public abstract class Table<E> : Component() {
 /**
  * Table column configuration.
  *
- * @param name
- *         the name of the column to be displayed in column's header.
- * @param horizontalArrangement
- *         the horizontal arrangement of the column's content.
- * @param weight
- *         the proportional width to allocate to this column
- *         relative to other columns. Must be positive.
- * @param padding
- *         the padding values of each cell's content in this column.
- * @param cellContent
- *         a callback that specifies what element to display
- *         inside each cell of this column.
- *         An entity of type [E] comes as a parameter of a callback.
+ * @param name The name of the column to be displayed in column's header.
+ * @param horizontalArrangement The horizontal arrangement of the column's content.
+ * @param weight The proportional width to allocate to this column
+ *   relative to other columns. Must be positive.
+ * @param padding The padding values of each cell's content in this column.
+ * @param cellContent A callback that specifies what element to display
+ *   inside each cell of this column.
  */
 public data class TableColumn<E>(
     val name: String,
@@ -329,9 +318,8 @@ private fun VerticalScrollBar(
 /**
  * Table row with headers.
  *
- * @param columns
- *         a list of column configuration objects
- *         with information about headers.
+ * @param columns A list of column configuration objects
+ *   with information about headers.
  */
 @Composable
 private fun <E> HeaderTableRow(
@@ -348,21 +336,18 @@ private fun <E> HeaderTableRow(
 /**
  * Table row component that supports a click action.
  *
- * @param columns
- *         a list of columns from which the row consists.
- * @param entity
- *         the entity to represent in a row.
- * @param modifier
- *         the [Modifier] to be applied to this row.
- * @param onClick
- *         a callback that is triggered when a user clicks on a row.
+ * @param columns A list of columns from which the row consists.
+ * @param entity The entity to represent in a row.
+ * @param modifier The [Modifier] to be applied to this row.
+ * @param rowActionsConfig Configuration for row actions.
+ * @param onClick A callback that is triggered when a user clicks on a row.
  */
 @Composable
 private fun <E> ContentTableRow(
     entity: E,
     columns: List<TableColumn<E>>,
     modifier: Modifier,
-    rowActionsConfig: (RowActionsConfig<E>)?,
+    rowActionsConfig: RowActionsConfig<E>?,
     onClick: () -> Unit
 ) {
     TableRow(
@@ -381,21 +366,16 @@ private fun <E> ContentTableRow(
 /**
  * Table row component.
  *
- * @param columns
- *         a list of columns from which the row consists.
- * @param modifier
- *         the [Modifier] to be applied to this row.
- * @param cellContent
- *         a callback that specifies what element to display
- *         inside each cell of this column.
- *         A column to which the cell belongs comes
- *         as a parameter of a callback.
+ * @param columns A list of columns from which the row consists.
+ * @param modifier The [Modifier] to be applied to this row.
+ * @param cellContent A callback that specifies what element to display
+ *   inside each cell of this column.
  */
 @Composable
 private fun <E> TableRow(
     columns: List<TableColumn<E>>,
     modifier: Modifier = Modifier,
-    rowActions: (RowActionsConfig<E>)? = null,
+    rowActions: RowActionsConfig<E>? = null,
     value: E? = null,
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
