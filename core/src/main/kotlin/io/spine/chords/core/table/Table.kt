@@ -78,8 +78,8 @@ import io.spine.chords.core.Component
  *
  * This component is intended for rendering tabular data,
  * where each row corresponds to an entity of the [E] type.
- * Users can customize row behavior and style, as well as specify column
- * configurations for displaying the data.
+ * Users can customize row behavior and style, specify column
+ * configurations for displaying the data, and visual appearance of a table.
  *
  * @param E
  *         the type of entities represented in the table.
@@ -94,12 +94,12 @@ public abstract class Table<E> : Component() {
 
     /**
      * A list of columns to be displayed in the table.
-     * They are displayed in the order they are passed.
      */
     public abstract fun defineColumns(): List<TableColumn<E>>
 
     /**
-     *  A callback that configures the click action for any row;
+     *  A callback that configures the click action for any row.
+     *
      *  An entity displayed on a row comes as a parameter of the callback.
      */
     public abstract fun onRowClick(entity: E)
@@ -112,6 +112,7 @@ public abstract class Table<E> : Component() {
 
     /**
      * A callback that allows to modify any row behaviour and style.
+     *
      * An entity displayed on a row comes as a parameter of a callback.
      */
     public open var rowModifier: (E) -> Modifier = { Modifier }
@@ -122,9 +123,7 @@ public abstract class Table<E> : Component() {
      * Row actions are displayed as a dropdown menu when the "More" button is clicked
      * at the end of each row.
      *
-     * If `rowActionsConfig` is `null`, no "More" button will be shown in the table rows.
-     *
-     * @see RowActionsConfig for configuring the actions.
+     * If this property is `null`, no "More" button will be shown in the table rows.
      */
     public open var rowActions: RowActionsConfig<E>? = null
 
@@ -144,6 +143,7 @@ public abstract class Table<E> : Component() {
      * An object allowing configuring the visual appearance parameters.
      *
      * @param padding The padding applied to the entire content of the table.
+     * @param selectedItemColor The color of the selected item.
      */
     public data class Look(
         public var padding: PaddingValues = PaddingValues(16.dp),
@@ -276,11 +276,11 @@ public data class RowActionsConfig<E>(
 )
 
 /**
- * Configuration object for an item in a row action menu.
+ * Configuration object for an item in a row actions menu.
  *
  * @param E The type of entity to which this action applies.
  * @param text The label of the action.
- * @param onClick A function executed when the action is clicked,
+ * @param onClick A callback executed when the action is clicked,
  *   receiving the corresponding entity as a parameter.
  * @param enabled A function that determines whether the action should be enabled,
  *   based on the given entity's state. By default, it is always enabled.
@@ -294,8 +294,8 @@ public data class RowActionsItem<E>(
 /**
  * An object allowing adjustments of row action item visual appearance parameters.
  *
- * @param colors The color scheme applied to the dropdown menu items.
- * @param modifier A modifier to apply additional styling to the items.
+ * @param colors The color scheme applied to the item.
+ * @param modifier A modifier to apply additional styling to the item.
  * @param contentPadding The padding applied inside each dropdown menu item.
  */
 public data class RowActionsItemLook(
