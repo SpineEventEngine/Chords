@@ -135,7 +135,7 @@ public abstract class Table<E> : Component() {
      *
      * By default, entities are displayed in their original order.
      */
-    protected var sortBy: (List<E>) -> List<E> = { it }
+    protected var sortBy: Comparator<E> = Comparator { _, _ -> 0 }
 
     /**
      * The padding applied to the entire content of the table.
@@ -152,6 +152,7 @@ public abstract class Table<E> : Component() {
     @Composable
     override fun content() {
         val columns = defineColumns()
+        val sortedEntities = entities.sortedWith(sortBy)
         Column(
             modifier = Modifier.fillMaxSize()
                 .padding(contentPadding),
@@ -159,7 +160,7 @@ public abstract class Table<E> : Component() {
         ) {
             HeaderTableRow(columns)
             if (entities.isNotEmpty()) {
-                ListContent(sortBy(entities), columns, rowModifier, rowActions)
+                ListContent(sortedEntities, columns, rowModifier, rowActions)
             } else {
                 EmptyListContent()
             }
