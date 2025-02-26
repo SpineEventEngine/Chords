@@ -119,7 +119,7 @@ public abstract class Table<E> : Component() {
      *
      * An entity displayed on a row comes as a parameter of a callback.
      */
-    protected var rowModifier: (E) -> Modifier = { Modifier }
+    protected var rowModifier: (E) -> Modifier by mutableStateOf({ Modifier })
 
     /**
      * Specifies the row actions available in the table.
@@ -129,26 +129,26 @@ public abstract class Table<E> : Component() {
      *
      * If this property is `null`, no "More" button will be shown in the table rows.
      */
-    protected var rowActions: RowActionsConfig<E>? = null
+    protected var rowActions: RowActionsConfig<E>? by mutableStateOf(null)
 
     /**
      * Defines the sorting logic for the entities displayed in the table.
      *
      * By default, entities are displayed in their original order.
      */
-    protected var sortBy: Comparator<E> = Comparator { _, _ -> 0 }
+    protected var sortBy: Comparator<E> by mutableStateOf(Comparator { _, _ -> 0 })
 
     /**
      * The padding applied to the entire content of the table.
      */
-    protected var contentPadding: PaddingValues = PaddingValues(16.dp)
+    protected var contentPadding: PaddingValues by mutableStateOf(PaddingValues(16.dp))
 
     /**
      * The color of the selected row.
      *
      * The default value is `MaterialTheme.colorScheme.surfaceVariant`.
      */
-    protected var selectedRowColor: Color? = null
+    protected var selectedRowColor: Color? by mutableStateOf(null)
 
     @Composable
     override fun content() {
@@ -201,8 +201,7 @@ public abstract class Table<E> : Component() {
                             entity = value,
                             columns = columns,
                             modifier = if (selectedItem.value == value) {
-                                Modifier.background(selectedRowColor!!)
-                                    .then(rowModifier(value))
+                                rowModifier(value).background(selectedRowColor!!)
                             } else {
                                 rowModifier(value)
                             },
