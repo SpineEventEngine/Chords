@@ -57,8 +57,8 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.Text
@@ -68,7 +68,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
@@ -213,7 +213,7 @@ public abstract class Table<E> : Component() {
                     }
                 }
             }
-            VerticalScrollBar(listState) { Modifier.align(Alignment.CenterEnd) }
+            VerticalScrollBar(listState) { Modifier.align(CenterEnd) }
         }
     }
 
@@ -327,7 +327,7 @@ private fun <E> HeaderTableRow(
     TableRow(columns = columns) { column ->
         Text(
             text = column.name,
-            style = MaterialTheme.typography.titleMedium
+            style = typography.titleMedium
         )
     }
 }
@@ -358,7 +358,7 @@ private fun <E> ContentTableRow(
                 indication = null,
             ) { onClick() },
         rowActions = rowActionsConfig,
-        value = entity
+        entity = entity
     ) { column -> column.cellContent(entity) }
 }
 
@@ -367,6 +367,8 @@ private fun <E> ContentTableRow(
  *
  * @param columns A list of columns from which the row consists.
  * @param modifier The [Modifier] to be applied to this row.
+ * @param rowActions Configuration for row actions.
+ * @param entity The entity to represent in a row.
  * @param cellContent A callback that specifies what element to display
  *   inside each cell of this column.
  */
@@ -375,7 +377,7 @@ private fun <E> TableRow(
     columns: List<TableColumn<E>>,
     modifier: Modifier = Modifier,
     rowActions: RowActionsConfig<E>? = null,
-    value: E? = null,
+    entity: E? = null,
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
     val rowActionsVisible = remember { mutableStateOf(false) }
@@ -398,7 +400,7 @@ private fun <E> TableRow(
                 verticalAlignment = CenterVertically
             ) { cellContent(column) }
         }
-        if (rowActions != null && value != null) {
+        if (rowActions != null && entity != null) {
             IconButton({
                 rowActionsVisible.value = true
             }) {
@@ -408,7 +410,7 @@ private fun <E> TableRow(
                     modifier = Modifier.size(20.dp)
                 )
                 if (rowActionsVisible.value) {
-                    RowActionsDropdown(value, rowActions, rowActionsVisible.value) {
+                    RowActionsDropdown(entity, rowActions, rowActionsVisible.value) {
                         rowActionsVisible.value = false
                     }
                 }
