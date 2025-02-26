@@ -92,21 +92,21 @@ public abstract class Table<E> : Component() {
     /**
      * The list of entities with data that should be displayed in table rows.
      *
-     * Each entity should represent a row in a table.
+     * Each entity should represent a row in the table.
      */
     public var entities: List<E> by mutableStateOf(listOf())
 
     /**
-     * A list of columns to be displayed in the table.
+     * Defines a list of columns to be displayed in the table.
      */
     protected abstract fun defineColumns(): List<TableColumn<E>>
 
     /**
-     * A callback that configures the click action for any row.
+     * Handles the click action for a row in the table.
      *
-     * An entity displayed on a row comes as a parameter of the callback.
+     * @param entity The entity associated with the clicked row.
      */
-    protected abstract fun onRowClick(entity: E)
+    protected abstract fun handleRowClick(entity: E)
 
     /**
      * Specifies the content to be displayed when the table has no entities.
@@ -117,7 +117,7 @@ public abstract class Table<E> : Component() {
     /**
      * A callback that allows to modify any row behaviour and style.
      *
-     * An entity displayed on a row comes as a parameter of a callback.
+     * An entity displayed in a row comes as a parameter of a callback.
      */
     protected var rowModifier: (E) -> Modifier by mutableStateOf({ Modifier })
 
@@ -127,7 +127,7 @@ public abstract class Table<E> : Component() {
      * Row actions are displayed as a dropdown menu when the "More" button is clicked
      * at the end of each row.
      *
-     * If this property is `null`, no "More" button will be shown in the table rows.
+     * If this property is `null`, no "More" button will be shown in table rows.
      */
     protected var rowActions: RowActionsConfig<E>? by mutableStateOf(null)
 
@@ -161,15 +161,15 @@ public abstract class Table<E> : Component() {
         ) {
             HeaderTableRow(columns)
             if (entities.isNotEmpty()) {
-                ListContent(sortedEntities, columns, rowModifier, rowActions)
+                ContentList(sortedEntities, columns, rowModifier, rowActions)
             } else {
-                EmptyListContent()
+                EmptyContentList()
             }
         }
     }
 
     /**
-     * Displays a vertical list of table rows without header.
+     * Displays the table content without a header.
      *
      * @param entities The list of entities with data that should be displayed in table rows.
      * @param columns A list of columns to be displayed in the table.
@@ -177,7 +177,7 @@ public abstract class Table<E> : Component() {
      * @param rowActionsConfig Configuration for row actions.
      */
     @Composable
-    private fun ListContent(
+    private fun ContentList(
         entities: List<E>,
         columns: List<TableColumn<E>>,
         rowModifier: (E) -> Modifier,
@@ -208,7 +208,7 @@ public abstract class Table<E> : Component() {
                             rowActionsConfig = rowActionsConfig
                         ) {
                             selectedItem.value = value
-                            onRowClick(value)
+                            handleRowClick(value)
                         }
                     }
                 }
@@ -221,7 +221,7 @@ public abstract class Table<E> : Component() {
      * Displays the empty state of the table.
      */
     @Composable
-    private fun EmptyListContent() {
+    private fun EmptyContentList() {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Center,
@@ -235,7 +235,7 @@ public abstract class Table<E> : Component() {
 /**
  * Table column configuration.
  *
- * @param name The name of the column to be displayed in column's header.
+ * @param name The name of the column to be displayed in a header.
  * @param horizontalArrangement The horizontal arrangement of the column's content.
  * @param weight The proportional width to allocate to this column
  *   relative to other columns. Must be positive.
