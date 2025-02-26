@@ -115,6 +115,14 @@ public abstract class Table<E> : Component() {
     protected abstract fun ColumnScope.EmptyTableContent()
 
     /**
+     * Extracts a unique and immutable field from an entity.
+     *
+     * This property is used to compare entities based on a stable field, ensuring
+     * that changes to mutable properties do not affect entity identification.
+     */
+    protected abstract val extractUniqueField: (E) -> Any
+
+    /**
      * A callback that allows to modify any row behaviour and style.
      *
      * An entity displayed in a row comes as a parameter of a callback.
@@ -150,6 +158,8 @@ public abstract class Table<E> : Component() {
      */
     protected var selectedRowColor: Color? by mutableStateOf(null)
 
+    private val selectedItem: MutableState<E?> = mutableStateOf(null)
+
     @Composable
     override fun content() {
         val columns = defineColumns()
@@ -184,7 +194,6 @@ public abstract class Table<E> : Component() {
         rowActionsConfig: RowActionsConfig<E>?,
     ) {
         val listState = rememberLazyListState()
-        val selectedItem: MutableState<E?> = remember { mutableStateOf(null) }
         if (selectedRowColor == null) {
             selectedRowColor = colorScheme.surfaceVariant
         }
@@ -197,14 +206,17 @@ public abstract class Table<E> : Component() {
             ) {
                 entities.forEach { value ->
                     item {
+                        val modifier = if (selectedItem.value?.let { extractUniqueField(it) } ==
+                            extractUniqueField(value)
+                        ) {
+                            rowModifier(value).background(selectedRowColor!!)
+                        } else {
+                            rowModifier(value)
+                        }
                         ContentTableRow(
                             entity = value,
                             columns = columns,
-                            modifier = if (selectedItem.value == value) {
-                                rowModifier(value).background(selectedRowColor!!)
-                            } else {
-                                rowModifier(value)
-                            },
+                            modifier = modifier,
                             rowActionsConfig = rowActionsConfig
                         ) {
                             selectedItem.value = value
