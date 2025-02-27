@@ -97,6 +97,11 @@ public abstract class Table<E> : Component() {
     public var entities: List<E> by mutableStateOf(listOf())
 
     /**
+     * The currently selected entity (row) in the table.
+     */
+    public val selectedItem: MutableState<E?> = mutableStateOf(null)
+
+    /**
      * Defines a list of columns to be displayed in the table.
      */
     protected abstract fun defineColumns(): List<TableColumn<E>>
@@ -157,15 +162,6 @@ public abstract class Table<E> : Component() {
      * The default value is `MaterialTheme.colorScheme.surfaceVariant`.
      */
     protected var selectedRowColor: Color? by mutableStateOf(null)
-
-    private val selectedItem: MutableState<E?> = mutableStateOf(null)
-
-    /**
-     * Clears the currently selected row in the table.
-     */
-    public fun clearSelection() {
-        selectedItem.value = null
-    }
 
     @Composable
     override fun content() {
