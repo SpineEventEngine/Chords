@@ -117,10 +117,10 @@ public abstract class Table<E> : Component() {
     /**
      * Extracts a unique and immutable field from an entity.
      *
-     * This property is used to compare entities based on a stable field, ensuring
+     * This function is used to compare entities based on a stable field, ensuring
      * that changes to mutable properties do not affect entity identification.
      */
-    protected abstract val extractUniqueField: (E) -> Any
+    protected abstract fun extractUniqueField(entity: E): Any
 
     /**
      * A callback that allows to modify any row behaviour and style.
@@ -159,6 +159,13 @@ public abstract class Table<E> : Component() {
     protected var selectedRowColor: Color? by mutableStateOf(null)
 
     private val selectedItem: MutableState<E?> = mutableStateOf(null)
+
+    /**
+     * Clears the currently selected row in the table.
+     */
+    public fun clearSelection() {
+        selectedItem.value = null
+    }
 
     @Composable
     override fun content() {
@@ -206,9 +213,9 @@ public abstract class Table<E> : Component() {
             ) {
                 entities.forEach { value ->
                     item {
-                        val modifier = if (selectedItem.value?.let { extractUniqueField(it) } ==
-                            extractUniqueField(value)
-                        ) {
+                        val selected = selectedItem.value
+                        val modifier = if (selected != null &&
+                            extractUniqueField(selected) == extractUniqueField(value)) {
                             rowModifier(value).background(selectedRowColor!!)
                         } else {
                             rowModifier(value)
