@@ -27,85 +27,241 @@
 package io.spine.chords.core.table
 
 import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement.Center
 import androidx.compose.foundation.layout.Arrangement.Horizontal
+import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize.Min
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollbarAdapter
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Divider
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment.Companion.CenterEnd
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import io.spine.chords.core.Component
 
 /**
  * A list of entities in a tabular format.
  *
  * This component is intended for rendering tabular data,
  * where each row corresponds to an entity of the [E] type.
- * Users can customize row behavior and style, as well as specify column
- * configurations for displaying the data.
+ * Users can customize row behavior and style, specify column
+ * configurations for displaying the data, and visual appearance of a table.
  *
- * @param entities
- *         the list of entities with data that should be displayed in table rows.
- *         Each entity should represent a row in a table.
- * @param onRowClick
- *         a callback that configures the click action for any row;
- *         An entity displayed on a row comes as a parameter of the callback.
- * @param rowModifier
- *         a callback that allows to modify any row behaviour and style.
- *         An entity displayed on a row comes as a parameter of a callback.
- * @param columns
- *         a list of columns to be displayed in the table.
- *         They are displayed in the order they are passed.
- * @param E
- *         the type of entities represented in the table.
+ * @param E The type of entities represented in the table.
  */
-@Composable
-public fun <E> Table(
-    entities: List<E>,
-    onRowClick: (E) -> Unit = {},
-    rowModifier: (E) -> Modifier = { Modifier },
-    columns: List<TableColumn<E>>
-) {
-    Column {
-        HeaderTableRow(columns)
-        ContentList(entities, columns, onRowClick, rowModifier)
+public abstract class Table<E> : Component() {
+
+    /**
+     * A list of entities with data that should be displayed in table rows.
+     *
+     * Each entity should represent a row in the table.
+     */
+    public var entities: List<E> by mutableStateOf(listOf())
+
+    /**
+     * The currently selected entity (row) in the table.
+     */
+    public val selectedEntity: MutableState<E?> = mutableStateOf(null)
+
+    /**
+     * A list of columns to be displayed in the table.
+     */
+    protected abstract val columns: List<TableColumn<E>>
+
+    /**
+     * Handles the click action for a row in the table.
+     *
+     * @param entity The entity associated with the clicked row.
+     */
+    protected abstract fun handleRowClick(entity: E)
+
+    /**
+     * Specifies the content to be displayed when the table has no entities.
+     */
+    @Composable
+    protected abstract fun ColumnScope.EmptyTableContent()
+
+    /**
+     * Extracts a unique identifier from an entity.
+     *
+     * This function is used to identify entities based on a stable value,
+     * ensuring that changes to mutable properties do not affect
+     * entity identification.
+     *
+     * The ID's equality is determined using structural equality operator (`==`).
+     * Therefore, the returned identifier should be a type that supports
+     * meaningful structural equality.
+     *
+     * @param entity An entity from which to extract the identifier.
+     * @return The ID of an entity.
+     */
+    protected abstract fun extractEntityId(entity: E): Any
+
+    /**
+     * A callback that allows to modify any row behaviour and style.
+     *
+     * An entity displayed in a row comes as a parameter of a callback.
+     */
+    protected var rowModifier: (E) -> Modifier by mutableStateOf({ Modifier })
+
+    /**
+     * Specifies the row actions available in the table.
+     *
+     * Row actions are displayed as a dropdown menu when the "More" button
+     * is clicked at the end of each row.
+     *
+     * If this property is `null`, no "More" button will be shown in table rows.
+     */
+    protected var rowActions: RowActionsConfig<E>? by mutableStateOf(null)
+
+    /**
+     * Defines the sorting logic for the entities displayed in the table.
+     *
+     * By default, entities are displayed in their original order.
+     */
+    protected var sortBy: Comparator<E> by mutableStateOf(Comparator { _, _ -> 0 })
+
+    /**
+     * The padding applied to the entire content of the table.
+     */
+    protected var contentPadding: PaddingValues by mutableStateOf(PaddingValues(16.dp))
+
+    /**
+     * The color of the selected row.
+     *
+     * The default value is `MaterialTheme.colorScheme.surfaceVariant`.
+     */
+    protected var selectedRowColor: Color? by mutableStateOf(null)
+
+    @Composable
+    override fun content() {
+        val sortedEntities = entities.sortedWith(sortBy)
+        Column(
+            modifier = Modifier.fillMaxSize()
+                .padding(contentPadding),
+            verticalArrangement = Center,
+        ) {
+            HeaderTableRow(columns)
+            if (entities.isNotEmpty()) {
+                ContentList(sortedEntities, columns)
+            } else {
+                EmptyContentList()
+            }
+        }
+    }
+
+    /**
+     * Displays the table content without a header.
+     *
+     * @param entities The list of entities with data that
+     *   should be displayed in table rows.
+     * @param columns A list of columns to be displayed in the table.
+     */
+    @Composable
+    private fun ContentList(
+        entities: List<E>,
+        columns: List<TableColumn<E>>
+    ) {
+        val listState = rememberLazyListState()
+        if (selectedRowColor == null) {
+            selectedRowColor = colorScheme.surfaceVariant
+        }
+        Box(
+            modifier = Modifier.fillMaxHeight(),
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxHeight(),
+                state = listState
+            ) {
+                entities.forEach { value ->
+                    item {
+                        val selected = selectedEntity.value
+                        val modifier = if (selected != null &&
+                            extractEntityId(selected) == extractEntityId(value)) {
+                            rowModifier(value).background(selectedRowColor!!)
+                        } else {
+                            rowModifier(value)
+                        }
+                        ContentTableRow(
+                            entity = value,
+                            columns = columns,
+                            modifier = modifier,
+                            rowActionsConfig = rowActions
+                        ) {
+                            selectedEntity.value = value
+                            handleRowClick(value)
+                        }
+                    }
+                }
+            }
+            VerticalScrollBar(listState) { Modifier.align(CenterEnd) }
+        }
+    }
+
+    /**
+     * Displays the empty state of the table.
+     */
+    @Composable
+    private fun EmptyContentList() {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Center,
+            horizontalAlignment = CenterHorizontally
+        ) {
+            EmptyTableContent()
+        }
     }
 }
 
 /**
  * Table column configuration.
  *
- * @param name
- *         the name of the column to be displayed in column's header.
- * @param horizontalArrangement
- *         the horizontal arrangement of the column's content.
- * @param weight
- *         the proportional width to allocate to this column
- *         relative to other columns. Must be positive.
- * @param padding
- *         the padding values of each cell's content in this column.
- * @param cellContent
- *         a callback that specifies what element to display
- *         inside each cell of this column.
- *         An entity of type [E] comes as a parameter of a callback.
+ * @param name The name of the column to be displayed in a header.
+ * @param horizontalArrangement The horizontal arrangement of the column's content.
+ *   The default value is `Arrangement.Center`.
+ * @param weight The proportional width to allocate to this column
+ *   relative to other columns. Must be positive. The default value is `1F`
+ *   meaning that if all columns have this `weight` value, their width is equal.
+ * @param padding The padding values of each cell's content in this column.
+ *   By default, no padding is applied.
+ * @param cellContent A callback that specifies what element to display
+ *   inside each cell of this column.
  */
 public data class TableColumn<E>(
     val name: String,
@@ -116,45 +272,55 @@ public data class TableColumn<E>(
 )
 
 /**
- * A component that displays a vertical list of table rows without header.
+ * Configuration object for row actions in a table.
  *
- * @param entities
- *         the list of entities with data that should be displayed in table rows.
- * @param columns
- *         a list of columns to be displayed in the table.
- * @param onRowClick
- *         a callback that configures the click action for any row;
- *         An entity displayed on a row comes as a parameter of the callback.
- * @param rowModifier
- *         a callback that allows to modify any row behaviour and style.
- *         An entity displayed on a row comes as a parameter of the callback.
+ * Row actions are presented as a dropdown menu that opens when the "More" button
+ * displayed at the end of each table row is clicked.
+ *
+ * This object defines what actions should be displayed and how they are styled.
+ *
+ * @param E The type of entity for which the actions are defined.
+ * @param itemsProvider A function that provides a list of actions
+ *   based on the given entity.
+ * @param itemsLook The styling configuration applied to all row actions
+ *   in this table.
+ * @param modifier A modifier to be applied to the menu.
  */
-@Composable
-private fun <E> ContentList(
-    entities: List<E>,
-    columns: List<TableColumn<E>>,
-    onRowClick: (E) -> Unit,
-    rowModifier: (E) -> Modifier
-) {
-    val listState = rememberLazyListState()
-    Box(
-        modifier = Modifier.fillMaxHeight(),
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxHeight(),
-            state = listState
-        ) {
-            entities.forEach { value ->
-                item {
-                    ContentTableRow(value, columns, rowModifier(value)) {
-                        onRowClick(value)
-                    }
-                }
-            }
-        }
-        VerticalScrollBar(listState) { Modifier.align(Alignment.CenterEnd) }
-    }
-}
+public data class RowActionsConfig<E>(
+    val itemsProvider: (E) -> List<RowActionsItem<E>>,
+    val itemsLook: RowActionsItemLook,
+    val modifier: Modifier = Modifier
+)
+
+/**
+ * Describes an item in a row actions menu.
+ *
+ * @param E The type of entity to which this action applies.
+ * @param text The label of the action.
+ * @param onClick A callback executed when the action is clicked,
+ *   receiving the corresponding entity as a parameter.
+ * @param enabled A function that determines whether the action should be enabled,
+ *   based on the given entity's state. By default, it is always enabled.
+ */
+public data class RowActionsItem<E>(
+    val text: String,
+    val onClick: (E) -> Unit,
+    val enabled: (E) -> Boolean = { true }
+)
+
+/**
+ * An object allowing adjustments of row action item visual appearance parameters.
+ *
+ * @param textColor The color of the item text.
+ * @param modifier A modifier to apply additional styling to the item.
+ * @param contentPadding The padding applied inside each dropdown menu item.
+ *   By default, no padding is applied for the item content.
+ */
+public data class RowActionsItemLook(
+    val textColor: Color,
+    val modifier: Modifier = Modifier,
+    val contentPadding: PaddingValues = PaddingValues(0.dp)
+)
 
 /**
  * Vertical scrollbar component.
@@ -178,9 +344,8 @@ private fun VerticalScrollBar(
 /**
  * Table row with headers.
  *
- * @param columns
- *         a list of column configuration objects
- *         with information about headers.
+ * @param columns A list of column configuration objects
+ *   with information about headers.
  */
 @Composable
 private fun <E> HeaderTableRow(
@@ -189,7 +354,7 @@ private fun <E> HeaderTableRow(
     TableRow(columns = columns) { column ->
         Text(
             text = column.name,
-            style = MaterialTheme.typography.titleMedium
+            style = typography.titleMedium
         )
     }
 }
@@ -197,22 +362,21 @@ private fun <E> HeaderTableRow(
 /**
  * Table row component that supports a click action.
  *
- * @param columns
- *         a list of columns from which the row consists.
- * @param entity
- *         the entity to represent in a row.
- * @param modifier
- *         the [Modifier] to be applied to this row.
- * @param onClick
- *         a callback that is triggered when a user clicks on a row.
+ * @param columns A list of columns from which the row consists.
+ * @param entity The entity to represent in a row.
+ * @param modifier The [Modifier] to be applied to this row.
+ * @param rowActionsConfig Configuration for row actions.
+ * @param onClick A callback that is triggered when a user clicks on a row.
  */
 @Composable
 private fun <E> ContentTableRow(
     entity: E,
     columns: List<TableColumn<E>>,
     modifier: Modifier,
+    rowActionsConfig: RowActionsConfig<E>?,
     onClick: () -> Unit
 ) {
+    val rowActionsVisible = remember { mutableStateOf(false) }
     TableRow(
         columns = columns,
         modifier = Modifier
@@ -221,26 +385,33 @@ private fun <E> ContentTableRow(
                 interactionSource = MutableInteractionSource(),
                 indication = null,
             ) { onClick() },
+        rowActionsButton = {
+            if (rowActionsConfig != null) {
+                RowActionsButton(
+                    rowActionsConfig,
+                    entity,
+                    rowActionsVisible
+                )
+            }
+        }
     ) { column -> column.cellContent(entity) }
 }
 
 /**
  * Table row component.
  *
- * @param columns
- *         a list of columns from which the row consists.
- * @param modifier
- *         the [Modifier] to be applied to this row.
- * @param cellContent
- *         a callback that specifies what element to display
- *         inside each cell of this column.
- *         A column to which the cell belongs comes
- *         as a parameter of a callback.
+ * @param columns A list of columns from which the row consists.
+ * @param modifier The [Modifier] to be applied to this row.
+ * @param rowActionsButton A button that should open a row actions menu.
+ *   By default, no button is displayed.
+ * @param cellContent A callback that specifies what element to display
+ *   inside each cell of this column.
  */
 @Composable
 private fun <E> TableRow(
     columns: List<TableColumn<E>>,
     modifier: Modifier = Modifier,
+    rowActionsButton: (@Composable () -> Unit)? = null,
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
     Row(
@@ -248,7 +419,9 @@ private fun <E> TableRow(
             .fillMaxWidth()
             .requiredHeightIn(70.dp, 100.dp)
             .height(Min)
-            .then(modifier)
+            .then(modifier),
+        horizontalArrangement = SpaceBetween,
+        verticalAlignment = CenterVertically
     ) {
         columns.forEach {column ->
             Row(
@@ -260,10 +433,87 @@ private fun <E> TableRow(
                 verticalAlignment = CenterVertically
             ) { cellContent(column) }
         }
+        if (rowActionsButton != null) {
+            rowActionsButton()
+        }
     }
     Divider(
         modifier = Modifier.fillMaxWidth(),
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant
+        color = colorScheme.outlineVariant
     )
+}
+
+/**
+ * Displays a button that opens a row actions dropdown menu.
+ *
+ * When clicked, this button reveals a dropdown menu containing
+ * actions specific to the given entity.
+ *
+ * @param E The type of entity for which the row actions are defined.
+ * @param rowActions The configuration defining available actions
+ *   and their appearance.
+ * @param entity The entity for which the row actions are displayed.
+ * @param visibility A state that controls the visibility
+ *   of the dropdown menu.
+ */
+@Composable
+private fun <E> RowActionsButton(
+    rowActions: RowActionsConfig<E>,
+    entity: E,
+    visibility: MutableState<Boolean>,
+) {
+    IconButton({
+        visibility.value = true
+    }) {
+        Icon(
+            imageVector = Icons.Default.MoreVert,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        if (visibility.value) {
+            RowActionsDropdown(entity, rowActions, visibility.value) {
+                visibility.value = false
+            }
+        }
+    }
+}
+
+/**
+ * Displays the dropdown menu with row actions.
+ *
+ * @param E The type of entity for which the actions are provided.
+ * @param value The entity for which the actions should be displayed.
+ * @param config The configuration object specifying the row actions
+ *   and their appearance.
+ * @param visible Whether the dropdown menu is currently visible.
+ * @param onCancel A callback invoked when the dropdown menu is dismissed.
+ */
+@Composable
+private fun <E> RowActionsDropdown(
+    value: E,
+    config: RowActionsConfig<E>,
+    visible: Boolean,
+    onCancel: () -> Unit
+) {
+    val items = config.itemsProvider(value)
+    val look = config.itemsLook
+    DropdownMenu(
+        expanded = visible,
+        onDismissRequest = onCancel,
+        modifier = config.modifier
+    ) {
+        items.forEach {
+            DropdownMenuItem(
+                text = { Text(it.text) },
+                onClick = { it.onClick(value) },
+                enabled = it.enabled(value),
+                modifier = look.modifier,
+                colors = MenuDefaults.itemColors(
+                    textColor = look.textColor
+                ),
+                contentPadding = look.contentPadding
+            )
+        }
+    }
 }
