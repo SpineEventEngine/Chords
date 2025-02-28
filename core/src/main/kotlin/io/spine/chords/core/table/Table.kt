@@ -84,8 +84,7 @@ import io.spine.chords.core.Component
  * Users can customize row behavior and style, specify column
  * configurations for displaying the data, and visual appearance of a table.
  *
- * @param E
- *         the type of entities represented in the table.
+ * @param E The type of entities represented in the table.
  */
 public abstract class Table<E> : Component() {
 
@@ -99,7 +98,7 @@ public abstract class Table<E> : Component() {
     /**
      * The currently selected entity (row) in the table.
      */
-    public val selectedItem: MutableState<E?> = mutableStateOf(null)
+    public val selectedEntity: MutableState<E?> = mutableStateOf(null)
 
     /**
      * Defines a list of columns to be displayed in the table.
@@ -137,8 +136,8 @@ public abstract class Table<E> : Component() {
     /**
      * Specifies the row actions available in the table.
      *
-     * Row actions are displayed as a dropdown menu when the "More" button is clicked
-     * at the end of each row.
+     * Row actions are displayed as a dropdown menu when the "More" button
+     * is clicked at the end of each row.
      *
      * If this property is `null`, no "More" button will be shown in table rows.
      */
@@ -184,7 +183,8 @@ public abstract class Table<E> : Component() {
     /**
      * Displays the table content without a header.
      *
-     * @param entities The list of entities with data that should be displayed in table rows.
+     * @param entities The list of entities with data that
+     *   should be displayed in table rows.
      * @param columns A list of columns to be displayed in the table.
      * @param rowModifier A callback that allows to modify any row behaviour and style.
      * @param rowActionsConfig Configuration for row actions.
@@ -269,12 +269,14 @@ public data class TableColumn<E>(
 /**
  * Configuration object for row actions in a table.
  *
- * It defines how row actions should be generated and displayed for a given entity type.
+ * It defines how row actions should be generated
+ * and displayed for a given entity type.
  *
  * @param E The type of entity for which the actions are defined.
- * @param itemsProvider A function that dynamically generates a list of actions
+ * @param itemsProvider A function that provides a list of actions
  *   based on the given entity.
- * @param itemsLook The styling configuration applied to all row actions in this table.
+ * @param itemsLook The styling configuration applied to all row actions
+ *   in this table.
  */
 public data class RowActionsConfig<E>(
     val itemsProvider: (E) -> List<RowActionsItem<E>>,
@@ -282,7 +284,7 @@ public data class RowActionsConfig<E>(
 )
 
 /**
- * Configuration object for an item in a row actions menu.
+ * Describes an item in a row actions menu.
  *
  * @param E The type of entity to which this action applies.
  * @param text The label of the action.
