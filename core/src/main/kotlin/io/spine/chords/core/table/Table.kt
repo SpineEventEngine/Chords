@@ -89,7 +89,7 @@ import io.spine.chords.core.Component
 public abstract class Table<E> : Component() {
 
     /**
-     * The list of entities with data that should be displayed in table rows.
+     * A list of entities with data that should be displayed in table rows.
      *
      * Each entity should represent a row in the table.
      */
@@ -119,7 +119,7 @@ public abstract class Table<E> : Component() {
     protected abstract fun ColumnScope.EmptyTableContent()
 
     /**
-     * Extracts a stable and unique identifier from an entity.
+     * Extracts a unique identifier from an entity.
      *
      * This function is used to identify entities based on a stable value,
      * ensuring that changes to mutable properties do not affect
@@ -449,7 +449,7 @@ private fun <E> TableRow(
  *
  * @param E The type of entity for which the actions are provided.
  * @param value The entity for which the actions should be displayed.
- * @param config The configuration object specifying the available row actions
+ * @param config The configuration object specifying the row actions
  *   and their appearance.
  * @param visible Whether the dropdown menu is currently visible.
  * @param onCancel A callback invoked when the dropdown menu is dismissed.
