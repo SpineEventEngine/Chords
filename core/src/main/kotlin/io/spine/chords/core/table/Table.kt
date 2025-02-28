@@ -101,9 +101,9 @@ public abstract class Table<E> : Component() {
     public val selectedEntity: MutableState<E?> = mutableStateOf(null)
 
     /**
-     * Defines a list of columns to be displayed in the table.
+     * A list of columns to be displayed in the table.
      */
-    protected abstract fun defineColumns(): List<TableColumn<E>>
+    protected abstract val columns: List<TableColumn<E>>
 
     /**
      * Handles the click action for a row in the table.
@@ -164,7 +164,6 @@ public abstract class Table<E> : Component() {
 
     @Composable
     override fun content() {
-        val columns = defineColumns()
         val sortedEntities = entities.sortedWith(sortBy)
         Column(
             modifier = Modifier.fillMaxSize()
@@ -173,7 +172,7 @@ public abstract class Table<E> : Component() {
         ) {
             HeaderTableRow(columns)
             if (entities.isNotEmpty()) {
-                ContentList(sortedEntities, columns, rowModifier, rowActions)
+                ContentList(sortedEntities, columns)
             } else {
                 EmptyContentList()
             }
@@ -186,15 +185,11 @@ public abstract class Table<E> : Component() {
      * @param entities The list of entities with data that
      *   should be displayed in table rows.
      * @param columns A list of columns to be displayed in the table.
-     * @param rowModifier A callback that allows to modify any row behaviour and style.
-     * @param rowActionsConfig Configuration for row actions.
      */
     @Composable
     private fun ContentList(
         entities: List<E>,
-        columns: List<TableColumn<E>>,
-        rowModifier: (E) -> Modifier,
-        rowActionsConfig: RowActionsConfig<E>?,
+        columns: List<TableColumn<E>>
     ) {
         val listState = rememberLazyListState()
         if (selectedRowColor == null) {
@@ -209,7 +204,7 @@ public abstract class Table<E> : Component() {
             ) {
                 entities.forEach { value ->
                     item {
-                        val selected = selectedItem.value
+                        val selected = selectedEntity.value
                         val modifier = if (selected != null &&
                             extractUniqueField(selected) == extractUniqueField(value)) {
                             rowModifier(value).background(selectedRowColor!!)
@@ -220,9 +215,9 @@ public abstract class Table<E> : Component() {
                             entity = value,
                             columns = columns,
                             modifier = modifier,
-                            rowActionsConfig = rowActionsConfig
+                            rowActionsConfig = rowActions
                         ) {
-                            selectedItem.value = value
+                            selectedEntity.value = value
                             handleRowClick(value)
                         }
                     }
