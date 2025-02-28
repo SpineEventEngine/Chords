@@ -369,6 +369,7 @@ private fun <E> ContentTableRow(
     rowActionsConfig: RowActionsConfig<E>?,
     onClick: () -> Unit
 ) {
+    val rowActionsVisible = remember { mutableStateOf(false) }
     TableRow(
         columns = columns,
         modifier = Modifier
@@ -377,8 +378,15 @@ private fun <E> ContentTableRow(
                 interactionSource = MutableInteractionSource(),
                 indication = null,
             ) { onClick() },
-        rowActions = rowActionsConfig,
-        entity = entity
+        rowActionsButton = {
+            if (rowActionsConfig != null) {
+                RowActionsButton(
+                    rowActionsConfig,
+                    entity,
+                    rowActionsVisible
+                )
+            }
+        }
     ) { column -> column.cellContent(entity) }
 }
 
@@ -387,8 +395,8 @@ private fun <E> ContentTableRow(
  *
  * @param columns A list of columns from which the row consists.
  * @param modifier The [Modifier] to be applied to this row.
- * @param rowActions Configuration for row actions.
- * @param entity The entity to represent in a row.
+ * @param rowActionsButton A button that should open a row actions menu.
+ *   By default, no button is displayed.
  * @param cellContent A callback that specifies what element to display
  *   inside each cell of this column.
  */
@@ -396,11 +404,9 @@ private fun <E> ContentTableRow(
 private fun <E> TableRow(
     columns: List<TableColumn<E>>,
     modifier: Modifier = Modifier,
-    rowActions: RowActionsConfig<E>? = null,
-    entity: E? = null,
+    rowActionsButton: (@Composable () -> Unit)? = null,
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
-    val rowActionsVisible = remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -420,21 +426,8 @@ private fun <E> TableRow(
                 verticalAlignment = CenterVertically
             ) { cellContent(column) }
         }
-        if (rowActions != null && entity != null) {
-            IconButton({
-                rowActionsVisible.value = true
-            }) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                if (rowActionsVisible.value) {
-                    RowActionsDropdown(entity, rowActions, rowActionsVisible.value) {
-                        rowActionsVisible.value = false
-                    }
-                }
-            }
+        if (rowActionsButton != null) {
+            rowActionsButton()
         }
     }
     Divider(
@@ -442,6 +435,41 @@ private fun <E> TableRow(
         thickness = 1.dp,
         color = colorScheme.outlineVariant
     )
+}
+
+/**
+ * Displays a button that opens a row actions dropdown menu.
+ *
+ * When clicked, this button reveals a dropdown menu containing
+ * actions specific to the given entity.
+ *
+ * @param E The type of entity for which the row actions are defined.
+ * @param rowActions The configuration defining available actions
+ *   and their appearance.
+ * @param entity The entity for which the row actions are displayed.
+ * @param visibility A state that controls the visibility
+ *   of the dropdown menu.
+ */
+@Composable
+private fun <E> RowActionsButton(
+    rowActions: RowActionsConfig<E>,
+    entity: E,
+    visibility: MutableState<Boolean>,
+) {
+    IconButton({
+        visibility.value = true
+    }) {
+        Icon(
+            imageVector = Icons.Default.MoreVert,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        if (visibility.value) {
+            RowActionsDropdown(entity, rowActions, visibility.value) {
+                visibility.value = false
+            }
+        }
+    }
 }
 
 /**
