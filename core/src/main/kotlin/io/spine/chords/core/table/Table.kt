@@ -119,12 +119,20 @@ public abstract class Table<E> : Component() {
     protected abstract fun ColumnScope.EmptyTableContent()
 
     /**
-     * Extracts a unique and immutable field from an entity.
+     * Extracts a stable and unique identifier from an entity.
      *
-     * This function is used to compare entities based on a stable field, ensuring
-     * that changes to mutable properties do not affect entity identification.
+     * This function is used to identify entities based on a stable value,
+     * ensuring that changes to mutable properties do not affect
+     * entity identification.
+     *
+     * The ID's equality is determined using structural equality operator (`==`).
+     * Therefore, the returned identifier should be a type that supports
+     * meaningful structural equality.
+     *
+     * @param entity An entity from which to extract the identifier.
+     * @return The ID of an entity.
      */
-    protected abstract fun extractUniqueField(entity: E): Any
+    protected abstract fun extractEntityId(entity: E): Any
 
     /**
      * A callback that allows to modify any row behaviour and style.
@@ -206,7 +214,7 @@ public abstract class Table<E> : Component() {
                     item {
                         val selected = selectedEntity.value
                         val modifier = if (selected != null &&
-                            extractUniqueField(selected) == extractUniqueField(value)) {
+                            extractEntityId(selected) == extractEntityId(value)) {
                             rowModifier(value).background(selectedRowColor!!)
                         } else {
                             rowModifier(value)
