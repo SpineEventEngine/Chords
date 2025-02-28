@@ -60,7 +60,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -255,9 +254,12 @@ public abstract class Table<E> : Component() {
  *
  * @param name The name of the column to be displayed in a header.
  * @param horizontalArrangement The horizontal arrangement of the column's content.
+ *   The default value is `Arrangement.Center`.
  * @param weight The proportional width to allocate to this column
- *   relative to other columns. Must be positive.
+ *   relative to other columns. Must be positive. The default value is `1F`
+ *   meaning that if all columns have this `weight` value, their width is equal.
  * @param padding The padding values of each cell's content in this column.
+ *   By default, no padding is applied.
  * @param cellContent A callback that specifies what element to display
  *   inside each cell of this column.
  */
@@ -272,18 +274,22 @@ public data class TableColumn<E>(
 /**
  * Configuration object for row actions in a table.
  *
- * It defines how row actions should be generated
- * and displayed for a given entity type.
+ * Row actions are presented as a dropdown menu that opens when the "More" button
+ * displayed at the end of each table row is clicked.
+ *
+ * This object defines what actions should be displayed and how they are styled.
  *
  * @param E The type of entity for which the actions are defined.
  * @param itemsProvider A function that provides a list of actions
  *   based on the given entity.
  * @param itemsLook The styling configuration applied to all row actions
  *   in this table.
+ * @param modifier A modifier to be applied to the menu.
  */
 public data class RowActionsConfig<E>(
     val itemsProvider: (E) -> List<RowActionsItem<E>>,
-    val itemsLook: RowActionsItemLook
+    val itemsLook: RowActionsItemLook,
+    val modifier: Modifier = Modifier
 )
 
 /**
@@ -305,14 +311,15 @@ public data class RowActionsItem<E>(
 /**
  * An object allowing adjustments of row action item visual appearance parameters.
  *
- * @param colors The color scheme applied to the item.
+ * @param textColor The color of the item text.
  * @param modifier A modifier to apply additional styling to the item.
  * @param contentPadding The padding applied inside each dropdown menu item.
+ *   By default, no padding is applied for the item content.
  */
 public data class RowActionsItemLook(
-    val colors: MenuItemColors,
+    val textColor: Color,
     val modifier: Modifier = Modifier,
-    val contentPadding: PaddingValues = MenuDefaults.DropdownMenuItemContentPadding
+    val contentPadding: PaddingValues = PaddingValues(0.dp)
 )
 
 /**
@@ -494,6 +501,7 @@ private fun <E> RowActionsDropdown(
     DropdownMenu(
         expanded = visible,
         onDismissRequest = onCancel,
+        modifier = config.modifier
     ) {
         items.forEach {
             DropdownMenuItem(
@@ -501,7 +509,9 @@ private fun <E> RowActionsDropdown(
                 onClick = { it.onClick(value) },
                 enabled = it.enabled(value),
                 modifier = look.modifier,
-                colors = look.colors,
+                colors = MenuDefaults.itemColors(
+                    textColor = look.textColor
+                ),
                 contentPadding = look.contentPadding
             )
         }
