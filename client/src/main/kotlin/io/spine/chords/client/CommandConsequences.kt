@@ -40,7 +40,6 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -475,7 +474,8 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      * be used for triggering consequences callbacks.
      */
     protected fun callbacks(callbacks: suspend () -> Unit): Job {
-        check(callbacksCoroutineScope.isActive) { "Callbacks coroutine is not active" }
+        check(callbacksCoroutineScope.isActive) { "Callbacks coroutine is not active. Make sure " +
+                "that the coroutine where `app.client.postCommand` is invoked is still active." }
         return callbacksCoroutineScope.launch {
             callbacks()
             yield()
