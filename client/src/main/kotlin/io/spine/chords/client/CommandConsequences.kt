@@ -34,12 +34,14 @@ import io.spine.chords.client.appshell.client
 import io.spine.chords.client.layout.ModalCommandConsequences
 import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
+import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
@@ -100,15 +102,15 @@ public open class CommandConsequences<C: CommandMessage>(
      */
     internal suspend fun postAndProcessConsequences(
         command: C
-    ): EventSubscriptions = coroutineScope {
+    ): EventSubscriptions {
         val consequencesScope: CommandConsequencesScopeImpl<C> = createConsequencesScope(command)
 
         // NOTE: The `coroutineScope` property is not passed to the constructor,
         //       but assigned separately intentionally in order to simplify the
         //       constructor of CommandConsequencesScopeImpl and leave only the
         //       essential data that cannot be inferred automatically there.
-        consequencesScope.callbacksCoroutineScope = this
-        consequencesScope.postAndProcessConsequences {
+        consequencesScope.callbacksCoroutineScope = CoroutineScope(coroutineContext)
+        return consequencesScope.postAndProcessConsequences {
             registerConsequences(consequencesScope)
         }
     }
@@ -449,8 +451,8 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
                     if (it is DeferredEventSubscription<*>) {
                         it.subscribe()
                     }
-                    initialSubscriptionsMade = true
                 }
+                initialSubscriptionsMade = true
 
                 val allSubscriptionsSuccessful = allSubscriptionsActive
                 if (allSubscriptionsSuccessful) {
@@ -472,9 +474,12 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      * Triggers [callbacks] inside of a [callbacksCoroutineScope], which is designed to
      * be used for triggering consequences callbacks.
      */
-    protected fun callbacks(callbacks: suspend () -> Unit): Job = callbacksCoroutineScope.launch {
-        callbacks()
-        yield()
+    protected fun callbacks(callbacks: suspend () -> Unit): Job {
+        check(callbacksCoroutineScope.isActive) { "Callbacks coroutine is not active" }
+        return callbacksCoroutineScope.launch {
+            callbacks()
+            yield()
+        }
     }
 
     public companion object {
