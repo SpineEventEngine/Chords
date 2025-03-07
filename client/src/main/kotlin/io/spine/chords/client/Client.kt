@@ -37,7 +37,6 @@ import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.core.UserId
 import kotlin.time.Duration
-import kotlinx.coroutines.CoroutineScope
 
 /**
  * Provides an API for interacting with the application server.
@@ -121,8 +120,7 @@ import kotlinx.coroutines.CoroutineScope
      * specified with [consequences].
      *
      * All registered command consequence handlers except event handlers are
-     * invoked synchronously before this suspending method returns. Event
-     * handlers are invoked in same coroutine scope as this suspending function.
+     * invoked synchronously before this suspending method returns.
      *
      * Here's a simple usage example, which just includes a subscription to an
      * event expected to be emitted as a consequence of posting
@@ -273,15 +271,11 @@ public interface EventSubscription {
      *
      * @param timeout A maximum period of time that the subscribed event should
      *   be waited for.
-     * @param timeoutCoroutineScope A [CoroutineScope] used to launch
-     *   a coroutine for waiting a [timeout] period and invoking
-     *   the [onTimeout] callback.
      * @param onTimeout A callback, which will be invoked if event is not
      *   emitted within the [timeout] period after this method is called.
      */
     public fun withTimeout(
         timeout: Duration,
-        timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit
     )
 

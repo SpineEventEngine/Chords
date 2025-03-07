@@ -44,11 +44,10 @@ import io.spine.client.EventFilter.eq
 import io.spine.client.Subscription
 import io.spine.core.UserId
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 
 /**
@@ -314,30 +313,32 @@ internal open class EventSubscriptionImpl(
 
     private var timeoutJob: Job? = null
 
-    @OptIn(ExperimentalTime::class)
     override fun withTimeout(
         timeout: Duration,
-        timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit,
     ) {
         cancelTimeout()
-        timeoutJob = timeoutCoroutineScope.launch {
-            delay(timeout)
-            if (timeoutJob != null) {
-                // Event subscription should be cancelled BEFORE calling the
-                // timeout callback to prevent a condition when both an event
-                // callback and its timeout callback have been invoked.
-                cancelSubscription()
+        Thread {
+            runBlocking {
+                timeoutJob = launch {
+                    delay(timeout)
+                    if (timeoutJob != null) {
+                        // Event subscription should be cancelled BEFORE calling the
+                        // timeout callback to prevent a condition when both an event
+                        // callback and its timeout callback have been invoked.
+                        cancelSubscription()
 
-                onTimeout()
-                yield()
+                        onTimeout()
+                        yield()
 
-                // Timeout job should be canceled AFTER invoking a callback
-                // to ensure that `onTimeout` callback's coroutine scope still
-                // works normally.
-                cancelTimeout()
+                        // Timeout job should be canceled AFTER invoking a callback
+                        // to ensure that `onTimeout` callback's coroutine scope still
+                        // works normally.
+                        cancelTimeout()
+                    }
+                }
             }
-        }
+        }.start()
     }
 
     /**

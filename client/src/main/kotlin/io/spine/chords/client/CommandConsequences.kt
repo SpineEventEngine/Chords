@@ -36,13 +36,11 @@ import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 
 /**
  * Constitutes consequences, which can be expected after posting a command of
@@ -102,12 +100,6 @@ public open class CommandConsequences<C: CommandMessage>(
         command: C
     ): EventSubscriptions = withContext(NonCancellable) {
         val consequencesScope: CommandConsequencesScopeImpl<C> = createConsequencesScope(command)
-
-        // NOTE: The `coroutineScope` property is not passed to the constructor,
-        //       but assigned separately intentionally in order to simplify the
-        //       constructor of CommandConsequencesScopeImpl and leave only the
-        //       essential data that cannot be inferred automatically there.
-        consequencesScope.callbacksCoroutineScope = CoroutineScope(coroutineContext)
         consequencesScope.postAndProcessConsequences {
             registerConsequences(consequencesScope)
         }
@@ -327,14 +319,6 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
 ) : CommandConsequencesScope<C> {
 
     /**
-     * A [CoroutineScope] used to invoke consequence handlers.
-     *
-     * This property is automatically initialized by the internal
-     * [CommandConsequences.postAndProcessConsequences] method.
-     */
-    internal lateinit var callbacksCoroutineScope: CoroutineScope
-
-    /**
      * Allows to manage subscriptions made in this scope.
      */
     private val subscriptions: EventSubscriptions = object : EventSubscriptions {
@@ -409,7 +393,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override fun EventSubscription.withTimeout(
         timeout: Duration,
         timeoutHandler: suspend () -> Unit
-    ): Unit = withTimeout(timeout, callbacksCoroutineScope, timeoutHandler)
+    ): Unit = withTimeout(timeout, timeoutHandler)
 
     private fun triggerBeforePostHandlers() = callbacks {
         beforePostHandlers.forEach { it() }
@@ -441,6 +425,17 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
             )
         }
         serverErrorHandlers.forEach { it(e) }
+    }
+
+    /**
+     * Triggers [callbacks] inside a new synchronous blocking coroutine.
+     */
+    protected fun callbacks(callbacks: suspend () -> Unit) {
+        runBlocking {
+            launch {
+                callbacks()
+            }
+        }
     }
 
     override fun cancelAllSubscriptions() {
@@ -497,19 +492,6 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         }
         subscriptions
     }
-
-    /**
-     * Triggers [callbacks] inside of a [callbacksCoroutineScope], which is designed to
-     * be used for triggering consequences callbacks.
-     */
-    protected fun callbacks(callbacks: suspend () -> Unit) {
-        runBlocking {
-            launch {
-                callbacks()
-                yield()
-            }
-        }
-    }
 }
 
 /**
@@ -550,7 +532,6 @@ private class DeferredEventSubscription<E : EventMessage>(
 
     private class TimeoutParams(
         val timeout: Duration,
-        val timeoutCoroutineScope: CoroutineScope,
         val onTimeout: suspend () -> Unit
     )
 
@@ -582,20 +563,19 @@ private class DeferredEventSubscription<E : EventMessage>(
         }
         if (timeoutParams != null) {
             with(timeoutParams!!) {
-                actualSubscription!!.withTimeout(timeout, timeoutCoroutineScope, onTimeout)
+                actualSubscription!!.withTimeout(timeout, onTimeout)
             }
         }
     }
 
     override fun withTimeout(
         timeout: Duration,
-        timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit
     ) {
         if (actualSubscription == null) {
-            timeoutParams = TimeoutParams(timeout, timeoutCoroutineScope, onTimeout)
+            timeoutParams = TimeoutParams(timeout, onTimeout)
         } else {
-            actualSubscription!!.withTimeout(timeout, timeoutCoroutineScope, onTimeout)
+            actualSubscription!!.withTimeout(timeout, onTimeout)
         }
     }
 
