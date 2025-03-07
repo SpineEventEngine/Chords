@@ -92,7 +92,7 @@ public sealed class WindowType {
                 state = DialogState(
                     size = DpSize(dialog.width, dialog.height)
                 ),
-                onCloseRequest = { dialog.close() },
+                onCloseRequest = { dialog.cancel() },
                 onKeyEvent = { event ->
                     if (dialog.cancelAvailableInternal && event matches cancelShortcutKey.down) {
                         dialog.cancel()
