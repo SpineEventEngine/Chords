@@ -34,14 +34,13 @@ import io.spine.chords.client.appshell.client
 import io.spine.chords.client.layout.ModalCommandConsequences
 import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
-import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 
@@ -101,7 +100,7 @@ public open class CommandConsequences<C: CommandMessage>(
      */
     internal suspend fun postAndProcessConsequences(
         command: C
-    ): EventSubscriptions {
+    ): EventSubscriptions = withContext(NonCancellable) {
         val consequencesScope: CommandConsequencesScopeImpl<C> = createConsequencesScope(command)
 
         // NOTE: The `coroutineScope` property is not passed to the constructor,
@@ -109,7 +108,7 @@ public open class CommandConsequences<C: CommandMessage>(
         //       constructor of CommandConsequencesScopeImpl and leave only the
         //       essential data that cannot be inferred automatically there.
         consequencesScope.callbacksCoroutineScope = CoroutineScope(coroutineContext)
-        return consequencesScope.postAndProcessConsequences {
+        consequencesScope.postAndProcessConsequences {
             registerConsequences(consequencesScope)
         }
     }
@@ -127,6 +126,39 @@ public open class CommandConsequences<C: CommandMessage>(
      */
     protected open fun registerConsequences(consequencesScope: CommandConsequencesScope<C>) {
         consequences(consequencesScope)
+    }
+
+    public companion object {
+
+        /**
+         * A shortcut for the [CommandConsequences] constructor, which can be
+         * used to make [app.client.postCommand][Client.postCommand] calls
+         * more concise.
+         *
+         * As a result `postCommand` usage can look like this:
+         * ```
+         *     app.client.postCommand(command, consequences {
+         *         onEvent(
+         *             ItemImported::class.java,
+         *             ItemImported.Field.itemId(),
+         *             command.itemId
+         *         ) {
+         *             showMessage("Item imported")
+         *         }
+         *     })
+         * ```
+         *
+         * @param C A type of commands whose consequences are specified.
+         *
+         * @property consequences A lambda, which declares expected consequences
+         *   along with their handlers.
+         * @return The [ModalCommandConsequences] instance that was created.
+         */
+        public fun <C: CommandMessage> consequences(
+            consequences: CommandConsequencesScope<C>.() -> Unit
+        ): CommandConsequences<C> {
+            return CommandConsequences(consequences)
+        }
     }
 }
 
@@ -430,7 +462,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      */
     internal suspend fun postAndProcessConsequences(
         registerConsequences: () -> Unit
-    ): EventSubscriptions = withContext(IO) {
+    ): EventSubscriptions = withContext(IO + NonCancellable) {
         check(!used) {
             "`postAndProcessConsequences` cannot be invoked more than once " +
                     "on the same `CommandConsequencesScopeImpl` instance."
@@ -443,28 +475,25 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         // operation, and are considered a part of preparation for posting
         // of a command.
         triggerBeforePostHandlers()
-
-        launch {
-            try {
-                eventSubscriptions.forEach {
-                    if (it is DeferredEventSubscription<*>) {
-                        it.subscribe()
-                    }
+        try {
+            eventSubscriptions.forEach {
+                if (it is DeferredEventSubscription<*>) {
+                    it.subscribe()
                 }
-                initialSubscriptionsMade = true
-
-                val allSubscriptionsSuccessful = allSubscriptionsActive
-                if (allSubscriptionsSuccessful) {
-                    app.client.postCommand(command)
-                    triggerAcknowledgeHandlers()
-                } else {
-                    cancelAllSubscriptions()
-                }
-            } catch (e: ServerError) {
-                triggerServerErrorHandlers(e)
-            } catch (e: ServerCommunicationException) {
-                triggerNetworkErrorHandlers(e)
             }
+            initialSubscriptionsMade = true
+
+            val allSubscriptionsSuccessful = allSubscriptionsActive
+            if (allSubscriptionsSuccessful) {
+                app.client.postCommand(command)
+                triggerAcknowledgeHandlers()
+            } else {
+                cancelAllSubscriptions()
+            }
+        } catch (e: ServerError) {
+            triggerServerErrorHandlers(e)
+        } catch (e: ServerCommunicationException) {
+            triggerNetworkErrorHandlers(e)
         }
         subscriptions
     }
@@ -473,45 +502,12 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      * Triggers [callbacks] inside of a [callbacksCoroutineScope], which is designed to
      * be used for triggering consequences callbacks.
      */
-    protected fun callbacks(callbacks: suspend () -> Unit): Job {
-        check(callbacksCoroutineScope.isActive) { "Callbacks coroutine is not active. Make sure " +
-                "that the coroutine where `app.client.postCommand` is invoked is still active." }
-        return callbacksCoroutineScope.launch {
-            callbacks()
-            yield()
-        }
-    }
-
-    public companion object {
-
-        /**
-         * A shortcut for the [CommandConsequences] constructor, which can be
-         * used to make [app.client.postCommand][Client.postCommand] calls
-         * more concise.
-         *
-         * As a result `postCommand` usage can look like this:
-         * ```
-         *     app.client.postCommand(command, consequences {
-         *         onEvent(
-         *             ItemImported::class.java,
-         *             ItemImported.Field.itemId(),
-         *             command.itemId
-         *         ) {
-         *             showMessage("Item imported")
-         *         }
-         *     })
-         * ```
-         *
-         * @param C A type of commands whose consequences are specified.
-         *
-         * @property consequences A lambda, which declares expected consequences
-         *   along with their handlers.
-         * @return The [ModalCommandConsequences] instance that was created.
-         */
-        public fun <C: CommandMessage> consequences(
-            consequences: CommandConsequencesScope<C>.() -> Unit
-        ): CommandConsequences<C> {
-            return CommandConsequences(consequences)
+    protected fun callbacks(callbacks: suspend () -> Unit) {
+        runBlocking {
+            launch {
+                callbacks()
+                yield()
+            }
         }
     }
 }
