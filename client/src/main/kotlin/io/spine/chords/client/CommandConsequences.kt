@@ -36,13 +36,11 @@ import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 
 /**
  * Constitutes consequences, which can be expected after posting a command of
@@ -100,14 +98,8 @@ public open class CommandConsequences<C: CommandMessage>(
      */
     internal suspend fun postAndProcessConsequences(
         command: C
-    ): EventSubscriptions = coroutineScope {
+    ): EventSubscriptions = withContext(NonCancellable) {
         val consequencesScope: CommandConsequencesScopeImpl<C> = createConsequencesScope(command)
-
-        // NOTE: The `coroutineScope` property is not passed to the constructor,
-        //       but assigned separately intentionally in order to simplify the
-        //       constructor of CommandConsequencesScopeImpl and leave only the
-        //       essential data that cannot be inferred automatically there.
-        consequencesScope.callbacksCoroutineScope = this
         consequencesScope.postAndProcessConsequences {
             registerConsequences(consequencesScope)
         }
@@ -126,6 +118,39 @@ public open class CommandConsequences<C: CommandMessage>(
      */
     protected open fun registerConsequences(consequencesScope: CommandConsequencesScope<C>) {
         consequences(consequencesScope)
+    }
+
+    public companion object {
+
+        /**
+         * A shortcut for the [CommandConsequences] constructor, which can be
+         * used to make [app.client.postCommand][Client.postCommand] calls
+         * more concise.
+         *
+         * As a result `postCommand` usage can look like this:
+         * ```
+         *     app.client.postCommand(command, consequences {
+         *         onEvent(
+         *             ItemImported::class.java,
+         *             ItemImported.Field.itemId(),
+         *             command.itemId
+         *         ) {
+         *             showMessage("Item imported")
+         *         }
+         *     })
+         * ```
+         *
+         * @param C A type of commands whose consequences are specified.
+         *
+         * @property consequences A lambda, which declares expected consequences
+         *   along with their handlers.
+         * @return The [ModalCommandConsequences] instance that was created.
+         */
+        public fun <C: CommandMessage> consequences(
+            consequences: CommandConsequencesScope<C>.() -> Unit
+        ): CommandConsequences<C> {
+            return CommandConsequences(consequences)
+        }
     }
 }
 
@@ -294,14 +319,6 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
 ) : CommandConsequencesScope<C> {
 
     /**
-     * A [CoroutineScope] used to invoke consequence handlers.
-     *
-     * This property is automatically initialized by the internal
-     * [CommandConsequences.postAndProcessConsequences] method.
-     */
-    internal lateinit var callbacksCoroutineScope: CoroutineScope
-
-    /**
      * Allows to manage subscriptions made in this scope.
      */
     private val subscriptions: EventSubscriptions = object : EventSubscriptions {
@@ -376,7 +393,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
     override fun EventSubscription.withTimeout(
         timeout: Duration,
         timeoutHandler: suspend () -> Unit
-    ): Unit = withTimeout(timeout, callbacksCoroutineScope, timeoutHandler)
+    ): Unit = withTimeout(timeout, timeoutHandler)
 
     private fun triggerBeforePostHandlers() = callbacks {
         beforePostHandlers.forEach { it() }
@@ -410,6 +427,17 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         serverErrorHandlers.forEach { it(e) }
     }
 
+    /**
+     * Triggers [callbacks] inside a new synchronous blocking coroutine.
+     */
+    protected fun callbacks(callbacks: suspend () -> Unit) {
+        runBlocking {
+            launch {
+                callbacks()
+            }
+        }
+    }
+
     override fun cancelAllSubscriptions() {
         subscriptions.cancelAll()
     }
@@ -429,7 +457,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      */
     internal suspend fun postAndProcessConsequences(
         registerConsequences: () -> Unit
-    ): EventSubscriptions = withContext(IO) {
+    ): EventSubscriptions = withContext(IO + NonCancellable) {
         check(!used) {
             "`postAndProcessConsequences` cannot be invoked more than once " +
                     "on the same `CommandConsequencesScopeImpl` instance."
@@ -442,72 +470,27 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         // operation, and are considered a part of preparation for posting
         // of a command.
         triggerBeforePostHandlers()
-
-        launch {
-            try {
-                eventSubscriptions.forEach {
-                    if (it is DeferredEventSubscription<*>) {
-                        it.subscribe()
-                    }
-                    initialSubscriptionsMade = true
+        try {
+            eventSubscriptions.forEach {
+                if (it is DeferredEventSubscription<*>) {
+                    it.subscribe()
                 }
-
-                val allSubscriptionsSuccessful = allSubscriptionsActive
-                if (allSubscriptionsSuccessful) {
-                    app.client.postCommand(command)
-                    triggerAcknowledgeHandlers()
-                } else {
-                    cancelAllSubscriptions()
-                }
-            } catch (e: ServerError) {
-                triggerServerErrorHandlers(e)
-            } catch (e: ServerCommunicationException) {
-                triggerNetworkErrorHandlers(e)
             }
+            initialSubscriptionsMade = true
+
+            val allSubscriptionsSuccessful = allSubscriptionsActive
+            if (allSubscriptionsSuccessful) {
+                app.client.postCommand(command)
+                triggerAcknowledgeHandlers()
+            } else {
+                cancelAllSubscriptions()
+            }
+        } catch (e: ServerError) {
+            triggerServerErrorHandlers(e)
+        } catch (e: ServerCommunicationException) {
+            triggerNetworkErrorHandlers(e)
         }
         subscriptions
-    }
-
-    /**
-     * Triggers [callbacks] inside of a [callbacksCoroutineScope], which is designed to
-     * be used for triggering consequences callbacks.
-     */
-    protected fun callbacks(callbacks: suspend () -> Unit): Job = callbacksCoroutineScope.launch {
-        callbacks()
-        yield()
-    }
-
-    public companion object {
-
-        /**
-         * A shortcut for the [CommandConsequences] constructor, which can be
-         * used to make [app.client.postCommand][Client.postCommand] calls
-         * more concise.
-         *
-         * As a result `postCommand` usage can look like this:
-         * ```
-         *     app.client.postCommand(command, consequences {
-         *         onEvent(
-         *             ItemImported::class.java,
-         *             ItemImported.Field.itemId(),
-         *             command.itemId
-         *         ) {
-         *             showMessage("Item imported")
-         *         }
-         *     })
-         * ```
-         *
-         * @param C A type of commands whose consequences are specified.
-         *
-         * @property consequences A lambda, which declares expected consequences
-         *   along with their handlers.
-         * @return The [ModalCommandConsequences] instance that was created.
-         */
-        public fun <C: CommandMessage> consequences(
-            consequences: CommandConsequencesScope<C>.() -> Unit
-        ): CommandConsequences<C> {
-            return CommandConsequences(consequences)
-        }
     }
 }
 
@@ -549,7 +532,6 @@ private class DeferredEventSubscription<E : EventMessage>(
 
     private class TimeoutParams(
         val timeout: Duration,
-        val timeoutCoroutineScope: CoroutineScope,
         val onTimeout: suspend () -> Unit
     )
 
@@ -581,20 +563,19 @@ private class DeferredEventSubscription<E : EventMessage>(
         }
         if (timeoutParams != null) {
             with(timeoutParams!!) {
-                actualSubscription!!.withTimeout(timeout, timeoutCoroutineScope, onTimeout)
+                actualSubscription!!.withTimeout(timeout, onTimeout)
             }
         }
     }
 
     override fun withTimeout(
         timeout: Duration,
-        timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit
     ) {
         if (actualSubscription == null) {
-            timeoutParams = TimeoutParams(timeout, timeoutCoroutineScope, onTimeout)
+            timeoutParams = TimeoutParams(timeout, onTimeout)
         } else {
-            actualSubscription!!.withTimeout(timeout, timeoutCoroutineScope, onTimeout)
+            actualSubscription!!.withTimeout(timeout, onTimeout)
         }
     }
 
