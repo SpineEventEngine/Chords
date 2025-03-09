@@ -251,6 +251,25 @@ public abstract class Dialog : Component() {
     public var look: Look = Look()
 
     /**
+     * Setting to `true` allows the parent dialog to be closed before closing
+     * this dialog.
+     *
+     * By default, a modal dialog can only be [closed][close] only if no nested
+     * modal dialogs are currently shown. An attempt to invoke the [close]
+     * method on such a "parent" dialog will throw an exception, which means
+     * that a nested dialog normally has to be closed before trying to close the
+     * parent one.
+     *
+     * Setting [dismissibleWithParent] to `true` on a nested dialog changes this
+     * behavior and allows the parent dialog to close such nested dialog
+     * automatically when it closes. Note that if there's a deeper chain of
+     * nested dialogs, then having [dismissibleWithParent] equal to `false` in at
+     * least one of nested dialogs would still prevent the parent dialog
+     * from being closed.
+     */
+    public var dismissibleWithParent: Boolean = false
+
+    /**
      * An object allowing adjustments of visual appearance parameters.
      *
      * @param padding The padding applied to the entire content of the dialog.
@@ -413,6 +432,9 @@ public abstract class Dialog : Component() {
     /**
      * Closes the dialog while ignoring any data that might have been
      * possibly entered in the dialog currently.
+     *
+     * @throws IllegalStateException If the dialog cannot be closed due to a
+     *   nested modal dialog that is currently open.
      */
     public open fun close() {
         app.ui.closeDialog(this)
@@ -605,9 +627,13 @@ public abstract class Dialog : Component() {
     internal fun closeNestedDialog(dialog: Dialog) {
         checkNotNull(nestedDialog) { "This dialog is not displayed currently." }
         if (dialog == nestedDialog) {
-            check(dialog.nestedDialog == null) {
-                "Cannot close a dialog ${dialog.javaClass.simpleName} while it has a " +
-                        "nested dialog open: ${dialog.nestedDialog!!.javaClass.simpleName}."
+            if (dialog.nestedDialog != null) {
+                if (dialog.nestedDialog!!.dismissibleWithParent) {
+                    dialog.nestedDialog!!.close()
+                } else {
+                    error("Cannot close a dialog ${dialog.javaClass.simpleName} while it has a " +
+                          "nested dialog open: ${dialog.nestedDialog!!.javaClass.simpleName}.")
+                }
             }
             nestedDialog = null
         } else {
