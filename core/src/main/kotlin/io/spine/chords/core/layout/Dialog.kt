@@ -607,7 +607,7 @@ public abstract class Dialog : Component() {
         if (dialog == nestedDialog) {
             check(dialog.nestedDialog == null) {
                 "Cannot close a dialog ${dialog.javaClass.simpleName} while it has a " +
-                        "nested dialog open ${dialog.nestedDialog!!.javaClass.simpleName}."
+                        "nested dialog open: ${dialog.nestedDialog!!.javaClass.simpleName}."
             }
             nestedDialog = null
         } else {

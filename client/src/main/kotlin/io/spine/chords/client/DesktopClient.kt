@@ -242,7 +242,9 @@ public class DesktopClient(
                 })
                 .post()
         } catch (e: StatusRuntimeException) {
-            onNetworkError?.invoke(e)
+            if (eventSubscription.active) {
+                onNetworkError?.invoke(e)
+            }
         }
         return eventSubscription
     }

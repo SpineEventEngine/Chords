@@ -197,7 +197,7 @@ public class AppWindow(
             val nestedDialog = bottomDialog!!.nestedDialog
             check(nestedDialog == null) {
                 "Cannot close a dialog ${dialog.javaClass.simpleName} while it has a " +
-                        "nested dialog open ${nestedDialog!!.javaClass.simpleName}."
+                        "nested dialog open: ${nestedDialog!!.javaClass.simpleName}."
             }
             bottomDialog = null
         } else {
