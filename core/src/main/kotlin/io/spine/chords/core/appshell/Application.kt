@@ -359,6 +359,8 @@ internal constructor(private val appWindow: AppWindow) {
      * [Dialog]s to be able to control their display lifecycle.
      *
      * @param dialog The dialog that needs to be closed.
+     * @throws IllegalStateException If the dialog cannot be closed due to a
+     *   nested modal dialog that is currently open.
      * @see openDialog
      */
     internal fun closeDialog(dialog: Dialog) {

@@ -44,12 +44,10 @@ import io.spine.client.EventFilter.eq
 import io.spine.client.Subscription
 import io.spine.core.UserId
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
+import kotlinx.coroutines.runBlocking
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -238,12 +236,16 @@ public class DesktopClient(
                     onEvent(evt)
                 }
                 .onStreamingError({ err ->
-                    eventSubscription.cancel()
-                    onNetworkError?.invoke(err)
+                    if (!eventSubscription.canceled) {
+                        eventSubscription.cancel()
+                        onNetworkError?.invoke(err)
+                    }
                 })
                 .post()
         } catch (e: StatusRuntimeException) {
-            onNetworkError?.invoke(e)
+            if (!eventSubscription.canceled) {
+                onNetworkError?.invoke(e)
+            }
         }
         return eventSubscription
     }
@@ -307,6 +309,20 @@ internal open class EventSubscriptionImpl(
     override val active: Boolean get() = subscription != null
 
     /**
+     * A flag specifying whether the subscription has been canceled.
+     *
+     * It is the same as ![active] with one difference. Since the subscription
+     * activation can take a notable period of time (especially with network
+     * connectivity issues), it is possible that the subscription can be
+     * canceled _before_ its activation completes. This property allows
+     * distinguishing this scenario.
+     *
+     * It is only needed internally because [Client.onEvent] returns only after
+     * the subscription has been activated or after its activation has failed.
+     */
+    internal var canceled = false
+
+    /**
      * A Spine [Subscription], which was made, or `null` if it either hasn't
      * been made yet, or cancelled already.
      */
@@ -314,30 +330,31 @@ internal open class EventSubscriptionImpl(
 
     private var timeoutJob: Job? = null
 
-    @OptIn(ExperimentalTime::class)
     override fun withTimeout(
         timeout: Duration,
-        timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit,
     ) {
         cancelTimeout()
-        timeoutJob = timeoutCoroutineScope.launch {
-            delay(timeout)
-            if (timeoutJob != null) {
-                // Event subscription should be cancelled BEFORE calling the
-                // timeout callback to prevent a condition when both an event
-                // callback and its timeout callback have been invoked.
-                cancelSubscription()
+        Thread {
+            runBlocking {
+                timeoutJob = launch {
+                    delay(timeout)
+                    if (timeoutJob != null) {
+                        // Event subscription should be cancelled BEFORE calling the
+                        // timeout callback to prevent a condition when both an event
+                        // callback and its timeout callback have been invoked.
+                        cancelSubscription()
 
-                onTimeout()
-                yield()
+                        onTimeout()
 
-                // Timeout job should be canceled AFTER invoking a callback
-                // to ensure that `onTimeout` callback's coroutine scope still
-                // works normally.
-                cancelTimeout()
+                        // Timeout job should be canceled AFTER invoking a callback
+                        // to ensure that `onTimeout` callback's coroutine scope still
+                        // works normally.
+                        cancelTimeout()
+                    }
+                }
             }
-        }
+        }.start()
     }
 
     /**
@@ -358,6 +375,7 @@ internal open class EventSubscriptionImpl(
             spineClient.subscriptions().cancel(subscription!!)
             subscription = null
         }
+        canceled = true
     }
 
     private fun cancelTimeout() {
