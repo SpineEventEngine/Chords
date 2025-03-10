@@ -36,7 +36,10 @@ import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -336,12 +339,6 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
     private var initialSubscriptionsMade = false
 
     /**
-     * Returns `true` if all event subscriptions that have been made using the
-     * [onEvent] method are active.
-     */
-    private val allSubscriptionsActive: Boolean get() = eventSubscriptions.all { it.active }
-
-    /**
      * Specifies whether this instance has already been used by
      * invoking [postAndProcessConsequences].
      */
@@ -455,6 +452,10 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      * @return An object, which allows managing (e.g. cancelling) all event
      *   subscriptions made by [registerConsequences].
      */
+    @OptIn(
+        // We don't need the posting job to be canceled automatically.
+        DelicateCoroutinesApi::class
+    )
     internal suspend fun postAndProcessConsequences(
         registerConsequences: () -> Unit
     ): EventSubscriptions = withContext(IO + NonCancellable) {
@@ -464,31 +465,32 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         }
         used = true
         registerConsequences()
-
-        // "Before post" handlers should be triggered before making
-        // subscriptions, since subscriptions require a time-consuming network
-        // operation, and are considered a part of preparation for posting
-        // of a command.
-        triggerBeforePostHandlers()
-        try {
-            eventSubscriptions.forEach {
-                if (it is DeferredEventSubscription<*>) {
-                    it.subscribe()
+        GlobalScope.launch {
+            // "Before post" handlers should be triggered before making
+            // subscriptions, since subscriptions require a time-consuming network
+            // operation, and are considered a part of preparation for posting
+            // of a command.
+            triggerBeforePostHandlers()
+            try {
+                eventSubscriptions.forEach {
+                    if (it is DeferredEventSubscription<*>) {
+                        it.subscribe()
+                    }
                 }
-            }
-            initialSubscriptionsMade = true
+                initialSubscriptionsMade = true
 
-            val allSubscriptionsSuccessful = allSubscriptionsActive
-            if (allSubscriptionsSuccessful) {
-                app.client.postCommand(command)
-                triggerAcknowledgeHandlers()
-            } else {
-                cancelAllSubscriptions()
+                val allSubscriptionsSuccessful = eventSubscriptions.all { it.active }
+                if (allSubscriptionsSuccessful) {
+                    app.client.postCommand(command)
+                    triggerAcknowledgeHandlers()
+                } else {
+                    cancelAllSubscriptions()
+                }
+            } catch (e: ServerError) {
+                triggerServerErrorHandlers(e)
+            } catch (e: ServerCommunicationException) {
+                triggerNetworkErrorHandlers(e)
             }
-        } catch (e: ServerError) {
-            triggerServerErrorHandlers(e)
-        } catch (e: ServerCommunicationException) {
-            triggerNetworkErrorHandlers(e)
         }
         subscriptions
     }
@@ -535,13 +537,14 @@ private class DeferredEventSubscription<E : EventMessage>(
         val onTimeout: suspend () -> Unit
     )
 
-    private var subscriptionParams: SubscriptionParams<E>? =
+    private var subscriptionParams: SubscriptionParams<E> =
         SubscriptionParams(event, field, fieldValue, onNetworkError, onEvent)
+    private var canceled = false
 
     private var timeoutParams: TimeoutParams? = null
     private var actualSubscription: EventSubscription? = null
 
-    override val active: Boolean get() = actualSubscription?.active ?: true
+    override val active: Boolean get() = actualSubscription?.active ?: false
 
     /**
      * Subscribes to the event according to the parameters passed to the
@@ -554,12 +557,23 @@ private class DeferredEventSubscription<E : EventMessage>(
         check(actualSubscription == null) {
             "Subscription has already been made: `subscribe()` should be invoked only once."
         }
-        if (subscriptionParams == null) {
-            // Subscription has been cancelled.
+        if (canceled) {
             return
         }
-        actualSubscription = with(subscriptionParams!!) {
-            app.client.onEvent(event, field, fieldValue, onNetworkError, onEvent)
+        actualSubscription = with(subscriptionParams) {
+            app.client.onEvent(event, field, fieldValue, {
+                val canceledWhileSubscribing = canceled
+
+                // A subscription can be canceled while it is still in the
+                // process of making a subscription. This can in particular be
+                // the case if there are network connectivity issues, in which
+                // case the `app.client.onEvent` call above can take 10+ seconds
+                // before it synchronously admits a network failure (or succeeds
+                // after some retries).
+                if (!canceledWhileSubscribing) {
+                    onNetworkError?.invoke(it)
+                }
+            }, onEvent)
         }
         val subscriptionSuccessful = actualSubscription!!.active
         if (subscriptionSuccessful && timeoutParams != null) {
@@ -581,10 +595,7 @@ private class DeferredEventSubscription<E : EventMessage>(
     }
 
     override fun cancel() {
-        if (actualSubscription == null) {
-            subscriptionParams = null
-        } else {
-            actualSubscription!!.cancel()
-        }
+        actualSubscription?.cancel()
+        canceled = true
     }
 }

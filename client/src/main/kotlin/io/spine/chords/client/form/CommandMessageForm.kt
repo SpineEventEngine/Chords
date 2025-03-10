@@ -352,8 +352,6 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      */
     private var activeSubscriptions: MutableList<EventSubscriptions> = ArrayList()
 
-
-
     override fun initialize() {
         super.initialize()
         requireProperty(this::commandConsequences.isInitialized, "commandConsequences")
