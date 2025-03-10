@@ -561,7 +561,8 @@ private class DeferredEventSubscription<E : EventMessage>(
         actualSubscription = with(subscriptionParams!!) {
             app.client.onEvent(event, field, fieldValue, onNetworkError, onEvent)
         }
-        if (timeoutParams != null) {
+        val subscriptionSuccessful = actualSubscription!!.active
+        if (subscriptionSuccessful && timeoutParams != null) {
             with(timeoutParams!!) {
                 actualSubscription!!.withTimeout(timeout, onTimeout)
             }
