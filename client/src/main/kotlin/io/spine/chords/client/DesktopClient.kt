@@ -37,8 +37,6 @@ import io.spine.base.EntityState
 import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
-import io.spine.chords.client.appshell.client
-import io.spine.chords.core.appshell.app
 import io.spine.client.ClientRequest
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
@@ -81,30 +79,12 @@ public class DesktopClient(
         spineClient = io.spine.client.Client.usingChannel(channel).build()
 
         Runtime.getRuntime().addShutdownHook(Thread {
-            println("  CLOSING SPINE CLIENT")
             spineClient.close()
-            println("  SPINE CLIENT CLOSED")
-
-//            println()
-//            println("  SHUTDOWN HOOK: CANCELING ACTIVE SUBSCRIPTIONS " +
-//                    "(${activeSubscriptions.size} remaining):")
-//            val subscriptions = spineClient.subscriptions()
-//            subscriptions.cancelAll()
-//            spineClient.close()
-////            activeSubscriptions.forEach {
-////                println("   *** Canceling subscription for type: ${it.topic.target.type}")
-////                subscriptions.cancel(it)
-////            }
-//            println("  SUBSCRIPTION CANCELING COMPLETE!")
-//            println()
         })
     }
 
     public override val userId: UserId?
         get() = user()
-
-    private val activeSubscriptions = ArrayList<Subscription>()
-    private val canceledSubscriptions = ArrayList<Subscription>()
 
     /**
      * Reads the list of entities with the [entityClass] class into [targetList]
@@ -124,38 +104,13 @@ public class DesktopClient(
     ) {
         targetList.value = clientRequest().select(entityClass).run()
 
-        println("     Making subscription in " +
-                "DesktopClient.readAndObserver(${entityClass.simpleName})")
-        val subscription = clientRequest()
+        clientRequest()
             .subscribeTo(entityClass)
             .observe { entity ->
                 updateList(targetList, entity, extractId)
             }
             .post()
-        subscriptionMade(subscription)
     }
-
-    private fun subscriptionMade(subscription: Subscription) {
-        activeSubscriptions += subscription
-
-        println()
-        println("   ***  SUBSCRIPTION MADE: ${subscription.topic.target.type})  " +
-                "Total: $subscriptionsStr  ***" )
-        println()
-    }
-
-    internal fun subscriptionCanceled(subscription: Subscription) {
-        activeSubscriptions -= subscription
-        canceledSubscriptions += subscription
-        println()
-        println("   ***  SUBSCRIPTION CANCELED: ${subscription.topic.target.type})  " +
-                "Total: $subscriptionsStr  ***" )
-        println()
-    }
-
-    private val subscriptionsStr get() = "${activeSubscriptions.size}/" +
-            "${activeSubscriptions.size + canceledSubscriptions.size}"
-
 
     /**
      * Reads all entities of type [entityClass] that match the given
@@ -191,9 +146,7 @@ public class DesktopClient(
         onNext(initialResult)
 
         val observedEntities = mutableStateOf(initialResult)
-        println("     Making subscription in " +
-                "DesktopClient.readAndObserve(${entityClass.simpleName})")
-        val subscription = clientRequest()
+        clientRequest()
             .subscribeTo(entityClass)
             .observe { updatedEntity ->
                 updateList(observedEntities, updatedEntity, extractId)
@@ -201,7 +154,6 @@ public class DesktopClient(
             }
             .where(observeFilters)
             .post()
-        subscriptionMade(subscription)
     }
 
     /**
@@ -280,7 +232,6 @@ public class DesktopClient(
     ): EventSubscription {
         val eventSubscription = EventSubscriptionImpl(spineClient)
         try {
-            println("     Making subscription in DesktopClient.onEvent(${event.simpleName})")
             eventSubscription.subscription = clientRequest()
                 .subscribeToEvent(event)
                 .where(eq(field, fieldValue))
@@ -295,7 +246,6 @@ public class DesktopClient(
                     }
                 })
                 .post()
-            subscriptionMade(eventSubscription.subscription!!)
         } catch (e: StatusRuntimeException) {
             if (!eventSubscription.canceled) {
                 onNetworkError?.invoke(e)
@@ -427,7 +377,6 @@ internal open class EventSubscriptionImpl(
     private fun cancelSubscription() {
         if (subscription != null) {
             spineClient.subscriptions().cancel(subscription!!)
-            (app.client as DesktopClient).subscriptionCanceled(subscription!!)
             subscription = null
         }
         canceled = true
