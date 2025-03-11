@@ -39,10 +39,8 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 
 /**
  * Constitutes consequences, which can be expected after posting a command of
@@ -98,11 +96,9 @@ public open class CommandConsequences<C: CommandMessage>(
      * @return An object, which allows managing (e.g. cancelling) all event
      *   subscriptions made by this method according to [consequences].
      */
-    internal suspend fun postAndProcessConsequences(
-        command: C
-    ): EventSubscriptions = withContext(NonCancellable) {
-        val consequencesScope: CommandConsequencesScopeImpl<C> = createConsequencesScope(command)
-        consequencesScope.postAndProcessConsequences {
+    internal fun postAndProcessConsequences(command: C): EventSubscriptions {
+        val consequencesScope = createConsequencesScope(command)
+        return consequencesScope.postAndProcessConsequences {
             registerConsequences(consequencesScope)
         }
     }
@@ -282,9 +278,15 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      *   is not emitted within the specified [timeout] period after invoking
      *   this method.
      */
+    @Suppress(
+        // Just introducing a default value, whose invocation syntax won't
+        // be shadowed by the `withTimeout` member of `EventSubscription`.
+        "EXTENSION_SHADOWED_BY_MEMBER"
+    )
     public fun EventSubscription.withTimeout(
         timeout: Duration = defaultTimeout,
-        timeoutHandler: suspend () -> Unit)
+        timeoutHandler: suspend () -> Unit
+    ): Unit = withTimeout(timeout, timeoutHandler)
 
     /**
      * Registers the callback, which is invoked if a network communication
@@ -386,11 +388,6 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         return subscription
     }
 
-    override fun EventSubscription.withTimeout(
-        timeout: Duration,
-        timeoutHandler: suspend () -> Unit
-    ): Unit = withTimeout(timeout, timeoutHandler)
-
     private fun triggerBeforePostHandlers() = callbacks {
         beforePostHandlers.forEach { it() }
     }
@@ -424,13 +421,11 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
     }
 
     /**
-     * Triggers [callbacks] inside a new synchronous blocking coroutine.
+     * Launches [callbacks] inside a new synchronous blocking coroutine.
      */
-    protected fun callbacks(callbacks: suspend () -> Unit) {
-        runBlocking {
-            launch {
-                callbacks()
-            }
+    protected fun callbacks(callbacks: suspend () -> Unit): Unit = runBlocking {
+        launch {
+            callbacks()
         }
     }
 
@@ -455,16 +450,16 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         // We don't need the posting job to be canceled automatically.
         DelicateCoroutinesApi::class
     )
-    internal suspend fun postAndProcessConsequences(
+    internal fun postAndProcessConsequences(
         registerConsequences: () -> Unit
-    ): EventSubscriptions = withContext(IO + NonCancellable) {
+    ): EventSubscriptions {
         check(!used) {
             "`postAndProcessConsequences` cannot be invoked more than once " +
                     "on the same `CommandConsequencesScopeImpl` instance."
         }
         used = true
         registerConsequences()
-        GlobalScope.launch {
+        GlobalScope.launch(IO) {
             // "Before post" handlers should be triggered before making
             // subscriptions, since subscriptions require a time-consuming network
             // operation, and are considered a part of preparation for posting
@@ -491,7 +486,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
                 triggerNetworkErrorHandlers(e)
             }
         }
-        subscriptions
+        return subscriptions
     }
 }
 

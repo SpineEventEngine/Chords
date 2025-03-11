@@ -119,8 +119,8 @@ import kotlin.time.Duration
      * Posts the given [command], and runs handlers for any of the consequences
      * specified with [consequences].
      *
-     * All registered command consequence handlers except event handlers are
-     * invoked synchronously before this suspending method returns.
+     * The command is posted asynchronously and all registered command
+     * consequence handlers are invoked asynchronously as well.
      *
      * Here's a simple usage example, which just includes a subscription to an
      * event expected to be emitted as a consequence of posting
@@ -207,7 +207,7 @@ import kotlin.time.Duration
      *   [consequences] parameter.
      * @see CommandConsequencesScope
      */
-    public suspend fun <C : CommandMessage> postCommand(
+    public fun <C : CommandMessage> postCommand(
         command: C,
         consequences: CommandConsequences<C>
     ): EventSubscriptions

@@ -43,11 +43,14 @@ import io.spine.client.CompositeQueryFilter
 import io.spine.client.EventFilter.eq
 import io.spine.client.Subscription
 import io.spine.core.UserId
+import java.lang.Runtime.getRuntime
 import kotlin.time.Duration
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -78,7 +81,7 @@ public class DesktopClient(
             .build()
         spineClient = io.spine.client.Client.usingChannel(channel).build()
 
-        Runtime.getRuntime().addShutdownHook(Thread {
+        getRuntime().addShutdownHook(Thread {
             spineClient.close()
         })
     }
@@ -212,7 +215,7 @@ public class DesktopClient(
      *
      * See the [Client.postCommand] documentation for details.
      */
-    public override suspend fun <C : CommandMessage> postCommand(
+    public override fun <C : CommandMessage> postCommand(
         command: C,
         consequences: CommandConsequences<C>
     ): EventSubscriptions = consequences.postAndProcessConsequences(command)
@@ -334,31 +337,31 @@ internal open class EventSubscriptionImpl(
 
     private var timeoutJob: Job? = null
 
+    @OptIn(
+        // Timeout coroutine is canceled manually on demand.
+        DelicateCoroutinesApi::class
+    )
     override fun withTimeout(
         timeout: Duration,
         onTimeout: suspend () -> Unit,
     ) {
         cancelTimeout()
-        Thread {
-            runBlocking {
-                timeoutJob = launch {
-                    delay(timeout)
-                    if (timeoutJob != null) {
-                        // Event subscription should be cancelled BEFORE calling the
-                        // timeout callback to prevent a condition when both an event
-                        // callback and its timeout callback have been invoked.
-                        cancelSubscription()
+        timeoutJob = GlobalScope.launch(IO) {
+            delay(timeout)
+            if (timeoutJob != null) {
+                // Event subscription should be cancelled BEFORE calling the
+                // timeout callback to prevent a condition when both an event
+                // callback and its timeout callback have been invoked.
+                cancelSubscription()
 
-                        onTimeout()
+                onTimeout()
 
-                        // Timeout job should be canceled AFTER invoking a callback
-                        // to ensure that `onTimeout` callback's coroutine scope still
-                        // works normally.
-                        cancelTimeout()
-                    }
-                }
+                // Timeout job should be canceled AFTER invoking a callback
+                // to ensure that `onTimeout` callback's coroutine scope still
+                // works normally.
+                cancelTimeout()
             }
-        }.start()
+        }
     }
 
     /**
