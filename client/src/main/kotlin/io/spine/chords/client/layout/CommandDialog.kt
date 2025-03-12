@@ -39,6 +39,7 @@ import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.client.layout.ModalCommandConsequences.Companion.consequences
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.SubmitOrCancelDialog
+import io.spine.chords.core.writeOnce
 import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
@@ -85,7 +86,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      * The [CommandMessageForm] used as a container for the message
      * field editors.
      */
-    private lateinit var commandMessageForm: CommandMessageForm<C>
+    private var commandMessageForm: CommandMessageForm<C> by writeOnce()
 
     override fun updateProps() {
         super.updateProps()

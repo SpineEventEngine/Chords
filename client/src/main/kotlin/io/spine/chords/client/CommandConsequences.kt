@@ -36,13 +36,11 @@ import io.spine.chords.core.DefaultPropsOwnerBase
 import io.spine.chords.core.appshell.app
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
+import kotlinx.coroutines.runBlocking
 
 /**
  * Constitutes consequences, which can be expected after posting a command of
@@ -98,17 +96,9 @@ public open class CommandConsequences<C: CommandMessage>(
      * @return An object, which allows managing (e.g. cancelling) all event
      *   subscriptions made by this method according to [consequences].
      */
-    internal suspend fun postAndProcessConsequences(
-        command: C
-    ): EventSubscriptions = coroutineScope {
-        val consequencesScope: CommandConsequencesScopeImpl<C> = createConsequencesScope(command)
-
-        // NOTE: The `coroutineScope` property is not passed to the constructor,
-        //       but assigned separately intentionally in order to simplify the
-        //       constructor of CommandConsequencesScopeImpl and leave only the
-        //       essential data that cannot be inferred automatically there.
-        consequencesScope.callbacksCoroutineScope = this
-        consequencesScope.postAndProcessConsequences {
+    internal fun postAndProcessConsequences(command: C): EventSubscriptions {
+        val consequencesScope = createConsequencesScope(command)
+        return consequencesScope.postAndProcessConsequences {
             registerConsequences(consequencesScope)
         }
     }
@@ -126,6 +116,39 @@ public open class CommandConsequences<C: CommandMessage>(
      */
     protected open fun registerConsequences(consequencesScope: CommandConsequencesScope<C>) {
         consequences(consequencesScope)
+    }
+
+    public companion object {
+
+        /**
+         * A shortcut for the [CommandConsequences] constructor, which can be
+         * used to make [app.client.postCommand][Client.postCommand] calls
+         * more concise.
+         *
+         * As a result `postCommand` usage can look like this:
+         * ```
+         *     app.client.postCommand(command, consequences {
+         *         onEvent(
+         *             ItemImported::class.java,
+         *             ItemImported.Field.itemId(),
+         *             command.itemId
+         *         ) {
+         *             showMessage("Item imported")
+         *         }
+         *     })
+         * ```
+         *
+         * @param C A type of commands whose consequences are specified.
+         *
+         * @property consequences A lambda, which declares expected consequences
+         *   along with their handlers.
+         * @return The [ModalCommandConsequences] instance that was created.
+         */
+        public fun <C: CommandMessage> consequences(
+            consequences: CommandConsequencesScope<C>.() -> Unit
+        ): CommandConsequences<C> {
+            return CommandConsequences(consequences)
+        }
     }
 }
 
@@ -255,9 +278,15 @@ public interface CommandConsequencesScope<out C: CommandMessage> {
      *   is not emitted within the specified [timeout] period after invoking
      *   this method.
      */
+    @Suppress(
+        // Just introducing a default value, whose invocation syntax won't
+        // be shadowed by the `withTimeout` member of `EventSubscription`.
+        "EXTENSION_SHADOWED_BY_MEMBER"
+    )
     public fun EventSubscription.withTimeout(
         timeout: Duration = defaultTimeout,
-        timeoutHandler: suspend () -> Unit)
+        timeoutHandler: suspend () -> Unit
+    ): Unit = withTimeout(timeout, timeoutHandler)
 
     /**
      * Registers the callback, which is invoked if a network communication
@@ -294,14 +323,6 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
 ) : CommandConsequencesScope<C> {
 
     /**
-     * A [CoroutineScope] used to invoke consequence handlers.
-     *
-     * This property is automatically initialized by the internal
-     * [CommandConsequences.postAndProcessConsequences] method.
-     */
-    internal lateinit var callbacksCoroutineScope: CoroutineScope
-
-    /**
      * Allows to manage subscriptions made in this scope.
      */
     private val subscriptions: EventSubscriptions = object : EventSubscriptions {
@@ -317,12 +338,6 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      * to `true`.
      */
     private var initialSubscriptionsMade = false
-
-    /**
-     * Returns `true` if all event subscriptions that have been made using the
-     * [onEvent] method are active.
-     */
-    private val allSubscriptionsActive: Boolean get() = eventSubscriptions.all { it.active }
 
     /**
      * Specifies whether this instance has already been used by
@@ -373,11 +388,6 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         return subscription
     }
 
-    override fun EventSubscription.withTimeout(
-        timeout: Duration,
-        timeoutHandler: suspend () -> Unit
-    ): Unit = withTimeout(timeout, callbacksCoroutineScope, timeoutHandler)
-
     private fun triggerBeforePostHandlers() = callbacks {
         beforePostHandlers.forEach { it() }
     }
@@ -410,6 +420,15 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
         serverErrorHandlers.forEach { it(e) }
     }
 
+    /**
+     * Launches [callbacks] inside a new synchronous blocking coroutine.
+     */
+    protected fun callbacks(callbacks: suspend () -> Unit): Unit = runBlocking {
+        launch {
+            callbacks()
+        }
+    }
+
     override fun cancelAllSubscriptions() {
         subscriptions.cancelAll()
     }
@@ -427,32 +446,34 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
      * @return An object, which allows managing (e.g. cancelling) all event
      *   subscriptions made by [registerConsequences].
      */
-    internal suspend fun postAndProcessConsequences(
+    @OptIn(
+        // We don't need the posting job to be canceled automatically.
+        DelicateCoroutinesApi::class
+    )
+    internal fun postAndProcessConsequences(
         registerConsequences: () -> Unit
-    ): EventSubscriptions = withContext(IO) {
+    ): EventSubscriptions {
         check(!used) {
             "`postAndProcessConsequences` cannot be invoked more than once " +
                     "on the same `CommandConsequencesScopeImpl` instance."
         }
         used = true
         registerConsequences()
-
-        // "Before post" handlers should be triggered before making
-        // subscriptions, since subscriptions require a time-consuming network
-        // operation, and are considered a part of preparation for posting
-        // of a command.
-        triggerBeforePostHandlers()
-
-        launch {
+        GlobalScope.launch(IO) {
+            // "Before post" handlers should be triggered before making
+            // subscriptions, since subscriptions require a time-consuming network
+            // operation, and are considered a part of preparation for posting
+            // of a command.
+            triggerBeforePostHandlers()
             try {
                 eventSubscriptions.forEach {
                     if (it is DeferredEventSubscription<*>) {
                         it.subscribe()
                     }
-                    initialSubscriptionsMade = true
                 }
+                initialSubscriptionsMade = true
 
-                val allSubscriptionsSuccessful = allSubscriptionsActive
+                val allSubscriptionsSuccessful = eventSubscriptions.all { it.active }
                 if (allSubscriptionsSuccessful) {
                     app.client.postCommand(command)
                     triggerAcknowledgeHandlers()
@@ -465,49 +486,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
                 triggerNetworkErrorHandlers(e)
             }
         }
-        subscriptions
-    }
-
-    /**
-     * Triggers [callbacks] inside of a [callbacksCoroutineScope], which is designed to
-     * be used for triggering consequences callbacks.
-     */
-    protected fun callbacks(callbacks: suspend () -> Unit): Job = callbacksCoroutineScope.launch {
-        callbacks()
-        yield()
-    }
-
-    public companion object {
-
-        /**
-         * A shortcut for the [CommandConsequences] constructor, which can be
-         * used to make [app.client.postCommand][Client.postCommand] calls
-         * more concise.
-         *
-         * As a result `postCommand` usage can look like this:
-         * ```
-         *     app.client.postCommand(command, consequences {
-         *         onEvent(
-         *             ItemImported::class.java,
-         *             ItemImported.Field.itemId(),
-         *             command.itemId
-         *         ) {
-         *             showMessage("Item imported")
-         *         }
-         *     })
-         * ```
-         *
-         * @param C A type of commands whose consequences are specified.
-         *
-         * @property consequences A lambda, which declares expected consequences
-         *   along with their handlers.
-         * @return The [ModalCommandConsequences] instance that was created.
-         */
-        public fun <C: CommandMessage> consequences(
-            consequences: CommandConsequencesScope<C>.() -> Unit
-        ): CommandConsequences<C> {
-            return CommandConsequences(consequences)
-        }
+        return subscriptions
     }
 }
 
@@ -549,17 +528,17 @@ private class DeferredEventSubscription<E : EventMessage>(
 
     private class TimeoutParams(
         val timeout: Duration,
-        val timeoutCoroutineScope: CoroutineScope,
         val onTimeout: suspend () -> Unit
     )
 
-    private var subscriptionParams: SubscriptionParams<E>? =
+    private var subscriptionParams: SubscriptionParams<E> =
         SubscriptionParams(event, field, fieldValue, onNetworkError, onEvent)
+    private var canceled = false
 
     private var timeoutParams: TimeoutParams? = null
     private var actualSubscription: EventSubscription? = null
 
-    override val active: Boolean get() = actualSubscription?.active ?: true
+    override val active: Boolean get() = actualSubscription?.active ?: false
 
     /**
      * Subscribes to the event according to the parameters passed to the
@@ -572,37 +551,45 @@ private class DeferredEventSubscription<E : EventMessage>(
         check(actualSubscription == null) {
             "Subscription has already been made: `subscribe()` should be invoked only once."
         }
-        if (subscriptionParams == null) {
-            // Subscription has been cancelled.
+        if (canceled) {
             return
         }
-        actualSubscription = with(subscriptionParams!!) {
-            app.client.onEvent(event, field, fieldValue, onNetworkError, onEvent)
+        actualSubscription = with(subscriptionParams) {
+            app.client.onEvent(event, field, fieldValue, {
+                val canceledWhileSubscribing = canceled
+
+                // A subscription can be canceled while it is still in the
+                // process of making a subscription. This can in particular be
+                // the case if there are network connectivity issues, in which
+                // case the `app.client.onEvent` call above can take 10+ seconds
+                // before it synchronously admits a network failure (or succeeds
+                // after some retries).
+                if (!canceledWhileSubscribing) {
+                    onNetworkError?.invoke(it)
+                }
+            }, onEvent)
         }
-        if (timeoutParams != null) {
+        val subscriptionSuccessful = actualSubscription!!.active
+        if (subscriptionSuccessful && timeoutParams != null) {
             with(timeoutParams!!) {
-                actualSubscription!!.withTimeout(timeout, timeoutCoroutineScope, onTimeout)
+                actualSubscription!!.withTimeout(timeout, onTimeout)
             }
         }
     }
 
     override fun withTimeout(
         timeout: Duration,
-        timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit
     ) {
         if (actualSubscription == null) {
-            timeoutParams = TimeoutParams(timeout, timeoutCoroutineScope, onTimeout)
+            timeoutParams = TimeoutParams(timeout, onTimeout)
         } else {
-            actualSubscription!!.withTimeout(timeout, timeoutCoroutineScope, onTimeout)
+            actualSubscription!!.withTimeout(timeout, onTimeout)
         }
     }
 
     override fun cancel() {
-        if (actualSubscription == null) {
-            subscriptionParams = null
-        } else {
-            actualSubscription!!.cancel()
-        }
+        actualSubscription?.cancel()
+        canceled = true
     }
 }

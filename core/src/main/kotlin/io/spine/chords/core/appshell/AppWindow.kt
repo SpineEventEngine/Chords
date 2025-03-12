@@ -190,14 +190,20 @@ public class AppWindow(
      * This is a part of an internal dialog management API.
      *
      * @param dialog The dialog that needs to be closed.
+     * @throws IllegalStateException If the dialog cannot be closed due to a
+     *   nested modal dialog that is currently open.
      */
     internal fun closeDialog(dialog: Dialog) {
         checkNotNull(bottomDialog) { "No dialogs are displayed currently." }
         if (dialog == bottomDialog) {
             val nestedDialog = bottomDialog!!.nestedDialog
-            check(nestedDialog == null) {
-                "Cannot close a dialog ${dialog.javaClass.simpleName} while it has a " +
-                        "nested dialog open ${nestedDialog!!.javaClass.simpleName}."
+            if (nestedDialog != null) {
+                if (nestedDialog.dismissibleWithParent) {
+                    nestedDialog.close()
+                } else {
+                    error("Cannot close a dialog ${dialog.javaClass.simpleName} while it has a " +
+                            "nested dialog open: ${dialog.nestedDialog!!.javaClass.simpleName}.")
+                }
             }
             bottomDialog = null
         } else {

@@ -43,13 +43,14 @@ import io.spine.client.CompositeQueryFilter
 import io.spine.client.EventFilter.eq
 import io.spine.client.Subscription
 import io.spine.core.UserId
+import java.lang.Runtime.getRuntime
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -79,10 +80,27 @@ public class DesktopClient(
             .usePlaintext()
             .build()
         spineClient = io.spine.client.Client.usingChannel(channel).build()
+
+        getRuntime().addShutdownHook(Thread {
+            close()
+        })
     }
+
+    /**
+     * A flag that signifies whether the connection with the server is open.
+     */
+    override val isOpen: Boolean get() = spineClient.isOpen
 
     public override val userId: UserId?
         get() = user()
+
+
+    /**
+     * Closes the client and shuts down the connection with the server.
+     */
+    override fun close() {
+        spineClient.close()
+    }
 
     /**
      * Reads the list of entities with the [entityClass] class into [targetList]
@@ -210,7 +228,7 @@ public class DesktopClient(
      *
      * See the [Client.postCommand] documentation for details.
      */
-    public override suspend fun <C : CommandMessage> postCommand(
+    public override fun <C : CommandMessage> postCommand(
         command: C,
         consequences: CommandConsequences<C>
     ): EventSubscriptions = consequences.postAndProcessConsequences(command)
@@ -238,12 +256,16 @@ public class DesktopClient(
                     onEvent(evt)
                 }
                 .onStreamingError({ err ->
-                    eventSubscription.cancel()
-                    onNetworkError?.invoke(err)
+                    if (!eventSubscription.canceled) {
+                        eventSubscription.cancel()
+                        onNetworkError?.invoke(err)
+                    }
                 })
                 .post()
         } catch (e: StatusRuntimeException) {
-            onNetworkError?.invoke(e)
+            if (!eventSubscription.canceled) {
+                onNetworkError?.invoke(e)
+            }
         }
         return eventSubscription
     }
@@ -307,6 +329,20 @@ internal open class EventSubscriptionImpl(
     override val active: Boolean get() = subscription != null
 
     /**
+     * A flag specifying whether the subscription has been canceled.
+     *
+     * It is the same as ![active] with one difference. Since the subscription
+     * activation can take a notable period of time (especially with network
+     * connectivity issues), it is possible that the subscription can be
+     * canceled _before_ its activation completes. This property allows
+     * distinguishing this scenario.
+     *
+     * It is only needed internally because [Client.onEvent] returns only after
+     * the subscription has been activated or after its activation has failed.
+     */
+    internal var canceled = false
+
+    /**
      * A Spine [Subscription], which was made, or `null` if it either hasn't
      * been made yet, or cancelled already.
      */
@@ -314,14 +350,16 @@ internal open class EventSubscriptionImpl(
 
     private var timeoutJob: Job? = null
 
-    @OptIn(ExperimentalTime::class)
+    @OptIn(
+        // Timeout coroutine is canceled manually on demand.
+        DelicateCoroutinesApi::class
+    )
     override fun withTimeout(
         timeout: Duration,
-        timeoutCoroutineScope: CoroutineScope,
         onTimeout: suspend () -> Unit,
     ) {
         cancelTimeout()
-        timeoutJob = timeoutCoroutineScope.launch {
+        timeoutJob = GlobalScope.launch(IO) {
             delay(timeout)
             if (timeoutJob != null) {
                 // Event subscription should be cancelled BEFORE calling the
@@ -330,7 +368,6 @@ internal open class EventSubscriptionImpl(
                 cancelSubscription()
 
                 onTimeout()
-                yield()
 
                 // Timeout job should be canceled AFTER invoking a callback
                 // to ensure that `onTimeout` callback's coroutine scope still
@@ -358,6 +395,7 @@ internal open class EventSubscriptionImpl(
             spineClient.subscriptions().cancel(subscription!!)
             subscription = null
         }
+        canceled = true
     }
 
     private fun cancelTimeout() {

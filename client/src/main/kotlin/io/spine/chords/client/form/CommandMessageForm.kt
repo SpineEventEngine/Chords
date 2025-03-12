@@ -352,8 +352,6 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      */
     private var activeSubscriptions: MutableList<EventSubscriptions> = ArrayList()
 
-
-
     override fun initialize() {
         super.initialize()
         requireProperty(this::commandConsequences.isInitialized, "commandConsequences")
@@ -409,7 +407,9 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
             "checked to be valid within postCommand."
         }
         val consequences = createCommandConsequences(commandConsequences)
-        return app.client.postCommand(command, consequences)
+        val subscriptions = app.client.postCommand(command, consequences)
+        activeSubscriptions += subscriptions
+        return subscriptions
     }
 
     /**
