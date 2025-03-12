@@ -255,6 +255,10 @@ import kotlin.time.Duration
     /**
      * Closes the client and shuts down the connection with the server.
      *
+     * This will also cancel any subscriptions made with this client if they
+     * haven't been closed explicitly. Once the client is closed, it cannot be
+     * used anymore.
+     *
      * @see isOpen
      */
     public fun close()
