@@ -44,6 +44,13 @@ import kotlin.time.Duration
  public interface Client {
 
     /**
+     * Signifies whether the connection with the server is open.
+     *
+     * @see close
+     */
+    public val isOpen: Boolean
+
+    /**
      * The ID of the user on whose behalf this `Client` should send requests to
      * the server.
      */
@@ -244,6 +251,13 @@ import kotlin.time.Duration
         onNetworkError: ((Throwable) -> Unit)? = null,
         onEvent: (E) -> Unit
     ): EventSubscription
+
+    /**
+     * Closes the client and shuts down the connection with the server.
+     *
+     * @see isOpen
+     */
+    public fun close()
 }
 
 /**

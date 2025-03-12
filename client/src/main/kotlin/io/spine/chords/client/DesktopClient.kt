@@ -82,12 +82,25 @@ public class DesktopClient(
         spineClient = io.spine.client.Client.usingChannel(channel).build()
 
         getRuntime().addShutdownHook(Thread {
-            spineClient.close()
+            close()
         })
     }
 
+    /**
+     * A flag that signifies whether the connection with the server is open.
+     */
+    override val isOpen: Boolean get() = spineClient.isOpen
+
     public override val userId: UserId?
         get() = user()
+
+
+    /**
+     * Closes the client and shuts down the connection with the server.
+     */
+    override fun close() {
+        spineClient.close()
+    }
 
     /**
      * Reads the list of entities with the [entityClass] class into [targetList]
