@@ -106,7 +106,7 @@ public abstract class Table<E> : Component() {
      *
      * The parameter of the lambda receives the new selected entity value.
      */
-    public var onSelect: (E) -> Unit = { }
+    public var onSelect: ((E) -> Unit)? = null
 
     /**
      * A list of columns to be displayed in the table.
@@ -178,7 +178,7 @@ public abstract class Table<E> : Component() {
      */
     private fun changeSelectedEntity(entity: E) {
         selectedEntity.value = entity
-        onSelect(entity)
+        onSelect?.invoke(entity)
     }
 
     @Composable
