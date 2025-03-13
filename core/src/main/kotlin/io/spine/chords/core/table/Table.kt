@@ -239,7 +239,7 @@ public abstract class Table<E> : Component() {
                 // Make sure that selected entity value is always up to date
                 // with the `entities` list if it contains an updated
                 // entity value.
-                selectedEntity.value = entity
+                changeSelectedEntity(entity)
             }
             rowModifier(entity).background(selectedRowColor!!)
         } else {
