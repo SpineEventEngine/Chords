@@ -102,6 +102,13 @@ public abstract class Table<E> : Component() {
     )
 
     /**
+     * A callback which is invoked whenever selected entity value is changed.
+     *
+     * The parameter of the lambda receives the new selected entity value.
+     */
+    public var onSelect: (E) -> Unit = { }
+
+    /**
      * A list of columns to be displayed in the table.
      */
     protected abstract val columns: List<TableColumn<E>>
@@ -169,8 +176,9 @@ public abstract class Table<E> : Component() {
      *
      * @param entity The entity associated with the clicked row.
      */
-    protected open fun changeSelectedEntity(entity: E) {
+    private fun changeSelectedEntity(entity: E) {
         selectedEntity.value = entity
+        onSelect(entity)
     }
 
     @Composable
