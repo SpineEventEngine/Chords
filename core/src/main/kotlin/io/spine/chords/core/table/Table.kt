@@ -97,41 +97,14 @@ public abstract class Table<E> : Component() {
     /**
      * The currently selected entity (row) in the table.
      */
-    public val selectedEntity: MutableState<E?> = mutableStateOf(null)
+    public var selectedEntity: MutableState<E?> by mutableStateOf(
+        mutableStateOf(null)
+    )
 
     /**
      * A list of columns to be displayed in the table.
      */
     protected abstract val columns: List<TableColumn<E>>
-
-    /**
-     * Handles the click action for a row in the table.
-     *
-     * @param entity The entity associated with the clicked row.
-     */
-    protected abstract fun handleRowClick(entity: E)
-
-    /**
-     * Specifies the content to be displayed when the table has no entities.
-     */
-    @Composable
-    protected abstract fun ColumnScope.EmptyTableContent()
-
-    /**
-     * Extracts a unique identifier from an entity.
-     *
-     * This function is used to identify entities based on a stable value,
-     * ensuring that changes to mutable properties do not affect
-     * entity identification.
-     *
-     * The ID's equality is determined using structural equality operator (`==`).
-     * Therefore, the returned identifier should be a type that supports
-     * meaningful structural equality.
-     *
-     * @param entity An entity from which to extract the identifier.
-     * @return The ID of an entity.
-     */
-    protected abstract fun extractEntityId(entity: E): Any
 
     /**
      * A callback that allows to modify any row behaviour and style.
@@ -168,6 +141,37 @@ public abstract class Table<E> : Component() {
      * The default value is `MaterialTheme.colorScheme.surfaceVariant`.
      */
     protected var selectedRowColor: Color? by mutableStateOf(null)
+
+    /**
+     * Specifies the content to be displayed when the table has no entities.
+     */
+    @Composable
+    protected abstract fun ColumnScope.EmptyTableContent()
+
+    /**
+     * Extracts a unique identifier from an entity.
+     *
+     * This function is used to identify entities based on a stable value,
+     * ensuring that changes to mutable properties do not affect
+     * entity identification.
+     *
+     * The ID's equality is determined using structural equality operator (`==`).
+     * Therefore, the returned identifier should be a type that supports
+     * meaningful structural equality.
+     *
+     * @param entity An entity from which to extract the identifier.
+     * @return The ID of an entity.
+     */
+    protected abstract fun extractEntityId(entity: E): Any
+
+    /**
+     * Changes the [selectedEntity] whenever selected row is changed.
+     *
+     * @param entity The entity associated with the clicked row.
+     */
+    protected open fun changeSelectedEntity(entity: E) {
+        selectedEntity.value = entity
+    }
 
     @Composable
     override fun content() {
@@ -211,26 +215,35 @@ public abstract class Table<E> : Component() {
             ) {
                 entities.forEach { value ->
                     item {
-                        val selected = selectedEntity.value
-                        val modifier = if (selected != null &&
-                            extractEntityId(selected) == extractEntityId(value)) {
-                            rowModifier(value).background(selectedRowColor!!)
-                        } else {
-                            rowModifier(value)
-                        }
                         ContentTableRow(
                             entity = value,
                             columns = columns,
-                            modifier = modifier,
+                            modifier = contentTableRowModifier(value),
                             rowActionsConfig = rowActions
                         ) {
-                            selectedEntity.value = value
-                            handleRowClick(value)
+                            changeSelectedEntity(value)
                         }
                     }
                 }
             }
             VerticalScrollBar(listState) { Modifier.align(CenterEnd) }
+        }
+    }
+
+    private fun contentTableRowModifier(entity: E): Modifier {
+        val selectedEntityValue = selectedEntity.value
+        return if (selectedEntityValue != null &&
+            extractEntityId(selectedEntityValue) == extractEntityId(entity)
+        ) {
+            if (entity != selectedEntityValue) {
+                // Make sure that selected entity value is always up to date
+                // with the `entities` list if it contains an updated
+                // entity value.
+                selectedEntity.value = entity
+            }
+            rowModifier(entity).background(selectedRowColor!!)
+        } else {
+            rowModifier(entity)
         }
     }
 
