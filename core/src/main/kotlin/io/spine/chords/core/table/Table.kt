@@ -31,6 +31,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement.Center
+import androidx.compose.foundation.layout.Arrangement.End
 import androidx.compose.foundation.layout.Arrangement.Horizontal
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
@@ -184,14 +185,30 @@ public abstract class Table<E> : Component() {
     @Composable
     override fun content() {
         val sortedEntities = entities.sortedWith(sortBy)
+        val tableColumns = columns.toMutableList()
+        if (rowActions != null) {
+            val rowActionsColumn = TableColumn<E>(
+                name = "",
+                horizontalArrangement = End,
+                padding = PaddingValues(end = 20.dp)
+            ) {
+                val rowActionsVisible = remember { mutableStateOf(false) }
+                RowActionsButton(
+                    rowActions!!,
+                    it,
+                    rowActionsVisible
+                )
+            }
+            tableColumns.add(rowActionsColumn)
+        }
         Column(
             modifier = Modifier.fillMaxSize()
                 .padding(contentPadding),
             verticalArrangement = Center,
         ) {
-            HeaderTableRow(columns)
+            HeaderTableRow(tableColumns)
             if (entities.isNotEmpty()) {
-                ContentList(sortedEntities, columns)
+                ContentList(sortedEntities, tableColumns)
             } else {
                 EmptyContentList()
             }
@@ -226,8 +243,7 @@ public abstract class Table<E> : Component() {
                         ContentTableRow(
                             entity = value,
                             columns = columns,
-                            modifier = contentTableRowModifier(value),
-                            rowActionsConfig = rowActions
+                            modifier = contentTableRowModifier(value)
                         ) {
                             changeSelectedEntity(value)
                         }
@@ -386,7 +402,6 @@ private fun <E> HeaderTableRow(
  * @param columns A list of columns from which the row consists.
  * @param entity The entity to represent in a row.
  * @param modifier The [Modifier] to be applied to this row.
- * @param rowActionsConfig Configuration for row actions.
  * @param onClick A callback that is triggered when a user clicks on a row.
  */
 @Composable
@@ -394,10 +409,8 @@ private fun <E> ContentTableRow(
     entity: E,
     columns: List<TableColumn<E>>,
     modifier: Modifier,
-    rowActionsConfig: RowActionsConfig<E>?,
     onClick: () -> Unit
 ) {
-    val rowActionsVisible = remember { mutableStateOf(false) }
     TableRow(
         columns = columns,
         modifier = Modifier
@@ -406,15 +419,6 @@ private fun <E> ContentTableRow(
                 interactionSource = MutableInteractionSource(),
                 indication = null,
             ) { onClick() },
-        rowActionsButton = {
-            if (rowActionsConfig != null) {
-                RowActionsButton(
-                    rowActionsConfig,
-                    entity,
-                    rowActionsVisible
-                )
-            }
-        }
     ) { column -> column.cellContent(entity) }
 }
 
@@ -423,8 +427,6 @@ private fun <E> ContentTableRow(
  *
  * @param columns A list of columns from which the row consists.
  * @param modifier The [Modifier] to be applied to this row.
- * @param rowActionsButton A button that should open a row actions menu.
- *   By default, no button is displayed.
  * @param cellContent A callback that specifies what element to display
  *   inside each cell of this column.
  */
@@ -432,7 +434,6 @@ private fun <E> ContentTableRow(
 private fun <E> TableRow(
     columns: List<TableColumn<E>>,
     modifier: Modifier = Modifier,
-    rowActionsButton: (@Composable () -> Unit)? = null,
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
     Row(
@@ -453,9 +454,6 @@ private fun <E> TableRow(
                 horizontalArrangement = column.horizontalArrangement,
                 verticalAlignment = CenterVertically
             ) { cellContent(column) }
-        }
-        if (rowActionsButton != null) {
-            rowActionsButton()
         }
     }
     Divider(
@@ -484,9 +482,12 @@ private fun <E> RowActionsButton(
     entity: E,
     visibility: MutableState<Boolean>,
 ) {
-    IconButton({
-        visibility.value = true
-    }) {
+    IconButton(
+        modifier = Modifier.size(36.dp),
+        onClick = {
+            visibility.value = true
+        }
+    ) {
         Icon(
             imageVector = Icons.Default.MoreVert,
             contentDescription = null,
