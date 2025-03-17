@@ -527,7 +527,10 @@ private fun <E> RowActionsDropdown(
         items.forEach {
             DropdownMenuItem(
                 text = { Text(it.text) },
-                onClick = { it.onClick(value) },
+                onClick = {
+                    onCancel()
+                    it.onClick(value)
+                },
                 enabled = it.enabled(value),
                 modifier = look.modifier,
                 colors = MenuDefaults.itemColors(
