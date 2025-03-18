@@ -187,8 +187,7 @@ public abstract class Table<E> : Component() {
         val sortedEntities = entities.sortedWith(sortBy)
         val tableColumns = columns.toMutableList()
         if (rowActions != null) {
-            val rowActionsColumn = rowActionsColumn(rowActions!!)
-            tableColumns.add(rowActionsColumn)
+            tableColumns.add(rowActionsColumn(rowActions!!))
         }
         Column(
             modifier = Modifier.fillMaxSize()
@@ -293,7 +292,7 @@ public data class TableColumn<E>(
     val name: String,
     val horizontalArrangement: Horizontal = Center,
     val weight: Float = 1F,
-    val padding: PaddingValues = PaddingValues(0.dp),
+    val padding: PaddingValues = PaddingValues(),
     val cellContent: @Composable (E) -> Unit
 )
 
@@ -312,7 +311,8 @@ public data class TableColumn<E>(
  *   in this table.
  * @param modifier A modifier to be applied to the menu.
  * @param buttonPadding The padding around the "More" button,
- *   affecting its placement within the cell.
+ *   affecting its placement within the cell. By default, no padding is applied,
+ *   placing the button at the right edge of the cell.
  */
 public data class RowActionsConfig<E>(
     val itemsProvider: (E) -> List<RowActionsItem<E>>,
@@ -470,11 +470,11 @@ private fun <E> rowActionsColumn(
         name = "",
         horizontalArrangement = End,
         padding = rowActionsConfig.buttonPadding
-    ) {
+    ) { entity ->
         val rowActionsVisible = remember { mutableStateOf(false) }
         RowActionsButton(
+            entity,
             rowActionsConfig,
-            it,
             rowActionsVisible
         )
     }
@@ -487,20 +487,20 @@ private fun <E> rowActionsColumn(
  * actions specific to the given entity.
  *
  * @param E The type of entity for which the row actions are defined.
- * @param rowActions The configuration defining available actions
- *   and their appearance.
  * @param entity The entity for which the row actions are displayed.
+ * @param config The configuration defining available actions
+ *   and their appearance.
  * @param visibility A state that controls the visibility
  *   of the dropdown menu.
  */
 @Composable
 private fun <E> RowActionsButton(
-    rowActions: RowActionsConfig<E>,
     entity: E,
+    config: RowActionsConfig<E>,
     visibility: MutableState<Boolean>,
 ) {
     IconButton(
-        modifier = Modifier.size(36.dp),
+        modifier = Modifier.size(48.dp),
         onClick = {
             visibility.value = true
         }
@@ -511,7 +511,7 @@ private fun <E> RowActionsButton(
             modifier = Modifier.size(20.dp)
         )
         if (visibility.value) {
-            RowActionsDropdown(entity, rowActions, visibility.value) {
+            RowActionsDropdown(entity, config, visibility.value) {
                 visibility.value = false
             }
         }
