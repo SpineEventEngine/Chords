@@ -187,18 +187,7 @@ public abstract class Table<E> : Component() {
         val sortedEntities = entities.sortedWith(sortBy)
         val tableColumns = columns.toMutableList()
         if (rowActions != null) {
-            val rowActionsColumn = TableColumn<E>(
-                name = "",
-                horizontalArrangement = End,
-                padding = PaddingValues(end = 20.dp)
-            ) {
-                val rowActionsVisible = remember { mutableStateOf(false) }
-                RowActionsButton(
-                    rowActions!!,
-                    it,
-                    rowActionsVisible
-                )
-            }
+            val rowActionsColumn = rowActionsColumn(rowActions!!)
             tableColumns.add(rowActionsColumn)
         }
         Column(
@@ -322,11 +311,14 @@ public data class TableColumn<E>(
  * @param itemsLook The styling configuration applied to all row actions
  *   in this table.
  * @param modifier A modifier to be applied to the menu.
+ * @param buttonPadding The padding around the "More" button,
+ *   affecting its placement within the cell.
  */
 public data class RowActionsConfig<E>(
     val itemsProvider: (E) -> List<RowActionsItem<E>>,
     val itemsLook: RowActionsItemLook,
-    val modifier: Modifier = Modifier
+    val modifier: Modifier = Modifier,
+    val buttonPadding: PaddingValues = PaddingValues()
 )
 
 /**
@@ -461,6 +453,31 @@ private fun <E> TableRow(
         thickness = 1.dp,
         color = colorScheme.outlineVariant
     )
+}
+
+/**
+ * Creates a `TableColumn` that displays a "More" button in each cell.
+ *
+ * Clicking the button opens the row actions menu.
+ *
+ * @param rowActionsConfig The configuration for row actions.
+ * @return A `TableColumn` with a "More" button for triggering row actions.
+ */
+private fun <E> rowActionsColumn(
+    rowActionsConfig: RowActionsConfig<E>
+): TableColumn<E> {
+    return TableColumn(
+        name = "",
+        horizontalArrangement = End,
+        padding = rowActionsConfig.buttonPadding
+    ) {
+        val rowActionsVisible = remember { mutableStateOf(false) }
+        RowActionsButton(
+            rowActionsConfig,
+            it,
+            rowActionsVisible
+        )
+    }
 }
 
 /**
