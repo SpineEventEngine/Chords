@@ -31,6 +31,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement.Center
+import androidx.compose.foundation.layout.Arrangement.End
 import androidx.compose.foundation.layout.Arrangement.Horizontal
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
@@ -184,14 +185,18 @@ public abstract class Table<E> : Component() {
     @Composable
     override fun content() {
         val sortedEntities = entities.sortedWith(sortBy)
+        val tableColumns = columns.toMutableList()
+        if (rowActions != null) {
+            tableColumns.add(rowActionsColumn(rowActions!!))
+        }
         Column(
             modifier = Modifier.fillMaxSize()
                 .padding(contentPadding),
             verticalArrangement = Center,
         ) {
-            HeaderTableRow(columns)
+            HeaderTableRow(tableColumns)
             if (entities.isNotEmpty()) {
-                ContentList(sortedEntities, columns)
+                ContentList(sortedEntities, tableColumns)
             } else {
                 EmptyContentList()
             }
@@ -226,8 +231,7 @@ public abstract class Table<E> : Component() {
                         ContentTableRow(
                             entity = value,
                             columns = columns,
-                            modifier = contentTableRowModifier(value),
-                            rowActionsConfig = rowActions
+                            modifier = contentTableRowModifier(value)
                         ) {
                             changeSelectedEntity(value)
                         }
@@ -288,7 +292,7 @@ public data class TableColumn<E>(
     val name: String,
     val horizontalArrangement: Horizontal = Center,
     val weight: Float = 1F,
-    val padding: PaddingValues = PaddingValues(0.dp),
+    val padding: PaddingValues = PaddingValues(),
     val cellContent: @Composable (E) -> Unit
 )
 
@@ -306,11 +310,15 @@ public data class TableColumn<E>(
  * @param itemsLook The styling configuration applied to all row actions
  *   in this table.
  * @param modifier A modifier to be applied to the menu.
+ * @param buttonPadding The padding around the "More" button,
+ *   affecting its placement within the cell. By default, no padding is applied,
+ *   placing the button at the right edge of the cell.
  */
 public data class RowActionsConfig<E>(
     val itemsProvider: (E) -> List<RowActionsItem<E>>,
     val itemsLook: RowActionsItemLook,
-    val modifier: Modifier = Modifier
+    val modifier: Modifier = Modifier,
+    val buttonPadding: PaddingValues = PaddingValues()
 )
 
 /**
@@ -386,7 +394,6 @@ private fun <E> HeaderTableRow(
  * @param columns A list of columns from which the row consists.
  * @param entity The entity to represent in a row.
  * @param modifier The [Modifier] to be applied to this row.
- * @param rowActionsConfig Configuration for row actions.
  * @param onClick A callback that is triggered when a user clicks on a row.
  */
 @Composable
@@ -394,10 +401,8 @@ private fun <E> ContentTableRow(
     entity: E,
     columns: List<TableColumn<E>>,
     modifier: Modifier,
-    rowActionsConfig: RowActionsConfig<E>?,
     onClick: () -> Unit
 ) {
-    val rowActionsVisible = remember { mutableStateOf(false) }
     TableRow(
         columns = columns,
         modifier = Modifier
@@ -406,15 +411,6 @@ private fun <E> ContentTableRow(
                 interactionSource = MutableInteractionSource(),
                 indication = null,
             ) { onClick() },
-        rowActionsButton = {
-            if (rowActionsConfig != null) {
-                RowActionsButton(
-                    rowActionsConfig,
-                    entity,
-                    rowActionsVisible
-                )
-            }
-        }
     ) { column -> column.cellContent(entity) }
 }
 
@@ -423,8 +419,6 @@ private fun <E> ContentTableRow(
  *
  * @param columns A list of columns from which the row consists.
  * @param modifier The [Modifier] to be applied to this row.
- * @param rowActionsButton A button that should open a row actions menu.
- *   By default, no button is displayed.
  * @param cellContent A callback that specifies what element to display
  *   inside each cell of this column.
  */
@@ -432,7 +426,6 @@ private fun <E> ContentTableRow(
 private fun <E> TableRow(
     columns: List<TableColumn<E>>,
     modifier: Modifier = Modifier,
-    rowActionsButton: (@Composable () -> Unit)? = null,
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
     Row(
@@ -454,9 +447,6 @@ private fun <E> TableRow(
                 verticalAlignment = CenterVertically
             ) { cellContent(column) }
         }
-        if (rowActionsButton != null) {
-            rowActionsButton()
-        }
     }
     Divider(
         modifier = Modifier.fillMaxWidth(),
@@ -466,34 +456,62 @@ private fun <E> TableRow(
 }
 
 /**
+ * Creates a `TableColumn` that displays a "More" button in each cell.
+ *
+ * Clicking the button opens the row actions menu.
+ *
+ * @param rowActionsConfig The configuration for row actions.
+ * @return A `TableColumn` with a "More" button for triggering row actions.
+ */
+private fun <E> rowActionsColumn(
+    rowActionsConfig: RowActionsConfig<E>
+): TableColumn<E> {
+    return TableColumn(
+        name = "",
+        horizontalArrangement = End,
+        padding = rowActionsConfig.buttonPadding
+    ) { entity ->
+        val rowActionsVisible = remember { mutableStateOf(false) }
+        RowActionsButton(
+            entity,
+            rowActionsConfig,
+            rowActionsVisible
+        )
+    }
+}
+
+/**
  * Displays a button that opens a row actions dropdown menu.
  *
  * When clicked, this button reveals a dropdown menu containing
  * actions specific to the given entity.
  *
  * @param E The type of entity for which the row actions are defined.
- * @param rowActions The configuration defining available actions
- *   and their appearance.
  * @param entity The entity for which the row actions are displayed.
+ * @param config The configuration defining available actions
+ *   and their appearance.
  * @param visibility A state that controls the visibility
  *   of the dropdown menu.
  */
 @Composable
 private fun <E> RowActionsButton(
-    rowActions: RowActionsConfig<E>,
     entity: E,
+    config: RowActionsConfig<E>,
     visibility: MutableState<Boolean>,
 ) {
-    IconButton({
-        visibility.value = true
-    }) {
+    IconButton(
+        modifier = Modifier.size(48.dp),
+        onClick = {
+            visibility.value = true
+        }
+    ) {
         Icon(
             imageVector = Icons.Default.MoreVert,
             contentDescription = null,
             modifier = Modifier.size(20.dp)
         )
         if (visibility.value) {
-            RowActionsDropdown(entity, rowActions, visibility.value) {
+            RowActionsDropdown(entity, config, visibility.value) {
                 visibility.value = false
             }
         }
@@ -527,7 +545,10 @@ private fun <E> RowActionsDropdown(
         items.forEach {
             DropdownMenuItem(
                 text = { Text(it.text) },
-                onClick = { it.onClick(value) },
+                onClick = {
+                    onCancel()
+                    it.onClick(value)
+                },
                 enabled = it.enabled(value),
                 modifier = look.modifier,
                 colors = MenuDefaults.itemColors(
