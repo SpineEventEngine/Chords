@@ -45,6 +45,7 @@ import io.spine.client.EventFilter.eq
 import io.spine.client.Subscription
 import io.spine.core.UserId
 import java.lang.Runtime.getRuntime
+import java.util.concurrent.CompletableFuture
 import kotlin.time.Duration
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers.IO
@@ -105,26 +106,40 @@ public class DesktopClient(
      * [State] and ensures that future updates to the list are reflected in it
      * as well.
      *
+     * By default, this method just launches an asynchronous reading and returns
+     * immediately. Setting [awaitInitialList] to `true` will make the
+     * method to wait for reading the list to complete before returning.
+     *
      * @param E A type of entities being read and observed.
      *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of
      *   the entity's ID.
+     * @param awaitInitialList Setting to `true` makes the method to wait for
+     *   reading the current entity list before returning.
      * @return A [State] that contains a list whose content should be populated
      *   and kept up to date by this function.
      */
     public override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
-        extractId: (E) -> Any
+        extractId: (E) -> Any,
+        awaitInitialList: Boolean
     ): State<List<E>> {
         val listState = mutableStateOf(listOf<E>())
-        listState.value = clientRequest().select(entityClass).run()
-        clientRequest()
-            .subscribeTo(entityClass)
-            .observe { entity ->
-                updateList(listState, entity, extractId)
-            }
-            .post()
+        val firstRead = CompletableFuture<Unit>()
+        Thread {
+            listState.value = clientRequest().select(entityClass).run()
+            firstRead.complete(Unit)
+            clientRequest()
+                .subscribeTo(entityClass)
+                .observe { entity ->
+                    updateList(listState, entity, extractId)
+                }
+                .post()
+        }.start()
+        if (awaitInitialList) {
+            firstRead.get()
+        }
         return listState
     }
 
@@ -144,16 +159,19 @@ public class DesktopClient(
      * @param queryFilter A filter for querying the initial entity value.
      * @param observeFilter A filter for observing entity updates, whose
      *   criteria are expected to match the ones in [queryFilter].
+     * @param awaitInitialValue Setting to `true` makes the method to wait for
+     *   reading the current entity value before returning.
      * @return A [State] that contains an up-to-date entity value according to
      *   the given [observeFilter].
      */
     override fun <E : EntityState> readAndObserveFirst(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter
+        observeFilter: CompositeEntityStateFilter,
+        awaitInitialValue: Boolean
     ): State<E?> {
         val entityState = mutableStateOf<E?>(null)
-        readAndObserve(entityClass, { it }, queryFilter, observeFilter) {
+        readAndObserve(entityClass, { it }, queryFilter, observeFilter, awaitInitialValue) {
             entityState.value = if (it.size > 0) it.first() else null
         }
         return entityState
@@ -168,6 +186,11 @@ public class DesktopClient(
      * changes, the [onNext] callback will be invoked again with the updated
      * list of entities.
      *
+     * By default, this method just launches an asynchronous reading and returns
+     * immediately. Setting [awaitInitialList] to `true` will make the
+     * method to wait for reading the list to complete, and invoking the
+     * [onNext] callback for the first time before returning.
+     *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of the
      *   entity's ID.
@@ -175,6 +198,8 @@ public class DesktopClient(
      *   of entities.
      * @param observeFilters Filters to apply when observing updates to
      *   the entities.
+     * @param awaitInitialList Setting to `true` makes the method to wait for
+     *   reading the current entity list before returning.
      * @param onNext A callback function that is called with the list of
      *   entities after the initial query completes, and each time any of the
      *   observed entities is updated.
@@ -184,23 +209,31 @@ public class DesktopClient(
         extractId: (E) -> Any,
         queryFilters: CompositeQueryFilter,
         observeFilters: CompositeEntityStateFilter,
+        awaitInitialList: Boolean,
         onNext: (List<E>) -> Unit
     ) {
-        val initialResult: List<E> = clientRequest()
-            .select(entityClass)
-            .where(queryFilters)
-            .run()
-        onNext(initialResult)
+        val initialRead = CompletableFuture<Unit>()
+        Thread {
+            val initialResult: List<E> = clientRequest()
+                .select(entityClass)
+                .where(queryFilters)
+                .run()
+            onNext(initialResult)
+            initialRead.complete(Unit)
 
-        val observedEntities = mutableStateOf(initialResult)
-        clientRequest()
-            .subscribeTo(entityClass)
-            .observe { updatedEntity ->
-                updateList(observedEntities, updatedEntity, extractId)
-                onNext(observedEntities.value)
-            }
-            .where(observeFilters)
-            .post()
+            val observedEntities = mutableStateOf(initialResult)
+            clientRequest()
+                .subscribeTo(entityClass)
+                .observe { updatedEntity ->
+                    updateList(observedEntities, updatedEntity, extractId)
+                    onNext(observedEntities.value)
+                }
+                .where(observeFilters)
+                .post()
+        }.start()
+        if (awaitInitialList) {
+            initialRead.get()
+        }
     }
 
     /**

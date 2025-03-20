@@ -58,19 +58,27 @@ import kotlin.time.Duration
 
 
     /**
-     * Reads the list of entities with the [entityClass] class into a new
-     * [State] and ensures that future updates to the list are reflected in it
-     * as well.
+     * Reads the list of entities with the [entityClass] class and returns the
+     * respective [State], which is maintained to contain an up-to-date list.
+     *
+     * By default, this method just launches an asynchronous reading and returns
+     * immediately. Setting [awaitInitialList] to `true` will make the
+     * method to wait for reading the list to complete before returning.
+     *
+     * @param E A type of entities being read and observed.
      *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of
      *   the entity's ID.
+     * @param awaitInitialList Setting to `true` makes the method to wait for
+     *   reading the current entity list before returning.
      * @return A [State] that contains a list whose content should be populated
      *   and kept up to date by this function.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
-        extractId: (E) -> Any
+        extractId: (E) -> Any,
+        awaitInitialList: Boolean = false
     ): State<List<E>>
 
     /**
@@ -83,13 +91,16 @@ import kotlin.time.Duration
      *   read and observed.
      * @param queryFilter Filter to use for querying the initial entity value.
      * @param observeFilter Filter to use for observing entity updates.
+     * @param awaitInitialValue Setting to `true` makes the method to wait for
+     *   reading the current entity value before returning.
      * @return A [State] that contains an up-to-date entity value according to
      *   the given [observeFilter].
      */
     public fun <E : EntityState> readAndObserveFirst(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter
+        observeFilter: CompositeEntityStateFilter,
+        awaitInitialValue: Boolean = false
     ): State<E?>
 
     /**
@@ -101,12 +112,19 @@ import kotlin.time.Duration
      * changes, the [onNext] callback will be invoked again with the updated
      * list of entities.
      *
+     * By default, this method just launches an asynchronous reading and returns
+     * immediately. Setting [awaitInitialList] to `true` will make the
+     * method to wait for reading the list to complete, and invoking the
+     * [onNext] callback for the first time before returning.
+     *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of the entity's ID.
      * @param queryFilters Filters to apply when querying the initial list
      *   of entities.
      * @param observeFilters Filters to apply when observing updates to
      *   the entities.
+     * @param awaitInitialList Setting to `true` makes the method to wait for
+     *   reading the current entity list before returning.
      * @param onNext A callback function that is called with the list of
      *   entities after the initial query completes, and each time any of the
      *   observed entities is updated.
@@ -116,6 +134,7 @@ import kotlin.time.Duration
         extractId: (E) -> Any,
         queryFilters: CompositeQueryFilter,
         observeFilters: CompositeEntityStateFilter,
+        awaitInitialList: Boolean,
         onNext: (List<E>) -> Unit
     )
 
