@@ -150,8 +150,7 @@ import kotlinx.coroutines.launch
  * - Mouse clicks have to be handled on the invoker with calling the
  *   [DropdownListBoxScope.handleClick] function.
  *
- * @param I
- *         a type of items displayed in the drop-down list.
+ * @param I A type of items displayed in the drop-down list.
  */
 // All class's functions are better to have in this class.
 @Suppress("TooManyFunctions", "LargeClass")
@@ -190,7 +189,7 @@ public class DropdownListBox<I> : Component() {
     /**
      * A list of items to display in the drop-down list.
      */
-    public var items: Iterable<I> = emptyList()
+    public var items: Iterable<I> by mutableStateOf(emptyList())
 
     /**
      * Specifies whether clicking the invoker triggers displaying of the
@@ -202,7 +201,7 @@ public class DropdownListBox<I> : Component() {
      * Currently selected item in the drop-down list,
      * or `null` if none is selected.
      */
-    public var selectedItem: I? = null
+    public var selectedItem: I? by mutableStateOf(null)
 
     /**
      * A function to be called when an item in the drop-down list is selected.
