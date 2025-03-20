@@ -132,12 +132,18 @@ public class DesktopClient(
      * Returns a [State], which contains an up-to-date entity value according to
      * the given filter parameters.
      *
+     * If more than one entity matches the criteria specified by [queryFilter]
+     * or [observeFilter] parameters, then the returned [State] gets the first
+     * value from the resulting list. If no entries match the specified
+     * criteria, then the respective value is `null`.
+     *
      * @param E A type of entity being read and observed.
      *
      * @param entityClass A class of entity value that should be
      *   read and observed.
-     * @param queryFilter Filter to use for querying the initial entity value.
-     * @param observeFilter Filter to use for observing entity updates.
+     * @param queryFilter A filter for querying the initial entity value.
+     * @param observeFilter A filter for observing entity updates, whose
+     *   criteria are expected to match the ones in [queryFilter].
      * @return A [State] that contains an up-to-date entity value according to
      *   the given [observeFilter].
      */
