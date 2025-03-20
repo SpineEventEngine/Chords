@@ -27,6 +27,7 @@
 package io.spine.chords.client
 
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import com.google.protobuf.Message
 import io.grpc.ManagedChannelBuilder
@@ -103,29 +104,29 @@ public class DesktopClient(
     }
 
     /**
-     * Reads the list of entities with the [entityClass] class into [targetList]
-     * and ensures that future updates to the list are reflected in [targetList]
+     * Reads the list of entities with the [entityClass] class into a new
+     * [State] and ensures that future updates to the list are reflected in it
      * as well.
      *
      * @param entityClass A class of entities that should be read and observed.
-     * @param targetList A [MutableState] that contains a list whose content
-     *   should be populated and kept up to date by this function.
-     * @param extractId  A callback that should read the value of
+     * @param extractId A callback that should read the value of
      *   the entity's ID.
+     * @return A [State] that contains a list whose content should be populated
+     *   and kept up to date by this function.
      */
     public override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
-        targetList: MutableState<List<E>>,
         extractId: (E) -> Any
-    ) {
-        targetList.value = clientRequest().select(entityClass).run()
-
+    ): State<List<E>> {
+        val listState = mutableStateOf(listOf<E>())
+        listState.value = clientRequest().select(entityClass).run()
         clientRequest()
             .subscribeTo(entityClass)
             .observe { entity ->
-                updateList(targetList, entity, extractId)
+                updateList(listState, entity, extractId)
             }
             .post()
+        return listState
     }
 
     /**
@@ -199,7 +200,7 @@ public class DesktopClient(
      *   failure that has occurred during posting of the command. It is unknown
      *   whether the command has been acknowledged or no in this case.
      */
-    override fun <C: CommandMessage> postCommand(command: C) {
+    override fun <C : CommandMessage> postCommand(command: C) {
         var error: Throwable? = null
         try {
             clientRequest()

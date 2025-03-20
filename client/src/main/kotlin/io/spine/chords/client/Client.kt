@@ -26,7 +26,7 @@
 
 package io.spine.chords.client
 
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
@@ -56,22 +56,22 @@ import kotlin.time.Duration
      */
     public val userId: UserId?
 
+
     /**
-     * Reads the list of entities with the [entityClass] class into [targetList]
-     * and ensures that future updates to the list are reflected in [targetList]
+     * Reads the list of entities with the [entityClass] class into a new
+     * [State] and ensures that future updates to the list are reflected in it
      * as well.
      *
      * @param entityClass A class of entities that should be read and observed.
-     * @param targetList A [MutableState] that contains a list whose content
-     *   should be populated and kept up to date by this function.
-     * @param extractId  A callback that should read the value of
+     * @param extractId A callback that should read the value of
      *   the entity's ID.
+     * @return A [State] that contains a list whose content should be populated
+     *   and kept up to date by this function.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
-        targetList: MutableState<List<E>>,
         extractId: (E) -> Any
-    )
+    ): State<List<E>>
 
     /**
      * Reads all entities of type [entityClass] that match the given
