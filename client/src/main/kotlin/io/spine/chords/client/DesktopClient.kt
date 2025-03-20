@@ -144,40 +144,6 @@ public class DesktopClient(
     }
 
     /**
-     * Returns a [State], which contains an up-to-date entity value according to
-     * the given filter parameters.
-     *
-     * If more than one entity matches the criteria specified by [queryFilter]
-     * or [observeFilter] parameters, then the returned [State] gets the first
-     * value from the resulting list. If no entries match the specified
-     * criteria, then the respective value is `null`.
-     *
-     * @param E A type of entity being read and observed.
-     *
-     * @param entityClass A class of entity value that should be
-     *   read and observed.
-     * @param queryFilter A filter for querying the initial entity value.
-     * @param observeFilter A filter for observing entity updates, whose
-     *   criteria are expected to match the ones in [queryFilter].
-     * @param awaitInitialValue Setting to `true` makes the method to wait for
-     *   reading the current entity value before returning.
-     * @return A [State] that contains an up-to-date entity value according to
-     *   the given [observeFilter].
-     */
-    override fun <E : EntityState> readAndObserveFirst(
-        entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter,
-        awaitInitialValue: Boolean
-    ): State<E?> {
-        val entityState = mutableStateOf<E?>(null)
-        readAndObserve(entityClass, { it }, queryFilter, observeFilter, awaitInitialValue) {
-            entityState.value = if (it.size > 0) it.first() else null
-        }
-        return entityState
-    }
-
-    /**
      * Reads all entities of type [entityClass] that match the given
      * [queryFilters] and invokes the [onNext] callback with the initial list of
      * entities. Then sets up observation to receive future updates to the
@@ -234,6 +200,40 @@ public class DesktopClient(
         if (awaitInitialList) {
             initialRead.get()
         }
+    }
+
+    /**
+     * Returns a [State], which contains an up-to-date entity value according to
+     * the given filter parameters.
+     *
+     * If more than one entity matches the criteria specified by [queryFilter]
+     * or [observeFilter] parameters, then the returned [State] gets the first
+     * value from the resulting list. If no entries match the specified
+     * criteria, then the respective value is `null`.
+     *
+     * @param E A type of entity being read and observed.
+     *
+     * @param entityClass A class of entity value that should be
+     *   read and observed.
+     * @param queryFilter A filter for querying the initial entity value.
+     * @param observeFilter A filter for observing entity updates, whose
+     *   criteria are expected to match the ones in [queryFilter].
+     * @param awaitInitialValue Setting to `true` makes the method to wait for
+     *   reading the current entity value before returning.
+     * @return A [State] that contains an up-to-date entity value according to
+     *   the given [observeFilter].
+     */
+    override fun <E : EntityState> readAndObserveFirst(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
+        awaitInitialValue: Boolean
+    ): State<E?> {
+        val entityState = mutableStateOf<E?>(null)
+        readAndObserve(entityClass, { it }, queryFilter, observeFilter, awaitInitialValue) {
+            entityState.value = if (it.size > 0) it.first() else null
+        }
+        return entityState
     }
 
     /**
