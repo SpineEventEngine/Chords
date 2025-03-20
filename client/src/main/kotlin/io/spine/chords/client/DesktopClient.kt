@@ -74,10 +74,7 @@ public class DesktopClient(
 
     init {
         val channel = ManagedChannelBuilder
-            .forAddress(
-                host,
-                port
-            )
+            .forAddress(host, port)
             .usePlaintext()
             .build()
         spineClient = io.spine.client.Client.usingChannel(channel).build()
@@ -108,6 +105,8 @@ public class DesktopClient(
      * [State] and ensures that future updates to the list are reflected in it
      * as well.
      *
+     * @param E A type of entities being read and observed.
+     *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of
      *   the entity's ID.
@@ -127,6 +126,31 @@ public class DesktopClient(
             }
             .post()
         return listState
+    }
+
+    /**
+     * Returns a [State], which contains an up-to-date entity value according to
+     * the given filter parameters.
+     *
+     * @param E A type of entity being read and observed.
+     *
+     * @param entityClass A class of entity value that should be
+     *   read and observed.
+     * @param queryFilter Filter to use for querying the initial entity value.
+     * @param observeFilter Filter to use for observing entity updates.
+     * @return A [State] that contains an up-to-date entity value according to
+     *   the given [observeFilter].
+     */
+    override fun <E : EntityState> readAndObserveFirst(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter
+    ): State<E?> {
+        val entityState = mutableStateOf<E?>(null)
+        readAndObserve(entityClass, { it }, queryFilter, observeFilter) {
+            entityState.value = if (it.size > 0) it.first() else null
+        }
+        return entityState
     }
 
     /**

@@ -140,7 +140,7 @@ import kotlin.time.Duration
 public open class ModalCommandConsequences<C : CommandMessage>(
     private val postingState: MutableState<Boolean>,
     public val close: () -> Unit,
-    consequences: ModalCommandConsequencesScope<C>.() -> Unit,
+    consequences: ModalCommandConsequencesScope<C>.() -> Unit
 ) : CommandConsequences<C>(
     consequences as CommandConsequencesScope<C>.() -> Unit
 ) {
