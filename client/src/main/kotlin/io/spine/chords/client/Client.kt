@@ -166,6 +166,9 @@ import kotlin.time.Duration
      *   when posting a command.
      * @throws ServerError If the command couldn't be acknowledged due to an
      *   error on the server.
+     * @throws ServerCommunicationException In case of a network communication
+     *   failure that has occurred during posting of the command. It is unknown
+     *   whether the command has been acknowledged or no in this case.
      */
     public fun <C: CommandMessage> postCommand(command: C)
 

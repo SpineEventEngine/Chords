@@ -38,7 +38,7 @@ object KotlinX {
         const val core = "$group:kotlinx-coroutines-core:$version"
         const val jdk8 = "$group:kotlinx-coroutines-jdk8:$version"
 
-        // TODO:2024-08-30:dmitry.pikhulya: the following five libs were added
+        // TODO:2024-08-30:dmitry.pikhulya: the following libs were added
         //    relative to the `config` module's content. Consider updating
         //    the `config` module accordingly.
         //   See https://github.com/SpineEventEngine/Chords/issues/3

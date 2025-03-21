@@ -91,7 +91,7 @@ public class DesktopClient(
      */
     override val isOpen: Boolean get() = spineClient.isOpen
 
-    public override val userId: UserId?
+    override val userId: UserId?
         get() = user()
 
 
@@ -102,30 +102,12 @@ public class DesktopClient(
         spineClient.close()
     }
 
-    /**
-     * Reads the list of entities with the [entityClass] class and returns the
-     * respective [State], which is maintained to contain an up-to-date list.
-     *
-     * By default, this method waits until the list is read for the first time
-     * before returning. Setting [awaitInitialList] to `false` will start
-     * loading the list in the background and return immediately.
-     *
-     * @param E A type of entities being read and observed.
-     *
-     * @param entityClass A class of entities that should be read and observed.
-     * @param extractId A callback that should read the value of
-     *   the entity's ID.
-     * @param awaitInitialList Setting to `false` makes the method to wait for
-     *   reading the current entity list before returning.
-     * @return A [State] that contains a list whose content should be populated
-     *   and kept up to date by this function.
-     */
     @OptIn(
         // The observation setup coroutine is short-lived and doesn't need to be
         // limited to a particular scope.
         DelicateCoroutinesApi::class
     )
-    public override fun <E : EntityState> readAndObserve(
+    override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
         awaitInitialList: Boolean
@@ -155,38 +137,12 @@ public class DesktopClient(
         return listState
     }
 
-    /**
-     * Reads all entities of type [entityClass] that match the given
-     * [queryFilters] and invokes the [onNext] callback with the initial list of
-     * entities. Then sets up observation to receive future updates to the
-     * entities, filtering the observed updates using the provided
-     * [observeFilters]. Each time any entity that matches the [observeFilters]
-     * changes, the [onNext] callback will be invoked again with the updated
-     * list of entities.
-     *
-     * By default, this method waits until the list is read for the first time
-     * and invokes [onNext] with the current list's content before returning.
-     * Setting [awaitInitialList] to `false` will start loading the list in the
-     * background and return immediately.
-     *
-     * @param entityClass A class of entities that should be read and observed.
-     * @param extractId A callback that should read the value of the entity's ID.
-     * @param queryFilters Filters to apply when querying the initial list
-     *   of entities.
-     * @param observeFilters Filters to apply when observing updates to
-     *   the entities.
-     * @param awaitInitialList Setting to `true` makes the method to wait for
-     *   reading the current entity list before returning.
-     * @param onNext A callback function that is called with the list of
-     *   entities after the initial query completes, and each time any of the
-     *   observed entities is updated.
-     */
     @OptIn(
         // The observation setup coroutine is short-lived and doesn't need to be
         // limited to a particular scope.
         DelicateCoroutinesApi::class
     )
-    public override fun <E : EntityState> readAndObserve(
+    override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
         queryFilters: CompositeQueryFilter,
@@ -225,30 +181,6 @@ public class DesktopClient(
         }
     }
 
-    /**
-     * Returns a [State], which maintains an up-to-date entity value according
-     * to the given filter parameters.
-     *
-     * If more than one entity matches the criteria specified by [queryFilter]
-     * or [observeFilter] parameters, then the returned [State] gets the first
-     * value from the resulting list. If no entries match the specified
-     * criteria, then the respective value is `null`.
-     *
-     * By default, this method waits until the entity value is read for the
-     * first time before returning. Setting [awaitInitialValue] to `false` will
-     * start loading the value in the background and return immediately.
-     *
-     * @param E A type of entity being read and observed.
-     *
-     * @param entityClass A class of entity value that should be
-     *   read and observed.
-     * @param queryFilter Filter to use for querying the initial entity value.
-     * @param observeFilter Filter to use for observing entity updates.
-     * @param awaitInitialValue Setting to `true` makes the method to wait for
-     *   reading the current entity value before returning.
-     * @return A [State] that contains an up-to-date entity value according to
-     *   the given [observeFilter].
-     */
     override fun <E : EntityState> readAndObserveFirst(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
@@ -262,13 +194,7 @@ public class DesktopClient(
         return entityState
     }
 
-    /**
-     * Retrieves an entity of the specified class with the given ID.
-     *
-     * @param entityClass The class of the entity to retrieve.
-     * @param id The ID of the entity to retrieve.
-     */
-    public override fun <E : EntityState, M : Message> read(
+    override fun <E : EntityState, M : Message> read(
         entityClass: Class<E>,
         id: M
     ): E? {
@@ -279,16 +205,6 @@ public class DesktopClient(
         return entities.firstOrNull()
     }
 
-    /**
-     * Posts the given [command] to the server.
-     *
-     * @param command A command that has to be posted.
-     * @throws ServerError If the command could not be acknowledged due to an
-     *   error on the server.
-     * @throws ServerCommunicationException In case of a network communication
-     *   failure that has occurred during posting of the command. It is unknown
-     *   whether the command has been acknowledged or no in this case.
-     */
     override fun <C : CommandMessage> postCommand(command: C) {
         var error: Throwable? = null
         try {
@@ -313,22 +229,11 @@ public class DesktopClient(
         }
     }
 
-    /**
-     * Posts the specified [command] and handles the respective [consequences].
-     *
-     * See the [Client.postCommand] documentation for details.
-     */
-    public override fun <C : CommandMessage> postCommand(
+    override fun <C : CommandMessage> postCommand(
         command: C,
         consequences: CommandConsequences<C>
     ): EventSubscriptions = consequences.postAndProcessConsequences(command)
 
-    /**
-     * Subscribes to an event of type [E] whose given [field]
-     * equals [fieldValue].
-     *
-     * See the [Client.onEvent] documentation for details.
-     */
     override fun <E : EventMessage> onEvent(
         event: Class<E>,
         field: EventMessageField,
