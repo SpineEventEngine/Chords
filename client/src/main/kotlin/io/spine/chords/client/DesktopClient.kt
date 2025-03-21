@@ -94,7 +94,6 @@ public class DesktopClient(
     override val userId: UserId?
         get() = user()
 
-
     /**
      * Closes the client and shuts down the connection with the server.
      */
@@ -102,93 +101,55 @@ public class DesktopClient(
         spineClient.close()
     }
 
-    @OptIn(
-        // The observation setup coroutine is short-lived and doesn't need to be
-        // limited to a particular scope.
-        DelicateCoroutinesApi::class
-    )
     override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
-        extractId: (E) -> Any,
-        awaitInitialList: Boolean
+        extractId: (E) -> Any
     ): State<List<E>> {
         val listState = mutableStateOf(listOf<E>())
-        val readInitialList = {
-            listState.value = clientRequest().select(entityClass).run()
-        }
-        if (awaitInitialList) {
-            readInitialList()
-        }
-        GlobalScope.launch(IO) {
-            if (!awaitInitialList) {
+        listState.value = clientRequest().select(entityClass).run()
+        clientRequest()
+            .subscribeTo(entityClass)
+            .observe { entity ->
                 runBlocking(Main) {
-                    readInitialList()
+                    updateList(listState, entity, extractId)
                 }
             }
-            clientRequest()
-                .subscribeTo(entityClass)
-                .observe { entity ->
-                    runBlocking(Main) {
-                        updateList(listState, entity, extractId)
-                    }
-                }
-                .post()
-        }
+            .post()
         return listState
     }
 
-    @OptIn(
-        // The observation setup coroutine is short-lived and doesn't need to be
-        // limited to a particular scope.
-        DelicateCoroutinesApi::class
-    )
     override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
         queryFilters: CompositeQueryFilter,
         observeFilters: CompositeEntityStateFilter,
-        awaitInitialList: Boolean,
         onNext: (List<E>) -> Unit
     ) {
-        var initialResult: List<E>? = null
-        val readInitialList = {
-             initialResult = clientRequest()
-                .select(entityClass)
-                .where(queryFilters)
-                .run()
-             onNext(initialResult!!)
-        }
-        if (awaitInitialList) {
-            readInitialList()
-        }
-        GlobalScope.launch(IO) {
-            if (!awaitInitialList) {
+        val initialResult: List<E>? = clientRequest()
+            .select(entityClass)
+            .where(queryFilters)
+            .run()
+        onNext(initialResult!!)
+        val observedEntities = mutableStateOf(initialResult)
+        clientRequest()
+            .subscribeTo(entityClass)
+            .observe { updatedEntity ->
+                updateList(observedEntities, updatedEntity, extractId)
                 runBlocking(Main) {
-                    readInitialList()
+                    onNext(observedEntities.value)
                 }
             }
-            val observedEntities = mutableStateOf(initialResult!!)
-            clientRequest()
-                .subscribeTo(entityClass)
-                .observe { updatedEntity ->
-                    updateList(observedEntities, updatedEntity, extractId)
-                    runBlocking(Main) {
-                        onNext(observedEntities.value)
-                    }
-                }
-                .where(observeFilters)
-                .post()
-        }
+            .where(observeFilters)
+            .post()
     }
 
     override fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter,
-        awaitInitialValue: Boolean
+        observeFilter: CompositeEntityStateFilter
     ): State<E?> {
         val entityState = mutableStateOf<E?>(null)
-        readAndObserve(entityClass, { it }, queryFilter, observeFilter, awaitInitialValue) {
+        readAndObserve(entityClass, { it }, queryFilter, observeFilter) {
             entityState.value = if (it.size > 0) it.first() else null
         }
         return entityState

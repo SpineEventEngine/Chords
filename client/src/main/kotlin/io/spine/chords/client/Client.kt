@@ -41,7 +41,7 @@ import kotlin.time.Duration
 /**
  * Provides an API for interacting with the application server.
  */
- public interface Client {
+public interface Client {
 
     /**
      * Signifies whether the connection with the server is open.
@@ -56,29 +56,21 @@ import kotlin.time.Duration
      */
     public val userId: UserId?
 
-
     /**
      * Reads the list of entities with the [entityClass] class and returns the
      * respective [State], which is maintained to contain an up-to-date list.
-     *
-     * By default, this method waits until the list is read for the first time
-     * before returning. Setting [awaitInitialList] to `false` will start
-     * loading the list in the background and return immediately.
      *
      * @param E A type of entities being read and observed.
      *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of
      *   the entity's ID.
-     * @param awaitInitialList Setting to `false` makes the method to wait for
-     *   reading the current entity list before returning.
      * @return A [State] that contains a list whose content should be populated
      *   and kept up to date by this function.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
-        extractId: (E) -> Any,
-        awaitInitialList: Boolean = true
+        extractId: (E) -> Any
     ): State<List<E>>
 
     /**
@@ -90,19 +82,12 @@ import kotlin.time.Duration
      * changes, the [onNext] callback will be invoked again with the updated
      * list of entities.
      *
-     * By default, this method waits until the list is read for the first time
-     * and invokes [onNext] with the current list's content before returning.
-     * Setting [awaitInitialList] to `false` will start loading the list in the
-     * background and return immediately.
-     *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of the entity's ID.
      * @param queryFilters Filters to apply when querying the initial list
      *   of entities.
      * @param observeFilters Filters to apply when observing updates to
      *   the entities.
-     * @param awaitInitialList Setting to `true` makes the method to wait for
-     *   reading the current entity list before returning.
      * @param onNext A callback function that is called with the list of
      *   entities after the initial query completes, and each time any of the
      *   observed entities is updated.
@@ -112,7 +97,6 @@ import kotlin.time.Duration
         extractId: (E) -> Any,
         queryFilters: CompositeQueryFilter,
         observeFilters: CompositeEntityStateFilter,
-        awaitInitialList: Boolean = true,
         onNext: (List<E>) -> Unit
     )
 
@@ -125,26 +109,19 @@ import kotlin.time.Duration
      * value from the resulting list. If no entries match the specified
      * criteria, then the respective value is `null`.
      *
-     * By default, this method waits until the entity value is read for the
-     * first time before returning. Setting [awaitInitialValue] to `false` will
-     * start loading the value in the background and return immediately.
-     *
      * @param E A type of entity being read and observed.
      *
      * @param entityClass A class of entity value that should be
      *   read and observed.
      * @param queryFilter Filter to use for querying the initial entity value.
      * @param observeFilter Filter to use for observing entity updates.
-     * @param awaitInitialValue Setting to `true` makes the method to wait for
-     *   reading the current entity value before returning.
      * @return A [State] that contains an up-to-date entity value according to
      *   the given [observeFilter].
      */
     public fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter,
-        awaitInitialValue: Boolean = true
+        observeFilter: CompositeEntityStateFilter
     ): State<E?>
 
     /**
