@@ -200,7 +200,7 @@ public class DesktopClient(
                 .select(entityClass)
                 .where(queryFilters)
                 .run()
-            onNext(initialResult!!)
+             onNext(initialResult!!)
         }
         if (awaitInitialList) {
             readInitialList()
