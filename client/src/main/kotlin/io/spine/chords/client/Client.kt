@@ -140,7 +140,7 @@ import kotlin.time.Duration
      * @return A [State] that contains an up-to-date entity value according to
      *   the given [observeFilter].
      */
-    public fun <E : EntityState> readAndObserveFirst(
+    public fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
         observeFilter: CompositeEntityStateFilter,

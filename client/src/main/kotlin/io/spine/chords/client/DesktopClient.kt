@@ -181,7 +181,7 @@ public class DesktopClient(
         }
     }
 
-    override fun <E : EntityState> readAndObserveFirst(
+    override fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
         observeFilter: CompositeEntityStateFilter,
