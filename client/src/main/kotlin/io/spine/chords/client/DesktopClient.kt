@@ -121,13 +121,13 @@ public class DesktopClient(
     override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
-        queryFilters: CompositeQueryFilter,
-        observeFilters: CompositeEntityStateFilter,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
         onNext: (List<E>) -> Unit
     ) {
         val initialResult: List<E> = clientRequest()
             .select(entityClass)
-            .where(queryFilters)
+            .where(queryFilter)
             .run()
         onNext(initialResult)
         val observedEntities = mutableStateOf(initialResult)
@@ -139,7 +139,7 @@ public class DesktopClient(
                     onNext(observedEntities.value)
                 }
             }
-            .where(observeFilters)
+            .where(observeFilter)
             .post()
     }
 

@@ -75,19 +75,19 @@ public interface Client {
 
     /**
      * Reads all entities of type [entityClass] that match the given
-     * [queryFilters] and invokes the [onNext] callback with the initial list of
+     * [queryFilter] and invokes the [onNext] callback with the initial list of
      * entities. Then sets up observation to receive future updates to the
      * entities, filtering the observed updates using the provided
-     * [observeFilters]. Each time any entity that matches the [observeFilters]
+     * [observeFilter]. Each time any entity that matches the [observeFilter]
      * changes, the [onNext] callback will be invoked again with the updated
      * list of entities.
      *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of the entity's ID.
-     * @param queryFilters Filters to apply when querying the initial list
+     * @param queryFilter A filter to apply when querying the initial list
      *   of entities.
-     * @param observeFilters Filters to apply when observing updates to
-     *   the entities.
+     * @param observeFilter A filter to apply when observing updates to
+     *   the entities, whose criteria should match the ones of [queryFilter].
      * @param onNext A callback function that is called with the list of
      *   entities after the initial query completes, and each time any of the
      *   observed entities is updated.
@@ -95,8 +95,8 @@ public interface Client {
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
-        queryFilters: CompositeQueryFilter,
-        observeFilters: CompositeEntityStateFilter,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
         onNext: (List<E>) -> Unit
     )
 
@@ -113,10 +113,11 @@ public interface Client {
      *
      * @param entityClass A class of entity value that should be
      *   read and observed.
-     * @param queryFilter Filter to use for querying the initial entity value.
-     * @param observeFilter Filter to use for observing entity updates.
+     * @param queryFilter A filter to use for querying the initial entity value.
+     * @param observeFilter A filter to use for observing entity updates, whose
+     *   criteria should match the ones of [queryFilter].
      * @return A [State] that contains an up-to-date entity value according to
-     *   the given [observeFilter].
+     *   the given criteria.
      */
     public fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
