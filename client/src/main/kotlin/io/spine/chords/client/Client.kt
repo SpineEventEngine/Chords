@@ -87,7 +87,7 @@ public interface Client {
      * @param queryFilter A filter to apply when querying the initial list
      *   of entities.
      * @param observeFilter A filter to apply when observing updates to
-     *   the entities, whose criteria should match the ones of [queryFilter].
+     *   the entities, whose criteria should match the ones in [queryFilter].
      * @param onNext A callback function that is called with the list of
      *   entities after the initial query completes, and each time any of the
      *   observed entities is updated.
@@ -104,11 +104,14 @@ public interface Client {
      * Returns a [State], which maintains an up-to-date entity value according
      * to the given filter parameters.
      *
-     * If more than one entity matches the criteria specified by [queryFilter]
+     * Note the following specifics of how special cases are handled:
+     * - If more than one entity matches the criteria specified by [queryFilter]
      * or [observeFilter] parameters, then the returned [State] gets the first
-     * matching value. If no entries match the specified criteria, then the
-     * state gets a non-`null` value of the [defaultValue] parameter. If
-     * [defaultValue] is `null`, [NoMatchingDataException] is thrown.
+     * matching value.
+     * - If no entries match the specified criteria, then the
+     * state gets the value of the [defaultValue] parameter, provided that it
+     * contains non-`null` value.
+     * - If [defaultValue] is `null`, then [NoMatchingDataException] is thrown.
      *
      * @param E A type of entity being read and observed.
      *
@@ -116,7 +119,7 @@ public interface Client {
      *   read and observed.
      * @param queryFilter A filter to use for querying the initial entity value.
      * @param observeFilter A filter to use for observing entity updates, whose
-     *   criteria should match the ones of [queryFilter].
+     *   criteria should match the ones in [queryFilter].
      * @param defaultValue Specifying a non-`null` value prevents this function
      *   from thrown an exception if no matching records were found by using
      *   this value as a result.
