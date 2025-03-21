@@ -147,9 +147,8 @@ public class DesktopClient(
         val initialValue = initialList.getOrNull(0) ?: defaultValue
         if (initialValue == null) {
             throw NoMatchingDataException(
-                "No entity could be found that matches the specified criteria:\n" +
-                "    entityClass = ${entityClass.name}\n" +
-                "    queryFilter = $queryFilter\n"
+                "No entity could be found that matches the specified criteria, and no " +
+                        "`defaultValue` has been provided. Entity class: ${entityClass.name}"
             )
         }
         val state = mutableStateOf(initialValue)
