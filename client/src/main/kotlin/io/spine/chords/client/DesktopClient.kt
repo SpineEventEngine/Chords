@@ -147,12 +147,30 @@ public class DesktopClient(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
         observeFilter: CompositeEntityStateFilter
-    ): State<E?> {
-        val entityState = mutableStateOf<E?>(null)
-        readAndObserve(entityClass, { it }, queryFilter, observeFilter) {
-            entityState.value = if (it.size > 0) it.first() else null
+    ): State<E> {
+        val initialResult: List<E> = clientRequest()
+            .select(entityClass)
+            .where(queryFilter)
+            .limit(1)
+            .run()
+        if (initialResult.size == 0) {
+            throw NoMatchingDataException(
+                "No entity could be found that matches the specified criteria"
+            )
         }
-        return entityState
+
+        val state = mutableStateOf(initialResult.get(0))
+
+        clientRequest()
+            .subscribeTo(entityClass)
+            .observe {
+                runBlocking(Main) {
+                    state.value = it
+                }
+            }
+            .where(observeFilter)
+            .post()
+        return state
     }
 
     override fun <E : EntityState, M : Message> read(
