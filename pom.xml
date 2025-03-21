@@ -102,6 +102,12 @@ all modules and does not describe the project structure per-subproject.
     <scope>compile</scope>
   </dependency>
   <dependency>
+    <groupId>org.jetbrains.kotlinx</groupId>
+    <artifactId>kotlinx-coroutines-swing</artifactId>
+    <version>1.7.3</version>
+    <scope>compile</scope>
+  </dependency>
+  <dependency>
     <groupId>com.google.guava</groupId>
     <artifactId>guava-testlib</artifactId>
     <version>31.1-jre</version>

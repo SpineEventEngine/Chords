@@ -25,6 +25,7 @@
  */
 
 import io.spine.internal.dependency.Kotlin
+import io.spine.internal.dependency.KotlinX
 import io.spine.internal.dependency.Material3
 import io.spine.internal.dependency.Spine
 
@@ -35,6 +36,7 @@ plugins {
 
 dependencies {
     implementation(Kotlin.reflect)
+    implementation(KotlinX.Coroutines.swing)
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
     implementation(Spine.CoreJava.server)

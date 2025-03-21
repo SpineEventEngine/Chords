@@ -45,14 +45,15 @@ import io.spine.client.EventFilter.eq
 import io.spine.client.Subscription
 import io.spine.core.UserId
 import java.lang.Runtime.getRuntime
-import java.util.concurrent.CompletableFuture
 import kotlin.time.Duration
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -120,25 +121,37 @@ public class DesktopClient(
      * @return A [State] that contains a list whose content should be populated
      *   and kept up to date by this function.
      */
+    @OptIn(
+        // The observation setup coroutine is short-lived and doesn't need to be
+        // limited to a particular scope.
+        DelicateCoroutinesApi::class
+    )
     public override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
         awaitInitialList: Boolean
     ): State<List<E>> {
         val listState = mutableStateOf(listOf<E>())
-        val firstRead = CompletableFuture<Unit>()
-        Thread {
+        val readInitialList = {
             listState.value = clientRequest().select(entityClass).run()
-            firstRead.complete(Unit)
+        }
+        if (awaitInitialList) {
+            readInitialList()
+        }
+        GlobalScope.launch(IO) {
+            if (!awaitInitialList) {
+                runBlocking(Main) {
+                    readInitialList()
+                }
+            }
             clientRequest()
                 .subscribeTo(entityClass)
                 .observe { entity ->
-                    updateList(listState, entity, extractId)
+                    runBlocking(Main) {
+                        updateList(listState, entity, extractId)
+                    }
                 }
                 .post()
-        }.start()
-        if (awaitInitialList) {
-            firstRead.get()
         }
         return listState
     }
@@ -170,6 +183,11 @@ public class DesktopClient(
      *   entities after the initial query completes, and each time any of the
      *   observed entities is updated.
      */
+    @OptIn(
+        // The observation setup coroutine is short-lived and doesn't need to be
+        // limited to a particular scope.
+        DelicateCoroutinesApi::class
+    )
     public override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
@@ -178,27 +196,34 @@ public class DesktopClient(
         awaitInitialList: Boolean,
         onNext: (List<E>) -> Unit
     ) {
-        val initialRead = CompletableFuture<Unit>()
-        Thread {
-            val initialResult: List<E> = clientRequest()
+        var initialResult: List<E>? = null
+        val readInitialList = {
+             initialResult = clientRequest()
                 .select(entityClass)
                 .where(queryFilters)
                 .run()
-            onNext(initialResult)
-            initialRead.complete(Unit)
-
-            val observedEntities = mutableStateOf(initialResult)
+            onNext(initialResult!!)
+        }
+        if (awaitInitialList) {
+            readInitialList()
+        }
+        GlobalScope.launch(IO) {
+            if (!awaitInitialList) {
+                runBlocking(Main) {
+                    readInitialList()
+                }
+            }
+            val observedEntities = mutableStateOf(initialResult!!)
             clientRequest()
                 .subscribeTo(entityClass)
                 .observe { updatedEntity ->
                     updateList(observedEntities, updatedEntity, extractId)
-                    onNext(observedEntities.value)
+                    runBlocking(Main) {
+                        onNext(observedEntities.value)
+                    }
                 }
                 .where(observeFilters)
                 .post()
-        }.start()
-        if (awaitInitialList) {
-            initialRead.get()
         }
     }
 

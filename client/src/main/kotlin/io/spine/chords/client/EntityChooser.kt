@@ -88,7 +88,7 @@ public abstract class EntityChooser<
     }
 
     override val items: MutableState<Iterable<I>> = mutableStateOf(listOf())
-    private val entityStates = app.client.readAndObserve(entityStateClass, ::entityId)
+    private val entityStates = app.client.readAndObserve(entityStateClass, ::entityId, false)
     private val entityStatesByIds: HashMap<I, E> = hashMapOf()
 
     /**
