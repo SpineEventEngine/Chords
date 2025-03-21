@@ -73,6 +73,8 @@ public class DesktopClient(
     private val user: () -> UserId? = { null }
 ) : Client {
     private val spineClient: io.spine.client.Client
+    override val isOpen: Boolean get() = spineClient.isOpen
+    override val userId: UserId? get() = user()
 
     init {
         val channel = ManagedChannelBuilder
@@ -86,17 +88,6 @@ public class DesktopClient(
         })
     }
 
-    /**
-     * A flag that signifies whether the connection with the server is open.
-     */
-    override val isOpen: Boolean get() = spineClient.isOpen
-
-    override val userId: UserId?
-        get() = user()
-
-    /**
-     * Closes the client and shuts down the connection with the server.
-     */
     override fun close() {
         spineClient.close()
     }
@@ -146,14 +137,22 @@ public class DesktopClient(
     override fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter
-    ): State<E?> {
-        val initialResult: List<E> = clientRequest()
+        observeFilter: CompositeEntityStateFilter,
+        defaultValue: E?
+    ): State<E> {
+        val initialList = clientRequest()
             .select(entityClass)
             .where(queryFilter)
-            .limit(1)
             .run()
-        val state = mutableStateOf(initialResult.getOrNull(0))
+        val initialValue = initialList.getOrNull(0) ?: defaultValue
+        if (initialValue == null) {
+            throw NoMatchingDataException(
+                "No entity could be found that matches the specified criteria:\n" +
+                "    entityClass = ${entityClass.name}\n" +
+                "    queryFilter = $queryFilter\n"
+            )
+        }
+        val state = mutableStateOf(initialValue)
 
         clientRequest()
             .subscribeTo(entityClass)

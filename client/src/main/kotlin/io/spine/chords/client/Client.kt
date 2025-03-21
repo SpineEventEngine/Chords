@@ -107,7 +107,8 @@ public interface Client {
      * If more than one entity matches the criteria specified by [queryFilter]
      * or [observeFilter] parameters, then the returned [State] gets the first
      * matching value. If no entries match the specified criteria, then the
-     * respective value is `null`.
+     * state gets a non-`null` value of the [defaultValue] parameter. If
+     * [defaultValue] is `null`, [NoMatchingDataException] is thrown.
      *
      * @param E A type of entity being read and observed.
      *
@@ -116,14 +117,20 @@ public interface Client {
      * @param queryFilter A filter to use for querying the initial entity value.
      * @param observeFilter A filter to use for observing entity updates, whose
      *   criteria should match the ones of [queryFilter].
+     * @param defaultValue Specifying a non-`null` value prevents this function
+     *   from thrown an exception if no matching records were found by using
+     *   this value as a result.
      * @return A [State] that contains an up-to-date entity value according to
      *   the given criteria.
+     * @throws NoMatchingDataException If there is no entity that matches the
+     *   given criteria and there's no non-`null` [defaultValue] provided.
      */
     public fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter
-    ): State<E?>
+        observeFilter: CompositeEntityStateFilter,
+        defaultValue: E? = null
+    ): State<E>
 
     /**
      * Retrieves an entity of the specified class with the given ID.
@@ -363,5 +370,14 @@ public class ServerCommunicationException(cause: Throwable) : RuntimeException(c
 public class ServerError(public val error: Error) : RuntimeException(error.message) {
     public companion object {
         private const val serialVersionUID: Long = -5438430153458733051L
+    }
+}
+
+/**
+ * Signifies a failure to obtain data matching the requested criteria.
+ */
+public class NoMatchingDataException(message: String) : RuntimeException(message) {
+    public companion object {
+        private const val serialVersionUID: Long = 2459671723206505789L
     }
 }
