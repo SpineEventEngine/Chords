@@ -28,7 +28,10 @@ package io.spine.chords.core.appshell
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.application
 import io.spine.chords.core.layout.ConfirmationDialog
@@ -197,13 +200,19 @@ public open class Application(
         }
 
         application(exitProcessOnExit = exitProcessOnClose) {
+            var mainWindowVisible by mutableStateOf(true)
             val appWindow = remember {
-                val appWindow = createAppWindow(::exitApplication)
+                val appWindow = createAppWindow({
+                    mainWindowVisible = false
+                    exitApplication()
+                })
                 _ui = ApplicationUI(appWindow)
                 appWindow.mainScreen.topBar.actions = { topBarActions() }
                 appWindow
             }
-            appWindowContent(appWindow)
+            if (mainWindowVisible) {
+                appWindowContent(appWindow)
+            }
         }
     }
 
