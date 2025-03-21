@@ -116,14 +116,12 @@ public interface Client {
      * @param observeFilter Filter to use for observing entity updates.
      * @return A [State] that contains an up-to-date entity value according to
      *   the given [observeFilter].
-     * @throws NoMatchingDataException If there is no entity that matches the
-     *   given criteria.
      */
     public fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
         observeFilter: CompositeEntityStateFilter
-    ): State<E>
+    ): State<E?>
 
     /**
      * Retrieves an entity of the specified class with the given ID.
@@ -363,14 +361,5 @@ public class ServerCommunicationException(cause: Throwable) : RuntimeException(c
 public class ServerError(public val error: Error) : RuntimeException(error.message) {
     public companion object {
         private const val serialVersionUID: Long = -5438430153458733051L
-    }
-}
-
-/**
- * Signifies a failure to obtain data matching the requested criteria.
- */
-public class NoMatchingDataException(message: String) : RuntimeException(message) {
-    public companion object {
-        private const val serialVersionUID: Long = 2459671723206505789L
     }
 }

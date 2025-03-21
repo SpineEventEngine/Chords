@@ -147,19 +147,13 @@ public class DesktopClient(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
         observeFilter: CompositeEntityStateFilter
-    ): State<E> {
+    ): State<E?> {
         val initialResult: List<E> = clientRequest()
             .select(entityClass)
             .where(queryFilter)
             .limit(1)
             .run()
-        if (initialResult.size == 0) {
-            throw NoMatchingDataException(
-                "No entity could be found that matches the specified criteria"
-            )
-        }
-
-        val state = mutableStateOf(initialResult.get(0))
+        val state = mutableStateOf(initialResult.getOrNull(0))
 
         clientRequest()
             .subscribeTo(entityClass)
