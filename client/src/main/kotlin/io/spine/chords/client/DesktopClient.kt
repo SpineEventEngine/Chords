@@ -125,11 +125,11 @@ public class DesktopClient(
         observeFilters: CompositeEntityStateFilter,
         onNext: (List<E>) -> Unit
     ) {
-        val initialResult: List<E>? = clientRequest()
+        val initialResult: List<E> = clientRequest()
             .select(entityClass)
             .where(queryFilters)
             .run()
-        onNext(initialResult!!)
+        onNext(initialResult)
         val observedEntities = mutableStateOf(initialResult)
         clientRequest()
             .subscribeTo(entityClass)
