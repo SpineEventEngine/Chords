@@ -106,7 +106,8 @@ public interface Client {
      *
      * If more than one entity matches the criteria specified by [queryFilter]
      * or [observeFilter] parameters, then the returned [State] gets the first
-     * matching value.
+     * matching value. If no entries match the specified criteria, then the
+     * respective value is `null`.
      *
      * @param E A type of entity being read and observed.
      *
