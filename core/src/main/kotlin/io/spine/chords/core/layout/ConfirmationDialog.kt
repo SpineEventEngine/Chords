@@ -42,7 +42,7 @@ import kotlinx.coroutines.CompletableDeferred
  * A dialog that prompts the user either to make a boolean decision
  * (e.g. approve or deny some action).
  *
- * Use the [ConfirmationDialog.showConfirmation] function to display the
+ * Use the `ConfirmationDialog.showConfirmation` function to display the
  * confirmation dialog and wait for the user's decision:
  *
  * ```

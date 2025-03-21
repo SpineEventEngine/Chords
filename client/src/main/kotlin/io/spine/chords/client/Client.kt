@@ -117,8 +117,8 @@ import kotlin.time.Duration
     )
 
     /**
-     * Returns a [State], which contains an up-to-date entity value according to
-     * the given filter parameters.
+     * Returns a [State], which maintains an up-to-date entity value according
+     * to the given filter parameters.
      *
      * @param E A type of entity being read and observed.
      *

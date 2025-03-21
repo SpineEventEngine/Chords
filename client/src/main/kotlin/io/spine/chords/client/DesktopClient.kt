@@ -203,8 +203,8 @@ public class DesktopClient(
     }
 
     /**
-     * Returns a [State], which contains an up-to-date entity value according to
-     * the given filter parameters.
+     * Returns a [State], which maintains an up-to-date entity value according
+     * to the given filter parameters.
      *
      * If more than one entity matches the criteria specified by [queryFilter]
      * or [observeFilter] parameters, then the returned [State] gets the first
