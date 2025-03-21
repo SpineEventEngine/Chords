@@ -123,7 +123,7 @@ public interface Client {
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
         observeFilter: CompositeEntityStateFilter
-    ): State<E?>
+    ): State<E>
 
     /**
      * Retrieves an entity of the specified class with the given ID.
