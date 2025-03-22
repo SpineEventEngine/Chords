@@ -41,6 +41,24 @@ import kotlinx.coroutines.CompletableDeferred
 /**
  * A dialog that prompts the user either to make a boolean decision
  * (e.g. approve or deny some action).
+ *
+ * Use the `ConfirmationDialog.showConfirmation` function to display the
+ * confirmation dialog and wait for the user's decision:
+ *
+ * ```
+ *     val confirmed = ConfirmationDialog.showConfirmation {
+ *         message = "Are you sure you want to continue?"
+ *         description = "This action is irreversible."
+ *     }
+ * ```
+ *
+ * You can also import this function specifically and make its usages
+ * more concise, like this:
+ * ```
+ *     val confirmed = showConfirmation {
+ *         message = "Are you sure you want to continue?"
+ *     }
+ * ```
  */
 public class ConfirmationDialog : Dialog() {
     public companion object : AbstractComponentSetup({ ConfirmationDialog() }) {

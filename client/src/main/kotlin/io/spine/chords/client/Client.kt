@@ -26,7 +26,7 @@
 
 package io.spine.chords.client
 
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
@@ -41,7 +41,7 @@ import kotlin.time.Duration
 /**
  * Provides an API for interacting with the application server.
  */
- public interface Client {
+public interface Client {
 
     /**
      * Signifies whether the connection with the server is open.
@@ -57,37 +57,37 @@ import kotlin.time.Duration
     public val userId: UserId?
 
     /**
-     * Reads the list of entities with the [entityClass] class into [targetList]
-     * and ensures that future updates to the list are reflected in [targetList]
-     * as well.
+     * Reads the list of entities with the [entityClass] class and returns the
+     * respective [State], which is maintained to contain an up-to-date list.
+     *
+     * @param E A type of entities being read and observed.
      *
      * @param entityClass A class of entities that should be read and observed.
-     * @param targetList A [MutableState] that contains a list whose content
-     *   should be populated and kept up to date by this function.
-     * @param extractId  A callback that should read the value of
+     * @param extractId A callback that should read the value of
      *   the entity's ID.
+     * @return A [State] that contains a list whose content should be populated
+     *   and kept up to date by this function.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
-        targetList: MutableState<List<E>>,
         extractId: (E) -> Any
-    )
+    ): State<List<E>>
 
     /**
      * Reads all entities of type [entityClass] that match the given
-     * [queryFilters] and invokes the [onNext] callback with the initial list of
+     * [queryFilter] and invokes the [onNext] callback with the initial list of
      * entities. Then sets up observation to receive future updates to the
      * entities, filtering the observed updates using the provided
-     * [observeFilters]. Each time any entity that matches the [observeFilters]
+     * [observeFilter]. Each time any entity that matches the [observeFilter]
      * changes, the [onNext] callback will be invoked again with the updated
      * list of entities.
      *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of the entity's ID.
-     * @param queryFilters Filters to apply when querying the initial list
+     * @param queryFilter A filter to apply when querying the initial list
      *   of entities.
-     * @param observeFilters Filters to apply when observing updates to
-     *   the entities.
+     * @param observeFilter A filter to apply when observing updates to
+     *   the entities, whose criteria should match the ones in [queryFilter].
      * @param onNext A callback function that is called with the list of
      *   entities after the initial query completes, and each time any of the
      *   observed entities is updated.
@@ -95,10 +95,45 @@ import kotlin.time.Duration
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
-        queryFilters: CompositeQueryFilter,
-        observeFilters: CompositeEntityStateFilter,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
         onNext: (List<E>) -> Unit
     )
+
+    /**
+     * Returns a [State], which maintains an up-to-date entity value according
+     * to the given filter parameters.
+     *
+     * Note the following specifics of how special cases are handled:
+     * - If more than one entity matches the criteria specified by [queryFilter]
+     * or [observeFilter] parameters, then the returned [State] gets the first
+     * matching value.
+     * - If no entries match the specified criteria, then the
+     * state gets the value of the [defaultValue] parameter, provided that it
+     * contains non-`null` value.
+     * - If [defaultValue] is `null`, then [NoMatchingDataException] is thrown.
+     *
+     * @param E A type of entity being read and observed.
+     *
+     * @param entityClass A class of entity value that should be
+     *   read and observed.
+     * @param queryFilter A filter to use for querying the initial entity value.
+     * @param observeFilter A filter to use for observing entity updates, whose
+     *   criteria should match the ones in [queryFilter].
+     * @param defaultValue Specifying a non-`null` value prevents this function
+     *   from thrown an exception if no matching records were found by using
+     *   this value as a result.
+     * @return A [State] that contains an up-to-date entity value according to
+     *   the given criteria.
+     * @throws NoMatchingDataException If there is no entity that matches the
+     *   given criteria and there's no non-`null` [defaultValue] provided.
+     */
+    public fun <E : EntityState> readOneAndObserve(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
+        defaultValue: E? = null
+    ): State<E>
 
     /**
      * Retrieves an entity of the specified class with the given ID.
@@ -119,6 +154,9 @@ import kotlin.time.Duration
      *   when posting a command.
      * @throws ServerError If the command couldn't be acknowledged due to an
      *   error on the server.
+     * @throws ServerCommunicationException In case of a network communication
+     *   failure that has occurred during posting of the command. It is unknown
+     *   whether the command has been acknowledged or no in this case.
      */
     public fun <C: CommandMessage> postCommand(command: C)
 
@@ -335,5 +373,14 @@ public class ServerCommunicationException(cause: Throwable) : RuntimeException(c
 public class ServerError(public val error: Error) : RuntimeException(error.message) {
     public companion object {
         private const val serialVersionUID: Long = -5438430153458733051L
+    }
+}
+
+/**
+ * Signifies a failure to obtain data matching the requested criteria.
+ */
+public class NoMatchingDataException(message: String) : RuntimeException(message) {
+    public companion object {
+        private const val serialVersionUID: Long = 2459671723206505789L
     }
 }

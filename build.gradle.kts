@@ -65,6 +65,7 @@ allprojects {
                 KotlinX.Coroutines.core,
                 KotlinX.Coroutines.bom,
                 KotlinX.Coroutines.jdk8,
+                KotlinX.Coroutines.swing,
                 KotlinX.Coroutines.test,
                 KotlinX.Coroutines.testJvm,
                 KotlinX.Coroutines.debug,

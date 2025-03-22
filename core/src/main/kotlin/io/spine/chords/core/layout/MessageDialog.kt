@@ -40,6 +40,17 @@ import kotlinx.coroutines.CompletableDeferred
 
 /**
  * A dialog that displays the specified text message for the user.
+ *
+ * Use the `MessageDialog.showMessage` method to show the dialog.
+ * Here's an example:
+ * ```
+ *     MessageDialog.showMessage("An error has occurred: ...")
+ * ```
+ *
+ * You can make the usage more concise by importing this function:
+ * ```
+ *     showMessage("An error has occurred: ...")
+ * ```
  */
 public class MessageDialog : Dialog() {
     public companion object : AbstractComponentSetup({ MessageDialog() }) {

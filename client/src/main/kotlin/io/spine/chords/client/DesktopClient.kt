@@ -27,6 +27,7 @@
 package io.spine.chords.client
 
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import com.google.protobuf.Message
 import io.grpc.ManagedChannelBuilder
@@ -47,10 +48,12 @@ import java.lang.Runtime.getRuntime
 import kotlin.time.Duration
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -70,13 +73,12 @@ public class DesktopClient(
     private val user: () -> UserId? = { null }
 ) : Client {
     private val spineClient: io.spine.client.Client
+    override val isOpen: Boolean get() = spineClient.isOpen
+    override val userId: UserId? get() = user()
 
     init {
         val channel = ManagedChannelBuilder
-            .forAddress(
-                host,
-                port
-            )
+            .forAddress(host, port)
             .usePlaintext()
             .build()
         spineClient = io.spine.client.Client.usingChannel(channel).build()
@@ -86,99 +88,84 @@ public class DesktopClient(
         })
     }
 
-    /**
-     * A flag that signifies whether the connection with the server is open.
-     */
-    override val isOpen: Boolean get() = spineClient.isOpen
-
-    public override val userId: UserId?
-        get() = user()
-
-
-    /**
-     * Closes the client and shuts down the connection with the server.
-     */
     override fun close() {
         spineClient.close()
     }
 
-    /**
-     * Reads the list of entities with the [entityClass] class into [targetList]
-     * and ensures that future updates to the list are reflected in [targetList]
-     * as well.
-     *
-     * @param entityClass A class of entities that should be read and observed.
-     * @param targetList A [MutableState] that contains a list whose content
-     *   should be populated and kept up to date by this function.
-     * @param extractId  A callback that should read the value of
-     *   the entity's ID.
-     */
-    public override fun <E : EntityState> readAndObserve(
+    override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
-        targetList: MutableState<List<E>>,
         extractId: (E) -> Any
-    ) {
-        targetList.value = clientRequest().select(entityClass).run()
-
+    ): State<List<E>> {
+        val listState = mutableStateOf(listOf<E>())
+        listState.value = clientRequest().select(entityClass).run()
         clientRequest()
             .subscribeTo(entityClass)
             .observe { entity ->
-                updateList(targetList, entity, extractId)
+                runBlocking(Main) {
+                    updateList(listState, entity, extractId)
+                }
             }
             .post()
+        return listState
     }
 
-    /**
-     * Reads all entities of type [entityClass] that match the given
-     * [queryFilters] and invokes the [onNext] callback with the initial list of
-     * entities. Then sets up observation to receive future updates to the
-     * entities, filtering the observed updates using the provided
-     * [observeFilters]. Each time any entity that matches the [observeFilters]
-     * changes, the [onNext] callback will be invoked again with the updated
-     * list of entities.
-     *
-     * @param entityClass A class of entities that should be read and observed.
-     * @param extractId A callback that should read the value of the
-     *   entity's ID.
-     * @param queryFilters Filters to apply when querying the initial list
-     *   of entities.
-     * @param observeFilters Filters to apply when observing updates to
-     *   the entities.
-     * @param onNext A callback function that is called with the list of
-     *   entities after the initial query completes, and each time any of the
-     *   observed entities is updated.
-     */
-    public override fun <E : EntityState> readAndObserve(
+    override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
-        queryFilters: CompositeQueryFilter,
-        observeFilters: CompositeEntityStateFilter,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
         onNext: (List<E>) -> Unit
     ) {
         val initialResult: List<E> = clientRequest()
             .select(entityClass)
-            .where(queryFilters)
+            .where(queryFilter)
             .run()
         onNext(initialResult)
-
         val observedEntities = mutableStateOf(initialResult)
         clientRequest()
             .subscribeTo(entityClass)
             .observe { updatedEntity ->
                 updateList(observedEntities, updatedEntity, extractId)
-                onNext(observedEntities.value)
+                runBlocking(Main) {
+                    onNext(observedEntities.value)
+                }
             }
-            .where(observeFilters)
+            .where(observeFilter)
             .post()
     }
 
-    /**
-     * Retrieves an entity of the specified class with the given ID.
-     *
-     * @param entityClass The class of the entity to retrieve.
-     * @param id The ID of the entity to retrieve.
-     */
-    public override fun <E : EntityState, M : Message> read(
+    override fun <E : EntityState> readOneAndObserve(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
+        defaultValue: E?
+    ): State<E> {
+        val initialList = clientRequest()
+            .select(entityClass)
+            .where(queryFilter)
+            .run()
+        val initialValue = initialList.getOrNull(0) ?: defaultValue
+        if (initialValue == null) {
+            throw NoMatchingDataException(
+                "No entity could be found that matches the specified criteria, and no " +
+                        "`defaultValue` has been provided. Entity class: ${entityClass.name}"
+            )
+        }
+        val state = mutableStateOf(initialValue)
+
+        clientRequest()
+            .subscribeTo(entityClass)
+            .observe {
+                runBlocking(Main) {
+                    state.value = it
+                }
+            }
+            .where(observeFilter)
+            .post()
+        return state
+    }
+
+    override fun <E : EntityState, M : Message> read(
         entityClass: Class<E>,
         id: M
     ): E? {
@@ -189,17 +176,7 @@ public class DesktopClient(
         return entities.firstOrNull()
     }
 
-    /**
-     * Posts the given [command] to the server.
-     *
-     * @param command A command that has to be posted.
-     * @throws ServerError If the command could not be acknowledged due to an
-     *   error on the server.
-     * @throws ServerCommunicationException In case of a network communication
-     *   failure that has occurred during posting of the command. It is unknown
-     *   whether the command has been acknowledged or no in this case.
-     */
-    override fun <C: CommandMessage> postCommand(command: C) {
+    override fun <C : CommandMessage> postCommand(command: C) {
         var error: Throwable? = null
         try {
             clientRequest()
@@ -223,22 +200,11 @@ public class DesktopClient(
         }
     }
 
-    /**
-     * Posts the specified [command] and handles the respective [consequences].
-     *
-     * See the [Client.postCommand] documentation for details.
-     */
-    public override fun <C : CommandMessage> postCommand(
+    override fun <C : CommandMessage> postCommand(
         command: C,
         consequences: CommandConsequences<C>
     ): EventSubscriptions = consequences.postAndProcessConsequences(command)
 
-    /**
-     * Subscribes to an event of type [E] whose given [field]
-     * equals [fieldValue].
-     *
-     * See the [Client.onEvent] documentation for details.
-     */
     override fun <E : EventMessage> onEvent(
         event: Class<E>,
         field: EventMessageField,

@@ -60,13 +60,13 @@ import kotlin.reflect.javaType
  * to specify the type of items to be searched for by implementing the
  * [entityStateClass] method, and implement [entityId] and [itemText] methods.
  *
- * @param I a type of entity ID.
- * @param E a type of entity state.
+ * @param E A type of entity state.
+ * @param I A type of entity ID.
  */
 @Stable
 public abstract class EntityChooser<
-        I : MessageFieldValue,
-        E : EntityState // Keep in sync with the `TypeParameters` enum!
+        E : EntityState, // Keep in sync with the `TypeParameters` enum!
+        I : MessageFieldValue
         > : DropdownSelector<I>() {
 
     /**
@@ -77,24 +77,18 @@ public abstract class EntityChooser<
     private enum class TypeParameters(val index: Int) {
 
         /**
-         * The entity ID type parameter (`I` class's parameter).
-         */
-        ID(0),
-
-        /**
          * The entity state type parameter (`E` class's parameter).
          */
-        ENTITY_STATE(1)
+        ENTITY_STATE(0),
+
+        /**
+         * The entity ID type parameter (`I` class's parameter).
+         */
+        ID(1)
     }
 
     override val items: MutableState<Iterable<I>> = mutableStateOf(listOf())
-
-    private val entityStates = run {
-        val entityStates = mutableStateOf(listOf<E>())
-        app.client.readAndObserve(entityStateClass, entityStates, ::entityId)
-        entityStates
-    }
-
+    private val entityStates = app.client.readAndObserve(entityStateClass, ::entityId)
     private val entityStatesByIds: HashMap<I, E> = hashMapOf()
 
     /**

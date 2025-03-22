@@ -154,12 +154,13 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
      * is selected or not.
      */
     private val fieldTextStyle: TextStyle @Composable get() {
-        val defaultTextStyle = LocalTextStyle.current
+        val currentTextStyle = LocalTextStyle.current
         return if (selectedItem != null) {
-            defaultTextStyle
+            currentTextStyle
         } else {
-            val defaultTextColor = defaultTextStyle.color
-            defaultTextStyle.copy(color = defaultTextColor.copy(alpha = 0.5f))
+            currentTextStyle.copy(
+                currentTextStyle.color.copy(0.5f)
+            )
         }
     }
 
@@ -191,7 +192,6 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     }
 
     @Composable
-    @OptIn(ExperimentalComposeUiApi::class)
     override fun content() {
         val fieldText = getFieldText(searchString)
 
