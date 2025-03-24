@@ -1235,6 +1235,8 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     public val dirty: Boolean get() = _dirty
     private var _dirty = false
 
+    @Composable
+    @ReadOnlyComposable
     override fun initialize() {
         super.initialize()
         requireProperty(::builder.isInitialized, "builder")

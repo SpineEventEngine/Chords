@@ -34,7 +34,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -201,12 +200,12 @@ public typealias RawTextContent = TextFieldValue
  * When both `placeholder` and `promptText` properties are specified, then only
  * the `placeholder` is used.
  *
- * @param V
- *         a type of values that an input field allows to edit.
- * @constructor a constructor, which is used internally by the input component's
- *         implementation. Use [companion object's][ComponentCompanion]
- *         [invoke][ComponentCompanion.invoke] operators for instantiating
- *         and rendering any specific input component in any application code.
+ * @param V A type of values that an input field allows to edit.
+ *
+ * @constructor A constructor, which is used internally by the input component's
+ *   implementation. Use [companion object's][ComponentSetup]
+ *   [invoke][ComponentSetup.invoke] operators for instantiating and
+ *   rendering any specific input component in any application code.
  */
 @Stable
 public open class InputField<V> : InputComponent<V>() {
@@ -281,17 +280,14 @@ public open class InputField<V> : InputComponent<V>() {
      * An [InputReviser] that can be specified to modify the user's input before
      * it is applied to the input field.
      */
-    protected var inputReviser: InputReviser? by mutableStateOf(null)
+    protected open var inputReviser: InputReviser? by mutableStateOf(null)
 
     /**
      * Transforms the raw text typed in by the user to form a text displayed in
      * the field (without affecting how the text is stored in raw text, or
      * parsed and formatted with).
      */
-    protected open val visualTransformation: VisualTransformation
-        @Composable
-        @ReadOnlyComposable
-        get() = None
+    protected open var visualTransformation: VisualTransformation by mutableStateOf(None)
 
     /**
      * An intermediate text field's text, which is a text that cannot be
@@ -330,6 +326,12 @@ public open class InputField<V> : InputComponent<V>() {
      * is to be displayed.
      */
     protected open var supportingText: (@Composable (String) -> Unit) = { Text(it) }
+
+    /**
+     * Specifies whether this should be a single-line text entry field (if
+     * `false`, by default), or a multiline text entry one (if set to `true`).
+     */
+    protected open var multiline: Boolean = false
 
     /**
      * A function that should validate the given input field's raw text, and, if
@@ -376,13 +378,12 @@ public open class InputField<V> : InputComponent<V>() {
      *         }
      *   ```
      *
-     * @param rawText
-     *         an input field's raw text that needs to be parsed for creating
-     *         a value of type [V].
-     * @return a valid value of type [V] that is the result of
-     *         parsing [rawText].
-     * @throws ValueParseException if [rawText] cannot be parsed as
-     *         a valid value.
+     * @param rawText An input field's raw text that needs to be parsed for
+     *   creating a value of type [V].
+     * @return A valid value of type [V] that is the result of
+     *   parsing [rawText].
+     * @throws ValueParseException If [rawText] cannot be parsed as
+     *   a valid value.
      * @see exceptionBasedParser
      */
     @Throws(ValueParseException::class)
@@ -406,7 +407,7 @@ public open class InputField<V> : InputComponent<V>() {
         val validationErrorText = ownValidationMessage.value ?: externalValidationMessage?.value
 
         TextField(
-            singleLine = true,
+            singleLine = !multiline,
             value = rawTextContent,
             label = label?.let { { Text(text = it) } },
             isError = validationErrorText != null,

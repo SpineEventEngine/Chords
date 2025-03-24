@@ -26,7 +26,9 @@
 
 package io.spine.chords.core
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -267,6 +269,8 @@ public abstract class InputComponent<V> : FocusableComponent() {
      */
     public var enabled: Boolean by mutableStateOf(true)
 
+    @Composable
+    @ReadOnlyComposable
     override fun initialize() {
         super.initialize()
         if (!this::value.isInitialized) {
