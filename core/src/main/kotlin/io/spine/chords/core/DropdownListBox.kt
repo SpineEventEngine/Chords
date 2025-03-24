@@ -63,7 +63,6 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.BottomEnd
 import androidx.compose.ui.Alignment.Companion.CenterEnd
@@ -118,8 +117,6 @@ import java.awt.event.KeyEvent.CHAR_UNDEFINED
 import java.lang.Character.UnicodeBlock
 import java.lang.Character.UnicodeBlock.SPECIALS
 import java.lang.Character.isISOControl
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * A component that displays a customizable composable [invoker] content, and
@@ -420,7 +417,7 @@ public class DropdownListBox<I> : Component() {
     private val firstItemIndex: Int get() = if (noneItemEnabled) -1 else 0
 
     private var scrollState: ScrollState by writeOnce()
-    private var coroutineScope: CoroutineScope by writeOnce()
+    protected override var enableLaunch: Boolean = true
 
     @Composable
     @ReadOnlyComposable
@@ -432,7 +429,6 @@ public class DropdownListBox<I> : Component() {
     @Composable
     override fun content() {
         scrollState = rememberScrollState(0)
-        coroutineScope = rememberCoroutineScope()
 
         LaunchedEffect(enabled) {
             if (!enabled) {
@@ -975,7 +971,7 @@ public class DropdownListBox<I> : Component() {
                         .height(visibleListHeight)
                 ) {
                     if (scrollPositionRequested != null) {
-                        coroutineScope.launch {
+                        launch {
                             scrollState.scrollTo(scrollPositionRequested!!)
                             scrollPositionRequested = null
                         }
@@ -1007,7 +1003,7 @@ public class DropdownListBox<I> : Component() {
             )
         }
 
-        coroutineScope.launch {
+        launch {
             focusRequester.requestFocus()
         }
 
