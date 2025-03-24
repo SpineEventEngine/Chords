@@ -54,6 +54,7 @@ import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
 import io.spine.chords.core.keyboard.KeyRange.Companion.Whitespace
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.primitive.preventWidthAutogrowing
+import kotlin.Int.Companion.MAX_VALUE
 import kotlin.math.min
 import kotlin.reflect.KClass
 
@@ -334,6 +335,18 @@ public open class InputField<V> : InputComponent<V>() {
     protected open var multiline: Boolean = false
 
     /**
+     * Minimum number of visible lines
+     * (applicable only if [multiline] == `true`).
+     */
+    protected open var minLines: Int = 1
+
+    /**
+     * Maximum number of visible lines
+     * (applicable only if [multiline] == `true`).
+     */
+    protected open var maxLines: Int = MAX_VALUE
+
+    /**
      * A function that should validate the given input field's raw text, and, if
      * it has a valid format for parsing a value of type [V], and satisfies all
      * constraints that might have been defined for the target value, then it
@@ -407,7 +420,6 @@ public open class InputField<V> : InputComponent<V>() {
         val validationErrorText = ownValidationMessage.value ?: externalValidationMessage?.value
 
         TextField(
-            singleLine = !multiline,
             value = rawTextContent,
             label = label?.let { { Text(text = it) } },
             isError = validationErrorText != null,
@@ -436,6 +448,9 @@ public open class InputField<V> : InputComponent<V>() {
             prefix = prefix,
             suffix = suffix,
             interactionSource = interactionSource,
+            singleLine = !multiline,
+            minLines = if (multiline) minLines else 1,
+            maxLines = if (multiline) maxLines else 1,
             enabled = enabled,
             textStyle = textStyle,
             modifier = modifier(modifier)

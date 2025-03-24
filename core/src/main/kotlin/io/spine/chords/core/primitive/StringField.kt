@@ -46,6 +46,18 @@ public class StringField : InputField<String>() {
         get() = super.visualTransformation
         set(value) { super.visualTransformation = value }
 
+    public override var multiline: Boolean
+        get() = super.multiline
+        set(value) { super.multiline = value }
+
+    public override var minLines: Int
+        get() = super.minLines
+        set(value) { super.minLines = value }
+
+    public override var maxLines: Int
+        get() = super.maxLines
+        set(value) { super.maxLines = value }
+
     public override var prefix: (@Composable () -> Unit)?
         get() = super.prefix
         set(value) { super.prefix = value }
@@ -53,8 +65,4 @@ public class StringField : InputField<String>() {
     public override var suffix: (@Composable () -> Unit)?
         get() = super.suffix
         set(value) { super.suffix = value }
-
-    public override var multiline: Boolean
-        get() = super.multiline
-        set(value) { super.multiline = value }
 }
