@@ -95,10 +95,9 @@ public class DateTimeField : InputField<Timestamp>() {
         textStyle = LocalTextStyle.current.copy(fontFamily = Monospace)
         val secondaryColor = colorScheme.secondary
         visualTransformation = VisualTransformation {
-            val transformedString = complementWithPattern(
+            complementWithPattern(
                 it.text, dateTimePattern
             ).toTransformedString(secondaryColor)
-            transformedString
         }
     }
 
