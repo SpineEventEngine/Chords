@@ -332,19 +332,19 @@ public open class InputField<V> : InputComponent<V>() {
      * Specifies whether this should be a single-line text entry field (if
      * `false`, by default), or a multiline text entry one (if set to `true`).
      */
-    protected open var multiline: Boolean = false
+    protected open var multiline: Boolean by mutableStateOf(false)
 
     /**
      * Minimum number of visible lines
      * (applicable only if [multiline] == `true`).
      */
-    protected open var minLines: Int = 1
+    protected open var minLines: Int by mutableStateOf(1)
 
     /**
      * Maximum number of visible lines
      * (applicable only if [multiline] == `true`).
      */
-    protected open var maxLines: Int = MAX_VALUE
+    protected open var maxLines: Int by mutableStateOf(MAX_VALUE)
 
     /**
      * A function that should validate the given input field's raw text, and, if
