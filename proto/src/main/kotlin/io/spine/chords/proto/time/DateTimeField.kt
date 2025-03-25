@@ -85,7 +85,6 @@ public class DateTimeField : InputField<Timestamp>() {
 
     init {
         label = "Date/time"
-        inputReviser = DateTimeFieldReviser(dateTimePattern)
     }
 
     @Composable
