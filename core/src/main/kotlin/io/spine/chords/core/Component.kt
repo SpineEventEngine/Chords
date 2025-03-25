@@ -622,14 +622,15 @@ public abstract class Component : DefaultPropsOwnerBase() {
     private val initialized = mutableStateOf(false)
 
     /**
-     * Override this property with a value of `true in order to use the
+     * Override this property with a value of `true` in order to use the
      * shorthand [launch] method:
      * ```
      *     protected override val enableLaunch: Boolean = true
      * ```
      *
      * Doing so ensures that [rememberCoroutineScope] is implicitly invoked
-     * to prepare a [CoroutineScope], which is required by the [launch] method.
+     * by the component to prepare a [CoroutineScope], which is required by the
+     * [launch] method to work.
      *
      * Note: it is deliberately set to `false` by default to prevent making an
      * excessive `rememberCoroutineScope` call for all components unless needed.
@@ -643,7 +644,6 @@ public abstract class Component : DefaultPropsOwnerBase() {
      * A [CoroutineScope] in which all [launch] calls will be executed.
      */
     private var coroutineScope: CoroutineScope? = null
-
 
     /**
      * A component's lifecycle method, which is invoked right after the
@@ -751,8 +751,14 @@ public abstract class Component : DefaultPropsOwnerBase() {
     }
 
     /**
-     * Launches a coroutine on a scope that has the same lifecycle as that of
-     * the component (the one created with [rememberCoroutineScope]).
+     * Launches a coroutine on a [CoroutineScope], which is automatically
+     * cancelled when the component leaves the composition (the one created
+     * using [rememberCoroutineScope]).
+     *
+     * Using this method is equivalent to having a [rememberCoroutineScope] call
+     * in the component's [content] method, and invoking
+     * the [launch][CoroutineScope.launch] method on [CoroutineScope] provided
+     * by that function.
      *
      * In order to use this method, the component's [enableLaunch] property
      * has to be overridden with a value of `true`:
@@ -762,15 +768,16 @@ public abstract class Component : DefaultPropsOwnerBase() {
      */
     protected open fun launch(block: suspend CoroutineScope.() -> Unit) {
         check(enableLaunch) {
-            "Make sure to override `useLaunchApi` property with a value of `true` " +
-                    "to use `Component.launch` method."
+            "Make sure to override the `enableLaunch` property with a value of `true` " +
+                    "to use the `Component.launch` method."
         }
         checkNotNull(coroutineScope) {
             "`Component.launch` cannot be invoked before the first component's composition."
         }
         check(coroutineScope!!.isActive) {
             "Coroutine is not active. It cannot be used after the component " +
-                    "has left the composition (was hidden)." }
+                    "has left the composition (was hidden)."
+        }
         coroutineScope!!.launch(block = block)
     }
 
