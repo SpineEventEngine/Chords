@@ -89,8 +89,9 @@ public class DateTimeField : InputField<Timestamp>() {
 
     @Composable
     @ReadOnlyComposable
-    override fun initialize() {
+    override fun beforeComposeContent() {
         super.beforeComposeContent()
+        inputReviser = DateTimeFieldReviser(dateTimePattern)
         textStyle = LocalTextStyle.current.copy(fontFamily = Monospace)
         val secondaryColor = colorScheme.secondary
         visualTransformation = VisualTransformation {
@@ -98,11 +99,6 @@ public class DateTimeField : InputField<Timestamp>() {
                 it.text, dateTimePattern
             ).toTransformedString(secondaryColor)
         }
-    }
-
-    override fun updateProps() {
-        super.updateProps()
-        inputReviser = DateTimeFieldReviser(dateTimePattern)
     }
 
     override fun formatValue(value: Timestamp): String {

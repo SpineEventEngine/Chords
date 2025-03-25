@@ -28,7 +28,6 @@ package io.spine.chords.client.form
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.mutableStateOf
 import io.spine.base.CommandMessage
 import io.spine.chords.client.CommandConsequences
@@ -345,8 +344,6 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      */
     private var activeSubscriptions: MutableList<EventSubscriptions> = ArrayList()
 
-    @Composable
-    @ReadOnlyComposable
     override fun initialize() {
         super.initialize()
         requireProperty(this::commandConsequences.isInitialized, "commandConsequences")
