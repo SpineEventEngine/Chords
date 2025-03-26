@@ -28,6 +28,9 @@ package io.spine.chords.proto.net
 
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputField
+import io.spine.chords.core.InputReviser.Companion.NonWhitespaces
+import io.spine.chords.core.InputReviser.Companion.ToLowerCase
+import io.spine.chords.core.InputReviser.Companion.then
 import io.spine.chords.core.exceptionBasedParser
 import io.spine.net.InternetDomain
 import io.spine.net.InternetDomains
@@ -39,6 +42,10 @@ public class InternetDomainField : InputField<InternetDomain>() {
     public companion object : ComponentSetup<InternetDomainField>(
         { InternetDomainField() }
     )
+
+    init {
+        inputReviser = NonWhitespaces then ToLowerCase
+    }
 
     override fun parseValue(rawText: String): InternetDomain = exceptionBasedParser(
         IllegalArgumentException::class,

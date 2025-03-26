@@ -54,6 +54,7 @@ import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
 import io.spine.chords.core.keyboard.KeyRange.Companion.Whitespace
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.primitive.preventWidthAutogrowing
+import java.util.*
 import javax.annotation.OverridingMethodsMustInvokeSuper
 import kotlin.Int.Companion.MAX_VALUE
 import kotlin.math.min
@@ -805,7 +806,6 @@ public interface InputReviser {
          * An [InputReviser], which accepts only digits.
          */
         public val DigitsOnly: InputReviser = object : InputReviser {
-
             override fun reviseRawTextContent(
                 currentRawTextContent: RawTextContent,
                 rawTextContentCandidate: RawTextContent
@@ -824,7 +824,6 @@ public interface InputReviser {
          * An [InputReviser], which accepts everything except whitespaces.
          */
         public val NonWhitespaces: InputReviser = object : InputReviser {
-
             override fun reviseRawTextContent(
                 currentRawTextContent: RawTextContent,
                 rawTextContentCandidate: RawTextContent
@@ -840,16 +839,33 @@ public interface InputReviser {
         }
 
         /**
+         * An [InputReviser], which converts upper-case letters to
+         * lower-case ones, and retains other characters intact.
+         */
+        public val ToLowerCase: InputReviser = object : InputReviser {
+            override fun reviseRawTextContent(
+                currentRawTextContent: RawTextContent,
+                rawTextContentCandidate: RawTextContent
+            ): RawTextContent {
+                return rawTextContentCandidate.copy(
+                    rawTextContentCandidate.text.lowercase()
+                )
+            }
+
+            override fun filterKeyEvent(keyEvent: KeyEvent): Boolean {
+                return keyEvent matches Whitespace.typed
+            }
+        }
+
+        /**
          * Provides an [InputReviser], which truncates the text to
          * the specified maximum length.
          *
-         * @param maxLength
-         *         a maximum number of characters that can be
-         *         retained (inclusive).
+         * @param maxLength A maximum number of characters that can be
+         *   retained (inclusive).
          * @return a requested [InputReviser].
          */
         public fun maxLength(maxLength: Int): InputReviser = object : InputReviser {
-
             override fun reviseRawTextContent(
                 currentRawTextContent: RawTextContent,
                 rawTextContentCandidate: RawTextContent
@@ -877,18 +893,16 @@ public interface InputReviser {
          * and if it is not stopped from propagation by the receiver,
          * then it gets determined by [additionalReviser].
          *
-         * @receiver the first reviser that should process the raw text
+         * @receiver The first reviser that should process the raw text
          *           content candidate and key event.
-         * @param additionalReviser
-         *         the second reviser that should process the raw text
-         *         content candidate and key event.
-         * @return a new `InputReviser`, which combines the action of two
-         *         other revisers.
+         * @param additionalReviser The second reviser that should process the
+         *   raw text content candidate and key event.
+         * @return A new `InputReviser`, which combines the action of two
+         *   other revisers.
          */
         public infix fun InputReviser.then(
             additionalReviser: InputReviser
         ): InputReviser = object : InputReviser {
-
             override fun reviseRawTextContent(
                 currentRawTextContent: RawTextContent,
                 rawTextContentCandidate: RawTextContent

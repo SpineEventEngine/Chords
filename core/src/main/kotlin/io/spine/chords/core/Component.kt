@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import io.spine.chords.core.appshell.Props
+import javax.annotation.OverridingMethodsMustInvokeSuper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -651,6 +652,7 @@ public abstract class Component : DefaultPropsOwnerBase() {
      * declaration) has been invoked for the first time, and before
      * the component's composable content is rendered for the first time.
      */
+    @OverridingMethodsMustInvokeSuper
     protected open fun initialize() {
         check(!initialized.value) {
             "Component.initialize() shouldn't be invoked more than once."
@@ -758,7 +760,7 @@ public abstract class Component : DefaultPropsOwnerBase() {
      *     protected override val enableLaunch: Boolean = true
      * ```
      */
-    protected open fun launch(block: suspend CoroutineScope.() -> Unit) {
+    protected fun launch(block: suspend CoroutineScope.() -> Unit) {
         check(enableLaunch) {
             "Make sure to override the `enableLaunch` property with a value of `true` " +
                     "to use the `Component.launch` method."
@@ -785,6 +787,7 @@ public abstract class Component : DefaultPropsOwnerBase() {
      * these two sources of property values, instance-specific property
      * declarations override application-wide property declarations.
      */
+    @OverridingMethodsMustInvokeSuper
     protected open fun updateProps() {
         setDefaultProps()
         props?.run { configure() }
@@ -805,6 +808,7 @@ public abstract class Component : DefaultPropsOwnerBase() {
      */
     @Composable
     @ReadOnlyComposable
+    @OverridingMethodsMustInvokeSuper
     protected open fun beforeComposeContent(): Unit = recompositionWorkaroundReadonly {
     }
 
