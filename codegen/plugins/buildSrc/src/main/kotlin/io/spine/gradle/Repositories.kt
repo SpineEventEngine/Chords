@@ -233,7 +233,7 @@ val RepositoryHandler.jetBrainsCacheRedirector: MavenArtifactRepository
  * Applies repositories commonly used by Spine Event Engine projects.
  */
 fun RepositoryHandler.standardToSpineSdk() {
-    spineArtifacts()
+    //spineArtifacts()
 
     val spineRepos = listOf(
         Repos.spine,
