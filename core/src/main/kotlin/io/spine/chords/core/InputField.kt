@@ -55,7 +55,6 @@ import io.spine.chords.core.keyboard.KeyRange.Companion.Whitespace
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.primitive.preventWidthAutogrowing
 import java.util.*
-import javax.annotation.OverridingMethodsMustInvokeSuper
 import kotlin.Int.Companion.MAX_VALUE
 import kotlin.math.min
 import kotlin.reflect.KClass
@@ -597,12 +596,20 @@ public open class InputField<V> : InputComponent<V>() {
     }
 
     /**
+     * This method is invoked to validate [value] that has been parsed
+     * successfully, and identify whether it should be interpreted as a valid or
+     * invalid value by the component.
+     *
+     * The default implementation delegates this to the [onValidateValue]
+     * callback, but subclasses can introduce additional validation logic
+     * if needed.
+     *
      * @param value A value that needs to be validated.
      * @return A non-`null` validation error message string if a value [V]
      *   should be considered as an invalid one.
+     * @see onValidateValue
      */
-    @OverridingMethodsMustInvokeSuper
-    protected fun validateValue(value: V): String? {
+    protected open fun validateValue(value: V): String? {
         return onValidateValue?.invoke(value)
     }
 
