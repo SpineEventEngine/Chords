@@ -51,7 +51,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.BottomCenter
 import androidx.compose.ui.Alignment.Companion.Center
@@ -72,8 +71,6 @@ import io.spine.chords.core.layout.WizardContentSize.minHeight
 import io.spine.chords.core.layout.WizardContentSize.width
 import io.spine.chords.core.primitive.HorizontalScrollbar
 import io.spine.chords.core.primitive.VerticalScrollbar
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * Constants for the min and max size of the wizard's content pane.
@@ -134,6 +131,8 @@ public abstract class Wizard : Component() {
      */
     protected val pages: List<WizardPage> by lazy { createPages() }
 
+    override val enableLaunch: Boolean = true
+
     /**
      * Creates the list of pages of which the wizard consists.
      *
@@ -166,7 +165,6 @@ public abstract class Wizard : Component() {
 
     @Composable
     override fun content() {
-        val coroutineScope = rememberCoroutineScope()
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Center
@@ -185,14 +183,14 @@ public abstract class Wizard : Component() {
                     Modifier
                         .weight(1F)
                         .on(Ctrl(Enter.key).up) {
-                            submitPage(currentPage, coroutineScope)
+                            submitPage(currentPage)
                         }
                         .on(Alt(DirectionLeft.key).up) {
                             handlePreviousClick()
                         }
                         .on(Alt(DirectionRight.key).up) {
                             if (!isOnLastPage()) {
-                                submitPage(currentPage, coroutineScope)
+                                submitPage(currentPage)
                             }
                         }
                 ) {
@@ -207,9 +205,7 @@ public abstract class Wizard : Component() {
                     onNextClick = { handleNextClick(currentPage) },
                     onBackClick = { handlePreviousClick() },
                     onFinishClick = {
-                        coroutineScope.launch {
-                            handleFinishClick(currentPage)
-                        }
+                        handleFinishClick(currentPage)
                     },
                     onCancelClick = { onCloseRequest?.invoke() },
                     isOnFirstPage = isOnFirstPage(),
@@ -220,12 +216,9 @@ public abstract class Wizard : Component() {
         }
     }
 
-    private fun Wizard.submitPage(
-        currentPage: WizardPage,
-        coroutineScope: CoroutineScope
-    ) {
+    private fun Wizard.submitPage(currentPage: WizardPage) {
         if (isOnLastPage()) {
-            coroutineScope.launch {
+            launch {
                 handleFinishClick(currentPage)
             }
         } else {
@@ -233,7 +226,7 @@ public abstract class Wizard : Component() {
         }
     }
 
-    private suspend fun Wizard.handleFinishClick(currentPage: WizardPage) {
+    private fun Wizard.handleFinishClick(currentPage: WizardPage) = launch {
         if (currentPage.validate()) {
             submit()
         }

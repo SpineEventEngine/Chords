@@ -39,7 +39,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.Bottom
 import androidx.compose.ui.Alignment.Companion.CenterVertically
@@ -55,10 +54,6 @@ import io.spine.chords.core.appshell.app
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.layout.WindowType.DesktopWindow
-import io.spine.chords.core.writeOnce
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 
 /**
  * A shortcut (key combination), which invokes dialog submission.
@@ -389,11 +384,7 @@ public abstract class Dialog : Component() {
      */
     internal var nestedDialog by mutableStateOf<Dialog?>(null)
 
-    /**
-     * Coroutine scope for launching asynchronous execution of actions initiated
-     * by the dialog's controls.
-     */
-    private var coroutineScope: CoroutineScope by writeOnce()
+    protected override val enableLaunch: Boolean = true
 
     /**
      * Specifies whether the "Submit" button should be displayed.
@@ -452,12 +443,9 @@ public abstract class Dialog : Component() {
      * controls and doesn't close the dialog. Any such effects should be a part
      * of the actual dialog's implementation in its [submitContent] method.
      */
-    public fun submit() {
-        check(coroutineScope.isActive) { "Coroutine is not active" }
-        coroutineScope.launch {
-            if (onBeforeSubmit()) {
-                submitContent()
-            }
+    public fun submit(): Unit = launch {
+        if (onBeforeSubmit()) {
+            submitContent()
         }
     }
 
@@ -480,12 +468,9 @@ public abstract class Dialog : Component() {
      * This means invoking the [onBeforeCancel] callback, and closing the dialog
      * if the callback didn't prevent closing.
      */
-    public fun cancel() {
-        check(coroutineScope.isActive) { "Coroutine is not active" }
-        coroutineScope.launch {
-            if (onBeforeCancel()) {
-                close()
-            }
+    public fun cancel(): Unit = launch {
+        if (onBeforeCancel()) {
+            close()
         }
     }
 
@@ -498,7 +483,6 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected final override fun content() {
-        coroutineScope = rememberCoroutineScope()
         windowType.dialogWindow(this)
     }
 
