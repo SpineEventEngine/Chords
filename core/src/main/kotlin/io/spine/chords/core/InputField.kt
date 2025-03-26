@@ -270,7 +270,7 @@ public open class InputField<V> : InputComponent<V>() {
      * string to be displayed as an in-component's validation error message,
      * and makes the [valueValid] state to be `false`.
      */
-    public val onValidateValue: ((V) -> String?)? = null
+    public var onValidateValue: ((V) -> String?)? = null
 
     /**
      * A label for the component.
