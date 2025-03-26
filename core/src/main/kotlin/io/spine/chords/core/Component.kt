@@ -652,7 +652,6 @@ public abstract class Component : DefaultPropsOwnerBase() {
      * declaration) has been invoked for the first time, and before
      * the component's composable content is rendered for the first time.
      */
-    @OverridingMethodsMustInvokeSuper
     protected open fun initialize() {
         check(!initialized.value) {
             "Component.initialize() shouldn't be invoked more than once."
@@ -787,7 +786,6 @@ public abstract class Component : DefaultPropsOwnerBase() {
      * these two sources of property values, instance-specific property
      * declarations override application-wide property declarations.
      */
-    @OverridingMethodsMustInvokeSuper
     protected open fun updateProps() {
         setDefaultProps()
         props?.run { configure() }
@@ -808,7 +806,6 @@ public abstract class Component : DefaultPropsOwnerBase() {
      */
     @Composable
     @ReadOnlyComposable
-    @OverridingMethodsMustInvokeSuper
     protected open fun beforeComposeContent(): Unit = recompositionWorkaroundReadonly {
     }
 
