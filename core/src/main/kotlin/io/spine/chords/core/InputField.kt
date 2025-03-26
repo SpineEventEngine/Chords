@@ -54,6 +54,7 @@ import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
 import io.spine.chords.core.keyboard.KeyRange.Companion.Whitespace
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.primitive.preventWidthAutogrowing
+import javax.annotation.OverridingMethodsMustInvokeSuper
 import kotlin.Int.Companion.MAX_VALUE
 import kotlin.math.min
 import kotlin.reflect.KClass
@@ -152,20 +153,33 @@ public typealias RawTextContent = TextFieldValue
  *
  * ### Input validation and field value
  *
- * The value in the [value] [MutableState] is set to a non-`null` value of type
- * [V] whenever the currently edited field's text (raw text) can successfully be
- * parsed with the [parseValue] function. If [parseValue] fails to parse the
- * current field's raw text (and throws [ValueParseException]), then the value
- * in [value] [MutableState] is set to `null`.
+ * An `InputField` has a two-stage validation mechanism, as described below.
  *
- * When current text's parsing fails (with [parseValue] throwing
- * [ValueParseException]), the validation error
- * [message][ValueParseException.validationErrorMessage] from the respective
- * [ValueParseException] is displayed near the field, and [valueValid]'s state
- * is set to `false`.
+ *  - A value [V] is parsed from string.
  *
- * If raw text is valid according to [parseValue] (no exception is thrown),
- * the value in [valueValid] is `true`.
+ *    The value in the [value] [MutableState] is set to a non-`null` value of
+ *    type [V] whenever the currently edited field's text (raw text) can
+ *    successfully be parsed with the [parseValue] function. If [parseValue]
+ *    fails to parse the current field's raw text (and throws
+ *    [ValueParseException]), then the value in [value] [MutableState] is set
+ *    to `null`.
+ *
+ *    When current text's parsing fails (with [parseValue] throwing
+ *    [ValueParseException]), the validation error
+ *    [message][ValueParseException.validationErrorMessage] from the respective
+ *    [ValueParseException] is displayed near the field, and [valueValid]'s
+ *    state is set to `false`.
+ *
+ *  - A value [V] is validated using the custom [onValidateValue] callback.
+ *
+ *    After a value was successfully parsed, an optional [onValidateValue]
+ *    callback is invoked, which can be used to specify which values should be
+ *    interpreted as valid, and which ones should be interpreted as a
+ *    validation failure. If a callback is missing or if it returns `null`, then
+ *    the value is considered valid.
+ *
+ * If the entered value valid according to both [parseValue] and
+ * [onValidateValue], the [valueValid] state gets a value of `true`.
  *
  * #### Handling empty input
  *
@@ -246,6 +260,17 @@ public open class InputField<V> : InputComponent<V>() {
      * [value] has been updated with a newly edited value.
      */
     public var onValueChange: ((V?) -> Unit)? = null
+
+    /**
+     * A lambda, which can optionally be specified when some value(s) of type
+     * [V], which were parsed successfully need to be reported by the component
+     * as invalid ones.
+     *
+     * Returning a non-`null` string for a particular value [V] makes that
+     * string to be displayed as an in-component's validation error message,
+     * and makes the [valueValid] state to be `false`.
+     */
+    public val onValidateValue: ((V) -> String?)? = null
 
     /**
      * A label for the component.
@@ -494,24 +519,19 @@ public open class InputField<V> : InputComponent<V>() {
      * string is translated as a `null` value being
      * saved in [valueMutableState].
      *
-     * @param currentRawTextContent
-     *         a [RawTextContent] that represents the current content
-     *         that text field has, before user has modified it.
-     * @param newRawTextContentCandidate
-     *         the modified input field's raw text content that includes
-     *         the current modification that the user is trying to make,
-     *         but before it has been passed through [InputReviser].
-     * @param inputReviser
-     *         an optional function that can be specified to modify the user's
-     *         input before it is processed and saved as the new component's
-     *         raw text content.
-     * @param onValueChange
-     *         the input field's `onValueChange` callback that has to be
-     *         triggered by this method if the new text has a valid format and
-     *         can be recognized as a respective entity.
-     * @param valueMutableState
-     *         an input field's `value` property that holds the value to be
-     *         updated with a newly edited one.
+     * @param currentRawTextContent A [RawTextContent] that represents the
+     *   current content that text field has, before user has modified it.
+     * @param newRawTextContentCandidate The modified input field's raw text
+     *   content that includes the current modification that the user is trying
+     *   to make, but before it has been passed through [InputReviser].
+     * @param inputReviser An optional function that can be specified to modify
+     *   the user's input before it is processed and saved as the new
+     *   component's raw text content.
+     * @param onValueChange The input field's `onValueChange` callback that has
+     *   to be triggered by this method if the new text has a valid format and
+     *   can be recognized as a respective entity.
+     * @param valueMutableState An input field's `value` property that holds the
+     *   value to be updated with a newly edited one.
      */
     @Suppress("SwallowedException" /* Exception value is not needed. */)
     private fun handleChange(
@@ -525,6 +545,7 @@ public open class InputField<V> : InputComponent<V>() {
             currentRawTextContent,
             newRawTextContentCandidate
         ) ?: newRawTextContentCandidate
+        selection = revisedTextContent.selection
 
         val value = if (revisedTextContent.text != "") {
             if (currentRawTextContent.text == "") {
@@ -536,7 +557,6 @@ public open class InputField<V> : InputComponent<V>() {
                 ownValidationMessage.value = e.validationErrorMessage
                 valueValid.value = false
                 intermediateText = revisedTextContent.text
-                selection = revisedTextContent.selection
                 return
             } catch (
                 // This generic catch is needed to identify, and kindly report
@@ -563,13 +583,26 @@ public open class InputField<V> : InputComponent<V>() {
             null
         }
 
-        ownValidationMessage.value = null
-        valueValid.value = true
+        val validationErrorMessage  = value?.let {
+            validateValue(it)
+        }
+
+        ownValidationMessage.value = validationErrorMessage
+        valueValid.value = validationErrorMessage == null
 
         valueMutableState.value = value
         onValueChange?.invoke(value)
         intermediateText = null
-        selection = revisedTextContent.selection
+    }
+
+    /**
+     * @param value A value that needs to be validated.
+     * @return A non-`null` validation error message string if a value [V]
+     *   should be considered as an invalid one.
+     */
+    @OverridingMethodsMustInvokeSuper
+    protected fun validateValue(value: V): String? {
+        return onValidateValue?.invoke(value)
     }
 
     /**
@@ -635,12 +668,11 @@ public open class InputField<V> : InputComponent<V>() {
  * An exception that is thrown when [InputField]'s `parseValue` callback
  * cannot parse a value entered by the user.
  *
- * @property validationErrorMessage
- *         a human-readable input value validation error message that describes
- *         what was found to be wrong about the user's entry, which couldn't be
- *         parsed as a valid value.
- * @param cause
- *         an exception that is being declared as the cause for this exception.
+ * @property validationErrorMessage A human-readable input value validation
+ *   error message that describes what was found to be wrong about the user's
+ *   entry, which couldn't be parsed as a valid value.
+ * @param cause An exception that is being declared as the cause for
+ *   this exception.
  */
 public class ValueParseException(
     public val validationErrorMessage: String = "Enter a valid value",
@@ -687,13 +719,12 @@ public fun interface InputFieldParser<V> {
      * be set with a human-readable message that specifies the reason of
      * the failure, which will be displayed near the field.
      *
-     * @param rawText
-     *         an input field's raw text that needs to be parsed for creating
-     *         a value of type [V].
-     * @return a valid value of type [V] that is the result of
-     *         parsing [rawText].
-     * @throws ValueParseException if [rawText] cannot be parsed as
-     *         a valid value.
+     * @param rawText An input field's raw text that needs to be parsed for
+     *   creating a value of type [V].
+     * @return A valid value of type [V] that is the result of
+     *   parsing [rawText].
+     * @throws ValueParseException If [rawText] cannot be parsed as
+     *   a valid value.
      */
     @Throws(ValueParseException::class)
     public fun parse(rawText: String): V
