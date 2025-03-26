@@ -26,41 +26,35 @@
 
 package io.spine.chords.proto.time
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import com.google.protobuf.Timestamp
-import io.spine.chords.proto.value.time.toInstant
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
- * A text that shows a given date being interpreted in the system time zone.
+ * Renders the given timestamp with the pattern which includes the date
+ * and time values being interpreted in the system time zone.
  *
- * @param date A date that should be displayed as text.
- * @param pattern A pattern for formatting the date (see [DateTimeFormatter]
+ * @param dateTime A dateTime value that should be displayed as text.
+ * @param pattern A dateTime formatting pattern (see [DateTimeFormatter]
  *         for the formatting syntax).
  * @param modifier A component's layout and behaviour decorator.
  * @param color A color that will be applied to the text.
  * @param fontWeight A font thickness value that will be applied to the text.
  */
 @Composable
-public fun DateText(
-    date: Timestamp,
-    pattern: String = "yyyy-MM-dd",
+public fun DateTimeText(
+    dateTime: Timestamp,
+    pattern: String = "yyyy-MM-dd hh:mm a",
     modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,
     fontWeight: FontWeight? = null
 ) {
-    val instant = date.toInstant()
-    val zoneId = ZoneId.systemDefault()
-    val dateTimeFormatter = DateTimeFormatter.ofPattern(pattern)
-    val zonedDateTime = instant.atZone(zoneId)
-    val dateText = dateTimeFormatter.format(zonedDateTime)
-    Text(
-        dateText,
+    DateText(
+        dateTime,
+        pattern,
         modifier = modifier,
         color = color,
         fontWeight = fontWeight
