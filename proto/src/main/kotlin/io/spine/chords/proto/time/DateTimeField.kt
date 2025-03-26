@@ -27,7 +27,7 @@
 package io.spine.chords.proto.time
 
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
@@ -85,23 +85,7 @@ public class DateTimeField : InputField<Timestamp>() {
 
     init {
         label = "Date/time"
-        inputReviser = DateTimeFieldReviser(dateTimePattern)
     }
-
-    override val visualTransformation: VisualTransformation
-        @Composable
-        @ReadOnlyComposable
-        get() {
-            val maskTextColor: Color = MaterialTheme.colorScheme.secondary
-            return VisualTransformation {
-                val transformedString = complementWithPattern(
-                    it.text,
-                    dateTimePattern
-                )
-                    .toTransformedString(maskTextColor)
-                transformedString
-            }
-        }
 
     @Composable
     @ReadOnlyComposable
@@ -109,6 +93,12 @@ public class DateTimeField : InputField<Timestamp>() {
         super.beforeComposeContent()
         inputReviser = DateTimeFieldReviser(dateTimePattern)
         textStyle = LocalTextStyle.current.copy(fontFamily = Monospace)
+        val secondaryColor = colorScheme.secondary
+        visualTransformation = VisualTransformation {
+            complementWithPattern(
+                it.text, dateTimePattern
+            ).toTransformedString(secondaryColor)
+        }
     }
 
     override fun formatValue(value: Timestamp): String {

@@ -27,12 +27,16 @@
 package io.spine.chords.core
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.rememberCoroutineScope
 import io.spine.chords.core.appshell.Props
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 /**
  * A base class for class-based component implementations.
@@ -618,6 +622,30 @@ public abstract class Component : DefaultPropsOwnerBase() {
     private val initialized = mutableStateOf(false)
 
     /**
+     * Override this property with a value of `true` in order to use the
+     * shorthand [launch] method:
+     * ```
+     *     protected override val enableLaunch: Boolean = true
+     * ```
+     *
+     * Doing so ensures that [rememberCoroutineScope] is implicitly invoked
+     * by the component to prepare a [CoroutineScope], which is required by the
+     * [launch] method to work.
+     *
+     * Note: it is deliberately set to `false` by default to prevent making an
+     * excessive `rememberCoroutineScope` call for all components unless needed.
+     *
+     * @see launch
+     * @see rememberCoroutineScope
+     */
+    protected open val enableLaunch: Boolean = false
+
+    /**
+     * A [CoroutineScope] in which all [launch] calls will be executed.
+     */
+    private var coroutineScope: CoroutineScope? = null
+
+    /**
      * A component's lifecycle method, which is invoked right after the
      * [props] callback (which is passed along with component instance's
      * declaration) has been invoked for the first time, and before
@@ -702,6 +730,9 @@ public abstract class Component : DefaultPropsOwnerBase() {
     @Composable
     public fun Content(): Unit = recompositionWorkaround {
         updateProps()
+        if (enableLaunch) {
+            coroutineScope = rememberCoroutineScope()
+        }
         if (!initialized.value) {
             initialize()
             initialized.value = true
@@ -709,6 +740,37 @@ public abstract class Component : DefaultPropsOwnerBase() {
 
         beforeComposeContent()
         content()
+    }
+
+    /**
+     * Launches a coroutine on a [CoroutineScope], which is automatically
+     * cancelled when the component leaves the composition (the one created
+     * using [rememberCoroutineScope]).
+     *
+     * Using this method is equivalent to having a [rememberCoroutineScope] call
+     * in the component's [content] method, and invoking
+     * the [launch][CoroutineScope.launch] method on [CoroutineScope] provided
+     * by that function.
+     *
+     * In order to use this method, the component's [enableLaunch] property
+     * has to be overridden with a value of `true`:
+     * ```
+     *     protected override val enableLaunch: Boolean = true
+     * ```
+     */
+    protected open fun launch(block: suspend CoroutineScope.() -> Unit) {
+        check(enableLaunch) {
+            "Make sure to override the `enableLaunch` property with a value of `true` " +
+                    "to use the `Component.launch` method."
+        }
+        checkNotNull(coroutineScope) {
+            "`Component.launch` cannot be invoked before the first component's composition."
+        }
+        check(coroutineScope!!.isActive) {
+            "Coroutine is not active. It cannot be used after the component " +
+                    "has left the composition (was hidden)."
+        }
+        coroutineScope!!.launch(block = block)
     }
 
     /**

@@ -29,7 +29,6 @@ package io.spine.chords.client.form
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import io.spine.base.CommandMessage
 import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.CommandConsequencesScope
@@ -42,7 +41,6 @@ import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.MessageFormSetupBase
 import io.spine.chords.proto.form.MultipartFormScope
 import io.spine.protobuf.ValidatingBuilder
-import kotlinx.coroutines.CoroutineScope
 
 /**
  * A form that allows entering a value of a command message and posting
@@ -341,12 +339,6 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
         { CommandConsequences(it) }
 
     /**
-     * [CoroutineScope] owned by this form's composition used for running
-     * form-related suspending calls.
-     */
-    private lateinit var coroutineScope: CoroutineScope
-
-    /**
      * Event subscriptions, which were made by [commandConsequences] as a result
      * of command posted during dialog form's submission.
      */
@@ -355,12 +347,6 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
     override fun initialize() {
         super.initialize()
         requireProperty(this::commandConsequences.isInitialized, "commandConsequences")
-    }
-
-    @Composable
-    override fun content() {
-        coroutineScope = rememberCoroutineScope()
-        super.content()
     }
 
     /**
@@ -396,7 +382,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * @see commandConsequences
      * @see cancelActiveSubscriptions
      */
-    public suspend fun postCommand(): EventSubscriptions {
+    public fun postCommand(): EventSubscriptions {
         updateValidationDisplay(true)
         check(valueValid.value) {
             "`postCommand` cannot be invoked on an invalid form`"

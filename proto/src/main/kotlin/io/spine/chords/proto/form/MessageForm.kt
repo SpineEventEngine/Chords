@@ -1096,7 +1096,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         valueRequired = true
     }
 
-    private val messageDef get() = builder().messageDef()
+    private val messageDef by lazy { builder().messageDef() }
 
     /**
      * Message's fields that are a part of this form.
@@ -1637,6 +1637,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         }
 
         updateMessage(true, focusInvalidPart)
+    }
+
+    /**
+     * A developer-friendly string representation of this form instance.
+     */
+    override fun toString(): String {
+        return "${javaClass.simpleName} for ${builder().descriptorForType.name} " +
+                "(${super.toString()})"
     }
 
     private fun clearValidationDisplay() {
