@@ -273,31 +273,31 @@ internal class DateTimeFieldReviser(
 ) : InputReviser {
 
     override fun reviseRawTextContent(
-        currentRawTextContent: RawTextContent,
-        rawTextContentCandidate: RawTextContent
+        current: RawTextContent,
+        candidate: RawTextContent
     ): RawTextContent {
-        var updatedRawTextContentCandidate = rawTextContentCandidate
+        var updatedRawTextContentCandidate = candidate
 
-        if (currentRawTextContent.text != rawTextContentCandidate.text) {
+        if (current.text != candidate.text) {
             updatedRawTextContentCandidate =
-                if (currentRawTextContent.selection.collapsed) {
+                if (current.selection.collapsed) {
                     updateRawTextContentCandidateWhenTextIsNotSelected(
-                        currentRawTextContent,
-                        rawTextContentCandidate
+                        current,
+                        candidate
                     )
                 } else {
                     updateRawTextContentCandidateWhenTextIsSelected(
-                        currentRawTextContent,
-                        rawTextContentCandidate
+                        current,
+                        candidate
                     )
                 }
         }
 
         updatedRawTextContentCandidate =
-            DigitsOnly.reviseRawTextContent(currentRawTextContent, updatedRawTextContentCandidate)
+            DigitsOnly.reviseRawTextContent(current, updatedRawTextContentCandidate)
 
         return maxLength(dateTimePattern.filter { it.isLetter() }.length).reviseRawTextContent(
-            currentRawTextContent,
+            current,
             updatedRawTextContentCandidate
         )
     }

@@ -782,15 +782,15 @@ public interface InputReviser {
      * See the "Revising the entered text" section in
      * [InputField]'s description.
      *
-     * @param currentRawTextContent A [RawTextContent], which represents the
+     * @param current A [RawTextContent], which represents the
      *   current value of text that field has, before user modification.
-     * @param rawTextContentCandidate A [RawTextContent] which holds raw text
+     * @param candidate A [RawTextContent] which holds raw text
      *   content that was just modified by the user.
      * @return [RawTextContent] which holds revised user input text.
      */
     public fun reviseRawTextContent(
-        currentRawTextContent: RawTextContent,
-        rawTextContentCandidate: RawTextContent
+        current: RawTextContent,
+        candidate: RawTextContent
     ): RawTextContent
 
     /**
@@ -817,17 +817,14 @@ public interface InputReviser {
          */
         public val DigitsOnly: InputReviser = object : InputReviser {
             override fun reviseRawTextContent(
-                currentRawTextContent: RawTextContent,
-                rawTextContentCandidate: RawTextContent
-            ): RawTextContent {
-                return rawTextContentCandidate.copy(
-                    rawTextContentCandidate.text.filter { it.isDigit() }
-                )
-            }
+                current: RawTextContent,
+                candidate: RawTextContent
+            ): RawTextContent = candidate.copy(
+                candidate.text.filter { it.isDigit() }
+            )
 
-            override fun filterKeyEvent(keyEvent: KeyEvent): Boolean {
-                return keyEvent matches (!Digit).typed
-            }
+            override fun filterKeyEvent(keyEvent: KeyEvent): Boolean =
+                keyEvent matches (!Digit).typed
         }
 
         /**
@@ -835,17 +832,14 @@ public interface InputReviser {
          */
         public val NonWhitespaces: InputReviser = object : InputReviser {
             override fun reviseRawTextContent(
-                currentRawTextContent: RawTextContent,
-                rawTextContentCandidate: RawTextContent
-            ): RawTextContent {
-                return rawTextContentCandidate.copy(
-                    rawTextContentCandidate.text.filter { !it.isWhitespace() }
-                )
-            }
+                current: RawTextContent,
+                candidate: RawTextContent
+            ): RawTextContent = candidate.copy(
+                candidate.text.filter { !it.isWhitespace() }
+            )
 
-            override fun filterKeyEvent(keyEvent: KeyEvent): Boolean {
-                return keyEvent matches Whitespace.typed
-            }
+            override fun filterKeyEvent(keyEvent: KeyEvent): Boolean =
+                keyEvent matches Whitespace.typed
         }
 
         /**
@@ -854,13 +848,11 @@ public interface InputReviser {
          */
         public val ToLowerCase: InputReviser = object : InputReviser {
             override fun reviseRawTextContent(
-                currentRawTextContent: RawTextContent,
-                rawTextContentCandidate: RawTextContent
-            ): RawTextContent {
-                return rawTextContentCandidate.copy(
-                    rawTextContentCandidate.text.lowercase()
-                )
-            }
+                current: RawTextContent,
+                candidate: RawTextContent
+            ): RawTextContent = candidate.copy(
+                candidate.text.lowercase()
+            )
 
             override fun filterKeyEvent(keyEvent: KeyEvent): Boolean = false
         }
@@ -875,16 +867,14 @@ public interface InputReviser {
          */
         public fun maxLength(maxLength: Int): InputReviser = object : InputReviser {
             override fun reviseRawTextContent(
-                currentRawTextContent: RawTextContent,
-                rawTextContentCandidate: RawTextContent
-            ): RawTextContent {
-                return rawTextContentCandidate.copy(
-                    rawTextContentCandidate.text.substring(
-                        0,
-                        min(maxLength, rawTextContentCandidate.text.length)
-                    )
+                current: RawTextContent,
+                candidate: RawTextContent
+            ): RawTextContent = candidate.copy(
+                candidate.text.substring(
+                    0,
+                    min(maxLength, candidate.text.length)
                 )
-            }
+            )
 
             override fun filterKeyEvent(keyEvent: KeyEvent): Boolean = false
         }
@@ -900,7 +890,7 @@ public interface InputReviser {
          * then it gets determined by [additionalReviser].
          *
          * @receiver The first reviser that should process the raw text
-         *           content candidate and key event.
+         *   content candidate and key event.
          * @param additionalReviser The second reviser that should process the
          *   raw text content candidate and key event.
          * @return A new `InputReviser`, which combines the action of two
@@ -910,17 +900,11 @@ public interface InputReviser {
             additionalReviser: InputReviser
         ): InputReviser = object : InputReviser {
             override fun reviseRawTextContent(
-                currentRawTextContent: RawTextContent,
-                rawTextContentCandidate: RawTextContent
+                current: RawTextContent,
+                candidate: RawTextContent
             ): RawTextContent {
-                val intermediateRevision = this@then.reviseRawTextContent(
-                    currentRawTextContent,
-                    rawTextContentCandidate
-                )
-                return additionalReviser.reviseRawTextContent(
-                    currentRawTextContent,
-                    intermediateRevision
-                )
+                val intermediateRevision = this@then.reviseRawTextContent(current, candidate)
+                return additionalReviser.reviseRawTextContent(current, intermediateRevision)
             }
 
             override fun filterKeyEvent(keyEvent: KeyEvent): Boolean {
