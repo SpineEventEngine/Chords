@@ -529,19 +529,30 @@ public open class InputField<V> : InputComponent<V>() {
             currentRawTextContent,
             newRawTextContentCandidate
         ) ?: newRawTextContentCandidate
-        val (validatedValue, validationErrorMessage) = parseAndValidate(revisedTextContent.text)
+        val newText = revisedTextContent.text
+        var validationErrorMessage: String? = null
+        val validatedValue: V? = try {
+            if (newText.isNotEmpty()) {
+                parseAndValidate(newText)
+            } else {
+                null
+            }
+        } catch (e: ParsingOrValidationException) {
+            validationErrorMessage = e.validationErrorMessage
+            null
+        }
         val valid = validationErrorMessage == null
 
         val prevValue = value.value
         value.value = validatedValue.takeIf { valid }
-        invalidValueText = revisedTextContent.text.takeIf { !valid }
+        invalidValueText = newText.takeIf { !valid }
         selection = revisedTextContent.selection
 
         valueValid.value = valid
         ownValidationMessage.value = validationErrorMessage
 
         val prevTextEmpty = currentRawTextContent.text.isEmpty()
-        val newTextEmpty = revisedTextContent.text.isEmpty()
+        val newTextEmpty = newText.isEmpty()
         if (newTextEmpty != prevTextEmpty) {
             onDirtyStateChange?.invoke(prevTextEmpty)
         }
@@ -553,52 +564,56 @@ public open class InputField<V> : InputComponent<V>() {
     /**
      * Parses and validates the field's text content.
      *
-     * This method returns a [Pair] of values:
-     * - The [first][Pair.first] one is a value that was parsed and validated
-     *   successfully. If parsing or validation fails it is `null`.
-     * - The [second][Pair.second] one is a validation error message if either
-     *   parsing or validation has failed.
-     *
      * @param rawText A field's text content, which has to be parsed
      *   and validated.
-     * @return A pair of values, where the first one is a value that was parsed
-     *   and validated successfully, and the second value is a validation
-     *   error message.
+     * @return A value, which was parsed and validated successfully.
+     * @throws ParsingOrValidationException If parsing or validation fails.
      */
-    private fun parseAndValidate(rawText: String): Pair<V?, String?> {
-        if (rawText == "") {
-            return Pair(null, null)
+    private fun parseAndValidate(rawText: String): V {
+        val value = parseValueWithExceptionGuard(rawText)
+        val validationErrorMessage = validateValue(value)
+        if (validationErrorMessage != null) {
+            throw ValueValidationException(validationErrorMessage)
         }
+        return value
+    }
 
-        return try {
-            val parsedValue = parseValue(rawText)
-            val validationErrorMessage = parsedValue?.let {
-                validateValue(it)
-            }
-            Pair(parsedValue, validationErrorMessage)
-        } catch (
-            @Suppress("SwallowedException" /* Exception value is not needed. */)
-            e: ValueParseException
-        ) {
-            Pair(null, e.validationErrorMessage)
-        } catch (
-            // This generic catch is needed to identify, and kindly report
-            // cases of uncontrolled throwing of any unexpected exceptions.
-            @Suppress("TooGenericExceptionCaught")
-            e: Throwable
-        ) {
-            throw IllegalStateException(
-                "Unexpected exception thrown by `InputField.parseValue`: " +
-                "${e.javaClass.name}.\n" +
-                "Make sure to explicitly throw `${ValueParseException::class.qualifiedName}` " +
-                "instead\n" +
-                "in order to report validation failures during parsing." +
-                "You can also consider changing the implementation of `parseValue` to use " +
-                "either\n" +
-                "`exceptionBasedParser` or `vBuildBasedParser` function as a convenience.",
-                e
-            )
-        }
+    /**
+     * Invokes the [parseValue] method and ensures that it uses a proper
+     * exception ([ValueParseException]) for reporting parsing failures.
+     *
+     * @param rawText An input field's raw text that needs to be parsed for
+     *   creating a value of type [V].
+     * @return A valid value of type [V] that is the result of
+     *   parsing [rawText].
+     * @throws ValueParseException If [rawText] cannot be parsed as
+     *   a valid value.
+     * @throws IllegalStateException An exception explaining the proper usage to
+     *   the developer if [parseValue] throws any other exception
+     *   except [ValueParseException].
+     * @see parseValue
+     */
+    private fun parseValueWithExceptionGuard(rawText: String) = try {
+        parseValue(rawText)
+    } catch (e: ValueParseException) {
+        throw e
+    } catch (
+        // This generic catch is needed to identify, and kindly report
+        // cases of uncontrolled throwing of any unexpected exceptions.
+        @Suppress("TooGenericExceptionCaught")
+        e: Throwable
+    ) {
+        throw IllegalStateException(
+            "Unexpected exception thrown by `InputField.parseValue`: " +
+                    "${e.javaClass.name}.\n" +
+                    "Make sure to explicitly throw `${ValueParseException::class.qualifiedName}` " +
+                    "instead\n" +
+                    "in order to report validation failures during parsing." +
+                    "You can also consider changing the implementation of `parseValue` to use " +
+                    "either\n" +
+                    "`exceptionBasedParser` or `vBuildBasedParser` function as a convenience.",
+            e
+        )
     }
 
     /**
@@ -679,6 +694,27 @@ public open class InputField<V> : InputComponent<V>() {
 }
 
 /**
+ * An exception that signifies a failure to parse or validate the value entered
+ * within the field.
+ *
+ * @property validationErrorMessage A human-readable input value validation
+ *   error message that describes what was found to be wrong about the user's
+ *   entry, which couldn't be parsed as a valid value.
+ * @param cause An exception that is being declared as the cause for
+ *   this exception.
+ */
+public sealed class ParsingOrValidationException(
+    public val validationErrorMessage: String,
+    cause: Throwable? = null
+) : RuntimeException(
+    "Parsing or validation failed with message: $validationErrorMessage", cause
+) {
+    public companion object {
+        private const val serialVersionUID: Long = -357459616639786205L
+    }
+}
+
+/**
  * An exception that is thrown when [InputField]'s `parseValue` callback
  * cannot parse a value entered by the user.
  *
@@ -689,13 +725,23 @@ public open class InputField<V> : InputComponent<V>() {
  *   this exception.
  */
 public class ValueParseException(
-    public val validationErrorMessage: String = "Enter a valid value",
+    validationErrorMessage: String = "Enter a valid value",
     cause: Throwable? = null
-) : RuntimeException(
-    "Parsing failed with error: $validationErrorMessage", cause
-) {
+) : ParsingOrValidationException(validationErrorMessage, cause) {
     public companion object {
         private const val serialVersionUID: Long = -4668463236512226876L
+    }
+}
+
+/**
+ * An exception that signifies a failure to validate the value.
+ */
+public class ValueValidationException(
+    validationErrorMessage: String = "Enter a valid value",
+    cause: Throwable? = null
+) : ParsingOrValidationException(validationErrorMessage, cause) {
+    public companion object {
+        private const val serialVersionUID: Long = -7116864861693768762L
     }
 }
 
