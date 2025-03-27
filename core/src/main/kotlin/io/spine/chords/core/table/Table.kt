@@ -112,7 +112,7 @@ public abstract class Table<E> : Component() {
     /**
      * A list of columns to be displayed in the table.
      */
-    protected abstract val columns: List<TableColumn<E>>
+    protected var columns: List<TableColumn<E>> by mutableStateOf(listOf())
 
     /**
      * A callback that allows to modify any row behaviour and style.
