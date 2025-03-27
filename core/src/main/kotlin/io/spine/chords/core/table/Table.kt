@@ -112,7 +112,7 @@ public abstract class Table<E> : Component() {
     /**
      * A list of columns to be displayed in the table.
      */
-    protected var columns: List<TableColumn<E>> by mutableStateOf(listOf())
+    public var columns: List<TableColumn<E>> by mutableStateOf(listOf())
 
     /**
      * A callback that allows to modify any row behaviour and style.
@@ -407,7 +407,7 @@ private fun <E> ContentTableRow(
         columns = columns,
         modifier = Modifier
             .then(modifier)
-            .clickable (
+            .clickable(
                 interactionSource = MutableInteractionSource(),
                 indication = null,
             ) { onClick() },
@@ -437,7 +437,7 @@ private fun <E> TableRow(
         horizontalArrangement = SpaceBetween,
         verticalAlignment = CenterVertically
     ) {
-        columns.forEach {column ->
+        columns.forEach { column ->
             Row(
                 modifier = Modifier
                     .weight(column.weight)
