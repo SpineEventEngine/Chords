@@ -900,7 +900,7 @@ public interface InputReviser {
          * then it gets determined by [additionalReviser].
          *
          * @receiver The first reviser that should process the raw text
-         *           content candidate and key event.
+         *   content candidate and key event.
          * @param additionalReviser The second reviser that should process the
          *   raw text content candidate and key event.
          * @return A new `InputReviser`, which combines the action of two
