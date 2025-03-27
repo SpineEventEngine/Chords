@@ -276,30 +276,21 @@ internal class DateTimeFieldReviser(
         current: RawTextContent,
         candidate: RawTextContent
     ): RawTextContent {
-        var updatedRawTextContentCandidate = candidate
+        var updatedCandidate = candidate
 
         if (current.text != candidate.text) {
-            updatedRawTextContentCandidate =
+            updatedCandidate =
                 if (current.selection.collapsed) {
-                    updateRawTextContentCandidateWhenTextIsNotSelected(
-                        current,
-                        candidate
-                    )
+                    updateCandidateWhenTextIsNotSelected(current, candidate)
                 } else {
-                    updateRawTextContentCandidateWhenTextIsSelected(
-                        current,
-                        candidate
-                    )
+                    updateCandidateWhenTextIsSelected(current, candidate)
                 }
         }
 
-        updatedRawTextContentCandidate =
-            DigitsOnly.reviseRawTextContent(current, updatedRawTextContentCandidate)
+        updatedCandidate = DigitsOnly.reviseRawTextContent(current, updatedCandidate)
 
-        return maxLength(dateTimePattern.filter { it.isLetter() }.length).reviseRawTextContent(
-            current,
-            updatedRawTextContentCandidate
-        )
+        val rawPatternLength = dateTimePattern.filter { it.isLetter() }.length
+        return maxLength(rawPatternLength).reviseRawTextContent(current, updatedCandidate)
     }
 
     override fun filterKeyEvent(keyEvent: KeyEvent): Boolean {
@@ -309,16 +300,14 @@ internal class DateTimeFieldReviser(
     /**
      * Updates user's input when entered text replaces the one selected by user.
      *
-     * @param currentRawTextContent
-     *         a [RawTextContent] that encapsulates current text input value
-     *         and cursor position.
-     * @param rawTextContentCandidate
-     *         a [RawTextContent] that encapsulates updated text input value
-     *         and updated cursor position.
+     * @param currentRawTextContent A [RawTextContent] that encapsulates current
+     *   text input value and cursor position.
+     * @param rawTextContentCandidate A [RawTextContent] that encapsulates
+     *   updated text input value and updated cursor position.
      * @return [RawTextContent] which contains updated text input and
-     *         updated cursor input position.
+     *   updated cursor input position.
      */
-    private fun updateRawTextContentCandidateWhenTextIsSelected(
+    private fun updateCandidateWhenTextIsSelected(
         currentRawTextContent: RawTextContent,
         rawTextContentCandidate: RawTextContent
     ): RawTextContent {
@@ -374,16 +363,14 @@ internal class DateTimeFieldReviser(
      * Updates user's input when user doesn't select any input text
      * and just enters new one.
      *
-     * @param currentRawTextContent
-     *         a [RawTextContent] that encapsulates current text input value
-     *         and cursor position.
-     * @param rawTextContentCandidate
-     *         a [RawTextContent] that encapsulates updated text input value
-     *         and updated cursor position.
+     * @param currentRawTextContent A [RawTextContent] that encapsulates current
+     *   text input value and cursor position.
+     * @param rawTextContentCandidate A [RawTextContent] that encapsulates
+     *   updated text input value and updated cursor position.
      * @return [RawTextContent] which contains updated text input and
-     *         updated cursor input position.
+     *   updated cursor input position.
      */
-    private fun updateRawTextContentCandidateWhenTextIsNotSelected(
+    private fun updateCandidateWhenTextIsNotSelected(
         currentRawTextContent: RawTextContent,
         rawTextContentCandidate: RawTextContent
     ): RawTextContent {
