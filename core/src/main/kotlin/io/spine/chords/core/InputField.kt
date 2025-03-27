@@ -45,7 +45,7 @@ import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.OffsetMapping.Companion.Identity
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
@@ -324,7 +324,9 @@ public open class InputField<V> : InputComponent<V>() {
      * still needs to be displayed in the field to let the user complete or
      * correct it to a valid form.
      *
-     * If the text field has a valid format, then this property is `null`.
+     * If the text field has a valid format (parsed successfully with
+     * [parseValue]), and is valid according to [onValidateValue] then this
+     * property is `null`.
      */
     private var invalidValueText by mutableStateOf<String?>(null)
 
@@ -780,12 +782,10 @@ public interface InputReviser {
      * See the "Revising the entered text" section in
      * [InputField]'s description.
      *
-     * @param currentRawTextContent
-     *         a [RawTextContent], which represents the current value
-     *         of text that field has, before user modification.
-     * @param rawTextContentCandidate
-     *         a [RawTextContent] which holds raw text content that was
-     *         just modified by the user.
+     * @param currentRawTextContent A [RawTextContent], which represents the
+     *   current value of text that field has, before user modification.
+     * @param rawTextContentCandidate A [RawTextContent] which holds raw text
+     *   content that was just modified by the user.
      * @return [RawTextContent] which holds revised user input text.
      */
     public fun reviseRawTextContent(
@@ -804,8 +804,7 @@ public interface InputReviser {
      * for implementing sophisticated key processing logic for purposes
      * other than key event filtering.
      *
-     * @param keyEvent
-     *         a key event which occurs when user presses key.
+     * @param keyEvent A key event which occurs when user presses key.
      * @return `true` if [keyEvent] should be stopped from
      *         further propagation, `false` otherwise.
      */
@@ -863,9 +862,7 @@ public interface InputReviser {
                 )
             }
 
-            override fun filterKeyEvent(keyEvent: KeyEvent): Boolean {
-                return keyEvent matches Whitespace.typed
-            }
+            override fun filterKeyEvent(keyEvent: KeyEvent): Boolean = false
         }
 
         /**
@@ -889,9 +886,7 @@ public interface InputReviser {
                 )
             }
 
-            override fun filterKeyEvent(keyEvent: KeyEvent): Boolean {
-                return false
-            }
+            override fun filterKeyEvent(keyEvent: KeyEvent): Boolean = false
         }
 
         /**
@@ -958,7 +953,7 @@ private fun inputTransformation(
         ) {
             visualTransformation.filter(rawText)
         } else {
-            TransformedText(rawText, OffsetMapping.Identity)
+            TransformedText(rawText, Identity)
         }
     }
 }
