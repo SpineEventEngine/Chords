@@ -29,7 +29,7 @@ package io.spine.chords.core
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -153,9 +153,10 @@ public typealias RawTextContent = TextFieldValue
  *
  * ### Input validation and field value
  *
- * An `InputField` has a two-stage validation mechanism, as described below.
+ * Whenever the user makes any change within the field, the field undergoes
+ * a two-stage validation mechanism:
  *
- *  - A value [V] is parsed from string.
+ *  - The [value] state is updated Field's raw text is parsed using [parseValue] to obtain value of type [V].
  *
  *    The value in the [value] [MutableState] is set to a non-`null` value of
  *    type [V] whenever the currently edited field's text (raw text) can
@@ -170,13 +171,15 @@ public typealias RawTextContent = TextFieldValue
  *    [ValueParseException] is displayed near the field, and [valueValid]'s
  *    state is set to `false`.
  *
- *  - A value [V] is validated using the custom [onValidateValue] callback.
+ *  - A value [V] is validated using [onValidateValue].
  *
  *    After a value was successfully parsed, an optional [onValidateValue]
  *    callback is invoked, which can be used to specify which values should be
- *    interpreted as valid, and which ones should be interpreted as a
- *    validation failure. If a callback is missing or if it returns `null`, then
- *    the value is considered valid.
+ *    interpreted as valid, and which ones should cause a validation failure.
+ *    If a callback is missing or if it returns `null`, then the value is
+ *    considered valid. If [onValidateValue] returns a non-`null` validation
+ *    error message, then this message is displayed near the field and the
+ *    [valueValid] state is set to `false`.
  *
  * If the entered value valid according to both [parseValue] and
  * [onValidateValue], the [valueValid] state gets a value of `true`.
@@ -262,13 +265,13 @@ public open class InputField<V> : InputComponent<V>() {
     public var onValueChange: ((V?) -> Unit)? = null
 
     /**
-     * A lambda, which can optionally be specified when some value(s) of type
-     * [V], which were parsed successfully need to be reported by the component
-     * as invalid ones.
+     * An optional lambda, which acts as a custom validator for any value [V]
+     * entered within the field.
      *
      * Returning a non-`null` string for a particular value [V] makes that
      * string to be displayed as an in-component's validation error message,
-     * and makes the [valueValid] state to be `false`.
+     * and makes the [valueValid] state to be `false`. Returning `null`
+     * accepts the value as a valid one.
      */
     public var onValidateValue: ((V) -> String?)? = null
 
@@ -317,12 +320,13 @@ public open class InputField<V> : InputComponent<V>() {
 
     /**
      * An intermediate text field's text, which is a text that cannot be
-     * recognized as having a valid format, but is still displayed in the field
-     * to let the user complete or correct it to a valid form.
+     * recognized as having a valid format (or one that passes validation), but
+     * still needs to be displayed in the field to let the user complete or
+     * correct it to a valid form.
      *
      * If the text field has a valid format, then this property is `null`.
      */
-    private var intermediateText by mutableStateOf<String?>(null)
+    private var invalidValueText by mutableStateOf<String?>(null)
 
     private val ownValidationMessage = mutableStateOf<String?>(null)
 
@@ -453,21 +457,13 @@ public open class InputField<V> : InputComponent<V>() {
                     supportingText(it)
                 }
             },
-            onValueChange = {
-                handleChange(
-                    rawTextContent,
-                    it,
-                    inputReviser,
-                    value,
-                    onValueChange
-                )
-            },
+            onValueChange = { handleChangeAttempt(rawTextContent, it) },
             visualTransformation = inputTransformation(visualTransformation, focused.value),
             placeholder = placeholder ?: {
                 Text(
                     promptText ?: "",
                     fontFamily = textStyle.fontFamily,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = colorScheme.secondary
                 )
             },
             prefix = prefix,
@@ -487,7 +483,7 @@ public open class InputField<V> : InputComponent<V>() {
 
     override fun clear() {
         super.clear()
-        intermediateText = null
+        invalidValueText = null
         selection = TextRange(0)
         ownValidationMessage.value = null
         onDirtyStateChange?.invoke(false)
@@ -498,11 +494,10 @@ public open class InputField<V> : InputComponent<V>() {
      * [TextField], provides an opportunity to modify it according to any
      * requirements of the respective input field implementation.
      *
-     * @param modifier
-     *         a [Modifier], which is going to be set to the [TextField]
-     *         displayed by this `InputField`.
-     * @return a modified version of a given [modifier] if any modifications are
-     *         required.
+     * @param modifier A [Modifier], which is going to be set to the [TextField]
+     *   displayed by this `InputField`.
+     * @return A modified version of a given [modifier] if any modifications
+     *   are required.
      */
     protected open fun modifier(modifier: Modifier): Modifier = modifier
 
@@ -513,86 +508,95 @@ public open class InputField<V> : InputComponent<V>() {
      *
      * If the incoming text has a valid format and thus can be recognized as
      * a respective valid value of type [V], then this method updates the value
-     * in [valueMutableState] accordingly. Otherwise, if it is not valid yet, it
-     * just updates [intermediateText] in order to accept the newly edited text
+     * in [value] accordingly. Otherwise, if it is not valid yet, it
+     * just updates [invalidValueText] in order to accept the newly edited text
      * as a temporary incomplete text representation of some value. An empty
-     * string is translated as a `null` value being
-     * saved in [valueMutableState].
+     * string is translated as a `null` value being saved in [value].
      *
      * @param currentRawTextContent A [RawTextContent] that represents the
      *   current content that text field has, before user has modified it.
      * @param newRawTextContentCandidate The modified input field's raw text
      *   content that includes the current modification that the user is trying
      *   to make, but before it has been passed through [InputReviser].
-     * @param inputReviser An optional function that can be specified to modify
-     *   the user's input before it is processed and saved as the new
-     *   component's raw text content.
-     * @param onValueChange The input field's `onValueChange` callback that has
-     *   to be triggered by this method if the new text has a valid format and
-     *   can be recognized as a respective entity.
-     * @param valueMutableState An input field's `value` property that holds the
-     *   value to be updated with a newly edited one.
      */
-    @Suppress("SwallowedException" /* Exception value is not needed. */)
-    private fun handleChange(
+    private fun handleChangeAttempt(
         currentRawTextContent: RawTextContent,
-        newRawTextContentCandidate: RawTextContent,
-        inputReviser: InputReviser?,
-        valueMutableState: MutableState<V?>,
-        onValueChange: ((V?) -> Unit)? = null
+        newRawTextContentCandidate: RawTextContent
     ) {
         val revisedTextContent = inputReviser?.reviseRawTextContent(
             currentRawTextContent,
             newRawTextContentCandidate
         ) ?: newRawTextContentCandidate
+        val (validatedValue, validationErrorMessage) = parseAndValidate(revisedTextContent.text)
+        val valid = validationErrorMessage == null
+
+        val prevValue = value.value
+        value.value = validatedValue.takeIf { valid }
+        invalidValueText = revisedTextContent.text.takeIf { !valid }
         selection = revisedTextContent.selection
 
-        val value = if (revisedTextContent.text != "") {
-            if (currentRawTextContent.text == "") {
-                onDirtyStateChange?.invoke(true)
-            }
-            try {
-                parseValue(revisedTextContent.text)
-            } catch (e: ValueParseException) {
-                ownValidationMessage.value = e.validationErrorMessage
-                valueValid.value = false
-                intermediateText = revisedTextContent.text
-                return
-            } catch (
-                // This generic catch is needed to identify, and kindly report
-                // cases of uncontrolled throwing of any unexpected exceptions.
-                @Suppress("TooGenericExceptionCaught")
-                e: Throwable
-            ) {
-                throw IllegalStateException(
-                    "Unexpected exception thrown by `InputField.parseValue`: " +
-                            "${e.javaClass.name}.\n" +
-                    "Make sure to explicitly throw `${ValueParseException::class.qualifiedName}` " +
-                            "instead\n" +
-                    "in order to report validation failures during parsing." +
-                    "You can also consider changing the implementation of `parseValue` to use " +
-                            "either\n" +
-                    "`exceptionBasedParser` or `vBuildBasedParser` function as a convenience.",
-                    e
-                )
-            }
-        } else {
-            if (currentRawTextContent.text != "") {
-                onDirtyStateChange?.invoke(false)
-            }
-            null
-        }
-
-        val validationErrorMessage  = value?.let {
-            validateValue(it)
-        }
-
+        valueValid.value = valid
         ownValidationMessage.value = validationErrorMessage
-        valueValid.value = validationErrorMessage == null
 
-        valueMutableState.value = value
-        onValueChange?.invoke(value)
-        intermediateText = null
+        val prevTextEmpty = currentRawTextContent.text.isEmpty()
+        val newTextEmpty = revisedTextContent.text.isEmpty()
+        if (newTextEmpty != prevTextEmpty) {
+            onDirtyStateChange?.invoke(prevTextEmpty)
+        }
+        if (value.value != prevValue) {
+            onValueChange?.invoke(value.value)
+        }
+    }
+
+    /**
+     * Parses and validates the field's text content.
+     *
+     * This method returns a [Pair] of values:
+     * - The [first][Pair.first] one is a value that was parsed and validated
+     *   successfully. If parsing or validation fails it is `null`.
+     * - The [second][Pair.second] one is a validation error message if either
+     *   parsing or validation has failed.
+     *
+     * @param rawText A field's text content, which has to be parsed
+     *   and validated.
+     * @return A pair of values, where the first one is a value that was parsed
+     *   and validated successfully, and the second value is a validation
+     *   error message.
+     */
+    private fun parseAndValidate(rawText: String): Pair<V?, String?> {
+        if (rawText == "") {
+            return Pair(null, null)
+        }
+
+        return try {
+            val parsedValue = parseValue(rawText)
+            val validationErrorMessage = parsedValue?.let {
+                validateValue(it)
+            }
+            Pair(parsedValue, validationErrorMessage)
+        } catch (
+            @Suppress("SwallowedException" /* Exception value is not needed. */)
+            e: ValueParseException
+        ) {
+            Pair(null, e.validationErrorMessage)
+        } catch (
+            // This generic catch is needed to identify, and kindly report
+            // cases of uncontrolled throwing of any unexpected exceptions.
+            @Suppress("TooGenericExceptionCaught")
+            e: Throwable
+        ) {
+            throw IllegalStateException(
+                "Unexpected exception thrown by `InputField.parseValue`: " +
+                "${e.javaClass.name}.\n" +
+                "Make sure to explicitly throw `${ValueParseException::class.qualifiedName}` " +
+                "instead\n" +
+                "in order to report validation failures during parsing." +
+                "You can also consider changing the implementation of `parseValue` to use " +
+                "either\n" +
+                "`exceptionBasedParser` or `vBuildBasedParser` function as a convenience.",
+                e
+            )
+        }
     }
 
     /**
@@ -623,13 +627,13 @@ public open class InputField<V> : InputComponent<V>() {
     private fun getRawTextContent(): RawTextContent {
         val previousInputReviser = remember { mutableStateOf(inputReviser) }
         val currentRawTextContent =
-            RawTextContent(intermediateText ?: value.value?.let { formatValue(it) }
+            RawTextContent(invalidValueText ?: value.value?.let { formatValue(it) }
             ?: "", selection)
 
         if (previousInputReviser.value != inputReviser) {
             previousInputReviser.value = inputReviser
 
-            if (intermediateText != null) {
+            if (invalidValueText != null) {
                 return getRevisedRawTextContent(currentRawTextContent)
             }
         }
@@ -654,16 +658,16 @@ public open class InputField<V> : InputComponent<V>() {
 
         if (revisedRawTextContent.text == "") {
             value.value = null
-            intermediateText = null
+            invalidValueText = null
             selection = revisedRawTextContent.selection
             ownValidationMessage.value = null
         } else {
             if (valueValid.value) {
-                intermediateText = null
+                invalidValueText = null
                 selection = revisedRawTextContent.selection
                 ownValidationMessage.value = null
             } else {
-                intermediateText = revisedRawTextContent.text
+                invalidValueText = revisedRawTextContent.text
                 selection = revisedRawTextContent.selection
             }
         }
