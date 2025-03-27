@@ -171,7 +171,7 @@ public typealias RawTextContent = TextFieldValue
  *    [ValueParseException] is displayed near the field, and [valueValid]'s
  *    state is set to `false`.
  *
- *  - A value [V] is validated using [onValidateValue].
+ *  - A value [V] is validated using [onValidate].
  *
  *    After a value was successfully parsed, an optional [onValidateValue]
  *    callback is invoked, which can be used to specify which values should be
@@ -182,7 +182,7 @@ public typealias RawTextContent = TextFieldValue
  *    [valueValid] state is set to `false`.
  *
  * If the entered value valid according to both [parseValue] and
- * [onValidateValue], the [valueValid] state gets a value of `true`.
+ * [onValidate], the [valueValid] state gets a value of `true`.
  *
  * #### Handling empty input
  *
@@ -273,7 +273,7 @@ public open class InputField<V> : InputComponent<V>() {
      * and makes the [valueValid] state to be `false`. Returning `null`
      * accepts the value as a valid one.
      */
-    public var onValidateValue: ((V) -> String?)? = null
+    public var onValidate: ((V) -> String?)? = null
 
     /**
      * A label for the component.
@@ -325,7 +325,7 @@ public open class InputField<V> : InputComponent<V>() {
      * correct it to a valid form.
      *
      * If the text field has a valid format (parsed successfully with
-     * [parseValue]), and is valid according to [onValidateValue] then this
+     * [parseValue]), and is valid according to [onValidate] then this
      * property is `null`.
      */
     private var invalidValueText by mutableStateOf<String?>(null)
@@ -571,7 +571,7 @@ public open class InputField<V> : InputComponent<V>() {
      */
     private fun parseAndValidate(rawText: String): V {
         val value = parseValueWithExceptionGuard(rawText)
-        val validationErrorMessage = validateValue(value)
+        val validationErrorMessage = onValidate?.invoke(value)
         if (validationErrorMessage != null) {
             throw ValueValidationException(validationErrorMessage)
         }
@@ -614,24 +614,6 @@ public open class InputField<V> : InputComponent<V>() {
                     "`exceptionBasedParser` or `vBuildBasedParser` function as a convenience.",
             e
         )
-    }
-
-    /**
-     * This method is invoked to validate [value] that has been parsed
-     * successfully, and identify whether it should be interpreted as a valid or
-     * invalid value by the component.
-     *
-     * The default implementation delegates this to the [onValidateValue]
-     * callback, but subclasses can introduce additional validation logic
-     * if needed.
-     *
-     * @param value A value that needs to be validated.
-     * @return A non-`null` validation error message string if a value [V]
-     *   should be considered as an invalid one.
-     * @see onValidateValue
-     */
-    protected open fun validateValue(value: V): String? {
-        return onValidateValue?.invoke(value)
     }
 
     /**
