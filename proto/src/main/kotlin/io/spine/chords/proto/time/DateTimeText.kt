@@ -24,7 +24,39 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.proto.time
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import com.google.protobuf.Timestamp
+import java.time.format.DateTimeFormatter
+
 /**
- * The version of all Chords libraries.
+ * Renders the given timestamp with the pattern which includes the date
+ * and time values being interpreted in the system time zone.
+ *
+ * @param dateTime A dateTime value that should be displayed as text.
+ * @param pattern A dateTime formatting pattern (see [DateTimeFormatter]
+ *         for the formatting syntax).
+ * @param modifier A component's layout and behaviour decorator.
+ * @param color A color that will be applied to the text.
+ * @param fontWeight A font thickness value that will be applied to the text.
  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.74")
+@Composable
+public fun DateTimeText(
+    dateTime: Timestamp,
+    pattern: String = "yyyy-MM-dd hh:mm a",
+    modifier: Modifier = Modifier,
+    color: Color = Color.Unspecified,
+    fontWeight: FontWeight? = null
+) {
+    DateText(
+        dateTime,
+        pattern,
+        modifier = modifier,
+        color = color,
+        fontWeight = fontWeight
+    )
+}
