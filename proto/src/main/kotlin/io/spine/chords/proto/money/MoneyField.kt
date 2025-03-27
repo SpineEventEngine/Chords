@@ -437,18 +437,20 @@ internal class MoneyFieldReviser(
         current: RawTextContent,
         rawCandidate: RawTextContent
     ): RawTextContent {
-        val updatedRawText =
-            current.text.substring(0, current.selection.min) +
-                    rawCandidate.text.substring(
-                        current.selection.min,
-                        rawCandidate.selection.max
-                    ) + (
-                    current.text.substring(
-                        rawCandidate.selection.max,
-                        current.text.length
-                    ).takeIf { current.text.length >= rawCandidate.selection.max } ?: "")
+        val beforeSelection = current.text.substring(0, current.selection.min)
 
-        return rawCandidate.copy(updatedRawText)
+        val atSelection = rawCandidate.text.substring(
+            current.selection.min,
+            rawCandidate.selection.max
+        )
+
+        val afterSelection = if (current.text.length >= rawCandidate.selection.max)
+            current.text.substring(
+                rawCandidate.selection.max,
+                current.text.length
+            ) else ""
+
+        return rawCandidate.copy(beforeSelection + atSelection + afterSelection)
     }
 
     /**
