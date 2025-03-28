@@ -79,7 +79,7 @@ public typealias RawTextContent = TextFieldValue
  * into [value].
  *
  * If the text field's input string doesn't have a valid format (a [parseValue]
- * function throws [ValueParseException]), then the text field will be displayed
+ * function throws [ParseException]), then the text field will be displayed
  * as having an error state and `null` will be stored in [value] until a valid
  * value is entered.
  *
@@ -156,19 +156,19 @@ public typealias RawTextContent = TextFieldValue
  * Whenever the user makes any change within the field, the field undergoes
  * a two-stage validation mechanism:
  *
- *  - The [value] state is updated Field's raw text is parsed using [parseValue] to obtain value of type [V].
+ *  - The [value] state is updated Field's raw text is parsed using [parseValue]
+ *    to obtain value of type [V].
  *
  *    The value in the [value] [MutableState] is set to a non-`null` value of
  *    type [V] whenever the currently edited field's text (raw text) can
  *    successfully be parsed with the [parseValue] function. If [parseValue]
- *    fails to parse the current field's raw text (and throws
- *    [ValueParseException]), then the value in [value] [MutableState] is set
- *    to `null`.
+ *    fails to parse the current field's raw text (and throws [ParseException]),
+ *    then the value in [value] [MutableState] is set to `null`.
  *
  *    When current text's parsing fails (with [parseValue] throwing
- *    [ValueParseException]), the validation error
- *    [message][ValueParseException.validationErrorMessage] from the respective
- *    [ValueParseException] is displayed near the field, and [valid] state
+ *    [ParseException]), the validation error
+ *    [message][ParseException.validationErrorMessage] from the respective
+ *    [ParseException] is displayed near the field, and [valid] state
  *    is set to a value of `false`.
  *
  *  - A value [V] is validated using [onValidate].
@@ -249,9 +249,9 @@ public open class InputField<V> : InputComponent<V>() {
      * A [MutableState], whose value is maintained by this component depending
      * on whether the component's current entry is valid or not.
      *
-     * If an invalid value is entered ([parseValue] throws
-     * [ValueParseException]), then the value in this [MutableState] is set
-     * to `false`. Otherwise, it's set to `true`.
+     * If an invalid value is entered ([parseValue] throws [ParseException]),
+     * then the value in this [MutableState] is set to `false`. Otherwise, it's
+     * set to `true`.
      */
     override var valid: MutableState<Boolean>
         get() = super.valid
@@ -389,7 +389,7 @@ public open class InputField<V> : InputComponent<V>() {
      *
      * If the text doesn't have a valid format, or doesn't satisfy any of the
      * constraints that are defined for the edited value, then the function
-     * should throw [ValueParseException].
+     * should throw [ParseException].
      *
      * More specifically, besides just parsing the raw text and thus ensuring
      * that it can be interpreted as a value of type [V] (for example a date
@@ -404,7 +404,7 @@ public open class InputField<V> : InputComponent<V>() {
      * Upon an inability to either parse a string representation of [V] (raw
      * text), or upon successfully parsing a string value, but then detecting
      * that it doesn't match some respective constraints, this method should
-     * throw [ValueParseException] whose `validationErrorMessage` property can
+     * throw [ParseException] whose `validationErrorMessage` property can
      * be set with a human-readable message that specifies the reason of
      * the failure, which will be displayed near the field.
      *
@@ -427,11 +427,11 @@ public open class InputField<V> : InputComponent<V>() {
      *   creating a value of type [V].
      * @return A valid value of type [V] that is the result of
      *   parsing [rawText].
-     * @throws ValueParseException If [rawText] cannot be parsed as
+     * @throws ParseException If [rawText] cannot be parsed as
      *   a valid value.
      * @see exceptionBasedParser
      */
-    @Throws(ValueParseException::class)
+    @Throws(ParseException::class)
     @Suppress("UNCHECKED_CAST") // implying editing a string by default
     protected open fun parseValue(rawText: String): V = rawText as V
 
@@ -574,29 +574,29 @@ public open class InputField<V> : InputComponent<V>() {
         val value = parseValueWithExceptionGuard(rawText)
         val validationErrorMessage = whatsWrongWith(value)
         if (validationErrorMessage != null) {
-            throw ValueValidationException(validationErrorMessage)
+            throw ValidationException(validationErrorMessage)
         }
         return value
     }
 
     /**
      * Invokes the [parseValue] method and ensures that it uses a proper
-     * exception ([ValueParseException]) for reporting parsing failures.
+     * exception ([ParseException]) for reporting parsing failures.
      *
      * @param rawText An input field's raw text that needs to be parsed for
      *   creating a value of type [V].
      * @return A valid value of type [V] that is the result of
      *   parsing [rawText].
-     * @throws ValueParseException If [rawText] cannot be parsed as
+     * @throws ParseException If [rawText] cannot be parsed as
      *   a valid value.
      * @throws IllegalStateException An exception explaining the proper usage to
      *   the developer if [parseValue] throws any other exception
-     *   except [ValueParseException].
+     *   except [ParseException].
      * @see parseValue
      */
     private fun parseValueWithExceptionGuard(rawText: String) = try {
         parseValue(rawText)
-    } catch (e: ValueParseException) {
+    } catch (e: ParseException) {
         throw e
     } catch (
         // This generic catch is needed to identify, and kindly report
@@ -607,7 +607,7 @@ public open class InputField<V> : InputComponent<V>() {
         throw IllegalStateException(
             "Unexpected exception thrown by `InputField.parseValue`: " +
                     "${e.javaClass.name}.\n" +
-                    "Make sure to explicitly throw `${ValueParseException::class.qualifiedName}` " +
+                    "Make sure to explicitly throw `${ParseException::class.qualifiedName}` " +
                     "instead\n" +
                     "in order to report validation failures during parsing." +
                     "You can also consider changing the implementation of `parseValue` to use " +
@@ -725,7 +725,7 @@ public sealed class ParsingOrValidationException(
  * @param cause An exception that is being declared as the cause for
  *   this exception.
  */
-public class ValueParseException(
+public class ParseException(
     validationErrorMessage: String = "Enter a valid value",
     cause: Throwable? = null
 ) : ParsingOrValidationException(validationErrorMessage, cause) {
@@ -737,7 +737,7 @@ public class ValueParseException(
 /**
  * An exception that signifies a failure to validate the value.
  */
-private class ValueValidationException(
+private class ValidationException(
     validationErrorMessage: String
 ) : ParsingOrValidationException(validationErrorMessage) {
     companion object {
@@ -760,7 +760,7 @@ public fun interface InputFieldParser<V> {
      *
      * If the text doesn't have a valid format, or doesn't satisfy any of the
      * constraints that are defined for the edited value, then the function
-     * should throw [ValueParseException].
+     * should throw [ParseException].
      *
      * More specifically, besides just parsing the raw text and thus ensuring
      * that it can be interpreted as a value of type [V] (for example a date
@@ -775,7 +775,7 @@ public fun interface InputFieldParser<V> {
      * Upon an inability to either parse a string representation of [V] (raw
      * text), or upon successfully parsing a string value, but then detecting
      * that it doesn't match some respective constraints, this method should
-     * throw [ValueParseException] whose `validationErrorMessage` property can
+     * throw [ParseException] whose `validationErrorMessage` property can
      * be set with a human-readable message that specifies the reason of
      * the failure, which will be displayed near the field.
      *
@@ -783,10 +783,10 @@ public fun interface InputFieldParser<V> {
      *   creating a value of type [V].
      * @return A valid value of type [V] that is the result of
      *   parsing [rawText].
-     * @throws ValueParseException If [rawText] cannot be parsed as
+     * @throws ParseException If [rawText] cannot be parsed as
      *   a valid value.
      */
-    @Throws(ValueParseException::class)
+    @Throws(ParseException::class)
     public fun parse(rawText: String): V
 }
 
@@ -1014,20 +1014,18 @@ private fun inputTransformation(
  * More precisely it runs the given [parser], and when it identifies that
  * it has thrown  [parseFailureException] to signify the parsing failure, it
  * fulfills the [InputField.parseValue]'s contract by throwing
- * [ValueParseException] with the given [failureMessage].
+ * [ParseException] with the given [failureMessage].
  *
- * @param parseFailureException
- *         an exception expected to be thrown by [parser] when it identifies
- *         a parsing error.
- * @param failureMessage
- *         a parsing failure message that will be reported when throwing
- *         [ValueParseException] (in case when parsing failure occurs).
- * @param parser
- *         a lambda that is run to perform the actual parsing.
+ * @param V A type of value being parsed.
+ *
+ * @param parseFailureException An exception expected to be thrown by [parser]
+ *   when it identifies a parsing error.
+ * @param failureMessage A parsing failure message that will be reported when
+ *   throwing [ParseException] (in case when parsing failure occurs).
+ * @param parser A lambda that is run to perform the actual parsing.
  * @return the result of successful parsing.
- * @throws ValueParseException
- *         when [parser] has thrown an exception whose class is either
- *         the same as [parseFailureException] or extends that class.
+ * @throws ParseException When [parser] has thrown an exception whose class is
+ *   either the same as [parseFailureException] or extends that class.
  * @see [InputField.formatValue]
  */
 public inline fun <V> exceptionBasedParser(
@@ -1046,5 +1044,5 @@ public inline fun <V> exceptionBasedParser(
         if (!(parseFailureException.javaObjectType.isAssignableFrom(e.javaClass))) {
             throw e
         }
-        throw ValueParseException(failureMessage, e)
+        throw ParseException(failureMessage, e)
     }
