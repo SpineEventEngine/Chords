@@ -226,6 +226,7 @@ public typealias RawTextContent = TextFieldValue
  *   rendering any specific input component in any application code.
  */
 @Stable
+@Suppress("TooManyFunctions" /* All functions are relevant. */)
 public open class InputField<V> : InputComponent<V>() {
 
     /**
@@ -571,7 +572,7 @@ public open class InputField<V> : InputComponent<V>() {
      */
     private fun parseAndValidate(rawText: String): V {
         val value = parseValueWithExceptionGuard(rawText)
-        val validationErrorMessage = onValidate?.invoke(value)
+        val validationErrorMessage = whatsWrongWith(value)
         if (validationErrorMessage != null) {
             throw ValueValidationException(validationErrorMessage)
         }
@@ -614,6 +615,24 @@ public open class InputField<V> : InputComponent<V>() {
                     "`exceptionBasedParser` or `vBuildBasedParser` function as a convenience.",
             e
         )
+    }
+
+    /**
+     * This method is invoked to check [value] that has been parsed
+     * successfully, and identify whether it should be interpreted as a valid or
+     * invalid value by the component.
+     *
+     * The default implementation delegates this to the [onValidate]
+     * callback, but subclasses can introduce additional validation logic
+     * if needed.
+     *
+     * @param value A value that needs to be validated.
+     * @return A non-`null` validation error message string if a value [V]
+     *   should be considered as an invalid one.
+     * @see onValidate
+     */
+    protected open fun whatsWrongWith(value: V): String? {
+        return onValidate?.invoke(value)
     }
 
     /**
@@ -718,11 +737,10 @@ public class ValueParseException(
 /**
  * An exception that signifies a failure to validate the value.
  */
-public class ValueValidationException(
-    validationErrorMessage: String = "Enter a valid value",
-    cause: Throwable? = null
-) : ParsingOrValidationException(validationErrorMessage, cause) {
-    public companion object {
+private class ValueValidationException(
+    validationErrorMessage: String
+) : ParsingOrValidationException(validationErrorMessage) {
+    companion object {
         private const val serialVersionUID: Long = -7116864861693768762L
     }
 }
