@@ -171,18 +171,18 @@ public typealias RawTextContent = TextFieldValue
  *    [ValueParseException] is displayed near the field, and [valid] state
  *    is set to a value of `false`.
  *
- *  - A value [V] is validated using [onValidateValue].
+ *  - A value [V] is validated using [onValidate].
  *
- *    After a value was successfully parsed, an optional [onValidateValue]
+ *    After a value was successfully parsed, an optional [onValidate]
  *    callback is invoked, which can be used to specify which values should be
  *    interpreted as valid, and which ones should cause a validation failure.
  *    If a callback is missing or if it returns `null`, then the value is
- *    considered valid. If [onValidateValue] returns a non-`null` validation
+ *    considered valid. If [onValidate] returns a non-`null` validation
  *    error message, then this message is displayed near the field and the
  *    [valid] state is set to `false`.
  *
  * If the entered value valid according to both [parseValue] and
- * [onValidateValue], the [valid] state gets a value of `true`.
+ * [onValidate], the [valid] state gets a value of `true`.
  *
  * #### Handling empty input
  *
@@ -274,7 +274,7 @@ public open class InputField<V> : InputComponent<V>() {
      * and makes the [valid] state to be `false`. Returning `null`
      * accepts the value as a valid one.
      */
-    public var onValidateValue: ((V) -> String?)? = null
+    public var onValidate: ((V) -> String?)? = null
 
     /**
      * A label for the component.
@@ -326,7 +326,7 @@ public open class InputField<V> : InputComponent<V>() {
      * correct it to a valid form.
      *
      * If the text field has a valid format (parsed successfully with
-     * [parseValue]), and is valid according to [onValidateValue] then this
+     * [parseValue]), and is valid according to [onValidate] then this
      * property is `null`.
      */
     private var invalidValueText by mutableStateOf<String?>(null)
@@ -622,17 +622,17 @@ public open class InputField<V> : InputComponent<V>() {
      * successfully, and identify whether it should be interpreted as a valid or
      * invalid value by the component.
      *
-     * The default implementation delegates this to the [onValidateValue]
+     * The default implementation delegates this to the [onValidate]
      * callback, but subclasses can introduce additional validation logic
      * if needed.
      *
      * @param value A value that needs to be validated.
      * @return A non-`null` validation error message string if a value [V]
      *   should be considered as an invalid one.
-     * @see onValidateValue
+     * @see onValidate
      */
     protected open fun whatsWrongWith(value: V): String? {
-        return onValidateValue?.invoke(value)
+        return onValidate?.invoke(value)
     }
 
     /**
