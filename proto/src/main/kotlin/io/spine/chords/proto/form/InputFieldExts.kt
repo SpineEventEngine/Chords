@@ -28,7 +28,7 @@ package io.spine.chords.proto.form
 
 import com.google.protobuf.Message
 import io.spine.chords.core.InputField
-import io.spine.chords.core.ValueParseException
+import io.spine.chords.core.ParseException
 import io.spine.chords.core.exceptionBasedParser
 import io.spine.protobuf.ValidatingBuilder
 import io.spine.validate.ValidationException
@@ -43,23 +43,20 @@ import io.spine.validate.ValidationException
  * of [InputField.formatValue], which invokes this function. Then it invokes
  * [vBuild][ValidatingBuilder.vBuild()] on that builder instance and returns
  * its value if it completes successfully. If `vBuild` fails with
- * [ValidationException] then this method throws [ValueParseException] with
+ * [ValidationException] then this method throws [ParseException] with
  * the given [failureMessage].
  *
- * @param failureMessage
- *         a parsing failure message that will be reported when throwing
- *         [ValueParseException] (in case when building a message fails with
- *         [ValidationException]).
- * @param builder
- *         a lambda that should create and configure a respective
- *         [ValidatingBuilder] instance based on the [passeValue]'s
- *         `rawText` argument.
- * @return the message value that has been successfully parsed (built by
- *         invoking [vBuild][ValidatingBuilder.vBuild()] on
- *         [ValidatingBuilder] returned by [builder]).
- * @throws ValueParseException
- *         if [vBuild][ValidatingBuilder.vBuild()] on the prepared builder
- *         throws [ValidationException].
+ * @param failureMessage A parsing failure message that will be reported when
+ *   throwing [ParseException] (in case when building a message fails
+ *   with [ValidationException]).
+ * @param builder A lambda that should create and configure a respective
+ *   [ValidatingBuilder] instance based on the
+ *   [parseValue][InputField.parseValue]'s `rawText` argument.
+ * @return The message value that has been successfully parsed (built by
+ *   invoking [vBuild][ValidatingBuilder.vBuild] on [ValidatingBuilder]
+ *   returned by [builder]).
+ * @throws ParseException If [vBuild][ValidatingBuilder.vBuild()] on the
+ *   prepared builder throws [ValidationException].
  * @see [InputField.formatValue]
  * @see vBuildBasedParser
  */

@@ -244,7 +244,7 @@ public class MoneyField : InputField<Money>() {
 
         selectedCurrency = item
 
-        if (value.value == null || !valueValid.value) {
+        if (value.value == null || !valid.value) {
             return
         }
 

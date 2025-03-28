@@ -169,10 +169,10 @@ internal fun <
 ) {
     Field(field, defaultValue) {
         this@InputComponent.value = this@Field.fieldValue
-        this@InputComponent.valueValid = this@Field.fieldValueValid
+        this@InputComponent.valid = this@Field.fieldValueValid
         this@InputComponent.externalValidationMessage = this@Field.externalValidationMessage
         this@InputComponent.onDirtyStateChange = { this@Field.notifyDirtyStateChanged(it) }
-        this@InputComponent.valueRequired = this@Field.fieldRequired
+        this@InputComponent.required = this@Field.fieldRequired
         this@InputComponent.enabled = this@Field.fieldEnabled.value
         this@Field.focusRequestDispatcher.handleFocusRequest = { focus() }
         registerFieldValueEditor(this@InputComponent)

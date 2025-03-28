@@ -80,7 +80,7 @@ import io.spine.protobuf.ValidatingBuilder
  *          // method is invoked when the form needs to be posted.
  *          Button(
  *              onClick = {
- *                  if (form.valueValid.value) {
+ *                  if (form.valid.value) {
  *                      form.postCommand()
  *                  }
  *              }
@@ -142,7 +142,7 @@ import io.spine.protobuf.ValidatingBuilder
  *
  *          Button(
  *              onClick = {
- *                  if (form.valueValid.value) {
+ *                  if (form.valid.value) {
  *                      form.postCommand()
  *                  }
  *              }
@@ -353,7 +353,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * Posts the command based on all currently entered data.
      *
      * Note that this method can only be invoked when the data entered within
-     * the form is valid (when `valueValid.value == false`).
+     * the form is valid (when `valid.value == false`).
      *
      * Here's a typical usage example:
      * ```
@@ -362,14 +362,14 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      *     commandMessageForm.updateValidationDisplay(true)
      *
      *     // Submit the form if it is valid currently.
-     *     if (commandMessageForm.valueValid.value) {
+     *     if (commandMessageForm.valid.value) {
      *         commandMessageForm.postCommand()
      *     }
      * ```
      *
      * Note that the [updateValidationDisplay] invocation is technically not
      * required to check if the form is valid because the form is always
-     * validated on-the-fly automatically, and its [valueValid] property always
+     * validated on-the-fly automatically, and its [valid] property always
      * contains an up-to-date value. Nevertheless, it would typically be useful
      * to invoke it before [postCommand] to improve user's experience when the
      * form's [validationDisplayMode] property has a value of
@@ -378,13 +378,13 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
      * @return An object, which allows managing (e.g. cancelling) all
      *   subscriptions made by the [commandConsequences] callback.
      * @throws IllegalStateException If the form is not valid when this method
-     *   is invoked (e.g. when `valueValid.value == false`).
+     *   is invoked (e.g. when `valid.value == false`).
      * @see commandConsequences
      * @see cancelActiveSubscriptions
      */
     public fun postCommand(): EventSubscriptions {
         updateValidationDisplay(true)
-        check(valueValid.value) {
+        check(valid.value) {
             "`postCommand` cannot be invoked on an invalid form`"
         }
         val command = value.value
