@@ -67,7 +67,7 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
      * @param selectorsOffset A vertical distance between radio button selectors
      *   and their respective fields.
      * @param optionalCheckboxOffset A vertical distance between the checkbox,
-     *   which is displayed when [valueRequired] is `false`, and the rest of
+     *   which is displayed when [required] is `false`, and the rest of
      *   the controls within the component.
      */
     public data class Look(
@@ -79,7 +79,7 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
     @Composable
     override fun FormPartScope<PaymentMethod>.customContent() {
         Column {
-            if (!valueRequired) {
+            if (!required) {
                 Row {
                     OptionalMessageCheckbox("Specify payment method")
                 }

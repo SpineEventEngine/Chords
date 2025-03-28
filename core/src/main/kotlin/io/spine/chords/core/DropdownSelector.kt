@@ -202,7 +202,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
         DropdownListBox<I> {
             items = getFilteredItems(searchString)
             selectedItem = this@DropdownSelector.selectedItem
-            noneItemEnabled = !valueRequired
+            noneItemEnabled = !required
             onSelectItem = ::onSelectItem
             expanded = this@DropdownSelector.expanded
             enabled = this@DropdownSelector.enabled
@@ -249,7 +249,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
                 .onPreviewKeyEvent { handleKeyEvent(it) },
             trailingIcon = {
                 TrailingIcons(
-                    valueRequired,
+                    required,
                     selectedItem != null,
                     expanded.value,
                     enabled
@@ -294,7 +294,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
         searchString = ""
         selectedItem = item
         selection = TextRange(if (item != null) itemText(item).length else 0)
-        valueValid.value = true
+        valid.value = true
         expanded.value = false
     }
 
@@ -355,7 +355,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
         if (searchString != newSearchString || selectedItem != null) {
             searchString = newSearchString
             selectedItem = null
-            valueValid.value = (newSearchString == "")
+            valid.value = (newSearchString == "")
             expanded.value = true
         }
     }

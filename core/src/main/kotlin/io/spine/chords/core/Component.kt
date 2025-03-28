@@ -396,7 +396,7 @@ import kotlinx.coroutines.launch
  *   easily standardize the concepts common for all similar components
  *   (e.g. concepts reused in all input components) by extracting them into base
  *   class(es). For example, the input component's parameters such as its value,
- *   validity state ([valueValid][InputComponent.valueValid]), external
+ *   validity state ([valid][InputComponent.valid]), external
  *   validation message
  *   ([externalValidationMessage][InputComponent.externalValidationMessage]),
  *   etc. can be declared and documented as properties in the respective base

@@ -98,11 +98,11 @@ public interface InputContext {
  *
  * - Whenever the component contains a valid data entry at any given point in
  *   time, it provides a respective value of type [V] inside of [value] state,
- *   and reports a value of `true` in its [valueValid] state.
+ *   and reports a value of `true` in its [valid] state.
  *
  * - Whenever the component contains an invalid data entry at any given point in
  *   time, it provides `null` inside of [value], and `false` inside
- *   of [valueValid].
+ *   of [valid].
  *
  *   Besides, to ensure a good user's experience, and make the current state
  *   explicit to the user, a component is responsible for notifying the user of
@@ -117,7 +117,7 @@ public interface InputContext {
  * This is called an internal validation for convenience here. This kind of
  * validation is performed by the input component itself, before it comes up
  * with an actual value that it stores in the [value] property. The status of
- * this kind of validation is reflected in the [valueValid] state.
+ * this kind of validation is reflected in the [valid] state.
  *
  * It might also be needed for an application to validate field values after
  * they have been entered using `InputComponent`s. For example a form might need
@@ -130,7 +130,7 @@ public interface InputContext {
  * can enforce this input component to be displayed as an invalid one to
  * the user despite the input component itself didn't detect any validation
  * errors and has emitted the respective value of type [V], accompanied by its
- * `valueValid` having a value of `true`. In such cases the form that contains
+ * [valid] state having a value of `true`. In such cases the form that contains
  * such input component generates the respective "external" validation message
  * that it passes to the input component so that it can display it inside.
  *
@@ -142,7 +142,7 @@ public interface InputContext {
  * whenever it contains a non-`null` value. Note that
  * [externalValidationMessage] concerns only the external validation, and it is
  * not related to the component's own internal validation state, so it is
- * a normal situation that a component reports its [valueValid] state to contain
+ * a normal situation that a component reports its [valid] state to contain
  * `true`, but [externalValidationMessage] can contain a non-`null` value at
  * the same time.
  *
@@ -171,12 +171,12 @@ public interface InputContext {
  * Whenever the input component transitions from/to the dirty state, it has
  * to invoke the [onDirtyStateChange] callback.
  *
- * @param V
- *         a type of values that this input component allows to edit.
- * @constructor a constructor, which is used internally by the input component's
- *         implementation. Use [companion object's][ComponentCompanion]
- *         [invoke][ComponentCompanion.invoke] operators for instantiating
- *         and rendering any specific input component in any application code.
+ * @param V A type of values that this input component allows to edit.
+ *
+ * @constructor A constructor, which is used internally by the input component's
+ *   implementation. Use [companion object's][ComponentSetup]
+ *   [invoke][ComponentSetup.invoke] operators for instantiating and rendering
+ *   any specific input component in any application code.
  */
 @Stable
 public abstract class InputComponent<V> : FocusableComponent() {
@@ -189,7 +189,7 @@ public abstract class InputComponent<V> : FocusableComponent() {
      *
      * A value of `null` corresponds to a "not present" value if the input
      * component is in the respective state, or an invalid input. A value of
-     * [valueValid] at the same time describes whether the field has
+     * [valid] at the same time describes whether the field has
      * a valid value.
      */
     public open lateinit var value: MutableState<V?>
@@ -202,23 +202,23 @@ public abstract class InputComponent<V> : FocusableComponent() {
      * If an invalid value is entered, then the value in this [MutableState] is
      * set to `false`. Otherwise, it's set to `true`.
      */
-    public open lateinit var valueValid: MutableState<Boolean>
+    public open lateinit var valid: MutableState<Boolean>
 
     /**
      * Specifies whether the valid entry within the component can only result in
      * a non-`null` value.
      *
      * A value of `false` means that an input component can report its certain
-     * entry state as representing a `null` value, and still have `valueValid`
+     * entry state as representing a `null` value, and still have [valid]
      * to be `true`.
      *
      * A value of `true` means that the input component can only report a `null`
-     * value if its current entry is invalid (when it reports `valueValid` to
+     * value if its current entry is invalid (when it reports [valid] to
      * be `false`).
      * TODO:2024-03-17:dmitry.pikhulya: see how this property can be
      *     supported in all input components, not just in MessageForm
      */
-    public var valueRequired: Boolean by mutableStateOf(false)
+    public var required: Boolean by mutableStateOf(false)
 
     /**
      * This property is dedicated to be set by the form automatically for
@@ -272,8 +272,8 @@ public abstract class InputComponent<V> : FocusableComponent() {
         if (!this::value.isInitialized) {
             value = mutableStateOf(null)
         }
-        if (!this::valueValid.isInitialized) {
-            valueValid = mutableStateOf(true)
+        if (!this::valid.isInitialized) {
+            valid = mutableStateOf(true)
         }
     }
 
