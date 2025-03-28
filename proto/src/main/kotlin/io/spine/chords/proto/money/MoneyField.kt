@@ -288,32 +288,23 @@ internal class MoneyFieldReviser(
 ) : InputReviser {
 
     override fun reviseRawTextContent(
-        currentRawTextContent: RawTextContent,
-        rawTextContentCandidate: RawTextContent
+        current: RawTextContent,
+        candidate: RawTextContent
     ): RawTextContent {
-        var updatedRawTextContentCandidate = rawTextContentCandidate.copy(
-            text = rawTextContentCandidate.text.replace(
-                '.',
-                decimalSeparator
-            )
+        var updatedCandidate = candidate.copy(
+            candidate.text.replace('.', decimalSeparator)
         )
-        if (currentRawTextContent.text != updatedRawTextContentCandidate.text &&
-            currentRawTextContent.text.isNotEmpty()
+        if (current.text != updatedCandidate.text &&
+            current.text.isNotEmpty()
         ) {
-            updatedRawTextContentCandidate =
-                if (currentRawTextContent.selection.collapsed) {
-                    updateRawTextContentCandidateWhenTextIsNotSelected(
-                        currentRawTextContent,
-                        updatedRawTextContentCandidate
-                    )
+            updatedCandidate =
+                if (current.selection.collapsed) {
+                    updateCandidateWhenTextIsNotSelected(current, updatedCandidate)
                 } else {
-                    updateRawTextContentCandidateWhenTextIsSelected(
-                        currentRawTextContent,
-                        updatedRawTextContentCandidate
-                    )
+                    updateCandidateWhenTextIsSelected(current, updatedCandidate)
                 }
         }
-        return sanitizeMoneyField(currentRawTextContent, updatedRawTextContentCandidate, currency)
+        return sanitizeMoneyField(current, updatedCandidate)
     }
 
     override fun filterKeyEvent(keyEvent: KeyEvent): Boolean {
@@ -328,52 +319,47 @@ internal class MoneyFieldReviser(
      * contain decimal separator, input value is modified to preserve decimal
      * separator in it.
      *
-     * @param currentRawTextContent
-     *         a [RawTextContent] that encapsulates current text input value
-     *         and cursor position.
-     * @param rawTextContentCandidate
-     *         a [RawTextContent] that encapsulates updated text input value
-     *         and updated cursor position.
-     * @return [RawTextContent] which contains updated text input and
-     *         updated cursor input position.
+     * @param current A [RawTextContent] that encapsulates current
+     *   text input value and cursor position.
+     * @param candidate A [RawTextContent] that encapsulates
+     *   updated text input value and updated cursor position.
+     * @return [RawTextContent] which contains updated text input and updated
+     *   cursor input position.
      */
-    private fun updateRawTextContentCandidateWhenTextIsSelected(
-        currentRawTextContent: RawTextContent,
-        rawTextContentCandidate: RawTextContent
+    private fun updateCandidateWhenTextIsSelected(
+        current: RawTextContent,
+        candidate: RawTextContent
     ): RawTextContent {
-        if (currentRawTextContent.selection.length != currentRawTextContent.text.length) {
-            val selectedText = currentRawTextContent.getSelectedText()
-            val replaceWithText = rawTextContentCandidate.text.substring(
-                currentRawTextContent.selection.min,
-                rawTextContentCandidate.selection.start
-            )
-            val decimalSeparatorIndex =
-                currentRawTextContent.text.indexOfFirst { it == decimalSeparator }
-            val updatedRawTextContentCandidate: RawTextContent
-            if (!replaceWithText.contains(decimalSeparator) &&
-                selectedText.contains(decimalSeparator)
-            ) {
-                val startIndex = rawTextContentCandidate.selection.start
-                val updatedRawText = rawTextContentCandidate.text.substring(0, startIndex) +
-                        decimalSeparator +
-                        rawTextContentCandidate.text.substring(startIndex)
-
-                updatedRawTextContentCandidate =
-                    RawTextContent(
-                        updatedRawText,
-                        TextRange(startIndex)
-                    )
-            } else if (decimalSeparatorIndex < currentRawTextContent.selection.min) {
-                updatedRawTextContentCandidate =
-                    updateRawTextContentDecimalPart(currentRawTextContent, rawTextContentCandidate)
-            } else {
-                updatedRawTextContentCandidate = rawTextContentCandidate
-            }
-
-            return updatedRawTextContentCandidate
+        if (current.selection.length == current.text.length) {
+             return candidate
         }
 
-        return rawTextContentCandidate
+        val selectedText = current.getSelectedText()
+        val replaceWithText = candidate.text.substring(
+            current.selection.min,
+            candidate.selection.start
+        )
+        val decimalSeparatorIndex = current.text.indexOfFirst { it == decimalSeparator }
+        return when {
+            (!replaceWithText.contains(decimalSeparator) &&
+                selectedText.contains(decimalSeparator)
+            ) -> {
+                val startIndex = candidate.selection.start
+                val updatedRawText = candidate.text.substring(0, startIndex) +
+                        decimalSeparator +
+                        candidate.text.substring(startIndex)
+
+                RawTextContent(updatedRawText, TextRange(startIndex))
+            }
+
+            decimalSeparatorIndex < current.selection.min -> {
+                updateDecimalPart(current, candidate)
+            }
+
+            else -> {
+                candidate
+            }
+        }
     }
 
     /**
@@ -384,97 +370,94 @@ internal class MoneyFieldReviser(
      * if that character is decimal separator resulting input value will
      * preserve separator, it will just update cursor position.
      *
-     * @param currentRawTextContent
-     *         a [RawTextContent] that encapsulates current text input value
-     *         and cursor position.
-     * @param rawTextContentCandidate
-     *         a [RawTextContent] that encapsulates updated text input value
-     *         and updated cursor position.
+     * @param current A [RawTextContent] that encapsulates current text input
+     *   value and cursor position.
+     * @param candidate A [RawTextContent] that encapsulates updated text input
+     *   value and updated cursor position.
      * @return [RawTextContent] which contains updated text input and
-     *         updated cursor input position.
+     *   updated cursor input position.
      */
-    private fun updateRawTextContentCandidateWhenTextIsNotSelected(
-        currentRawTextContent: RawTextContent,
-        rawTextContentCandidate: RawTextContent
+    private fun updateCandidateWhenTextIsNotSelected(
+        current: RawTextContent,
+        candidate: RawTextContent
     ): RawTextContent {
         val decimalSeparatorIndex =
-            currentRawTextContent.text.indexOfFirst { it == decimalSeparator }
-        val updatedRawTextContentCandidate: RawTextContent
-        if (rawTextContentCandidate.selection.start <= currentRawTextContent.selection.start) {
-            val deletedChar = currentRawTextContent.text[rawTextContentCandidate.selection.start]
-            if (deletedChar == decimalSeparator) {
-                val textRange = TextRange(rawTextContentCandidate.selection.start)
+            current.text.indexOfFirst { it == decimalSeparator }
+        return when {
+            candidate.selection.start <= current.selection.start -> {
+                val deletedChar = current.text[candidate.selection.start]
+                when {
+                    deletedChar == decimalSeparator -> {
+                        val textRange = TextRange(candidate.selection.start)
+                        RawTextContent(current.text, textRange)
+                    }
 
-                updatedRawTextContentCandidate =
-                    RawTextContent(currentRawTextContent.text, textRange)
-            } else if (rawTextContentCandidate.selection.start > decimalSeparatorIndex) {
-                val remainingDecimalPartIndex = if (currentRawTextContent.selection.collapsed &&
-                    rawTextContentCandidate.selection.collapsed &&
-                    currentRawTextContent.selection.start == rawTextContentCandidate.selection.start
-                ) {
-                    currentRawTextContent.selection.min + 1
-                } else {
-                    currentRawTextContent.selection.min
+                    candidate.selection.start > decimalSeparatorIndex -> {
+                        val remainingDecimalPartIndex =
+                            current.selection.min + (1.takeIf {
+                                current.selection.collapsed &&
+                                        candidate.selection.collapsed &&
+                                        current.selection.start == candidate.selection.start
+                            } ?: 0)
+
+                        val updatedRawText =
+                            current.text.substring(0, candidate.selection.min) +
+                                    "0" + current.text.substring(remainingDecimalPartIndex)
+
+                        candidate.copy(updatedRawText)
+                    }
+
+                    else -> {
+                        candidate
+                    }
                 }
-                val updatedRawText =
-                    currentRawTextContent.text.substring(0, rawTextContentCandidate.selection.min) +
-                            "0" + currentRawTextContent.text.substring(remainingDecimalPartIndex)
-
-                updatedRawTextContentCandidate = rawTextContentCandidate.copy(text = updatedRawText)
-            } else {
-                updatedRawTextContentCandidate = rawTextContentCandidate
             }
-        } else if (decimalSeparatorIndex < currentRawTextContent.selection.min) {
-            updatedRawTextContentCandidate =
-                updateRawTextContentDecimalPart(currentRawTextContent, rawTextContentCandidate)
-        } else {
-            updatedRawTextContentCandidate = rawTextContentCandidate
-        }
 
-        return updatedRawTextContentCandidate
+            decimalSeparatorIndex < current.selection.min -> {
+                updateDecimalPart(current, candidate)
+            }
+
+            else -> {
+                candidate
+            }
+        }
     }
 
     /**
      * Revise user's input when user modifies decimal part of money value.
      *
-     * @param currentRawTextContent
-     *         a [RawTextContent] that encapsulates current text input value
-     *         and cursor position.
-     * @param rawTextContentCandidate
-     *         a [RawTextContent] that encapsulates updated text input value
-     *         and updated cursor position.
+     * @param current A [RawTextContent] that encapsulates current text input
+     *   value and cursor position.
+     * @param rawCandidate A [RawTextContent] that encapsulates updated text
+     *   input value and updated cursor position.
      * @return [RawTextContent] which contains revised text input and
-     *         updated cursor input position.
+     *   updated cursor input position.
      */
-    private fun updateRawTextContentDecimalPart(
-        currentRawTextContent: RawTextContent,
-        rawTextContentCandidate: RawTextContent
+    private fun updateDecimalPart(
+        current: RawTextContent,
+        rawCandidate: RawTextContent
     ): RawTextContent {
-        val updatedRawText =
-            currentRawTextContent.text.substring(0, currentRawTextContent.selection.min) +
-                    rawTextContentCandidate.text.substring(
-                        currentRawTextContent.selection.min,
-                        rawTextContentCandidate.selection.max
-                    ) +
-                    if (currentRawTextContent.text.length <
-                        rawTextContentCandidate.selection.max
-                    ) {
-                        ""
-                    } else {
-                        currentRawTextContent.text.substring(
-                            rawTextContentCandidate.selection.max,
-                            currentRawTextContent.text.length
-                        )
-                    }
+        val beforeSelection = current.text.substring(0, current.selection.min)
 
-        return rawTextContentCandidate.copy(text = updatedRawText)
+        val atSelection = rawCandidate.text.substring(
+            current.selection.min,
+            rawCandidate.selection.max
+        )
+
+        val afterSelection = if (current.text.length >= rawCandidate.selection.max)
+            current.text.substring(
+                rawCandidate.selection.max,
+                current.text.length
+            ) else ""
+
+        return rawCandidate.copy(beforeSelection + atSelection + afterSelection)
     }
 
     /**
      * Corrects the human-readable string representation of [Money] according to
      * some basic limitations of how the money string should be formatted.
      *
-     * Note that depending on the value of [rawTextContentCandidate] input
+     * Note that depending on the value of [candidate] input
      * string, this function doesn't necessarily return [RawTextContent] with
      * valid money string, e.g. when the input string doesn't
      * include a currency symbol or an amount value.
@@ -503,7 +486,7 @@ internal class MoneyFieldReviser(
      *   something else).
      *
      * Having mentioned the above, it should generally be noted that, depending
-     * on the [rawTextContentCandidate] input text, this method doesn't
+     * on the [candidate] input text, this method doesn't
      * necessarily result in a [RawTextContent] with a string value,
      * which can be interpreted as a valid money string.
      *
@@ -511,23 +494,18 @@ internal class MoneyFieldReviser(
      * considered as a valid value, and thus results in returning a
      * [RawTextContent] with empty string value as well.
      *
-     * @param currentRawTextContent
-     *         a [RawTextContent] that encapsulates current text input value
-     *         and cursor position.
-     * @param rawTextContentCandidate
-     *         a [RawTextContent] that encapsulates updated text input value
-     *         and cursor position that should be sanitized.
-     * @param currency
-     *         a money amount currency.
+     * @param current A [RawTextContent] that encapsulates current text input
+     *   value and cursor position.
+     * @param candidate A [RawTextContent] that encapsulates updated text input
+     *   value and cursor position that should be sanitized.
      * @return [RawTextContent] which holds updated cursor position and
      *         sanitized modification of [rawTextCandidate] text value.
      */
     private fun sanitizeMoneyField(
-        currentRawTextContent: RawTextContent,
-        rawTextContentCandidate: RawTextContent,
-        currency: Currency
+        current: RawTextContent,
+        candidate: RawTextContent
     ): RawTextContent {
-        val trimmedStr = rawTextContentCandidate.text.trim()
+        val trimmedStr = candidate.text.trim()
         if (trimmedStr.isEmpty()) {
             return RawTextContent("")
         }
@@ -535,8 +513,8 @@ internal class MoneyFieldReviser(
         val exponentDigits = currency.options.exponentDigits
 
         val (sanitizedAmount, inputCursorOffset) = sanitizeAmount(
-            currentRawTextContent,
-            rawTextContentCandidate,
+            current,
+            candidate,
             trimmedStr,
             exponentDigits
         )
@@ -550,8 +528,8 @@ internal class MoneyFieldReviser(
 
         return RawTextContent(
             sanitizedText, TextRange(
-                start = rawTextContentCandidate.selection.start - inputCursorOffset,
-                end = rawTextContentCandidate.selection.end - inputCursorOffset
+                candidate.selection.start - inputCursorOffset,
+                candidate.selection.end - inputCursorOffset
             )
         )
     }

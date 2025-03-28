@@ -66,15 +66,12 @@ public class IpAddressField : InputField<IpAddress>() {
  */
 private val DigitsAndDotsOnly: InputReviser = object : InputReviser {
     override fun reviseRawTextContent(
-        currentRawTextContent: RawTextContent,
-        rawTextContentCandidate: RawTextContent
-    ): RawTextContent {
-        return rawTextContentCandidate.copy(
-            rawTextContentCandidate.text.filter { it.isDigit() || it == '.' }
-        )
-    }
+        current: RawTextContent,
+        candidate: RawTextContent
+    ): RawTextContent = candidate.copy(
+        candidate.text.filter { it.isDigit() || it == '.' }
+    )
 
-    override fun filterKeyEvent(keyEvent: KeyEvent): Boolean {
-        return keyEvent matches (!Digit and !'.'.key).typed
-    }
+    override fun filterKeyEvent(keyEvent: KeyEvent): Boolean =
+        keyEvent matches (!Digit and !'.'.key).typed
 }
