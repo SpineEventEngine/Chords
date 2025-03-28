@@ -53,7 +53,7 @@ import io.spine.chords.core.InputReviser
 import io.spine.chords.core.InputReviser.Companion.DigitsOnly
 import io.spine.chords.core.InputReviser.Companion.maxLength
 import io.spine.chords.core.RawTextContent
-import io.spine.chords.core.ValueParseException
+import io.spine.chords.core.ParseException
 import io.spine.chords.core.time.WallClock
 import io.spine.chords.proto.value.time.DefaultDatePattern
 import java.time.Instant
@@ -115,7 +115,7 @@ public class DateTimeField : InputField<Timestamp>() {
                 ofPattern(dateTimePattern)
             )
         } catch (e: DateTimeParseException) {
-            throw ValueParseException("Enter a valid value", e)
+            throw ParseException("Enter a valid value", e)
         }
         val millis = Date.from(offsetDateTime.toInstant(WallClock.zoneOffset)).time
         return Timestamps.fromMillis(millis)

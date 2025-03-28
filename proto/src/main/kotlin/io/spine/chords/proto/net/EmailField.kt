@@ -28,7 +28,7 @@ package io.spine.chords.proto.net
 
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputField
-import io.spine.chords.core.ValueParseException
+import io.spine.chords.core.ParseException
 import io.spine.net.EmailAddress
 
 /**
@@ -62,14 +62,14 @@ public class EmailField : InputField<EmailAddress>() {
     /**
      * Validate the email address value.
      *
-     * @throws ValueParseException
-     *         if the provided email value does not match the [EmailRegex] pattern.
+     * @throws ParseException If the provided email value does not match the
+     *   [EmailRegex] pattern.
      */
-    @Throws(ValueParseException::class)
+    @Throws(ParseException::class)
     private fun validate(email: String) {
         val emailPattern = Regex(EmailRegex)
         if (!emailPattern.matches(email)) {
-            throw ValueParseException("Enter a valid email address.")
+            throw ParseException("Enter a valid email address.")
         }
     }
 }

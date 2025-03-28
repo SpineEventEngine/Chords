@@ -758,7 +758,7 @@ public abstract class Component : DefaultPropsOwnerBase() {
      *     protected override val enableLaunch: Boolean = true
      * ```
      */
-    protected open fun launch(block: suspend CoroutineScope.() -> Unit) {
+    protected fun launch(block: suspend CoroutineScope.() -> Unit) {
         check(enableLaunch) {
             "Make sure to override the `enableLaunch` property with a value of `true` " +
                     "to use the `Component.launch` method."
