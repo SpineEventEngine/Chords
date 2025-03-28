@@ -78,7 +78,7 @@ import io.spine.validate.ValidationException
  * to build a message of type [M]). The simplest way to specify field editors is
  * to use respective suitable types of class-based input components (the ones,
  * which extend [InputComponent]), and associate them with respective message's
- * message's fields as shown below.
+ * fields as shown below.
  *
  * Note that unlike other input components, `MessageForm` doesn't introduce any
  * visual output or layout capabilities by itself. Instead, it displays whatever
