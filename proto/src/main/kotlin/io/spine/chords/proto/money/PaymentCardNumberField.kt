@@ -31,7 +31,7 @@ import io.spine.chords.core.InputField
 import io.spine.chords.core.InputReviser.Companion.DigitsOnly
 import io.spine.chords.core.InputReviser.Companion.maxLength
 import io.spine.chords.core.InputReviser.Companion.then
-import io.spine.chords.core.ValueParseException
+import io.spine.chords.core.ParseException
 import io.spine.chords.proto.form.vBuildBasedParser
 import io.spine.chords.proto.value.money.PaymentCardNumber
 import io.spine.chords.proto.value.money.PaymentCardNumberKt
@@ -85,7 +85,7 @@ public class PaymentCardNumberField : InputField<PaymentCardNumber>() {
             //           should be needed, since vBuild() would include
             //           the respective check.
             //     See: https://github.com/Projects-tm/1DAM/issues/44
-            throw ValueParseException()
+            throw ParseException()
         }
         return vBuildBasedParser {
             PaymentCardNumber.newBuilder()
