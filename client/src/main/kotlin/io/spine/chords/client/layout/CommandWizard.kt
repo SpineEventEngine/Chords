@@ -222,7 +222,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      */
     override suspend fun submit() {
         commandMessageForm.updateValidationDisplay(true)
-        if (!commandMessageForm.valueValid.value) {
+        if (!commandMessageForm.valid.value) {
             return
         }
         commandMessageForm.postCommand()
@@ -309,6 +309,6 @@ public abstract class CommandWizardPage<M : Message, B : ValidatingBuilder<out M
 
     override fun validate(): Boolean {
         pageForm.updateValidationDisplay(true)
-        return pageForm.valueValid.value
+        return pageForm.valid.value
     }
 }

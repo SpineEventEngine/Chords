@@ -65,7 +65,7 @@ public fun <M : Message> FormPartScope<M>.OptionalMessageCheckbox(
 public fun <M : Message> MultipartFormScope<M>.OptionalMessageCheckbox(
     text: String
 ) {
-    check(!form.valueRequired) {
+    check(!form.required) {
         "`OptionalMessageCheckbox` can only be used with forms whose `valueRequired` is false."
     }
     CheckboxWithText(

@@ -220,7 +220,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      */
     protected override suspend fun submitContent() {
         commandMessageForm.updateValidationDisplay(true)
-        if (!commandMessageForm.valueValid.value) {
+        if (!commandMessageForm.valid.value) {
             return
         }
         commandMessageForm.postCommand()

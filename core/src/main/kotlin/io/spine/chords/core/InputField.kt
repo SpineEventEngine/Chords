@@ -168,8 +168,8 @@ public typealias RawTextContent = TextFieldValue
  *    When current text's parsing fails (with [parseValue] throwing
  *    [ValueParseException]), the validation error
  *    [message][ValueParseException.validationErrorMessage] from the respective
- *    [ValueParseException] is displayed near the field, and [valueValid]'s
- *    state is set to `false`.
+ *    [ValueParseException] is displayed near the field, and [valid] state
+ *    is set to a value of `false`.
  *
  *  - A value [V] is validated using [onValidate].
  *
@@ -179,10 +179,10 @@ public typealias RawTextContent = TextFieldValue
  *    If a callback is missing or if it returns `null`, then the value is
  *    considered valid. If [onValidateValue] returns a non-`null` validation
  *    error message, then this message is displayed near the field and the
- *    [valueValid] state is set to `false`.
+ *    [valid] state is set to `false`.
  *
  * If the entered value valid according to both [parseValue] and
- * [onValidate], the [valueValid] state gets a value of `true`.
+ * [onValidate], the [valid] state gets a value of `true`.
  *
  * #### Handling empty input
  *
@@ -236,7 +236,7 @@ public open class InputField<V> : InputComponent<V>() {
      *
      * A value of `null` corresponds to the empty input (when raw text is
      * an empty string), or an invalid input (when an input cannot be parsed as
-     * a valid value by [parseValue]). A value of [valueValid] describes whether
+     * a valid value by [parseValue]). A value of [valid] describes whether
      * the field has a valid value.
      */
     override var value: MutableState<V?>
@@ -253,17 +253,17 @@ public open class InputField<V> : InputComponent<V>() {
      * [ValueParseException]), then the value in this [MutableState] is set
      * to `false`. Otherwise, it's set to `true`.
      */
-    override var valueValid: MutableState<Boolean>
-        get() = super.valueValid
+    override var valid: MutableState<Boolean>
+        get() = super.valid
         set(value) {
-            super.valueValid = value
+            super.valid = value
         }
 
     /**
      * A callback, which is triggered after the value in the [MutableState] in
      * [value] has been updated with a newly edited value.
      */
-    public var onValueChange: ((V?) -> Unit)? = null
+    public var onChange: ((V?) -> Unit)? = null
 
     /**
      * An optional lambda, which acts as a custom validator for any value [V]
@@ -271,7 +271,7 @@ public open class InputField<V> : InputComponent<V>() {
      *
      * Returning a non-`null` string for a particular value [V] makes that
      * string to be displayed as an in-component's validation error message,
-     * and makes the [valueValid] state to be `false`. Returning `null`
+     * and makes the [valid] state to be `false`. Returning `null`
      * accepts the value as a valid one.
      */
     public var onValidate: ((V) -> String?)? = null
@@ -549,7 +549,7 @@ public open class InputField<V> : InputComponent<V>() {
         invalidValueText = newText.takeIf { !valid }
         selection = revisedTextContent.selection
 
-        valueValid.value = valid
+        this.valid.value = valid
         ownValidationMessage.value = validationErrorMessage
 
         val prevTextEmpty = currentRawTextContent.text.isEmpty()
@@ -558,7 +558,7 @@ public open class InputField<V> : InputComponent<V>() {
             onDirtyStateChange?.invoke(prevTextEmpty)
         }
         if (value.value != prevValue) {
-            onValueChange?.invoke(value.value)
+            onChange?.invoke(value.value)
         }
     }
 
@@ -680,7 +680,7 @@ public open class InputField<V> : InputComponent<V>() {
             selection = revisedRawTextContent.selection
             ownValidationMessage.value = null
         } else {
-            if (valueValid.value) {
+            if (valid.value) {
                 invalidValueText = null
                 selection = revisedRawTextContent.selection
                 ownValidationMessage.value = null

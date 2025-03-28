@@ -142,7 +142,7 @@ import io.spine.validate.ValidationException
  * Upon any change made in any declared field editor component, an attempt to
  * build a message [M] is made from all the currently entered field values. If
  * it succeeds, the respective validated value of type [M] is set into the
- * [value] state, and the value inside the [valueValid] state is set to `true`.
+ * [value] state, and the value inside the [valid] state is set to `true`.
  *
  * In case when any of the field editors report their own internal validation
  * errors (see [FormFieldScope.fieldValueValid]), or if any validation
@@ -150,7 +150,7 @@ import io.spine.validate.ValidationException
  * currently entered field values (when invoking the [builder]'s
  * [vBuild][ValidatingBuilder.vBuild] method), this prevents the form from a
  * successful creation of the resulting value [M], and results in `null` to be
- * stored in [value], and `false` to be stored in [valueValid].
+ * stored in [value], and `false` to be stored in [valid].
  *
  * ### Support for specifying a missing value
  *
@@ -162,13 +162,13 @@ import io.spine.validate.ValidationException
  * a value in the form might be useful for example when the form represents
  * an editor for an optional field of another message.
  *
- * To allow such an option for the user, set the form's [valueRequired] property
+ * To allow such an option for the user, set the form's [required] property
  * to `false`, and place the [OptionalMessageCheckbox] at the top-level scope of
  * the form ([MultipartFormScope], or [FormPartScope]), introduced by either of
  * `MessageForm` composable functions.
  *
  * If a checkbox is unchecked, a form would always report a [value]'s value of
- * `null`, and its [valueValid] state with a value of `true`.
+ * `null`, and its [valid] state with a value of `true`.
  *
  * ### Displaying per-field validation errors
  *
@@ -381,7 +381,7 @@ import io.spine.validate.ValidationException
  * ### Displaying validation errors manually
  *
  * The `MessageForm` component always provides an up-to-date input validation
- * state via its [valueValid] property. Nevertheless, it's possible to customize
+ * state via its [valid] property. Nevertheless, it's possible to customize
  * when validation error messages are displayed to the user.
  *
  * There are two aspects that can be utilized to gain more control of form's
@@ -887,9 +887,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * This has a non-`null` value only when a form-level validation has
          * indicated an error for this field, and is not affected by the field
          * editor's internal validation state, which is kept independently
-         * (see [valueValid]).
+         * (see [valid]).
          *
-         * @see [valueValid]
+         * @see [valid]
          */
         val externalValidationMessage: MutableState<String?> = mutableStateOf(null)
 
@@ -899,12 +899,12 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * state (not the validation state resulting in form the
          * form's validation).
          *
-         * Note that [valueValid] only reflects the field editor's own
+         * Note that [valid] only reflects the field editor's own
          * perspective on the field's validity state, which basically reflects
          * its ability to produce a value based on current user's input.
          * The form can perform additional validation over the values provided
          * by field editors, but the status of the form-level validation is
-         * independent from [valueValid].
+         * independent from [valid].
          *
          * @see [externalValidationMessage]
          */
@@ -1093,7 +1093,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     internal var onBeforeBuild: (ValidatingBuilder<out M>) -> Unit = {}
 
     init {
-        valueRequired = true
+        required = true
     }
 
     private val messageDef by lazy { builder().messageDef() }
@@ -1426,7 +1426,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     }
 
     private fun identifyInitialEnteringNonNullValue(): Boolean = when {
-        valueRequired || value.value != null ->
+        required || value.value != null ->
             true
 
         messageDef.fields.isEmpty() -> {
@@ -1518,9 +1518,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      *
      * If there are no validation failures while building the updated message's
      * value, then the value in the [value] state is updated with
-     * the newly built message, and the [valueValid] state is set to `true`.
+     * the newly built message, and the [valid] state is set to `true`.
      * Otherwise, the [value] state's value is set to a value of `null`, and
-     * the [valueValid] state's value is set to `false`.
+     * the [valid] state's value is set to `false`.
      *
      * The validation is performed using whatever rules are built in with
      * the standard Spine's `vBuild()` functionality of [ValidatingBuilder].
@@ -1533,7 +1533,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * invalid or incomplete entry in some of the fields). In this case, the
      * form's validation is also considered to fail.
      *
-     * This method states a validation error (sets [valueValid] to `true`, and
+     * This method states a validation error (sets [valid] to `true`, and
      * [value] to `null`),  if any of the validation constraints fail during
      * `vBuild()`, or if any fields have their internal validation errors.
      * The form's status is updated to reflect the validation failures before
@@ -1559,12 +1559,12 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         }
 
         if (!enteringNonNullValue.value) {
-            check(!valueRequired) {
+            check(!required) {
                 "enteringNonNullValue cannot be set to false " +
                         "on a form whose valueRequired is true."
             }
             value.value = null
-            valueValid.value = true
+            valid.value = true
             return
         }
 
@@ -1580,7 +1580,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 }
                 recoveringFromManualValidationErrors = true
             }
-            valueValid.value = false
+            valid.value = false
             value.value = null
             return
         }
@@ -1593,7 +1593,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         if (updateValidationErrors) {
             recoveringFromManualValidationErrors = nestedErrorsPresent
         }
-        valueValid.value = !nestedErrorsPresent
+        valid.value = !nestedErrorsPresent
         value.value = if (nestedErrorsPresent) {
             if (focusInvalidField) {
                 focus()
@@ -1620,7 +1620,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * Updates the displayed validation errors according to the currently
      * entered editor's data.
      *
-     * Note that the form's [valueValid] state is nevertheless always kept up to
+     * Note that the form's [valid] state is nevertheless always kept up to
      * date upon any updates in the form's fields, regardless of whether
      * [updateValidationDisplay] has been called or not. So this method just
      * ensures that the displayed messages are up-to-date as well, which makes
