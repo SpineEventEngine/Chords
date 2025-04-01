@@ -43,25 +43,18 @@ import io.spine.chords.core.primitive.StringField
 import kotlinx.coroutines.CompletableDeferred
 
 /**
- * Default value of the input component visible text lines.
+ * The default number of lines for the input text component.
  */
-private const val InputTextComponentVisibleLines = 3
+private const val InputComponentNoOfLines = 3
 
 /**
  * A dialog that allows input of a text value.
  *
- * Use the `InputTextDialog.inputText` function to display the dialog:
+ * By default, the dialog is configured to allow multiline text input. However,
+ * if [InputTextDialog.noOfTextLines] is set to `1`, it restricts input
+ * to a single line.
  *
- * ```
- *     val enteredText: MutableState<String?> = mutableStateOf(null)
- *     val valueSubmitted = InputTextDialog.inputText {
- *         message = "Please enter a text."
- *         value = enteredText
- *     }
- *     if (valueSubmitted) {
- *         // Read `enteredText.value` to get the entered value.
- *     }
- * ```
+ * See the [InputTextDialog.inputText] function on how to use the dialog.
  */
 public class InputTextDialog : Dialog() {
     public companion object : AbstractComponentSetup({ InputTextDialog() }) {
@@ -71,62 +64,71 @@ public class InputTextDialog : Dialog() {
          *
          * Here's a usage example:
          * ```
-         *     val enteredText: MutableState<String?> = mutableStateOf(null)
-         *     val valueSubmitted = InputTextDialog.inputText {
-         *         message = "Please enter a text."
-         *         value = enteredText
+         *     val rejectionReason = InputTextDialog.inputText {
+         *         title = "Confirm rejection"
+         *         message = "You are about to reject this purchase request."
+         *         description = "Please confirm or cancel if you are not sure."
+         *         submitButtonText = "Reject"
+         *         textValueLabel = "Rejection reason"
          *     }
-         *     if (valueSubmitted) {
-         *         // Read `enteredText.value` to get the entered value.
+         *     if (rejectionReason != null) {
+         *         // Use `rejectionReason` value.
          *     }
          * ```
          *
          * @param props A lambda, which configures the input text
          *   dialog's properties.
-         * @return `true`, if the user closes the dialog by presses the
-         *   Submit button, and `false`, if the user cancels the input.
+         * @return An entered text value, if the user closes the dialog by
+         *   pressing the submit button, or `null`, if the user cancels
+         *   the input.
          */
         public suspend fun inputText(
             props: Props<InputTextDialog>? = null
-        ): Boolean {
+        ): String? {
             val dialog = create(config = props)
-            return dialog.inputText()
+            return dialog.show()
         }
     }
 
     /**
-     * The title of the dialog.
+     * A title of the dialog.
      */
-    public override var title: String = "Input Text"
+    public override var title: String = "Input text"
 
     /**
-     * The main message of the dialog that explains
-     * the expected text value from the user.
+     * A message of the dialog that explains the expected text value
+     * to be entered by the user.
      */
-    public var message: String = "Please enter a text value."
+    public var message: String = "Please enter a text."
 
     /**
-     * An optional auxiliary text displayed below the message.
+     * An optional auxiliary text displayed below the [message].
      */
     public var description: String = ""
 
     /**
-     * A text label displayed by the input component
-     * that explains the input details, if any.
+     * A label displayed by the input text component that explains
+     * the input details, if any.
      */
-    public var valueLabel: String = ""
+    public var textValueLabel: String = ""
 
     /**
      * A [MutableState] that holds the entered text value.
-     *
-     * A value of `null` corresponds to the empty input.
      */
-    public var value: MutableState<String?> = mutableStateOf(null)
+    private val textValue: MutableState<String?> = mutableStateOf("")
 
     /**
-     * A value of the input component visible text lines.
+     * The initial value of the input text component.
      */
-    public var visibleTextLines: Int = InputTextComponentVisibleLines
+    public var defaultText: String = ""
+
+    /**
+     * A number of lines of the input text component.
+     *
+     * By default, the dialog allows multiline text input. However,
+     * if `noOfTextLines` is set to `1`, it restricts input to a single line.
+     */
+    public var noOfTextLines: Int = InputComponentNoOfLines
 
     /**
      * The label for the dialog's submit button.
@@ -181,14 +183,15 @@ public class InputTextDialog : Dialog() {
                 )
             }
             Row {
+                textValue.value = defaultText
                 StringField {
-                    label = valueLabel
-                    multiline = true
-                    minLines = visibleTextLines
-                    maxLines = visibleTextLines
+                    label = textValueLabel
+                    multiline = noOfTextLines > 1
+                    minLines = noOfTextLines
+                    maxLines = noOfTextLines
                     modifier = Modifier.fillMaxSize()
                         .padding(end = 8.dp)
-                    value = this@InputTextDialog.value
+                    value = textValue
                 }
             }
         }
@@ -204,23 +207,24 @@ public class InputTextDialog : Dialog() {
     /**
      * Displays the input text dialog.
      *
-     * @return `true`, if the user closes the dialog by presses the
-     *   submit button, and `false`, if the user cancels the input.
+     * Returns an entered text value, if the user closes the dialog by
+     * pressing the submit button, or `null`, if the user cancels the input.
      */
-    public suspend fun inputText(): Boolean {
-        var valueSubmitted = false
+    private suspend fun show(): String? {
+        var dialogCancelled = false
         val dialogClosure = CompletableDeferred<Unit>()
         onBeforeSubmit = {
-            valueSubmitted = true
             dialogClosure.complete(Unit)
             true
         }
         onBeforeCancel = {
+            dialogCancelled = true
             dialogClosure.complete(Unit)
             true
         }
         open()
         dialogClosure.await()
-        return valueSubmitted
+        return if (dialogCancelled) null
+        else textValue.value
     }
 }
