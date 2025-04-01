@@ -69,7 +69,7 @@ public class InputTextDialog : Dialog() {
          *         message = "Please enter a few lines about yourself."
          *         description = "This could be a fun fact from your bio," +
          *             " movie preferences, hobbies, etc."
-         *         textValueLabel = "Express yourself in a few lines"
+         *         textFieldLabel = "Express yourself in a few lines"
          *     }
          *     if (profileDescription != null) {
          *         // Use `profileDescription` value.
@@ -96,7 +96,7 @@ public class InputTextDialog : Dialog() {
          *         message = "You are about to reject this purchase request."
          *         description = "Please confirm or cancel if you are not sure."
          *         okButtonText = "Reject"
-         *         textValueLabel = "Rejection reason"
+         *         textFieldLabel = "Rejection reason"
          *     }
          *     if (rejectionReason != null) {
          *         // Use `rejectionReason` value.
@@ -137,7 +137,7 @@ public class InputTextDialog : Dialog() {
      * A label displayed by the input text component that explains
      * the input details, if any.
      */
-    public var textValueLabel: String = ""
+    public var textFieldLabel: String = ""
 
     /**
      * A [MutableState] that holds the entered text value.
@@ -212,7 +212,7 @@ public class InputTextDialog : Dialog() {
             Row {
                 text.value = defaultText
                 StringField {
-                    label = textValueLabel
+                    label = textFieldLabel
                     multiline = noOfTextLines > 1
                     minLines = noOfTextLines
                     maxLines = noOfTextLines
