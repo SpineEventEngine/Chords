@@ -64,11 +64,38 @@ public class InputTextDialog : Dialog() {
          *
          * Here's a usage example:
          * ```
+         *     val profileDescription = InputTextDialog.inputText {
+         *         title = "Profile description"
+         *         message = "Please enter a few lines about yourself."
+         *         description = "This could be a fun fact from your bio," +
+         *             " movie preferences, hobbies, etc."
+         *         textValueLabel = "Express yourself in a few lines"
+         *     }
+         *     if (profileDescription != null) {
+         *         // Use `profileDescription` value.
+         *     }
+         * ```
+         *
+         * Here is an example demonstrating a single-line input mode:
+         * ```
+         *     val projectName = InputTextDialog.inputText {
+         *         title = "Project name"
+         *         message = "Please enter a project name."
+         *         noOfTextLines = 1
+         *     }
+         *     if (projectName != null) {
+         *         // Use `projectName` value.
+         *     }
+         * ```
+         *
+         * And one more example demonstrating another usage scenario where
+         * the dialog functions as a confirmation with the required text input:
+         * ```
          *     val rejectionReason = InputTextDialog.inputText {
          *         title = "Confirm rejection"
          *         message = "You are about to reject this purchase request."
          *         description = "Please confirm or cancel if you are not sure."
-         *         submitButtonText = "Reject"
+         *         okButtonText = "Reject"
          *         textValueLabel = "Rejection reason"
          *     }
          *     if (rejectionReason != null) {
@@ -115,7 +142,7 @@ public class InputTextDialog : Dialog() {
     /**
      * A [MutableState] that holds the entered text value.
      */
-    private val textValue: MutableState<String?> = mutableStateOf("")
+    private val text: MutableState<String?> = mutableStateOf("")
 
     /**
      * The initial value of the input text component.
@@ -135,10 +162,10 @@ public class InputTextDialog : Dialog() {
      *
      * The default value is `OK`.
      */
-    public override var submitButtonText: String
-        get() = super.submitButtonText
+    public var okButtonText: String
+        get() = submitButtonText
         set(value) {
-            super.submitButtonText = value
+            submitButtonText = value
         }
 
     /**
@@ -183,7 +210,7 @@ public class InputTextDialog : Dialog() {
                 )
             }
             Row {
-                textValue.value = defaultText
+                text.value = defaultText
                 StringField {
                     label = textValueLabel
                     multiline = noOfTextLines > 1
@@ -191,14 +218,14 @@ public class InputTextDialog : Dialog() {
                     maxLines = noOfTextLines
                     modifier = Modifier.fillMaxSize()
                         .padding(end = 8.dp)
-                    value = textValue
+                    value = text
                 }
             }
         }
     }
 
     /**
-     * Just returns `true` on form submission since there is no data to submit.
+     * Just closes the dialog since there is no data to submit.
      */
     protected override suspend fun submitContent() {
         close()
@@ -225,6 +252,6 @@ public class InputTextDialog : Dialog() {
         open()
         dialogClosure.await()
         return if (dialogCancelled) null
-        else textValue.value
+        else text.value
     }
 }

@@ -170,7 +170,7 @@ public class ConfirmationDialog : Dialog() {
     }
 
     /**
-     * Just returns `true` on form submission since there is no data to submit.
+     * Just closes the dialog since there is no data to submit.
      */
     protected override suspend fun submitContent() {
         close()
