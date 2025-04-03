@@ -472,11 +472,14 @@ private fun <E> rowActionsColumn(
         padding = rowActionsConfig.buttonPadding
     ) { entity ->
         val rowActionsVisible = remember { mutableStateOf(false) }
-        RowActionsButton(
-            entity,
-            rowActionsConfig,
-            rowActionsVisible
-        )
+        val availableActions = rowActionsConfig.itemsProvider(entity)
+        if (availableActions.isNotEmpty()) {
+            RowActionsButton(
+                entity,
+                rowActionsConfig,
+                rowActionsVisible
+            )
+        }
     }
 }
 
