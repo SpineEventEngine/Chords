@@ -303,6 +303,8 @@ public data class TableColumn<E>(
  * displayed at the end of each table row is clicked.
  *
  * This object defines what actions should be displayed and how they are styled.
+ * When no actions are available for an entity displayed in a row, the "More" button
+ * is automatically hidden to maintain a clean UI.
  *
  * @param E The type of entity for which the actions are defined.
  * @param itemsProvider A function that provides a list of actions
@@ -472,11 +474,14 @@ private fun <E> rowActionsColumn(
         padding = rowActionsConfig.buttonPadding
     ) { entity ->
         val rowActionsVisible = remember { mutableStateOf(false) }
-        RowActionsButton(
-            entity,
-            rowActionsConfig,
-            rowActionsVisible
-        )
+        val availableActions = rowActionsConfig.itemsProvider(entity)
+        if (availableActions.isNotEmpty()) {
+            RowActionsButton(
+                entity,
+                rowActionsConfig,
+                rowActionsVisible
+            )
+        }
     }
 }
 
