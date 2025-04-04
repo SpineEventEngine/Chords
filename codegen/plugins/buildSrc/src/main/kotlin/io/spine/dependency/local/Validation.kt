@@ -38,11 +38,16 @@ object Validation {
      */
     const val version = "2.0.0-SNAPSHOT.188"
 
+    /**
+     * The version of the Validation runtime library artifacts.
+     */
+    const val runtimeVersion = "2.0.0-SNAPSHOT.197"
+
     const val group = "io.spine.validation"
     private const val prefix = "spine-validation"
 
     const val runtimeModule = "$group:$prefix-java-runtime"
-    const val runtime = "$runtimeModule:$version"
+    const val runtime = "$runtimeModule:$runtimeVersion"
     const val java = "$group:$prefix-java:$version"
 
     const val javaBundleModule = "$group:$prefix-java-bundle"
