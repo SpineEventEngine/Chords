@@ -20,8 +20,7 @@ jobs:
         with:
           java-version: 17
           distribution: zulu
-          cache: gradle
 
       - name: Build all libraries
         shell: bash
-        run: ./gradlew build --stacktrace
+        run: ./gradlew build --stacktrace --no-build-cache

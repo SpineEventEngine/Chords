@@ -16,7 +16,6 @@ jobs:
         with:
           java-version: 17
           distribution: zulu
-          cache: gradle
 
       - name: Decrypt CloudRepo credentials
         run: ./config/scripts/decrypt.sh "$CLOUDREPO_CREDENTIALS_KEY" ./.github/keys/cloudrepo.properties.gpg ./cloudrepo.properties
@@ -53,7 +52,7 @@ jobs:
       - name: Publish artifacts to Maven
         # Since we're in the `master` branch already, this means that tests of a PR passed.
         # So, no need to run the tests again when publishing.
-        run: ./gradlew publish -x test -x updateGitHubPages --stacktrace
+        run: ./gradlew publish -x test -x updateGitHubPages --stacktrace --no-build-cache
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORMAL_GIT_HUB_PAGES_AUTHOR: developers@spine.io

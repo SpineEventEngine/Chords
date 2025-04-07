@@ -26,8 +26,7 @@ jobs:
         with:
           java-version: 17
           distribution: zulu
-          cache: gradle
 
       - name: Check version is not yet published
         shell: bash
-        run: ./gradlew checkVersionIncrement --stacktrace
+        run: ./gradlew checkVersionIncrement --stacktrace --no-build-cache

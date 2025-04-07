@@ -20,7 +20,6 @@ jobs:
         with:
           java-version: 17
           distribution: zulu
-          cache: gradle
 
       # See: https://github.com/al-cheb/configure-pagefile-action
       - name: Configure Pagefile
@@ -29,4 +28,4 @@ jobs:
       - name: Build project and run tests
         shell: cmd
         # For the reason on `--no-daemon` see https://github.com/actions/cache/issues/454
-        run: gradlew.bat build --stacktrace --no-daemon
+        run: gradlew.bat build --stacktrace --no-daemon --no-build-cache

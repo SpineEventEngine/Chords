@@ -173,6 +173,7 @@ private fun ResolutionStrategy.forceTransitiveDependencies() {
         Coroutines.coreJvm,
         Coroutines.bom,
         Coroutines.jdk8,
+        Coroutines.slf4j,
         Okio.lib,
         OpenTest4J.lib,
         Plexus.utils,
