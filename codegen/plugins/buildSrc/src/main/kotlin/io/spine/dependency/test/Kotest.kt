@@ -24,6 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+@file:Suppress("unused")
+
 package io.spine.dependency.test
 
 /**
@@ -33,7 +35,7 @@ package io.spine.dependency.test
  */
 @Suppress("unused", "ConstPropertyName")
 object Kotest {
-    const val version = "5.6.2"
+    const val version = "5.9.1"
     const val group = "io.kotest"
     const val assertions = "$group:kotest-assertions-core:$version"
     const val runnerJUnit5 = "$group:kotest-runner-junit5:$version"

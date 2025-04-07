@@ -36,5 +36,5 @@ package io.spine.dependency.test
 object Hamcrest {
     // https://github.com/hamcrest/JavaHamcrest/releases
     private const val version = "2.2"
-    const val core = "org.hamcrest:hamcrest-core:${version}"
+    const val core = "org.hamcrest:hamcrest-core:$version"
 }

@@ -27,15 +27,16 @@
 package io.spine.dependency.lib
 
 // https://github.com/google/flogger
+@Deprecated("Please use Spine Logging library instead.")
 @Suppress("unused", "ConstPropertyName")
 object Flogger {
     internal const val version = "0.7.4"
-    const val lib = "com.google.flogger:flogger:${version}"
+    const val lib = "com.google.flogger:flogger:$version"
 
     object Runtime {
-        const val systemBackend = "com.google.flogger:flogger-system-backend:${version}"
-        const val log4j2Backend = "com.google.flogger:flogger-log4j2-backend:${version}"
-        const val slf4JBackend  = "com.google.flogger:flogger-slf4j-backend:${version}"
-        const val grpcContext   = "com.google.flogger:flogger-grpc-context:${version}"
+        const val systemBackend = "com.google.flogger:flogger-system-backend:$version"
+        const val log4j2Backend = "com.google.flogger:flogger-log4j2-backend:$version"
+        const val slf4JBackend  = "com.google.flogger:flogger-slf4j-backend:$version"
+        const val grpcContext   = "com.google.flogger:flogger-grpc-context:$version"
     }
 }

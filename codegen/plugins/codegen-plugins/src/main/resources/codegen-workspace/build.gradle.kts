@@ -47,13 +47,8 @@ buildscript {
 plugins {
     kotlin("jvm")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.70.3"
+    id("io.spine.protodata") version "0.93.6"
     idea
-}
-
-object BuildSettings {
-    private const val JAVA_VERSION = 11
-    val javaVersion: JavaLanguageVersion = JavaLanguageVersion.of(JAVA_VERSION)
 }
 
 allprojects {
@@ -120,13 +115,6 @@ fun Module.configureKotlin() {
     kotlin {
         explicitApi()
         applyJvmToolchain(BuildSettings.javaVersion.toString())
-    }
-
-    tasks.withType<KotlinCompile> {
-        kotlinOptions {
-            jvmTarget = BuildSettings.javaVersion.toString()
-        }
-        setFreeCompilerArgs()
     }
 }
 

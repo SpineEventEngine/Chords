@@ -38,6 +38,5 @@ object JavaDiffUtils {
 
     // https://github.com/java-diff-utils/java-diff-utils/releases
     private const val version = "4.12"
-    const val lib =
-        "io.github.java-diff-utils:java-diff-utils:${version}"
+    const val lib = "io.github.java-diff-utils:java-diff-utils:$version"
 }

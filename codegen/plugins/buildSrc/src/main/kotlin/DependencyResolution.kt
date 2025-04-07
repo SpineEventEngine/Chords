@@ -24,7 +24,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import io.spine.dependency.build.AnimalSniffer
 import io.spine.dependency.build.CheckerFramework
+import io.spine.dependency.build.Dokka
 import io.spine.dependency.build.ErrorProne
 import io.spine.dependency.build.FindBugs
 import io.spine.dependency.lib.Asm
@@ -40,59 +42,37 @@ import io.spine.dependency.lib.J2ObjC
 import io.spine.dependency.lib.Jackson
 import io.spine.dependency.lib.JavaDiffUtils
 import io.spine.dependency.lib.Kotlin
-import io.spine.dependency.lib.KotlinX
+import io.spine.dependency.lib.Coroutines
+import io.spine.dependency.lib.KotlinPoet
+import io.spine.dependency.lib.Okio
+import io.spine.dependency.lib.Plexus
 import io.spine.dependency.lib.Protobuf
 import io.spine.dependency.lib.Slf4J
+import io.spine.dependency.local.Base
+import io.spine.dependency.local.Logging
+import io.spine.dependency.local.ProtoData
+import io.spine.dependency.local.Spine
+import io.spine.dependency.local.ToolBase
+import io.spine.dependency.local.Validation
 import io.spine.dependency.test.Hamcrest
 import io.spine.dependency.test.JUnit
 import io.spine.dependency.test.Kotest
 import io.spine.dependency.test.OpenTest4J
 import io.spine.dependency.test.Truth
 import org.gradle.api.NamedDomainObjectContainer
+import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
+import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.artifacts.ResolutionStrategy
 import org.gradle.kotlin.dsl.exclude
-import org.gradle.kotlin.dsl.invoke
 
 /**
- * The function to be used in `buildscript` when a fully-qualified call must be made.
+ * The function to be used in `buildscript` when a fully qualified call must be made.
  */
 @Suppress("unused")
 fun doForceVersions(configurations: ConfigurationContainer) {
     configurations.forceVersions()
-
-    val validation = io.spine.dependency.local.Validation
-    val protoData = io.spine.dependency.local.ProtoData
-    val logging = io.spine.dependency.local.Logging
-    val reflect = io.spine.dependency.local.Reflect
-    val base = io.spine.dependency.local.Base
-    val toolBase = io.spine.dependency.local.ToolBase
-    val coreJava = io.spine.dependency.local.CoreJava
-    val time = io.spine.dependency.local.Time
-
-    configurations {
-        all {
-            exclude(group = "io.spine", module = "spine-logging-backend")
-
-            resolutionStrategy {
-                force(
-                    io.spine.dependency.lib.Grpc.api,
-                    reflect.lib,
-                    base.lib,
-                    toolBase.lib,
-                    coreJava.server,
-                    protoData.pluginLib,
-                    protoData.lib,
-                    logging.lib,
-                    logging.middleware,
-                    time.lib,
-                    validation.runtime,
-                    validation.javaBundle
-                )
-            }
-        }
-    }
 }
 
 /**
@@ -103,6 +83,7 @@ fun NamedDomainObjectContainer<Configuration>.forceVersions() {
         resolutionStrategy {
             failOnVersionConflict()
             cacheChangingModulesFor(0, "seconds")
+            forceSpineDependencies()
             forceProductionDependencies()
             forceTestDependencies()
             forceTransitiveDependencies()
@@ -110,12 +91,25 @@ fun NamedDomainObjectContainer<Configuration>.forceVersions() {
     }
 }
 
+private fun ResolutionStrategy.forceSpineDependencies() {
+    @Suppress("DEPRECATION") // Force versions of SLF4J and Kotlin libs.
+    force(
+        Validation.runtime,
+        Spine.base,
+        Logging.lib,
+        ToolBase.lib,
+        ProtoData.api
+    )
+}
+
 private fun ResolutionStrategy.forceProductionDependencies() {
     @Suppress("DEPRECATION") // Force versions of SLF4J and Kotlin libs.
     force(
+        AnimalSniffer.lib,
         AutoCommon.lib,
         AutoService.annotations,
         CheckerFramework.annotations,
+        Dokka.BasePlugin.lib,
         ErrorProne.annotations,
         ErrorProne.core,
         FindBugs.annotations,
@@ -126,11 +120,7 @@ private fun ResolutionStrategy.forceProductionDependencies() {
         Kotlin.stdLibCommon,
         Kotlin.stdLibJdk7,
         Kotlin.stdLibJdk8,
-        KotlinX.Coroutines.core,
-        KotlinX.Coroutines.jvm,
-        KotlinX.Coroutines.jdk8,
-        KotlinX.Coroutines.bom,
-        KotlinX.Coroutines.slf4j,
+        KotlinPoet.lib,
         Protobuf.GradlePlugin.lib,
         Protobuf.libs,
         Slf4J.lib
@@ -156,6 +146,10 @@ private fun ResolutionStrategy.forceTestDependencies() {
 private fun ResolutionStrategy.forceTransitiveDependencies() {
     force(
         Asm.lib,
+        Asm.tree,
+        Asm.analysis,
+        Asm.util,
+        Asm.commons,
         AutoValue.annotations,
         CommonsCli.lib,
         CommonsCodec.lib,
@@ -175,7 +169,13 @@ private fun ResolutionStrategy.forceTransitiveDependencies() {
         Jackson.moduleKotlin,
         JavaDiffUtils.lib,
         Kotlin.jetbrainsAnnotations,
+        Coroutines.core,
+        Coroutines.coreJvm,
+        Coroutines.bom,
+        Coroutines.jdk8,
+        Okio.lib,
         OpenTest4J.lib,
+        Plexus.utils,
     )
 }
 
@@ -193,4 +193,39 @@ fun NamedDomainObjectContainer<Configuration>.excludeProtobufLite() {
 
     excludeProtoLite("runtimeOnly")
     excludeProtoLite("testRuntimeOnly")
+}
+
+/**
+ * Excludes `spine-base` from the dependencies.
+ */
+@Suppress("unused")
+fun ModuleDependency.excludeSpineBase() {
+    exclude(group = Spine.group, module = "spine-base")
+}
+
+/**
+ * Forces the version of [Spine.base] in the given project.
+ */
+@Suppress("unused")
+fun Project.forceSpineBase() {
+    configurations.all {
+        resolutionStrategy {
+            force(Base.lib)
+        }
+    }
+}
+
+/**
+ * Forces configurations containing `"proto"` in their names (disregarding the case) to
+ * use [Spine.baseForBuildScript].
+ */
+@Suppress("unused")
+fun Project.forceBaseInProtoTasks() {
+    configurations.configureEach {
+        if (name.lowercase().contains("proto")) {
+            resolutionStrategy {
+                force(Base.libForBuildScript)
+            }
+        }
+    }
 }

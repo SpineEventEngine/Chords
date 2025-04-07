@@ -103,6 +103,8 @@ fun Module.configureJava(javaVersion: JavaLanguageVersion) {
 
     tasks {
         withType<JavaCompile>().configureEach {
+            //sourceCompatibility = javaVersion.toString()
+            //targetCompatibility = JavaVersion.VERSION_11.toString()
             configureJavac()
             configureErrorProne()
         }

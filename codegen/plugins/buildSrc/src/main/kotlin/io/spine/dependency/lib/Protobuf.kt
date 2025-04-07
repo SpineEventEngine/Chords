@@ -29,21 +29,32 @@ package io.spine.dependency.lib
 // https://github.com/protocolbuffers/protobuf
 @Suppress(
     "MemberVisibilityCanBePrivate" /* used directly from the outside */,
-    "ConstPropertyName"
+    "ConstPropertyName" /* https://bit.ly/kotlin-prop-names */
 )
 object Protobuf {
     const val group = "com.google.protobuf"
     const val version       = "3.25.1"
+
     /**
-     * The Java library containing proto definitions of Google Protobuf.
+     * The Java library with Protobuf data types.
      */
-    const val protoSrcLib = "${group}:protobuf-java:${version}"
+    const val javaLib = "$group:protobuf-java:$version"
+
+    /**
+     * The Java library containing proto definitions of Google Protobuf types.
+     */
+    @Suppress("unused")
+    const val protoSrcLib = javaLib
+
+    /**
+     * All Java and Kotlin libraries we depend on.
+     */
     val libs = listOf(
-        protoSrcLib,
-        "${group}:protobuf-java-util:${version}",
-        "${group}:protobuf-kotlin:${version}"
+        javaLib,
+        "$group:protobuf-java-util:$version",
+        "$group:protobuf-kotlin:$version"
     )
-    const val compiler = "${group}:protoc:${version}"
+    const val compiler = "$group:protoc:$version"
 
     // https://github.com/google/protobuf-gradle-plugin/releases
     object GradlePlugin {
@@ -55,6 +66,6 @@ object Protobuf {
          */
         const val version = "0.9.4"
         const val id = "com.google.protobuf"
-        const val lib = "${group}:protobuf-gradle-plugin:${version}"
+        const val lib = "$group:protobuf-gradle-plugin:$version"
     }
 }

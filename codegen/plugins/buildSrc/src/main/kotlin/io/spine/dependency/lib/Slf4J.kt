@@ -40,8 +40,8 @@ package io.spine.dependency.lib
 @Suppress("unused", "ConstPropertyName")
 object Slf4J {
     private const val version = "2.0.7"
-    const val lib = "org.slf4j:slf4j-api:${version}"
-    const val jdk14 = "org.slf4j:slf4j-jdk14:${version}"
-    const val reload4j = "org.slf4j:slf4j-reload4j:${version}"
-    const val simple = "org.slf4j:slf4j-simple:${version}"
+    const val lib = "org.slf4j:slf4j-api:$version"
+    const val jdk14 = "org.slf4j:slf4j-jdk14:$version"
+    const val reload4j = "org.slf4j:slf4j-reload4j:$version"
+    const val simple = "org.slf4j:slf4j-simple:$version"
 }

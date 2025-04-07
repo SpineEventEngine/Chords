@@ -25,6 +25,7 @@
  */
 
 import io.gitlab.arturbosch.detekt.Detekt
+import io.spine.dependency.local.Validation.config
 
 /**
  * This script-plugin sets up Kotlin code analyzing with Detekt.

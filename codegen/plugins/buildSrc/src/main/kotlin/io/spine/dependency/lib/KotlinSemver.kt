@@ -30,5 +30,5 @@ package io.spine.dependency.lib
 @Suppress("unused", "ConstPropertyName")
 object KotlinSemver {
     private const val version = "1.4.2"
-    const val lib = "io.github.z4kn4fein:semver:${version}"
+    const val lib     = "io.github.z4kn4fein:semver:$version"
 }

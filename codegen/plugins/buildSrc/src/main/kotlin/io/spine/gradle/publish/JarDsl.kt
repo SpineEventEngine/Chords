@@ -1,11 +1,11 @@
 /*
- * Copyright 2023, TeamDev. All rights reserved.
+ * Copyright 2025, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -25,6 +25,37 @@
  */
 
 package io.spine.gradle.publish
+
+/**
+ * A DSL element of [SpinePublishing] extension which configures publishing of
+ * [dokkaKotlinJar] artifact.
+ *
+ * This artifact contains Dokka-generated documentation. By default, it is not published.
+ *
+ * Take a look at the [SpinePublishing.dokkaJar] for a usage example.
+ *
+ * @see [artifacts]
+ */
+class DokkaJar {
+    /**
+     * Enables publishing `JAR`s with Dokka-generated documentation for all published modules.
+     */
+    @Suppress("unused")
+    @Deprecated("Please use `kotlin` and `java` flags instead.")
+    var enabled = false
+
+    /**
+     * Controls whether [dokkaKotlinJar] artifact should be published.
+     * The default value is `true`.
+     */
+    var kotlin = true
+
+    /**
+     * Controls whether [dokkaJavaJar] artifact should be published.
+     * The default value is `false`.
+     */
+    var java = false
+}
 
 /**
  * A DSL element of [SpinePublishing] extension which allows enabling publishing
@@ -88,10 +119,10 @@ internal data class JarFlags(
     /**
      * Tells whether [javadocJar] artifact should be published.
      *
-     * Default value is `false`.
+     * Default value is `true`.
      */
-    val javadocJar: Boolean = false,
-
+    val javadocJar: Boolean = true,
+    
     /**
      * Tells whether [protoJar] artifact should be published.
      */
@@ -100,7 +131,17 @@ internal data class JarFlags(
     /**
      * Tells whether [testJar] artifact should be published.
      */
-    val publishTestJar: Boolean
+    val publishTestJar: Boolean,
+
+    /**
+     * Tells whether [dokkaKotlinJar] artifact should be published.
+     */
+    val publishDokkaKotlinJar: Boolean,
+
+    /**
+     * Tells whether [dokkaJavaJar] artifact should be published.
+     */
+    val publishDokkaJavaJar: Boolean
 ) {
     internal companion object {
         /**
@@ -110,14 +151,16 @@ internal data class JarFlags(
         fun create(
             projectName: String,
             protoJar: ProtoJar,
-            testJar: TestJar
+            testJar: TestJar,
+            dokkaJar: DokkaJar
         ): JarFlags {
             val addProtoJar = (protoJar.exclusions.contains(projectName) || protoJar.disabled).not()
             val addTestJar = testJar.inclusions.contains(projectName) || testJar.enabled
             return JarFlags(
-                true,
-                false,
-                addProtoJar, addTestJar
+                sourcesJar = true,
+                javadocJar = true,
+                addProtoJar, addTestJar,
+                dokkaJar.kotlin, dokkaJar.java
             )
         }
     }

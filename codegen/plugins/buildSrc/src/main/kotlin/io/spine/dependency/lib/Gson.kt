@@ -27,7 +27,7 @@
 package io.spine.dependency.lib
 
 /**
- * Gson is a transitive dependency which we don't use directly.
+ * Gson is a transitive dependency, which we don't use directly.
  * We `force` it in [DependencyResolution.forceConfiguration()].
  *
  * [Gson](https://github.com/google/gson)
@@ -35,5 +35,5 @@ package io.spine.dependency.lib
 @Suppress("unused", "ConstPropertyName")
 object Gson {
     private const val version = "2.10.1"
-    const val lib = "com.google.code.gson:gson:${version}"
+    const val lib = "com.google.code.gson:gson:$version"
 }

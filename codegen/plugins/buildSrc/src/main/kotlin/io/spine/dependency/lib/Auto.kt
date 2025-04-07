@@ -31,19 +31,25 @@ package io.spine.dependency.lib
 // https://github.com/google/auto
 object AutoCommon {
     private const val version = "1.2.2"
-    const val lib = "com.google.auto:auto-common:${version}"
+    const val lib = "com.google.auto:auto-common:$version"
 }
 
 // https://github.com/google/auto
 object AutoService {
     private const val version = "1.1.1"
-    const val annotations = "com.google.auto.service:auto-service-annotations:${version}"
+    const val annotations = "com.google.auto.service:auto-service-annotations:$version"
     @Suppress("unused")
-    const val processor   = "com.google.auto.service:auto-service:${version}"
+    const val processor   = "com.google.auto.service:auto-service:$version"
 }
 
 // https://github.com/google/auto
 object AutoValue {
     private const val version = "1.10.2"
-    const val annotations = "com.google.auto.value:auto-value-annotations:${version}"
+    const val annotations = "com.google.auto.value:auto-value-annotations:$version"
+}
+
+// https://github.com/ZacSweers/auto-service-ksp
+object AutoServiceKsp {
+    private const val version = "1.2.0"
+    const val processor = "dev.zacsweers.autoservice:auto-service-ksp:$version"
 }

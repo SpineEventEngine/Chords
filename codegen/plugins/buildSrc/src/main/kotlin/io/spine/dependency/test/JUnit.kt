@@ -38,19 +38,19 @@ object JUnit {
     // https://github.com/junit-pioneer/junit-pioneer
     private const val pioneerVersion = "2.0.1"
 
-    const val legacy = "junit:junit:${legacyVersion}"
+    const val legacy = "junit:junit:$legacyVersion"
 
     val api = listOf(
-        "org.apiguardian:apiguardian-api:${apiGuardianVersion}",
-        "org.junit.jupiter:junit-jupiter-api:${version}",
-        "org.junit.jupiter:junit-jupiter-params:${version}"
+        "org.apiguardian:apiguardian-api:$apiGuardianVersion",
+        "org.junit.jupiter:junit-jupiter-api:$version",
+        "org.junit.jupiter:junit-jupiter-params:$version"
     )
-    const val bom = "org.junit:junit-bom:${version}"
+    const val bom = "org.junit:junit-bom:$version"
 
-    const val runner = "org.junit.jupiter:junit-jupiter-engine:${version}"
-    const val params = "org.junit.jupiter:junit-jupiter-params:${version}"
+    const val runner = "org.junit.jupiter:junit-jupiter-engine:$version"
+    const val params = "org.junit.jupiter:junit-jupiter-params:$version"
 
-    const val pioneer = "org.junit-pioneer:junit-pioneer:${pioneerVersion}"
+    const val pioneer = "org.junit-pioneer:junit-pioneer:$pioneerVersion"
 
     object Platform {
         // https://junit.org/junit5/

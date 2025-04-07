@@ -169,14 +169,6 @@ fun RepositoryHandler.applyStandardWithGitHub(project: Project, vararg gitHubRep
 }
 
 /**
- * A Maven repo for where snapshot versions for Spine libraries are published.
- */
-fun RepositoryHandler.spineSnapshots() {
-    maven("https://europe-maven.pkg.dev/spine-event-engine/snapshots")
-}
-
-
-/**
  * A scrambled version of PAT generated with the only "read:packages" scope.
  *
  * The scrambling around PAT is necessary because GitHub analyzes commits for the presence
@@ -212,9 +204,6 @@ object Pat {
 /**
  * Adds a read-only view to all artifacts of the SpineEventEngine
  * GitHub organization.
- *
- * This repo is temporary disabled so that `CloudArtifactRegistry` can be used
- * to resolve Spine dependencies.
  */
 fun RepositoryHandler.spineArtifacts(): MavenArtifactRepository = maven {
     url = URI("https://maven.pkg.github.com/SpineEventEngine/*")
@@ -236,6 +225,8 @@ val RepositoryHandler.jetBrainsCacheRedirector: MavenArtifactRepository
  * Applies repositories commonly used by Spine Event Engine projects.
  */
 fun RepositoryHandler.standardToSpineSdk() {
+    spineArtifacts()
+
     val spineRepos = listOf(
         Repos.spine,
         Repos.spineSnapshots,
@@ -261,7 +252,6 @@ fun RepositoryHandler.standardToSpineSdk() {
 
     mavenCentral()
     gradlePluginPortal()
-    google()
     mavenLocal().includeSpineOnly()
 }
 

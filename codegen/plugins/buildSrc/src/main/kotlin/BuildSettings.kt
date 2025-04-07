@@ -24,13 +24,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import org.gradle.api.JavaVersion
 import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 /**
- * This object provides high-level constants, like version of JVM, to be used
+ * This object provides high-level constants, like the version of JVM, to be used
  * throughout the project.
  */
 object BuildSettings {
-    private const val JVM_VERSION = 11
+    private const val JVM_VERSION = 17
     val javaVersion: JavaLanguageVersion = JavaLanguageVersion.of(JVM_VERSION)
+    val javaVersionCompat = JavaVersion.toVersion(JVM_VERSION)
+    val jvmTarget = JvmTarget.JVM_17
+    const val REMOTE_DEBUG_PORT = 5566
 }

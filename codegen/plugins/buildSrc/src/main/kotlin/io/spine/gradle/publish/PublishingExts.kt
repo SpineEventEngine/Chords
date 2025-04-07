@@ -26,8 +26,10 @@
 
 package io.spine.gradle.publish
 
+import dokkaKotlinJar
 import io.spine.gradle.Repository
 import io.spine.gradle.sourceSets
+import java.util.*
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -42,7 +44,6 @@ import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
-import java.util.*
 
 /**
  * Obtains [PublishingExtension] of this project.
@@ -268,9 +269,9 @@ internal fun Project.artifacts(jarFlags: JarFlags): Set<TaskProvider<Jar>> {
         tasks.add(testJar())
     }
 
-/*    if (jarFlags.publishDokkaKotlinJar) {
+    if (jarFlags.publishDokkaKotlinJar) {
         tasks.add(dokkaKotlinJar())
-    }*/
+    }
 
     return tasks
 }

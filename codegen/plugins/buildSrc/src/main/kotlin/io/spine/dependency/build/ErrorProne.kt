@@ -30,30 +30,33 @@ package io.spine.dependency.build
 @Suppress("unused", "ConstPropertyName")
 object ErrorProne {
     // https://github.com/google/error-prone
-    private const val version = "2.21.1"
+    private const val version = "2.36.0"
+
+    const val group = "com.google.errorprone"
+
     // https://github.com/tbroyer/gradle-errorprone-plugin/blob/v0.8/build.gradle.kts
     private const val javacPluginVersion = "9+181-r4173-1"
 
     val annotations = listOf(
-        "com.google.errorprone:error_prone_annotations:${version}",
-        "com.google.errorprone:error_prone_type_annotations:${version}"
+        "$group:error_prone_annotations:$version",
+        "$group:error_prone_type_annotations:$version"
     )
-    const val core = "com.google.errorprone:error_prone_core:${version}"
-    const val checkApi = "com.google.errorprone:error_prone_check_api:${version}"
-    const val testHelpers = "com.google.errorprone:error_prone_test_helpers:${version}"
-    const val javacPlugin  = "com.google.errorprone:javac:${javacPluginVersion}"
+    const val core = "$group:error_prone_core:$version"
+    const val checkApi = "$group:error_prone_check_api:$version"
+    const val testHelpers = "$group:error_prone_test_helpers:$version"
+    const val javacPlugin  = "$group:javac:$javacPluginVersion"
 
     // https://github.com/tbroyer/gradle-errorprone-plugin/releases
     object GradlePlugin {
         const val id = "net.ltgt.errorprone"
         /**
          * The version of this plugin is already specified in `buildSrc/build.gradle.kts` file.
-         * Thus, when applying the plugin in projects build files, only the [id] should be used.
+         * Thus, when applying the plugin to project build files, only the [id] should be used.
          *
-         * When the plugin is used as a library (e.g. in tools), its version and the library
+         * When the plugin is used as a library (e.g., in tools), its version and the library
          * artifacts are of importance.
          */
-        const val version = "3.1.0"
-        const val lib = "net.ltgt.gradle:gradle-errorprone-plugin:${version}"
+        const val version = "4.1.0"
+        const val lib = "net.ltgt.gradle:gradle-errorprone-plugin:$version"
     }
 }

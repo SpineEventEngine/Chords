@@ -29,6 +29,15 @@ package io.spine.dependency.lib
 // https://asm.ow2.io/
 @Suppress("unused", "ConstPropertyName")
 object Asm {
-    private const val version = "9.2"
-    const val lib = "org.ow2.asm:asm:$version"
+    private const val version = "9.6"
+    const val group = "org.ow2.asm"
+    const val lib = "$group:asm:$version"
+
+    // We use the following artifacts only to force the versions
+    // of the dependencies which are transitive for us.
+    //
+    const val tree = "$group:asm-tree:$version"
+    const val analysis = "$group:asm-analysis:$version"
+    const val util = "$group:asm-util:$version"
+    const val commons = "$group:asm-commons:$version"
 }

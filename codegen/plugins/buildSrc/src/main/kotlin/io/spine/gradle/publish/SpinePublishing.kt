@@ -28,6 +28,8 @@
 
 package io.spine.gradle.publish
 
+import dokkaJavaJar
+import dokkaKotlinJar
 import io.spine.gradle.Repository
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
@@ -135,8 +137,17 @@ fun Project.spinePublishing(block: SpinePublishing.() -> Unit) {
  */
 open class SpinePublishing(private val project: Project) {
 
+    companion object {
+
+        /**
+         * The default prefix added before a module name when publishing artifacts.
+         */
+        const val DEFAULT_PREFIX = "spine-"
+    }
+
     private val protoJar = ProtoJar()
     private val testJar = TestJar()
+    private val dokkaJar = DokkaJar()
 
     /**
      * Set of modules to be published.
@@ -194,10 +205,8 @@ open class SpinePublishing(private val project: Project) {
 
     /**
      * A prefix to be added before the name of each artifact.
-     *
-     * The default value is "spine-".
      */
-    var artifactPrefix: String = "spine-"
+    var artifactPrefix: String = DEFAULT_PREFIX
 
     /**
      * Allows disabling publishing of [protoJar] artifact, containing all Proto sources
@@ -275,7 +284,35 @@ open class SpinePublishing(private val project: Project) {
      * implementation("io.spine:spine-client:$version@test")
      * ```
      */
-    fun testJar(block: TestJar.() -> Unit) = testJar.run(block)
+    fun testJar(block: TestJar.() -> Unit)  = testJar.run(block)
+
+    /**
+     * Configures publishing of [dokkaKotlinJar] and [dokkaJavaJar] artifacts,
+     * containing Dokka-generated documentation.
+     *
+     * By default, publishing of the [dokkaKotlinJar] artifact is enabled, and [dokkaJavaJar]
+     * is disabled.
+     *
+     * Remember that the Dokka Gradle plugin should be applied to publish this artifact as it is
+     * produced by the `dokkaHtml` task. It can be done by using the
+     * [io.spine.dependency.build.Dokka] dependency object or by applying the
+     * `buildSrc/src/main/kotlin/dokka-for-kotlin` or
+     * `buildSrc/src/main/kotlin/dokka-for-java` script plugins.
+     *
+     * Here's an example of how to use this option:
+     *
+     * ```
+     * spinePublishing {
+     *     dokkaJar {
+     *         kotlin = false
+     *         java = true
+     *     }
+     * }
+     * ```
+     *
+     * The resulting artifact is available under "dokka" classifier.
+     */
+    fun dokkaJar(block: DokkaJar.() -> Unit) = dokkaJar.run(block)
 
     /**
      * Called to notify the extension that its configuration is completed.
@@ -291,7 +328,7 @@ open class SpinePublishing(private val project: Project) {
 
         val projectsToPublish = projectsToPublish()
         projectsToPublish.forEach { project ->
-            val jarFlags = JarFlags.create(project.name, protoJar, testJar)
+            val jarFlags = JarFlags.create(project.name, protoJar, testJar, dokkaJar)
             project.setUpPublishing(jarFlags)
         }
     }
@@ -369,10 +406,8 @@ open class SpinePublishing(private val project: Project) {
     private fun ensureProtoJarExclusionsArePublished() {
         val nonPublishedExclusions = protoJar.exclusions.minus(modules)
         if (nonPublishedExclusions.isNotEmpty()) {
-            throw IllegalStateException(
-                "One or more modules are marked as `excluded from proto " +
-                        "JAR publication`, but they are not even published: $nonPublishedExclusions"
-            )
+            throw IllegalStateException("One or more modules are marked as `excluded from proto " +
+                    "JAR publication`, but they are not even published: $nonPublishedExclusions")
         }
     }
 
@@ -418,10 +453,8 @@ open class SpinePublishing(private val project: Project) {
 
     private fun ensureCustomPublishingNotMisused() {
         if (modules.isNotEmpty() && customPublishing) {
-            error(
-                "`customPublishing` property can be set only if `spinePublishing` extension " +
-                        "is open in an individual module, so `modules` property should be empty."
-            )
+            error("`customPublishing` property can be set only if `spinePublishing` extension " +
+                    "is open in an individual module, so `modules` property should be empty.")
         }
     }
 }

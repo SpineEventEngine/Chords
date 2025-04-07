@@ -35,5 +35,5 @@ package io.spine.dependency.lib
 @Suppress("unused", "ConstPropertyName")
 object CommonsCli {
     private const val version = "1.5.0"
-    const val lib = "commons-cli:commons-cli:${version}"
+    const val lib = "commons-cli:commons-cli:$version"
 }

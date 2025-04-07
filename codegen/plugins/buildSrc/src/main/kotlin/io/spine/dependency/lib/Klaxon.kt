@@ -34,5 +34,5 @@ package io.spine.dependency.lib
 @Suppress("unused", "ConstPropertyName")
 object Klaxon {
     private const val version = "5.6"
-    const val lib = "com.beust:klaxon:${version}"
+    const val lib = "com.beust:klaxon:$version"
 }

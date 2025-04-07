@@ -25,6 +25,7 @@
  */
 
 import io.spine.dependency.local.CoreJava
+import io.spine.dependency.local.BaseTypes
 import io.spine.gradle.standardToSpineSdk
 
 // Apply ProtoData directly, without Spine's Model Compiler.
@@ -50,6 +51,7 @@ val sourceModuleDir = project.properties["sourceModuleDir"] as String
 dependencies {
     // The generated code relies onto `ValidatingBuilder` from Spine `1.9.x`.
     implementation(CoreJava.server_1_9)
+    implementation(BaseTypes.lib)
     protoData(codegenPluginsArtifact)
 }
 

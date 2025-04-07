@@ -24,9 +24,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+/**
+ * This script uses two declarations of the constant [licenseReportVersion] because
+ * currently there is no way to define a constant _before_ a build script of `buildSrc`.
+ * We cannot use imports or do something else before the `buildscript` or `plugin` clauses.
+ */
+
 plugins {
     java
+    groovy
     `kotlin-dsl`
+
+    // https://github.com/jk1/Gradle-License-Report/releases
+    id("com.github.jk1.dependency-license-report").version("2.7")
 }
 
 repositories {
@@ -38,63 +50,10 @@ repositories {
 /**
  * The version of Jackson used by `buildSrc`.
  *
- * Please keep this value in sync. with `io.spine.internal.dependency.Jackson.version`.
- * It's not a requirement, but would be good in terms of consistency.
+ * Please keep this value in sync with [io.spine.dependency.lib.Jackson.version].
+ * It is not a requirement but would be good in terms of consistency.
  */
-val jacksonVersion = "2.13.4"
-
-/**
- * The version of the Kotlin Gradle plugin.
- *
- * Please check that this value matches one defined in
- *  [i o.spine.internal.dependency.Kotlin.version].
- */
-val kotlinVersion = "1.8.22"
-
-/**
- * The version of Guava used in `buildSrc`.
- *
- * Always use the same version as the one specified in [io.spine.internal.dependency.Guava].
- * Otherwise, when testing Gradle plugins, clashes may occur.
- */
-val guavaVersion = "32.1.2-jre"
-
-/**
- * The version of ErrorProne Gradle plugin.
- *
- * Please keep in sync. with [io.spine.internal.dependency.ErrorProne.GradlePlugin.version].
- *
- * @see <a href="https://github.com/tbroyer/gradle-errorprone-plugin/releases">
- *     Error Prone Gradle Plugin Releases</a>
- */
-val errorPronePluginVersion = "3.1.0"
-
-/**
- * The version of Protobuf Gradle Plugin.
- *
- * Please keep in sync. with [io.spine.internal.dependency.Protobuf.GradlePlugin.version].
- *
- * @see <a href="https://github.com/google/protobuf-gradle-plugin/releases">
- *     Protobuf Gradle Plugins Releases</a>
- */
-val protobufPluginVersion = "0.9.4"
-
-/**
- * The version of Detekt Gradle Plugin.
- *
- * @see <a href="https://github.com/detekt/detekt/releases">Detekt Releases</a>
- */
-val detektVersion = "1.23.0"
-
-/**
- * @see [io.spine.internal.dependency.Kotest]
- */
-val kotestJvmPluginVersion = "0.4.10"
-
-/**
- * @see [io.spine.internal.dependency.Kover]
- */
-val koverVersion = "0.7.2"
+val jacksonVersion = "2.15.3"
 
 /**
  * The version of Google Artifact Registry used by `buildSrc`.
@@ -106,9 +65,86 @@ val koverVersion = "0.7.2"
  */
 val googleAuthToolVersion = "2.1.5"
 
+val licenseReportVersion = "2.7"
+
+val grGitVersion = "4.1.1"
+
+/**
+ * The version of the Kotlin Gradle plugin used by the build process.
+ *
+ * This version may change from the [version of Kotlin][io.spine.dependency.lib.Kotlin.version]
+ * used by the project.
+ */
+val kotlinVersion = "2.1.20"
+
+/**
+ * The version of Guava used in `buildSrc`.
+ *
+ * Always use the same version as the one specified in [io.spine.dependency.lib.Guava].
+ * Otherwise, when testing Gradle plugins, clashes may occur.
+ */
+val guavaVersion = "32.1.3-jre"
+
+/**
+ * The version of ErrorProne Gradle plugin.
+ *
+ * Please keep in sync. with [io.spine.dependency.build.ErrorProne.GradlePlugin.version].
+ *
+ * @see <a href="https://github.com/tbroyer/gradle-errorprone-plugin/releases">
+ *     Error Prone Gradle Plugin Releases</a>
+ */
+val errorPronePluginVersion = "4.1.0"
+
+/**
+ * The version of Protobuf Gradle Plugin.
+ *
+ * Please keep in sync. with [io.spine.dependency.lib.Protobuf.GradlePlugin.version].
+ *
+ * @see <a href="https://github.com/google/protobuf-gradle-plugin/releases">
+ *     Protobuf Gradle Plugins Releases</a>
+ */
+val protobufPluginVersion = "0.9.4"
+
+/**
+ * The version of Dokka Gradle Plugins.
+ *
+ * Please keep in sync with [io.spine.dependency.build.Dokka.version].
+ *
+ * @see <a href="https://github.com/Kotlin/dokka/releases">
+ *     Dokka Releases</a>
+ */
+val dokkaVersion = "1.9.20"
+
+/**
+ * The version of Detekt Gradle Plugin.
+ *
+ * @see <a href="https://github.com/detekt/detekt/releases">Detekt Releases</a>
+ */
+val detektVersion = "1.23.8"
+
+/**
+ * @see [io.spine.dependency.test.Kotest]
+ */
+val kotestJvmPluginVersion = "0.4.10"
+
+/**
+ * @see [io.spine.dependency.test.Kover]
+ */
+val koverVersion = "0.7.2"
+
+/**
+ * The version of the Shadow Plugin.
+ *
+ * `7.1.2` is the last version compatible with Gradle 7.x. Newer versions require Gradle v8.x.
+ *
+ * @see <a href="https://github.com/johnrengelman/shadow/releases">Shadow Plugin releases</a>
+ */
+val shadowVersion = "7.1.2"
+
 configurations.all {
     resolutionStrategy {
         force(
+            "com.google.guava:guava:${guavaVersion}",
             "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion",
 
             // Force Kotlin lib versions avoiding using those bundled with Gradle.
@@ -119,39 +155,61 @@ configurations.all {
     }
 }
 
-val jvmVersion = JavaLanguageVersion.of(11)
-
 java {
-    toolchain.languageVersion.set(jvmVersion)
+    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = jvmVersion.toString()
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
 dependencies {
+    api("com.github.jk1:gradle-license-report:$licenseReportVersion")
     dependOnAuthCommon()
 
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
+    listOf(
+        "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion",
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion",
+        "com.github.jk1:gradle-license-report:$licenseReportVersion",
+        "com.google.guava:guava:$guavaVersion",
+        "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion",
+        "gradle.plugin.com.github.johnrengelman:shadow:${shadowVersion}",
+        "io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detektVersion",
+        "io.kotest:kotest-gradle-plugin:$kotestJvmPluginVersion",
+        // https://github.com/srikanth-lingala/zip4j
+        "net.lingala.zip4j:zip4j:2.10.0",
+        "net.ltgt.gradle:gradle-errorprone-plugin:${errorPronePluginVersion}",
+        "org.ajoberstar.grgit:grgit-core:${grGitVersion}",
+        "org.jetbrains.dokka:dokka-base:${dokkaVersion}",
+        "org.jetbrains.dokka:dokka-gradle-plugin:${dokkaVersion}",
+        "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
+        "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion",
+        "org.jetbrains.kotlinx:kover-gradle-plugin:$koverVersion"
+    ).forEach {
+        implementation(it)
+    }
+}
 
-    implementation("com.google.guava:guava:$guavaVersion")
-    implementation("net.ltgt.gradle:gradle-errorprone-plugin:${errorPronePluginVersion}")
+dependOnBuildSrcJar()
 
-    // Add explicit dependency to avoid warning on different Kotlin runtime versions.
-    implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-
-    implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detektVersion")
-    implementation("com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion")
-
-    // https://github.com/srikanth-lingala/zip4j
-    implementation("net.lingala.zip4j:zip4j:2.10.0")
-
-    implementation("io.kotest:kotest-gradle-plugin:$kotestJvmPluginVersion")
-    implementation("org.jetbrains.kotlinx:kover-gradle-plugin:$koverVersion")
+/**
+ * Adds a dependency on a `buildSrc.jar`, iff:
+ *  1) the `src` folder is missing, and
+ *  2) `buildSrc.jar` is present in `buildSrc/` folder instead.
+ *
+ * This approach is used in the scope of integration testing.
+ */
+fun Project.dependOnBuildSrcJar() {
+    val srcFolder = this.rootDir.resolve("src")
+    val buildSrcJar = rootDir.resolve("buildSrc.jar")
+    if (!srcFolder.exists() && buildSrcJar.exists()) {
+        logger.info("Adding the pre-compiled 'buildSrc.jar' to 'implementation' dependencies.")
+        dependencies {
+            implementation(files("buildSrc.jar"))
+        }
+    }
 }
 
 /**
@@ -177,25 +235,5 @@ fun DependencyHandlerScope.dependOnAuthCommon() {
         "com.google.cloud.artifactregistry:artifactregistry-auth-common:$googleAuthToolVersion"
     ) {
         exclude(group = "com.google.guava")
-    }
-}
-
-dependOnBuildSrcJar()
-
-/**
- * Adds a dependency on a `buildSrc.jar`, iff:
- *  1) the `src` folder is missing, and
- *  2) `buildSrc.jar` is present in `buildSrc/` folder instead.
- *
- * This approach is used in the scope of integration testing.
- */
-fun Project.dependOnBuildSrcJar() {
-    val srcFolder = this.rootDir.resolve("src")
-    val buildSrcJar = rootDir.resolve("buildSrc.jar")
-    if (!srcFolder.exists() && buildSrcJar.exists()) {
-        logger.info("Adding the pre-compiled 'buildSrc.jar' to 'implementation' dependencies.")
-        dependencies {
-            implementation(files("buildSrc.jar"))
-        }
     }
 }
