@@ -47,7 +47,7 @@ buildscript {
 plugins {
     kotlin("jvm")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.70.3"
+    id("io.spine.protodata") version "0.92.11"
     idea
 }
 

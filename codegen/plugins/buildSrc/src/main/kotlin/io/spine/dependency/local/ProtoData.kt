@@ -44,7 +44,7 @@ object ProtoData {
     /**
      * The version of ProtoData dependencies.
      */
-    const val version = "0.70.3"
+    const val version = "0.92.11"
 
     /**
      * Identifies ProtoData as a `classpath` dependency under `buildScript` block.
