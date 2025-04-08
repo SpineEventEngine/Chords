@@ -26,12 +26,12 @@
 
 package io.spine.chords.codegen.plugins
 
-import io.spine.chords.runtime.MessageDef
-import io.spine.chords.runtime.MessageField
-import io.spine.chords.runtime.MessageOneof
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
+import io.spine.chords.runtime.MessageField
+import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.TypeName
 import io.spine.protodata.java.javaPackage
@@ -65,9 +65,6 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
         if (!sources.outputRoot.endsWith(KOTLIN_SOURCE_ROOT)) {
             return
         }
-        checkNotNull(typeSystem) {
-            "`TypeSystem` is not initialized."
-        }
 
         select(MessageTypeView::class.java).all()
             .filter {
@@ -75,7 +72,7 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
                 !it.id.file.path.endsWith(REJECTIONS_PROTO_FILE_NAME)
             }.forEach { messageTypeView ->
                 val typeName = messageTypeView.id.typeName
-                val messageToHeader = typeSystem!!.findMessage(typeName)
+                val messageToHeader = typeSystem.findMessage(typeName)
                 checkNotNull(messageToHeader) {
                     "Message not found for type `$typeName`."
                 }
@@ -93,10 +90,10 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
      * for the [fields] provided.
      */
     private fun TypeName.generateFileContent(fields: Iterable<Field>) =
-        FileSpec.builder(fullClassName(typeSystem!!))
+        FileSpec.builder(fullClassName(typeSystem))
             .indent(Indent.defaultJavaIndent.toString())
             .also { fileBuilder ->
-                MessageDefFileGenerator(this, fields, typeSystem!!)
+                MessageDefFileGenerator(this, fields, typeSystem)
                     .generateCode(fileBuilder)
             }
             .build()
@@ -107,7 +104,7 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
      */
     private fun TypeName.generateFilePath(): Path {
         return Path.of(
-            javaPackage(typeSystem!!).replace('.', '/'),
+            javaPackage(typeSystem).replace('.', '/'),
             generateFileName()
         )
     }
