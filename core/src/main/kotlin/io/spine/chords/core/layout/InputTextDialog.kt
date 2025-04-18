@@ -48,6 +48,22 @@ import kotlinx.coroutines.CompletableDeferred
 private const val InputComponentNoOfLines = 3
 
 /**
+ * Default width of the [InputTextDialog].
+ */
+private val DefaultDialogWidth = 450.dp
+
+/**
+ * Default height of the [InputTextDialog].
+ */
+private val DefaultDialogHeight = 300.dp
+
+/**
+ * The value used to reduce the dialog's height
+ * when the description field is empty.
+ */
+private val ReservedDescriptionHeight = 24.dp
+
+/**
  * A dialog that allows input of a text value.
  *
  * By default, the dialog is configured to allow multiline text input. However,
@@ -182,8 +198,8 @@ public class InputTextDialog : Dialog() {
     init {
         submitAvailable = true
         cancelAvailable = true
-        width = 430.dp
-        height = 300.dp
+        width = DefaultDialogWidth
+        height = DefaultDialogHeight
     }
 
     /**
@@ -193,23 +209,25 @@ public class InputTextDialog : Dialog() {
     protected override fun contentSection() {
         val textStyle = typography.bodyLarge
         Column {
-            Row(
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
+            Row {
                 Text(
                     text = message,
                     style = textStyle
                 )
             }
-            Row(
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Text(
-                    text = description,
-                    style = textStyle
-                )
+            if (description.isNotBlank()) {
+                Row(
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(
+                        text = description,
+                        style = textStyle
+                    )
+                }
             }
-            Row {
+            Row(
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
                 text.value = defaultText
                 StringField {
                     label = textFieldLabel
@@ -238,6 +256,9 @@ public class InputTextDialog : Dialog() {
      * pressing the submit button, or `null`, if the user cancels the input.
      */
     private suspend fun show(): String? {
+        if (description.isBlank() && height == DefaultDialogHeight) {
+            height -= ReservedDescriptionHeight
+        }
         var dialogCancelled = false
         val dialogClosure = CompletableDeferred<Unit>()
         onBeforeSubmit = {
