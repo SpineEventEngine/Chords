@@ -256,6 +256,9 @@ public class InputTextDialog : Dialog() {
      * pressing the submit button, or `null`, if the user cancels the input.
      */
     private suspend fun show(): String? {
+        // TODO:2025-04-18:oleg.melnik: Remove the code below after automatic
+        //  size detection is implemented for dialogs.
+        //  https://github.com/SpineEventEngine/Chords/issues/118
         if (description.isBlank() && height == DefaultDialogHeight) {
             height -= ReservedDescriptionHeight
         }

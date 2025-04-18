@@ -203,6 +203,9 @@ public class ConfirmationDialog : Dialog() {
      * makes a decision.
      */
     public suspend fun showConfirmation(): Boolean {
+        // TODO:2025-04-18:oleg.melnik: Remove the code below after automatic
+        //  size detection is implemented for dialogs.
+        //  https://github.com/SpineEventEngine/Chords/issues/118
         if (description.isBlank() && height == DefaultDialogHeight) {
             height -= ReservedDescriptionHeight
         }
