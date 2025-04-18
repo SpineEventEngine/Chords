@@ -1,6 +1,6 @@
 
 
-# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.79`
+# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.80`
 
 ## Runtime
 1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.1.**No license information found**
@@ -1094,12 +1094,12 @@
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 08 11:56:54 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Fri Apr 18 13:36:25 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-codegen-tests:2.0.0-SNAPSHOT.79`
+# Dependencies of `io.spine.chords:spine-chords-codegen-tests:2.0.0-SNAPSHOT.80`
 
 ## Runtime
 1.  **Group** : com.google.android. **Name** : annotations. **Version** : 4.1.1.4.
@@ -1953,12 +1953,12 @@ This report was generated on **Tue Apr 08 11:56:54 EEST 2025** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 08 11:57:03 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Fri Apr 18 13:36:27 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.79`
+# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.80`
 
 ## Runtime
 1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.1.
@@ -2991,12 +2991,12 @@ This report was generated on **Tue Apr 08 11:57:03 EEST 2025** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 08 11:57:05 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Fri Apr 18 13:36:28 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto:2.0.0-SNAPSHOT.79`
+# Dependencies of `io.spine.chords:spine-chords-proto:2.0.0-SNAPSHOT.80`
 
 ## Runtime
 1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.1.**No license information found**
@@ -4015,12 +4015,12 @@ This report was generated on **Tue Apr 08 11:57:05 EEST 2025** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 08 11:57:06 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Fri Apr 18 13:36:29 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto-values:2.0.0-SNAPSHOT.79`
+# Dependencies of `io.spine.chords:spine-chords-proto-values:2.0.0-SNAPSHOT.80`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -4814,12 +4814,12 @@ This report was generated on **Tue Apr 08 11:57:06 EEST 2025** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 08 11:57:07 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Fri Apr 18 13:36:30 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-runtime:2.0.0-SNAPSHOT.79`
+# Dependencies of `io.spine.chords:spine-chords-runtime:2.0.0-SNAPSHOT.80`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -5583,4 +5583,4 @@ This report was generated on **Tue Apr 08 11:57:07 EEST 2025** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 08 11:57:07 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Fri Apr 18 13:36:31 EEST 2025** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
