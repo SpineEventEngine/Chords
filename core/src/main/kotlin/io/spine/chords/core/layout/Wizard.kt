@@ -207,7 +207,7 @@ public abstract class Wizard : Component() {
                     onFinishClick = {
                         handleFinishClick(currentPage)
                     },
-                    onCancelClick = { onCloseRequest?.invoke() },
+                    onCancelClick = { close() },
                     isOnFirstPage = isOnFirstPage(),
                     isOnLastPage = isOnLastPage(),
                     submitting
