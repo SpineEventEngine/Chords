@@ -39,6 +39,22 @@ import io.spine.chords.core.appshell.Props
 import kotlinx.coroutines.CompletableDeferred
 
 /**
+ * Default width of the [ConfirmationDialog].
+ */
+private val DefaultDialogWidth = 450.dp
+
+/**
+ * Default height of the [ConfirmationDialog].
+ */
+private val DefaultDialogHeight = 220.dp
+
+/**
+ * The value used to reduce the dialog's height
+ * when the description field is empty.
+ */
+private val ReservedDescriptionHeight = 32.dp
+
+/**
  * A dialog that prompts the user either to make a boolean decision
  * (e.g. approve or deny some action).
  *
@@ -123,7 +139,9 @@ public class ConfirmationDialog : Dialog() {
      */
     public var yesButtonText: String
         get() = submitButtonText
-        set(value) { submitButtonText = value }
+        set(value) {
+            submitButtonText = value
+        }
 
     /**
      * The label for the dialog's No button.
@@ -132,7 +150,9 @@ public class ConfirmationDialog : Dialog() {
      */
     public var noButtonText: String
         get() = cancelButtonText
-        set(value) { cancelButtonText = value }
+        set(value) {
+            cancelButtonText = value
+        }
 
     init {
         submitAvailable = true
@@ -140,8 +160,8 @@ public class ConfirmationDialog : Dialog() {
 
         yesButtonText = "Yes"
         noButtonText = "No"
-        width = 430.dp
-        height = 210.dp
+        width = DefaultDialogWidth
+        height = DefaultDialogHeight
     }
 
     /**
@@ -152,19 +172,21 @@ public class ConfirmationDialog : Dialog() {
         val textStyle = typography.bodyLarge
 
         Column {
-            Row(
-                modifier = Modifier.padding(bottom = 6.dp)
-            ) {
+            Row {
                 Text(
                     text = message,
                     style = textStyle
                 )
             }
-            Row {
-                Text(
-                    text = description,
-                    style = textStyle
-                )
+            if (description.isNotBlank()) {
+                Row(
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(
+                        text = description,
+                        style = textStyle
+                    )
+                }
             }
         }
     }
@@ -181,6 +203,12 @@ public class ConfirmationDialog : Dialog() {
      * makes a decision.
      */
     public suspend fun showConfirmation(): Boolean {
+        // TODO:2025-04-18:oleg.melnik: Remove the code below after automatic
+        //  size detection is implemented for dialogs.
+        //  https://github.com/SpineEventEngine/Chords/issues/118
+        if (description.isBlank() && height == DefaultDialogHeight) {
+            height -= ReservedDescriptionHeight
+        }
         var confirmed = false
         val dialogClosure = CompletableDeferred<Unit>()
         onBeforeSubmit = {
