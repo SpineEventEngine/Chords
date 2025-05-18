@@ -36,7 +36,6 @@ import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +52,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation.Companion.None
+import io.spine.chords.core.InputReviser.Companion.maxLength
 import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
 import io.spine.chords.core.keyboard.KeyRange.Companion.Whitespace
 import io.spine.chords.core.keyboard.matches
