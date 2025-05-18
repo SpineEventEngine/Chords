@@ -40,6 +40,12 @@ import java.util.*
 import kotlin.math.abs
 import kotlin.reflect.KClass
 
+
+/**
+ * Gets a decimal separator character.
+ */
+public val decimalSeparator: Char get() = DecimalFormatSymbols.getInstance().decimalSeparator
+
 /**
  * Represents the number of digits denoting nano (10^-9) units of the amount.
  */
@@ -127,16 +133,27 @@ public fun identifyCurrency(str: String): Currency? {
 }
 
 /**
- * Gets a decimal separator character.
+ * Formats the [Money] value to a human-readable string that includes both the
+ * amount and ISO 4217 currency code.
+ *
+ * @receiver money instance that should be formatted.
+ * @see formatAmount
  */
-public val decimalSeparator: Char get() = DecimalFormatSymbols.getInstance().decimalSeparator
+public fun Money.format(): String {
+    val amountText = formatAmount()
+    return "${currency.name} $amountText"
+}
 
 /**
- * Formats the [Money] value as a respective human-readable string
- * without currency symbol.
+ * Formats the [Money] value as a respective human-readable string without
+ * mentioning a currency symbol or currency code.
+ *
+ * Use [format] if you need to format [Money] value as a string, which includes
+ * both an amount and a currency code.
  *
  * @receiver money instance that should be formatted.
  * @return a human-readable string representation of this [Money] value.
+ * @see format
  */
 public fun Money.formatAmount(): String {
     val currencyOptions = currency.options
