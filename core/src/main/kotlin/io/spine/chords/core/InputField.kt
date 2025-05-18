@@ -36,6 +36,7 @@ import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -450,15 +451,10 @@ public open class InputField<V> : InputComponent<V>() {
     protected open fun formatValue(value: V): String = value as String
 
     @Composable
-    override fun beforeComposeContent() {
-        super.beforeComposeContent()
+    override fun content(): Unit = recompositionWorkaround {
         if (!::colors.isInitialized) {
             colors = TextFieldDefaults.colors()
         }
-    }
-
-    @Composable
-    override fun content(): Unit = recompositionWorkaround {
         val textStyle = textStyle ?: LocalTextStyle.current
         val rawTextContent = getRawTextContent()
 
