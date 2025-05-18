@@ -236,7 +236,7 @@ public abstract class InputComponent<V> : FocusableComponent() {
      * implementation to ensure that the value specified in this property is
      * displayed as needed.
      */
-    public open var externalValidationMessage: State<String?>? = null
+    public var externalValidationMessage: State<String?>? = null
 
     /**
      * A callback, which is invoked every time when a component transitions
@@ -244,7 +244,7 @@ public abstract class InputComponent<V> : FocusableComponent() {
      * an argument of `true`, when the new state is dirty, and `false` when it
      * becomes empty.
      */
-    public open var onDirtyStateChange: ((Boolean) -> Unit)? = null
+    public var onDirtyStateChange: ((Boolean) -> Unit)? = null
 
     /**
      * A context that contains any data that affects input components that

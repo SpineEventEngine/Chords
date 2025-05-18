@@ -180,7 +180,7 @@ import kotlinx.coroutines.launch
  *   perspective this would just be a `someProp` property that can be configured
  *   with any `String` value.
  *
- * Here's an example of creating an input component that allows entering
+ * Here's an example of creating an input component that displays
  * a string value:
  *
  * ```kotlin
