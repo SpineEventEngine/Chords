@@ -32,6 +32,8 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
@@ -307,6 +309,12 @@ public open class InputField<V> : InputComponent<V>() {
     public var textStyle: TextStyle? by mutableStateOf(null)
 
     /**
+     * A [TextFieldColors] instance, which defines the color scheme for
+     * this field.
+     */
+    public lateinit var colors: TextFieldColors
+
+    /**
      * An [InputReviser] that can be specified to modify the user's input before
      * it is applied to the input field.
      */
@@ -367,13 +375,13 @@ public open class InputField<V> : InputComponent<V>() {
     protected open var multiline: Boolean by mutableStateOf(false)
 
     /**
-     * Minimum number of visible lines
+     * Minimum number of visible lines of text
      * (applicable only if [multiline] == `true`).
      */
     protected open var minLines: Int by mutableStateOf(1)
 
     /**
-     * Maximum number of visible lines
+     * Maximum number of visible lines of text
      * (applicable only if [multiline] == `true`).
      */
     protected open var maxLines: Int by mutableStateOf(MAX_VALUE)
@@ -442,6 +450,14 @@ public open class InputField<V> : InputComponent<V>() {
     protected open fun formatValue(value: V): String = value as String
 
     @Composable
+    override fun beforeComposeContent() {
+        super.beforeComposeContent()
+        if (!::colors.isInitialized) {
+            colors = TextFieldDefaults.colors()
+        }
+    }
+
+    @Composable
     override fun content(): Unit = recompositionWorkaround {
         val textStyle = textStyle ?: LocalTextStyle.current
         val rawTextContent = getRawTextContent()
@@ -477,6 +493,7 @@ public open class InputField<V> : InputComponent<V>() {
             maxLines = if (multiline) maxLines else 1,
             enabled = enabled,
             textStyle = textStyle,
+            colors = colors,
             modifier = modifier(modifier)
                 .focusRequester(focusRequester)
                 .preventWidthAutogrowing()
