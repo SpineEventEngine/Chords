@@ -75,7 +75,7 @@ public typealias DateTimePattern = String
  * A field that allows specifying date and time.
  */
 public class DateTimeField : InputField<Timestamp>() {
-    public companion object : ComponentSetup<DateTimeField>({ DateTimeField() })
+    public companion object : ComponentSetup<DateTimeField>()
 
     /**
      * A pattern for parsing and formatting a date component (as used with

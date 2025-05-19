@@ -36,7 +36,7 @@ import io.spine.chords.core.InputReviser
  * An [InputField] implementation that allows entering `String` values.
  */
 public class StringField : InputField<String>() {
-    public companion object : ComponentSetup<StringField>({ StringField() })
+    public companion object : ComponentSetup<StringField>()
 
     public override var inputReviser: InputReviser?
         get() = super.inputReviser

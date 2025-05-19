@@ -37,7 +37,7 @@ import io.spine.chords.proto.value.net.parse
  * A field that allows entering a URL.
  */
 public class UrlField : InputField<Url>() {
-    public companion object : ComponentSetup<UrlField>({ UrlField() })
+    public companion object : ComponentSetup<UrlField>()
 
     init {
         label = "URL"

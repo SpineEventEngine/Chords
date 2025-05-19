@@ -34,6 +34,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import io.spine.chords.core.appshell.Props
+import kotlin.reflect.javaType
+import kotlin.reflect.full.allSupertypes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -180,14 +182,12 @@ import kotlinx.coroutines.launch
  *   perspective this would just be a `someProp` property that can be configured
  *   with any `String` value.
  *
- * Here's an example of creating an input component that allows entering
+ * Here's an example of creating an input component that displays
  * a string value:
  *
  * ```kotlin
  *     public class HelloComponent : Component() {
- *         public companion object : ComponentSetup<HelloComponent>({
- *             HelloComponent()
- *         })
+ *         public companion object : ComponentSetup<HelloComponent>()
  *
  *         public var name: String by mutableStateOf("")
  *
@@ -234,9 +234,8 @@ import kotlinx.coroutines.launch
  *
  * ```kotlin
  *     public class StyledHelloComponent : Component() {
- *         public companion object : ComponentSetup<StyledHelloComponent>({
- *             StyledHelloComponent() // <-- Note child class name. ^^^
- *         })
+ *         public companion object : ComponentSetup<StyledHelloComponent>()
+ *         //                  Note child class name here   ^^^
  *
  *         // Add some more component customization properties...
  *         public var style: TextStyle by mutableStateOf(MaterialTheme.typography.bodyMedium)
@@ -345,7 +344,7 @@ import kotlinx.coroutines.launch
  * Here's an example:
  * ```
  *     public class HelloComponent : Component() {
- *         public companion object : ComponentSetup<HelloComponent>({ HelloComponent() })
+ *         public companion object : ComponentSetup<HelloComponent>()
  *
  *         public lateinit var name: String
  *
@@ -838,7 +837,7 @@ public abstract class Component : DefaultPropsOwnerBase() {
  * @see ComponentSetup
  */
 public abstract class AbstractComponentSetup(
-    protected val createInstance: (() -> Component)? = null
+    protected var createInstance: (() -> Component)? = null
 ) {
 
     /**
@@ -946,13 +945,74 @@ public abstract class AbstractComponentSetup(
  *   should be instantiated and rendered via this companion object).
  *
  * @constructor Creates a companion object for a component of type [C].
- * @param createInstance A lambda that should create a component's instance of
- *   type [C] with the given properties configuration callback.
+ * @param createInstance An optional lambda that should create a component's
+ *   instance of type [C]. In most cases (when a component has the recommended
+ *   no-args constructor), there's no need to specify this parameter.
  * @see AbstractComponentSetup
  */
-public open class ComponentSetup<C: Component>(
-    createInstance: () -> C
+public abstract class ComponentSetup<
+        C : Component // Keep the list of type parameters in sync with the `TypeParameters` enum!
+        >(
+    createInstance: (() -> C)? = null
 ) : AbstractComponentSetup(createInstance) {
+
+    /**
+     * An enumeration of the class's type parameters.
+     */
+    private enum class TypeParameters(val index: Int) {
+
+        /**
+         * The component type parameter (the class's `C` parameter).
+         */
+        COMPONENT_TYPE(0),
+    }
+
+     init {
+         if (this.createInstance == null) {
+             this.createInstance = {
+                 createInstanceByTypeParameter()
+             }
+         }
+     }
+
+    /**
+     * Creates an instance of a component by its type parameter [C], which is
+     * detected automatically from the class instance's implementation.
+     */
+    private fun createInstanceByTypeParameter(): C {
+        val cls = componentClass
+        val defaultConstructor = cls.declaredConstructors.find { it.parameters.isEmpty() }
+        checkNotNull(defaultConstructor) {
+            "A component must have a no-args constructor: $cls"
+        }
+        @Suppress("UNCHECKED_CAST")
+        return defaultConstructor.newInstance() as C
+    }
+
+    /**
+     * Identifies a type specified for the [C] type parameter by the companion
+     * object that implements this class.
+     */
+    @OptIn(ExperimentalStdlibApi::class)
+    private val componentClass: Class<C> get() {
+        val parameterizedEntityChooserType = this::class.allSupertypes.first {
+            it.classifier == ComponentSetup::class
+        }
+        val entityStateType =
+            parameterizedEntityChooserType.arguments[TypeParameters.COMPONENT_TYPE.index].type
+        checkNotNull(entityStateType) {
+            "The C type parameter (component type) cannot be a star <*> projection."
+        }
+
+        @Suppress(
+            // We only have the component type as an abstract `Type` value at
+            // runtime, so we have no other choice than to explicitly cast it to
+            // Class<E> here (it's safe as long as `TypeParameters` enum is kept
+            // up to date).
+            "UNCHECKED_CAST"
+        )
+        return entityStateType.javaType as Class<C>
+    }
 
     /**
      * Declares an instance of component of type [C] with the respective
@@ -965,7 +1025,7 @@ public open class ComponentSetup<C: Component>(
      * Once an instance is created, it is saved using [remember] and is reused
      * for subsequent recompositions.
      *
-     * @param props A lambda that is invoked in context of the component's
+     * @param props A lambda that is invoked in the context of the component's
      *   instance, which should configure its properties in a way that is needed
      *   for this component's instance. It is invoked before each recomposition
      *   of the component.

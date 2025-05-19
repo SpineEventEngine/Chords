@@ -65,9 +65,7 @@ private val PaymentCardNumberKt.maxValueLength get() = 19
  * A field that allows entering a payment card number.
  */
 public class PaymentCardNumberField : InputField<PaymentCardNumber>() {
-    public companion object : ComponentSetup<PaymentCardNumberField>({
-        PaymentCardNumberField()
-    })
+    public companion object : ComponentSetup<PaymentCardNumberField>()
 
     init {
         label = "Card no"

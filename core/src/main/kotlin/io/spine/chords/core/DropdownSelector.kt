@@ -40,6 +40,8 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
@@ -126,6 +128,12 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     public var modifier: Modifier by mutableStateOf(Modifier)
 
     /**
+     * A [TextFieldColors] instance, which defines the color scheme for
+     * the selector's field.
+     */
+    public lateinit var fieldColors: TextFieldColors
+
+    /**
      * Indicates whether the drop-down menu is expanded or not.
      */
     private val expanded = mutableStateOf(false)
@@ -193,6 +201,9 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
 
     @Composable
     override fun content() {
+        if (!::fieldColors.isInitialized) {
+            fieldColors = TextFieldDefaults.colors()
+        }
         val fieldText = getFieldText(searchString)
 
         SideEffect {
@@ -236,6 +247,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
                 }
             },
             textStyle = fieldTextStyle,
+            colors = fieldColors,
             modifier = modifier
                 .focusRequester(this@DropdownSelector.focusRequester)
                 .moveFocusOnTab()
