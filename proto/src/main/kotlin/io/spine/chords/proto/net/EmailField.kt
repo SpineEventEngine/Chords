@@ -40,7 +40,7 @@ private const val EmailRegex = """^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}${'$'}"""
  * An input field that allows editing a [EmailAddress] field.
  */
 public class EmailField : InputField<EmailAddress>() {
-    public companion object : ComponentSetup<EmailField>({ EmailField() })
+    public companion object : ComponentSetup<EmailField>()
 
     init {
         label = "Email"

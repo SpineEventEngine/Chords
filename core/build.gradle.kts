@@ -25,6 +25,7 @@
  */
 
 import io.spine.internal.dependency.Kotest
+import io.spine.internal.dependency.Kotlin
 import io.spine.internal.dependency.Material3
 import io.spine.internal.dependency.Voyager
 
@@ -34,8 +35,9 @@ plugins {
 
 dependencies {
     api(Voyager.navigator)
-    implementation(project(":runtime"))
+    implementation(Kotlin.reflect)
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
+    implementation(project(":runtime"))
     testImplementation(Kotest.runnerJUnit5)
 }

@@ -39,9 +39,7 @@ import io.spine.net.InternetDomains
  * A field that allows entering an [InternetDomain] value.
  */
 public class InternetDomainField : InputField<InternetDomain>() {
-    public companion object : ComponentSetup<InternetDomainField>(
-        { InternetDomainField() }
-    )
+    public companion object : ComponentSetup<InternetDomainField>()
 
     init {
         inputReviser = NonWhitespaces then ToLowerCase

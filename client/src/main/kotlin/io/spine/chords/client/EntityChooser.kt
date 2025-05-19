@@ -70,7 +70,7 @@ public abstract class EntityChooser<
         > : DropdownSelector<I>() {
 
     /**
-     * An enumeration of class's type parameters.
+     * An enumeration of the class's type parameters.
      */
     @Suppress("unused" /* All type parameters are listed for
     completeness despite only a part of them might be used via this enum. */)
@@ -92,10 +92,8 @@ public abstract class EntityChooser<
     private val entityStatesByIds: HashMap<I, E> = hashMapOf()
 
     /**
-     * A function which has to be implemented to provide a value of
-     * type `Class[E]` for the component which is being implemented.
-     *
-     * E.g., if [E] is a `User` class, it would just specify `User::class.java`.
+     * Identifies a type specified for the [E] type parameter by the
+     * implementation of the actual component's instance.
      */
     @OptIn(ExperimentalStdlibApi::class)
     private val entityStateClass: Class<E> get() {
@@ -108,11 +106,13 @@ public abstract class EntityChooser<
             "The V type parameter (entity value type) cannot be a star <*> projection. "
         }
 
-        // We only have the entity state type as an abstract `Type` value at
-        // runtime, so we have no other choice than to explicitly cast it to
-        // Class<E> here (it's safe as long as `TypeParameters` enum is kept
-        // up to date).
-        @Suppress("UNCHECKED_CAST")
+        @Suppress(
+            // We only have the entity state type as an abstract `Type` value at
+            // runtime, so we have no other choice than to explicitly cast it to
+            // Class<E> here (it's safe as long as `TypeParameters` enum is kept
+            // up to date).
+            "UNCHECKED_CAST"
+        )
         return entityStateType.javaType as Class<E>
     }
 

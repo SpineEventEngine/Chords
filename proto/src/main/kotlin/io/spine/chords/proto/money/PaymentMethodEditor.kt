@@ -52,7 +52,7 @@ import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
 public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
     { PaymentMethod.newBuilder() }
 ) {
-    public companion object : ComponentSetup<PaymentMethodEditor>({ PaymentMethodEditor() })
+    public companion object : ComponentSetup<PaymentMethodEditor>()
 
     /**
      * Identifies the component's appearance parameters.

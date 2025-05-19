@@ -37,7 +37,7 @@ import io.spine.chords.proto.value.person.parse
  * A field that allows editing a [PersonName] value.
  */
 public class PersonNameField : InputField<PersonName>() {
-    public companion object : ComponentSetup<PersonNameField>({ PersonNameField() })
+    public companion object : ComponentSetup<PersonNameField>()
 
     init {
         label = "Person name"

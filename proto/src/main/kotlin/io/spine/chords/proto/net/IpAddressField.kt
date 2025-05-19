@@ -44,7 +44,7 @@ import io.spine.chords.proto.value.net.parse
  * A field for entering an IP address.
  */
 public class IpAddressField : InputField<IpAddress>() {
-    public companion object : ComponentSetup<IpAddressField>({ IpAddressField() })
+    public companion object : ComponentSetup<IpAddressField>()
 
     init {
         label = "IP address"

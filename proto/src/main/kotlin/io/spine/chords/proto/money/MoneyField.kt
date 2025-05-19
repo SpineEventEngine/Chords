@@ -85,7 +85,7 @@ private val defaultCurrency = USD
  * A field that allows entering [Money] values.
  */
 public class MoneyField : InputField<Money>() {
-    public companion object : ComponentSetup<MoneyField>({ MoneyField() })
+    public companion object : ComponentSetup<MoneyField>()
 
     /**
      * A list of item values to choose from.

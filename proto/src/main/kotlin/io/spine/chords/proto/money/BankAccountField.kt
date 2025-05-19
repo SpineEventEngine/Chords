@@ -35,7 +35,7 @@ import io.spine.chords.proto.value.money.BankAccount
  * A field that allows entering a bank account number.
  */
 public class BankAccountField : InputField<BankAccount>() {
-    public companion object : ComponentSetup<BankAccountField>({ BankAccountField() })
+    public companion object : ComponentSetup<BankAccountField>()
 
     init {
         label = "Bank account"
