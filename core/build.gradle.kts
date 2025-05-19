@@ -38,6 +38,5 @@ dependencies {
     implementation(Kotlin.reflect)
     implementation(compose.desktop.currentOs)
     implementation(Material3.Desktop.lib)
-    implementation(project(":runtime"))
     testImplementation(Kotest.runnerJUnit5)
 }

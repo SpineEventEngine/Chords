@@ -30,7 +30,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
-import io.spine.chords.runtime.safeCast
 
 /**
  * The main screen of the application.
@@ -88,5 +87,5 @@ public class MainScreen(
      * Returns the currently selected view.
      */
     internal val currentView: AppView
-        get() = viewNavigator.lastItem.safeCast<AppView>()
+        get() = viewNavigator.lastItem as AppView
 }
