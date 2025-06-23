@@ -152,14 +152,26 @@ public open class ModalCommandConsequences<C : CommandMessage>(
             posting = true
         }
         onServerError {
+            // Prevent other events while the message is displayed, since the
+            // modal is already on the path of being closed.
+            cancelAllSubscriptions()
+
             showMessage("Unexpected server error has occurred.")
             close()
         }
         onNetworkError {
+            // Prevent other events while the message is displayed, since the
+            // modal is already on the path of being closed.
+            cancelAllSubscriptions()
+
             showMessage("Server connection failed.")
             close()
         }
         onDefaultTimeout {
+            // Prevent other events while the message is displayed, since the
+            // modal is already on the path of being closed.
+            cancelAllSubscriptions()
+
             showMessage("The operation takes unexpectedly long to process. " +
                     "Please check the status of its execution later.")
             close()
