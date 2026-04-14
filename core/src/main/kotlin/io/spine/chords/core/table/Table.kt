@@ -54,9 +54,10 @@ import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -70,11 +71,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
 
@@ -626,6 +630,7 @@ private fun VerticalScrollBar(
  * @param sortingState The current interactive sorting state of the table.
  */
 @Composable
+@OptIn(ExperimentalComposeUiApi::class)
 private fun <E> HeaderTableRow(
     columns: List<TableColumn<E>>,
     sortingEnabled: Boolean,
@@ -635,12 +640,14 @@ private fun <E> HeaderTableRow(
         columns = columns,
         cellModifier = { column ->
             if (sortingEnabled && column.sorting != null) {
-                Modifier.clickable(
-                    interactionSource = MutableInteractionSource(),
-                    indication = null,
-                ) {
-                    sortingState.toggle(column)
-                }
+                Modifier
+                    .pointerHoverIcon(Hand)
+                    .clickable(
+                        interactionSource = MutableInteractionSource(),
+                        indication = null,
+                    ) {
+                        sortingState.toggle(column)
+                    }
             } else {
                 Modifier
             }
@@ -667,6 +674,7 @@ private fun <E> HeaderCell(
     sortingEnabled: Boolean,
     sortingState: TableSortingState<E>
 ) {
+    val isSortable = sortingEnabled && column.sorting != null
     Row(
         horizontalArrangement = column.horizontalArrangement,
         verticalAlignment = CenterVertically
@@ -675,16 +683,17 @@ private fun <E> HeaderCell(
             text = column.name,
             style = typography.titleMedium
         )
-        val direction = if (sortingEnabled) {
+        val direction = if (isSortable) {
             sortingState.directionFor(column)
         } else {
             null
         }
-        if (direction != null) {
+        if (isSortable) {
             Icon(
                 imageVector = when (direction) {
-                    TableSortDirection.Ascending -> Icons.Default.ArrowUpward
-                    TableSortDirection.Descending -> Icons.Default.ArrowDownward
+                    TableSortDirection.Ascending -> Icons.Default.ArrowDropUp
+                    TableSortDirection.Descending -> Icons.Default.ArrowDropDown
+                    null -> Icons.Default.UnfoldMore
                 },
                 contentDescription = null,
                 modifier = Modifier.padding(start = 4.dp).size(18.dp),
