@@ -76,6 +76,7 @@ import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Enter
@@ -699,7 +700,7 @@ private fun <E> HeaderCell(
         } else {
             null
         }
-        if (isSortable && (direction != null || isHovered)) {
+        if (isSortable) {
             Icon(
                 imageVector = when (direction) {
                     ASCENDING -> Icons.Default.ArrowDropUp
@@ -707,7 +708,10 @@ private fun <E> HeaderCell(
                     null -> Icons.Default.UnfoldMore
                 },
                 contentDescription = null,
-                modifier = Modifier.padding(start = 4.dp).size(18.dp),
+                modifier = Modifier
+                    .padding(start = 4.dp)
+                    .size(18.dp)
+                    .alpha(if (direction != null || isHovered) 1f else 0f),
                 tint = colorScheme.onSurfaceVariant
             )
         }
