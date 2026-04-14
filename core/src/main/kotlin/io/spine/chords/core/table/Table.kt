@@ -81,6 +81,8 @@ import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
+import io.spine.chords.core.table.TableSortingDirection.ASCENDING
+import io.spine.chords.core.table.TableSortingDirection.DESCENDING
 
 /**
  * A list of entities in a tabular format.
@@ -208,7 +210,7 @@ public abstract class Table<E> : Component() {
     protected var sortBy: Comparator<E> by mutableStateOf(Comparator { _, _ -> 0 })
 
     /**
-     * Enables or disables automatic sorting for table content.
+     * Enables or disables sorting for table content.
      *
      * When enabled, the table applies [sortBy] by default and may switch to a column-specific
      * comparator when the user clicks a sortable header.
@@ -295,7 +297,7 @@ public abstract class Table<E> : Component() {
     }
 
     /**
-     * Resolves the list of entities to render according to the current sorting configuration.
+     * Resolves the list of entities to render, according to the current sorting configuration.
      *
      * @return The list of entities in the order that should be displayed.
      */
@@ -388,7 +390,7 @@ public abstract class Table<E> : Component() {
  *   meaning that if all columns have this `weight` value, their width is equal.
  * @param padding The padding values of each cell's content in this column.
  *   By default, no padding is applied.
- * @param key A stable identifier of the column used to keep track of the sorting state.
+ * @param columnKey A stable identifier of the column used to keep track of the sorting state.
  *   By default, the column [name] is used.
  * @param sorting Optional sorting configuration for this column.
  *   If `null`, the header is rendered without interactive sorting support.
@@ -400,7 +402,7 @@ public data class TableColumn<E>(
     val horizontalArrangement: Horizontal = Center,
     val weight: Float = 1F,
     val padding: PaddingValues = PaddingValues(),
-    val key: Any = name,
+    val columnKey: Any = name,
     val sorting: TableColumnSorting<E>? = null,
     val cellContent: @Composable (E) -> Unit
 )
@@ -413,33 +415,33 @@ public data class TableColumn<E>(
  */
 public data class TableColumnSorting<E>(
     val comparator: Comparator<E>,
-    val initialDirection: TableSortDirection = TableSortDirection.Ascending
+    val initialDirection: TableSortingDirection = ASCENDING
 )
 
 /**
  * Sorting direction used by the table.
  */
-public enum class TableSortDirection {
+public enum class TableSortingDirection {
 
     /**
      * Sorts values from lower to higher according to the column comparator.
      */
-    Ascending,
+    ASCENDING,
 
     /**
      * Sorts values from higher to lower according to the column comparator.
      */
-    Descending;
+    DESCENDING;
 
     /**
      * Returns the opposite sorting direction.
      *
      * @return The reversed sorting direction.
      */
-    public fun reverse(): TableSortDirection {
+    public fun reverse(): TableSortingDirection {
         return when (this) {
-            Ascending -> Descending
-            Descending -> Ascending
+            ASCENDING -> DESCENDING
+            DESCENDING -> ASCENDING
         }
     }
 
@@ -447,13 +449,13 @@ public enum class TableSortDirection {
      * Applies this direction to the given comparator.
      *
      * @param comparator The comparator to adjust.
-     * @return The original comparator for [Ascending] or the reversed comparator
-     *   for [Descending].
+     * @return The original comparator for [ASCENDING] or the reversed comparator
+     *   for [DESCENDING].
      */
     internal fun applyTo(comparator: Comparator<Any?>): Comparator<Any?> {
         return when (this) {
-            Ascending -> comparator
-            Descending -> comparator.reversed()
+            ASCENDING -> comparator
+            DESCENDING -> comparator.reversed()
         }
     }
 }
@@ -467,7 +469,7 @@ public enum class TableSortDirection {
  */
 public data class TableSorting<E>(
     val columnKey: Any,
-    val direction: TableSortDirection,
+    val direction: TableSortingDirection,
     val sorting: TableColumnSorting<E>
 ) {
     /**
@@ -487,31 +489,31 @@ public data class TableSorting<E>(
  * This class encapsulates sorting transitions so that the table component stays focused on
  * rendering, while sorting decisions remain centralized in one object.
  *
- * @param initialSort The initial sort selection, if any.
+ * @param initialSorting The initial sorting state, if any.
  */
 public class TableSortingState<E>(
-    initialSort: TableSorting<E>? = null
+    initialSorting: TableSorting<E>? = null
 ) {
 
     /**
-     * The currently active sort selection.
+     * The currently active sorting state.
      */
-    public var activeSort: TableSorting<E>? by mutableStateOf(initialSort)
+    public var currentSorting: TableSorting<E>? by mutableStateOf(initialSorting)
         private set
 
     /**
-     * Applies sorting for the given column or toggles the direction if the column is already active.
+     * Applies sorting for the given column or toggles the direction if the column is already sorted.
      *
      * If the column is not sortable, the state remains unchanged.
      */
     public fun toggle(column: TableColumn<E>) {
         val columnSorting = column.sorting ?: return
-        val nextDirection = if (activeSort?.columnKey == column.key) {
-            activeSort!!.direction.reverse()
+        val nextDirection = if (currentSorting?.columnKey == column.columnKey) {
+            currentSorting!!.direction.reverse()
         } else {
             columnSorting.initialDirection
         }
-        activeSort = TableSorting(column.key, nextDirection, columnSorting)
+        currentSorting = TableSorting(column.columnKey, nextDirection, columnSorting)
     }
 
     /**
@@ -521,7 +523,7 @@ public class TableSortingState<E>(
      * @return `true` if the column is active; otherwise `false`.
      */
     public fun isActive(column: TableColumn<E>): Boolean {
-        return activeSort?.columnKey == column.key
+        return currentSorting?.columnKey == column.columnKey
     }
 
     /**
@@ -530,8 +532,8 @@ public class TableSortingState<E>(
      * @param column The column whose direction should be resolved.
      * @return The active direction for the column, or `null` if the column is not active.
      */
-    internal fun directionFor(column: TableColumn<E>): TableSortDirection? {
-        return activeSort?.takeIf { it.columnKey == column.key }?.direction
+    internal fun directionFor(column: TableColumn<E>): TableSortingDirection? {
+        return currentSorting?.takeIf { it.columnKey == column.columnKey }?.direction
     }
 
     /**
@@ -541,7 +543,7 @@ public class TableSortingState<E>(
      * @return The active column comparator or the fallback comparator.
      */
     internal fun activeComparator(fallback: Comparator<E>): Comparator<E> {
-        return activeSort?.comparator() ?: fallback
+        return currentSorting?.comparator() ?: fallback
     }
 }
 
@@ -691,8 +693,8 @@ private fun <E> HeaderCell(
         if (isSortable) {
             Icon(
                 imageVector = when (direction) {
-                    TableSortDirection.Ascending -> Icons.Default.ArrowDropUp
-                    TableSortDirection.Descending -> Icons.Default.ArrowDropDown
+                    ASCENDING -> Icons.Default.ArrowDropUp
+                    DESCENDING -> Icons.Default.ArrowDropDown
                     null -> Icons.Default.UnfoldMore
                 },
                 contentDescription = null,
