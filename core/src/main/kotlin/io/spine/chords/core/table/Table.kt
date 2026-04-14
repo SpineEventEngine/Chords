@@ -277,7 +277,7 @@ public abstract class Table<E> : Component() {
 
     @Composable
     override fun content() {
-        val displayedEntities = displayedEntities()
+        val sortedEntities = sortedEntities()
         val tableColumns = columns.toMutableList()
         if (rowActions != null) {
             tableColumns.add(rowActionsColumn(rowActions!!))
@@ -293,7 +293,7 @@ public abstract class Table<E> : Component() {
                 sortingState = sortingState
             )
             if (entities.isNotEmpty()) {
-                ContentList(displayedEntities, tableColumns)
+                ContentList(sortedEntities, tableColumns)
             } else {
                 EmptyContentList()
             }
@@ -303,9 +303,9 @@ public abstract class Table<E> : Component() {
     /**
      * Resolves the list of entities to render, according to the current sorting configuration.
      *
-     * @return The list of entities in the order that should be displayed.
+     * @return The list of entities in the order that should be rendered.
      */
-    private fun displayedEntities(): List<E> {
+    private fun sortedEntities(): List<E> {
         if (!sortingEnabled) {
             return entities
         }
