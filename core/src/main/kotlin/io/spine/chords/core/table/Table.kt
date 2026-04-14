@@ -78,6 +78,9 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
+import androidx.compose.ui.input.pointer.PointerEventType.Companion.Enter
+import androidx.compose.ui.input.pointer.PointerEventType.Companion.Exit
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
@@ -671,13 +674,19 @@ private fun <E> HeaderTableRow(
  * @param sortingState The current interactive sorting state of the table.
  */
 @Composable
+@OptIn(ExperimentalComposeUiApi::class)
 private fun <E> HeaderCell(
     column: TableColumn<E>,
     sortingEnabled: Boolean,
     sortingState: TableSortingState<E>
 ) {
     val isSortable = sortingEnabled && column.sorting != null
+    var isHovered by remember { mutableStateOf(false) }
     Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .onPointerEvent(Enter) { isHovered = true }
+            .onPointerEvent(Exit) { isHovered = false },
         horizontalArrangement = column.horizontalArrangement,
         verticalAlignment = CenterVertically
     ) {
@@ -690,7 +699,7 @@ private fun <E> HeaderCell(
         } else {
             null
         }
-        if (isSortable) {
+        if (isSortable && (direction != null || isHovered)) {
             Icon(
                 imageVector = when (direction) {
                     ASCENDING -> Icons.Default.ArrowDropUp
