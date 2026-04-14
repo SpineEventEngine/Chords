@@ -37,6 +37,7 @@ dependencies {
     api(Voyager.navigator)
     implementation(Kotlin.reflect)
     implementation(compose.desktop.currentOs)
+    implementation(compose.materialIconsExtended)
     implementation(Material3.Desktop.lib)
     testImplementation(Kotest.runnerJUnit5)
 }

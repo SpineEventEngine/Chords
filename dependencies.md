@@ -142,6 +142,11 @@
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended-desktop. **Version** : 1.5.12.
+     * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
+     * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
+
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-ripple. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-ripple-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -795,6 +800,11 @@
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended-desktop. **Version** : 1.5.12.
+     * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
+     * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
+
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-ripple. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-ripple-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -1094,7 +1104,7 @@
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 12:03:18 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Apr 14 15:50:11 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
@@ -1953,7 +1963,7 @@ This report was generated on **Tue Apr 14 12:03:18 EEST 2026** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 12:03:18 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Apr 14 15:50:13 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
@@ -2054,6 +2064,11 @@ This report was generated on **Tue Apr 14 12:03:18 EEST 2026** using [Gradle-Lic
 
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-core. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-core-desktop. **Version** : 1.5.12.
+     * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
+     * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -2684,6 +2699,11 @@ This report was generated on **Tue Apr 14 12:03:18 EEST 2026** using [Gradle-Lic
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended-desktop. **Version** : 1.5.12.
+     * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
+     * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
+
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-ripple. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-ripple-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -2982,7 +3002,7 @@ This report was generated on **Tue Apr 14 12:03:18 EEST 2026** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 12:03:19 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Apr 14 15:50:14 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
@@ -3097,6 +3117,11 @@ This report was generated on **Tue Apr 14 12:03:19 EEST 2026** using [Gradle-Lic
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended-desktop. **Version** : 1.5.12.
+     * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
+     * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
+
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-ripple. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-ripple-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -3715,6 +3740,11 @@ This report was generated on **Tue Apr 14 12:03:19 EEST 2026** using [Gradle-Lic
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended. **Version** : 1.5.12.**No license information found**
+1.  **Group** : org.jetbrains.compose.material. **Name** : material-icons-extended-desktop. **Version** : 1.5.12.
+     * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
+     * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
+
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-ripple. **Version** : 1.5.12.**No license information found**
 1.  **Group** : org.jetbrains.compose.material. **Name** : material-ripple-desktop. **Version** : 1.5.12.
      * **Project URL:** [https://github.com/JetBrains/compose-jb](https://github.com/JetBrains/compose-jb)
@@ -4010,7 +4040,7 @@ This report was generated on **Tue Apr 14 12:03:19 EEST 2026** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 12:03:20 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Apr 14 15:50:15 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
@@ -4809,7 +4839,7 @@ This report was generated on **Tue Apr 14 12:03:20 EEST 2026** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 12:03:21 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Apr 14 15:50:16 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
@@ -5578,4 +5608,4 @@ This report was generated on **Tue Apr 14 12:03:21 EEST 2026** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 12:03:21 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Tue Apr 14 15:50:17 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).

@@ -84,6 +84,12 @@ all modules and does not describe the project structure per-subproject.
     <scope>compile</scope>
   </dependency>
   <dependency>
+    <groupId>org.jetbrains.compose.material</groupId>
+    <artifactId>material-icons-extended</artifactId>
+    <version>1.5.12</version>
+    <scope>compile</scope>
+  </dependency>
+  <dependency>
     <groupId>org.jetbrains.compose.material3</groupId>
     <artifactId>material3-desktop</artifactId>
     <version>1.5.12</version>
