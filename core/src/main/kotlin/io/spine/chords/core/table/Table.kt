@@ -101,7 +101,7 @@ import io.spine.chords.core.table.TableSortingDirection.DESCENDING
  * class UsersTable : Table<User>() {
  *
  *     init {
- *         sortingEnabled = false
+ *         defaultComparator = compareBy(User::name)
  *         columns = listOf(
  *             TableColumn(name = "Name") { user ->
  *                 Text(user.name)
@@ -121,13 +121,11 @@ import io.spine.chords.core.table.TableSortingDirection.DESCENDING
  * }
  * ```
  *
- * Example with sorting:
+ * Example with column sorting:
  * ```kotlin
  * class UsersTable : Table<User>() {
  *
  *     init {
- *         sortingEnabled = true
- *         sortBy = compareBy(User::name)
  *         columns = listOf(
  *             TableColumn(
  *                 name = "Name",
@@ -175,9 +173,9 @@ public abstract class Table<E> : Component() {
     )
 
     /**
-     * A callback which is invoked whenever selected entity value is changed.
+     * A callback that is invoked whenever the selected entity value is changed.
      *
-     * The parameter of the lambda receives the new selected entity value.
+     * The parameter of the lambda receives the newly selected entity value.
      */
     public var onSelect: ((E) -> Unit)? = null
 
@@ -206,22 +204,10 @@ public abstract class Table<E> : Component() {
     /**
      * Defines the default sorting logic for the entities displayed in the table.
      *
-     * This comparator is applied when [sortingEnabled] is `true` and the user
-     * has not selected a sortable header.
-     *
-     * By default, entities are displayed in their original order.
+     * This comparator is applied when the user has not selected a sortable header,
+     * if one is available.
      */
-    protected var sortBy: Comparator<E> by mutableStateOf(Comparator { _, _ -> 0 })
-
-    /**
-     * Enables or disables sorting for table content.
-     *
-     * When enabled, the table applies [sortBy] by default and may switch to a column-specific
-     * comparator when the user clicks a sortable header.
-     *
-     * When disabled, entities are rendered in the original order from [entities].
-     */
-    protected var sortingEnabled: Boolean by mutableStateOf(true)
+    protected var defaultComparator: Comparator<E> by mutableStateOf(Comparator { _, _ -> 0 })
 
     /**
      * Stores the current interactive sorting state for the table.
@@ -256,7 +242,7 @@ public abstract class Table<E> : Component() {
      * ensuring that changes to mutable properties do not affect
      * entity identification.
      *
-     * The ID's equality is determined using structural equality operator (`==`).
+     * The ID's equality is determined to use structural equality operator (`==`).
      * Therefore, the returned identifier should be a type that supports
      * meaningful structural equality.
      *
@@ -289,7 +275,6 @@ public abstract class Table<E> : Component() {
         ) {
             HeaderTableRow(
                 columns = tableColumns,
-                sortingEnabled = sortingEnabled,
                 sortingState = sortingState
             )
             if (entities.isNotEmpty()) {
@@ -306,10 +291,7 @@ public abstract class Table<E> : Component() {
      * @return The list of entities in the order that should be rendered.
      */
     private fun sortedEntities(): List<E> {
-        if (!sortingEnabled) {
-            return entities
-        }
-        return entities.sortedWith(sortingState.activeComparator(sortBy))
+        return entities.sortedWith(sortingState.activeComparator(defaultComparator))
     }
 
     /**
@@ -632,20 +614,18 @@ private fun VerticalScrollBar(
  *
  * @param columns A list of column configuration objects
  *   with information about headers.
- * @param sortingEnabled Whether header-driven sorting is enabled.
  * @param sortingState The current interactive sorting state of the table.
  */
 @Composable
 @OptIn(ExperimentalComposeUiApi::class)
 private fun <E> HeaderTableRow(
     columns: List<TableColumn<E>>,
-    sortingEnabled: Boolean,
     sortingState: TableSortingState<E>,
 ) {
     TableRow(
         columns = columns,
         cellModifier = { column ->
-            if (sortingEnabled && column.sorting != null) {
+            if (column.sorting != null) {
                 Modifier
                     .pointerHoverIcon(Hand)
                     .clickable(
@@ -661,7 +641,6 @@ private fun <E> HeaderTableRow(
     ) { column ->
         HeaderCell(
             column = column,
-            sortingEnabled = sortingEnabled,
             sortingState = sortingState
         )
     }
@@ -671,17 +650,15 @@ private fun <E> HeaderTableRow(
  * Displays a single table header cell.
  *
  * @param column The column whose header content should be displayed.
- * @param sortingEnabled Whether sorting indicators should be shown.
  * @param sortingState The current interactive sorting state of the table.
  */
 @Composable
 @OptIn(ExperimentalComposeUiApi::class)
 private fun <E> HeaderCell(
     column: TableColumn<E>,
-    sortingEnabled: Boolean,
     sortingState: TableSortingState<E>
 ) {
-    val isSortable = sortingEnabled && column.sorting != null
+    val isSortable = column.sorting != null
     var isHovered by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
