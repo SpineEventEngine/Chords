@@ -213,9 +213,6 @@ public abstract class Table<E> : Component() {
 
     /**
      * Stores the current interactive sorting state for the table.
-     *
-     * The state is separated into a dedicated object so that sorting rules and UI interactions
-     * remain encapsulated and reusable.
      */
     protected var sortingState: TableSortingState<E> by mutableStateOf(TableSortingState())
 
@@ -473,9 +470,6 @@ public data class TableSorting<E>(
 /**
  * Holds interactive sorting state for a [Table].
  *
- * This class encapsulates sorting transitions so that the table component stays focused on
- * rendering, while sorting decisions remain centralized in one object.
- *
  * @param initialSorting The initial sorting state, if any.
  */
 public class TableSortingState<E>(
@@ -613,11 +607,13 @@ private fun VerticalScrollBar(
 /**
  * Table row with headers.
  *
+ * NOTE: the Pointer Hover API used in this method is experimental
+ * in the current version of Compose (1.5.12).
+ *
  * @param columns A list of column configuration objects
  *   with information about headers.
  * @param sortingState The current interactive sorting state of the table.
  */
-// The Pointer Hover API is experimental in the current version of Compose (1.5.2).
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun <E> HeaderTableRow(
@@ -651,10 +647,12 @@ private fun <E> HeaderTableRow(
 /**
  * Displays a single table header cell.
  *
+ * NOTE: the Pointer Hover API used in this method is experimental
+ * in the current version of Compose (1.5.12).
+ *
  * @param column The column whose header content should be displayed.
  * @param sortingState The current interactive sorting state of the table.
  */
-// The Pointer Hover API is experimental in the current version of Compose (1.5.2).
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun <E> HeaderCell(
