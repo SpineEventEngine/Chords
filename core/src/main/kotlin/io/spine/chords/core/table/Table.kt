@@ -71,16 +71,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Enter
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Exit
+import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
@@ -206,6 +206,8 @@ public abstract class Table<E> : Component() {
      *
      * This comparator is applied when the user has not selected a sortable header,
      * if one is available.
+     *
+     * By default, the entities are displayed in their original order.
      */
     protected var defaultComparator: Comparator<E> by mutableStateOf(Comparator { _, _ -> 0 })
 
@@ -242,7 +244,7 @@ public abstract class Table<E> : Component() {
      * ensuring that changes to mutable properties do not affect
      * entity identification.
      *
-     * The ID's equality is determined to use structural equality operator (`==`).
+     * The ID's equality is determined using structural equality operator (`==`).
      * Therefore, the returned identifier should be a type that supports
      * meaningful structural equality.
      *
@@ -438,7 +440,7 @@ public enum class TableSortingDirection {
      * @return The original comparator for [ASCENDING] or the reversed comparator
      *   for [DESCENDING].
      */
-    internal fun applyTo(comparator: Comparator<Any?>): Comparator<Any?> {
+    internal fun <T> applyTo(comparator: Comparator<T>): Comparator<T> {
         return when (this) {
             ASCENDING -> comparator
             DESCENDING -> comparator.reversed()
@@ -464,8 +466,7 @@ public data class TableSorting<E>(
      * @return The comparator that should be applied to table entities.
      */
     internal fun comparator(): Comparator<E> {
-        @Suppress("UNCHECKED_CAST")
-        return direction.applyTo(sorting.comparator as Comparator<Any?>) as Comparator<E>
+        return direction.applyTo(sorting.comparator)
     }
 }
 
@@ -616,8 +617,9 @@ private fun VerticalScrollBar(
  *   with information about headers.
  * @param sortingState The current interactive sorting state of the table.
  */
-@Composable
+// The Pointer Hover API is experimental in the current version of Compose (1.5.2).
 @OptIn(ExperimentalComposeUiApi::class)
+@Composable
 private fun <E> HeaderTableRow(
     columns: List<TableColumn<E>>,
     sortingState: TableSortingState<E>,
@@ -652,8 +654,9 @@ private fun <E> HeaderTableRow(
  * @param column The column whose header content should be displayed.
  * @param sortingState The current interactive sorting state of the table.
  */
-@Composable
+// The Pointer Hover API is experimental in the current version of Compose (1.5.2).
 @OptIn(ExperimentalComposeUiApi::class)
+@Composable
 private fun <E> HeaderCell(
     column: TableColumn<E>,
     sortingState: TableSortingState<E>
