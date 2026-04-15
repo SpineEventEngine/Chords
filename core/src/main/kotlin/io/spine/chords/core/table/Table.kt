@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,10 @@ import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -71,10 +74,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType.Companion.Enter
+import androidx.compose.ui.input.pointer.PointerEventType.Companion.Exit
+import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
+import io.spine.chords.core.table.TableSortingDirection.ASCENDING
+import io.spine.chords.core.table.TableSortingDirection.DESCENDING
 
 /**
  * A list of entities in a tabular format.
@@ -83,6 +95,64 @@ import io.spine.chords.core.Component
  * where each row corresponds to an entity of the [E] type.
  * Users can customize row behavior and style, specify column
  * configurations for displaying the data, and visual appearance of a table.
+ *
+ * Example:
+ * ```kotlin
+ * class UsersTable : Table<User>() {
+ *
+ *     init {
+ *         defaultComparator = compareBy(User::name)
+ *         columns = listOf(
+ *             TableColumn(name = "Name") { user ->
+ *                 Text(user.name)
+ *             },
+ *             TableColumn(name = "Email") { user ->
+ *                 Text(user.email)
+ *             }
+ *         )
+ *     }
+ *
+ *     override fun extractEntityId(entity: User): Any = entity.id
+ *
+ *     @Composable
+ *     override fun ColumnScope.EmptyTableContent() {
+ *         Text("No users")
+ *     }
+ * }
+ * ```
+ *
+ * Example with column sorting:
+ * ```kotlin
+ * class UsersTable : Table<User>() {
+ *
+ *     init {
+ *         columns = listOf(
+ *             TableColumn(
+ *                 name = "Name",
+ *                 sorting = TableColumnSorting(compareBy(User::name))
+ *             ) { user ->
+ *                 Text(user.name)
+ *             },
+ *             TableColumn(
+ *                 name = "Created",
+ *                 sorting = TableColumnSorting(
+ *                     comparator = compareBy(User::createdAt),
+ *                     initialDirection = DESCENDING
+ *                 )
+ *             ) { user ->
+ *                 Text(user.createdAt.toString())
+ *             }
+ *         )
+ *     }
+ *
+ *     override fun extractEntityId(entity: User): Any = entity.id
+ *
+ *     @Composable
+ *     override fun ColumnScope.EmptyTableContent() {
+ *         Text("No users")
+ *     }
+ * }
+ * ```
  *
  * @param E The type of entities represented in the table.
  */
@@ -103,9 +173,9 @@ public abstract class Table<E> : Component() {
     )
 
     /**
-     * A callback which is invoked whenever selected entity value is changed.
+     * A callback that is invoked whenever the selected entity value is changed.
      *
-     * The parameter of the lambda receives the new selected entity value.
+     * The parameter of the lambda receives the newly selected entity value.
      */
     public var onSelect: ((E) -> Unit)? = null
 
@@ -132,11 +202,19 @@ public abstract class Table<E> : Component() {
     protected var rowActions: RowActionsConfig<E>? by mutableStateOf(null)
 
     /**
-     * Defines the sorting logic for the entities displayed in the table.
+     * Defines the default sorting logic for the entities displayed in the table.
      *
-     * By default, entities are displayed in their original order.
+     * This comparator is applied when the user has not selected a sortable header,
+     * if one is available.
+     *
+     * By default, the entities are displayed in their original order.
      */
-    protected var sortBy: Comparator<E> by mutableStateOf(Comparator { _, _ -> 0 })
+    protected var defaultComparator: Comparator<E> by mutableStateOf(Comparator { _, _ -> 0 })
+
+    /**
+     * Stores the current interactive sorting state for the table.
+     */
+    protected var sortingState: TableSortingState<E> by mutableStateOf(TableSortingState())
 
     /**
      * The padding applied to the entire content of the table.
@@ -184,7 +262,7 @@ public abstract class Table<E> : Component() {
 
     @Composable
     override fun content() {
-        val sortedEntities = entities.sortedWith(sortBy)
+        val sortedEntities = sortedEntities()
         val tableColumns = columns.toMutableList()
         if (rowActions != null) {
             tableColumns.add(rowActionsColumn(rowActions!!))
@@ -194,13 +272,25 @@ public abstract class Table<E> : Component() {
                 .padding(contentPadding),
             verticalArrangement = Center,
         ) {
-            HeaderTableRow(tableColumns)
+            HeaderTableRow(
+                columns = tableColumns,
+                sortingState = sortingState
+            )
             if (entities.isNotEmpty()) {
                 ContentList(sortedEntities, tableColumns)
             } else {
                 EmptyContentList()
             }
         }
+    }
+
+    /**
+     * Resolves the list of entities to render, according to the current sorting configuration.
+     *
+     * @return The list of entities in the order that should be rendered.
+     */
+    private fun sortedEntities(): List<E> {
+        return entities.sortedWith(sortingState.activeComparator(defaultComparator))
     }
 
     /**
@@ -285,6 +375,10 @@ public abstract class Table<E> : Component() {
  *   meaning that if all columns have this `weight` value, their width is equal.
  * @param padding The padding values of each cell's content in this column.
  *   By default, no padding is applied.
+ * @param columnKey A stable identifier of the column used to keep track of the sorting state.
+ *   By default, the column [name] is used.
+ * @param sorting Optional sorting configuration for this column.
+ *   If `null`, the header is rendered without interactive sorting support.
  * @param cellContent A callback that specifies what element to display
  *   inside each cell of this column.
  */
@@ -293,8 +387,146 @@ public data class TableColumn<E>(
     val horizontalArrangement: Horizontal = Center,
     val weight: Float = 1F,
     val padding: PaddingValues = PaddingValues(),
+    val columnKey: Any = name,
+    val sorting: TableColumnSorting<E>? = null,
     val cellContent: @Composable (E) -> Unit
 )
+
+/**
+ * Defines sorting rules for a table column.
+ *
+ * @param comparator The comparator used as the base sorting logic for this column.
+ * @param initialDirection The direction applied the first time the column is activated.
+ */
+public data class TableColumnSorting<E>(
+    val comparator: Comparator<E>,
+    val initialDirection: TableSortingDirection = ASCENDING
+)
+
+/**
+ * Sorting direction used by the table.
+ */
+public enum class TableSortingDirection {
+
+    /**
+     * Sorts values from lower to higher according to the column comparator.
+     */
+    ASCENDING,
+
+    /**
+     * Sorts values from higher to lower according to the column comparator.
+     */
+    DESCENDING;
+
+    /**
+     * Returns the opposite sorting direction.
+     *
+     * @return The reversed sorting direction.
+     */
+    public fun reverse(): TableSortingDirection {
+        return when (this) {
+            ASCENDING -> DESCENDING
+            DESCENDING -> ASCENDING
+        }
+    }
+
+    /**
+     * Applies this direction to the given comparator.
+     *
+     * @param comparator The comparator to adjust.
+     * @return The original comparator for [ASCENDING] or the reversed comparator
+     *   for [DESCENDING].
+     */
+    internal fun <T> applyTo(comparator: Comparator<T>): Comparator<T> {
+        return when (this) {
+            ASCENDING -> comparator
+            DESCENDING -> comparator.reversed()
+        }
+    }
+}
+
+/**
+ * A concrete sorting selection currently applied to the table.
+ *
+ * @param columnKey The key of the active column.
+ * @param direction The selected sorting direction.
+ * @param sorting The sorting definition associated with the column.
+ */
+public data class TableSorting<E>(
+    val columnKey: Any,
+    val direction: TableSortingDirection,
+    val sorting: TableColumnSorting<E>
+) {
+    /**
+     * Produces a comparator for the current column and direction.
+     *
+     * @return The comparator that should be applied to table entities.
+     */
+    internal fun comparator(): Comparator<E> {
+        return direction.applyTo(sorting.comparator)
+    }
+}
+
+/**
+ * Holds interactive sorting state for a [Table].
+ *
+ * @param initialSorting The initial sorting state, if any.
+ */
+public class TableSortingState<E>(
+    initialSorting: TableSorting<E>? = null
+) {
+
+    /**
+     * The currently active sorting state.
+     */
+    public var currentSorting: TableSorting<E>? by mutableStateOf(initialSorting)
+        private set
+
+    /**
+     * Applies sorting for the given column or toggles the direction if the column is already sorted.
+     *
+     * If the column is not sortable, the state remains unchanged.
+     */
+    public fun toggle(column: TableColumn<E>) {
+        val columnSorting = column.sorting ?: return
+        val nextDirection = if (currentSorting?.columnKey == column.columnKey) {
+            currentSorting!!.direction.reverse()
+        } else {
+            columnSorting.initialDirection
+        }
+        currentSorting = TableSorting(column.columnKey, nextDirection, columnSorting)
+    }
+
+    /**
+     * Returns `true` when the given column is the current sorting target.
+     *
+     * @param column The column to check.
+     * @return `true` if the column is active; otherwise `false`.
+     */
+    public fun isActive(column: TableColumn<E>): Boolean {
+        return currentSorting?.columnKey == column.columnKey
+    }
+
+    /**
+     * Returns the current sorting direction for the given column.
+     *
+     * @param column The column whose direction should be resolved.
+     * @return The active direction for the column, or `null` if the column is not active.
+     */
+    internal fun directionFor(column: TableColumn<E>): TableSortingDirection? {
+        return currentSorting?.takeIf { it.columnKey == column.columnKey }?.direction
+    }
+
+    /**
+     * Returns the comparator that should currently be applied to table entities.
+     *
+     * @param fallback The default comparator to use when no interactive sort is active.
+     * @return The active column comparator or the fallback comparator.
+     */
+    internal fun activeComparator(fallback: Comparator<E>): Comparator<E> {
+        return currentSorting?.comparator() ?: fallback
+    }
+}
 
 /**
  * Configuration object for row actions in a table.
@@ -375,18 +607,92 @@ private fun VerticalScrollBar(
 /**
  * Table row with headers.
  *
+ * NOTE: the Pointer Hover API used in this method is experimental
+ * in the current version of Compose (1.5.12).
+ *
  * @param columns A list of column configuration objects
  *   with information about headers.
+ * @param sortingState The current interactive sorting state of the table.
  */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun <E> HeaderTableRow(
     columns: List<TableColumn<E>>,
+    sortingState: TableSortingState<E>,
 ) {
-    TableRow(columns = columns) { column ->
+    TableRow(
+        columns = columns,
+        cellModifier = { column ->
+            if (column.sorting != null) {
+                Modifier
+                    .pointerHoverIcon(Hand)
+                    .clickable(
+                        interactionSource = MutableInteractionSource(),
+                        indication = null,
+                    ) {
+                        sortingState.toggle(column)
+                    }
+            } else {
+                Modifier
+            }
+        }
+    ) { column ->
+        HeaderCell(
+            column = column,
+            sortingState = sortingState
+        )
+    }
+}
+
+/**
+ * Displays a single table header cell.
+ *
+ * NOTE: the Pointer Hover API used in this method is experimental
+ * in the current version of Compose (1.5.12).
+ *
+ * @param column The column whose header content should be displayed.
+ * @param sortingState The current interactive sorting state of the table.
+ */
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun <E> HeaderCell(
+    column: TableColumn<E>,
+    sortingState: TableSortingState<E>
+) {
+    val isSortable = column.sorting != null
+    var isHovered by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .onPointerEvent(Enter) { isHovered = true }
+            .onPointerEvent(Exit) { isHovered = false },
+        horizontalArrangement = column.horizontalArrangement,
+        verticalAlignment = CenterVertically
+    ) {
         Text(
             text = column.name,
             style = typography.titleMedium
         )
+        val direction = if (isSortable) {
+            sortingState.directionFor(column)
+        } else {
+            null
+        }
+        if (isSortable) {
+            Icon(
+                imageVector = when (direction) {
+                    ASCENDING -> Icons.Default.ArrowDropUp
+                    DESCENDING -> Icons.Default.ArrowDropDown
+                    null -> Icons.Default.UnfoldMore
+                },
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(start = 4.dp)
+                    .size(18.dp)
+                    .alpha(if (direction != null || isHovered) 1f else 0f),
+                tint = colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -421,6 +727,8 @@ private fun <E> ContentTableRow(
  *
  * @param columns A list of columns from which the row consists.
  * @param modifier The [Modifier] to be applied to this row.
+ * @param cellModifier A callback that provides an additional [Modifier]
+ *   for each individual cell.
  * @param cellContent A callback that specifies what element to display
  *   inside each cell of this column.
  */
@@ -428,6 +736,7 @@ private fun <E> ContentTableRow(
 private fun <E> TableRow(
     columns: List<TableColumn<E>>,
     modifier: Modifier = Modifier,
+    cellModifier: (TableColumn<E>) -> Modifier = { Modifier },
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
     Row(
@@ -444,6 +753,7 @@ private fun <E> TableRow(
                 modifier = Modifier
                     .weight(column.weight)
                     .fillMaxHeight()
+                    .then(cellModifier(column))
                     .padding(column.padding),
                 horizontalArrangement = column.horizontalArrangement,
                 verticalAlignment = CenterVertically

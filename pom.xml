@@ -10,7 +10,7 @@ all modules and does not describe the project structure per-subproject.
  -->
 <groupId>io.spine.chords</groupId>
 <artifactId>Chords</artifactId>
-<version>2.0.0-SNAPSHOT.81</version>
+<version>2.0.0-SNAPSHOT.82</version>
 
 <inceptionYear>2015</inceptionYear>
 
@@ -79,7 +79,13 @@ all modules and does not describe the project structure per-subproject.
   </dependency>
   <dependency>
     <groupId>org.jetbrains.compose.desktop</groupId>
-    <artifactId>desktop-jvm-windows-x64</artifactId>
+    <artifactId>desktop-jvm-macos-x64</artifactId>
+    <version>1.5.12</version>
+    <scope>compile</scope>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.compose.material</groupId>
+    <artifactId>material-icons-extended</artifactId>
     <version>1.5.12</version>
     <scope>compile</scope>
   </dependency>
