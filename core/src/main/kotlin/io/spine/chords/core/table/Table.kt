@@ -137,7 +137,7 @@ import io.spine.chords.core.table.TableSortingDirection.DESCENDING
  *                 name = "Created",
  *                 sorting = TableColumnSorting(
  *                     comparator = compareBy(User::createdAt),
- *                     initialDirection = TableSortDirection.Descending
+ *                     initialDirection = DESCENDING
  *                 )
  *             ) { user ->
  *                 Text(user.createdAt.toString())
