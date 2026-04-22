@@ -78,11 +78,9 @@ object Spine {
         const val testlib = "2.0.0-SNAPSHOT.184"
 
         /**
-         * The version of `core-java`.
+         * The version of `core-jvm`.
          *
-         * @see [Spine.CoreJava.client]
-         * @see [Spine.CoreJava.server]
-         * @see <a href="https://github.com/SpineEventEngine/core-java">core-java</a>
+         * @see <a href="https://github.com/SpineEventEngine/core-jvm">core-jvm</a>
          */
         const val core = "1.9.1"
 
@@ -224,22 +222,24 @@ object Spine {
     const val javadocTools = "$toolsGroup::${ArtifactVersion.javadocTools}"
     const val javadocFilter = "$toolsGroup:spine-javadoc-filter:${ArtifactVersion.javadocTools}"
 
-    const val client = CoreJava.client // Added for brevity.
-    const val server = CoreJava.server // Added for brevity.
+    const val client = CoreJvm.client // Added for brevity.
 
     /**
-     * Dependencies on `core-java` modules.
+     * Dependencies on `core-jvm` modules.
      *
-     * See [`SpineEventEngine/core-java`](https://github.com/SpineEventEngine/core-java/).
+     * See [`SpineEventEngine/core-jvm`](https://github.com/SpineEventEngine/core-jvm/).
      */
-    object CoreJava {
+    object CoreJvm {
         const val version = ArtifactVersion.core
         const val core = "$group:spine-core:$version"
         const val client = "$group:spine-client:$version"
-        const val server = "$group:spine-server:$version"
-        const val testUtilServer = "$toolsGroup:spine-testutil-server:$version"
     }
 
+    /**
+     * Dependencies on `Chords` modules.
+     *
+     * See [`SpineEventEngine/Chords`](https://github.com/SpineEventEngine/Chords).
+     */
     object Chords {
         private const val chordsGroup = "$group.chords"
         private const val artifactPrefix = "spine-chords-"
@@ -249,6 +249,9 @@ object Spine {
                 "$chordsGroup:${artifactPrefix}codegen-plugins:$version"
         }
 
+        /**
+         * See [Chords Gradle Plugin](https://github.com/SpineEventEngine/Chords-Gradle-plugin).
+         */
         object GradlePlugin {
             private const val artifact = "${artifactPrefix}gradle-plugin"
             private const val version = "1.9.20"
