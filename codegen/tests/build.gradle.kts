@@ -61,7 +61,7 @@ protobuf {
 
 dependencies {
     implementation(Spine.base_1_9)
-    implementation(Spine.server)
+    implementation(Spine.CoreJvm.core)
     implementation(project(":runtime"))
     testImplementation(Kotest.runnerJUnit5)
 }

@@ -1,6 +1,6 @@
 
 
-# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.82`
+# Dependencies of `io.spine.chords:spine-chords-client:2.0.0-SNAPSHOT.83`
 
 ## Runtime
 1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.1.**No license information found**
@@ -1104,22 +1104,14 @@
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 15:50:11 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Apr 22 16:41:12 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-codegen-tests:2.0.0-SNAPSHOT.82`
+# Dependencies of `io.spine.chords:spine-chords-codegen-tests:2.0.0-SNAPSHOT.83`
 
 ## Runtime
-1.  **Group** : com.google.android. **Name** : annotations. **Version** : 4.1.1.4.
-     * **Project URL:** [http://source.android.com/](http://source.android.com/)
-     * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
-
-1.  **Group** : com.google.api.grpc. **Name** : proto-google-common-protos. **Version** : 1.17.0.
-     * **Project URL:** [https://github.com/googleapis/api-client-staging](https://github.com/googleapis/api-client-staging)
-     * **License:** [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
-
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
      * **Project URL:** [http://findbugs.sourceforge.net/](http://findbugs.sourceforge.net/)
      * **License:** [The Apache Software License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -1163,30 +1155,6 @@ This report was generated on **Tue Apr 14 15:50:11 EEST 2026** using [Gradle-Lic
 
 1.  **Group** : com.google.protobuf. **Name** : protobuf-kotlin. **Version** : 3.22.3.
      * **License:** [BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause)
-
-1.  **Group** : io.grpc. **Name** : grpc-api. **Version** : 1.59.0.
-     * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
-
-1.  **Group** : io.grpc. **Name** : grpc-core. **Version** : 1.28.1.
-     * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
-
-1.  **Group** : io.grpc. **Name** : grpc-protobuf. **Version** : 1.28.1.
-     * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
-
-1.  **Group** : io.grpc. **Name** : grpc-protobuf-lite. **Version** : 1.28.1.
-     * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
-
-1.  **Group** : io.grpc. **Name** : grpc-stub. **Version** : 1.28.1.
-     * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
-
-1.  **Group** : io.perfmark. **Name** : perfmark-api. **Version** : 0.19.0.
-     * **Project URL:** [https://github.com/perfmark/perfmark](https://github.com/perfmark/perfmark)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
 
 1.  **Group** : org.checkerframework. **Name** : checker-compat-qual. **Version** : 2.5.3.
      * **Project URL:** [https://checkerframework.org](https://checkerframework.org)
@@ -1271,14 +1239,6 @@ This report was generated on **Tue Apr 14 15:50:11 EEST 2026** using [Gradle-Lic
 1.  **Group** : com.github.kevinstern. **Name** : software-and-algorithms. **Version** : 1.0.
      * **Project URL:** [https://www.github.com/KevinStern/software-and-algorithms](https://www.github.com/KevinStern/software-and-algorithms)
      * **License:** [MIT License](http://www.opensource.org/licenses/mit-license.php)
-
-1.  **Group** : com.google.android. **Name** : annotations. **Version** : 4.1.1.4.
-     * **Project URL:** [http://source.android.com/](http://source.android.com/)
-     * **License:** [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
-
-1.  **Group** : com.google.api.grpc. **Name** : proto-google-common-protos. **Version** : 1.17.0.
-     * **Project URL:** [https://github.com/googleapis/api-client-staging](https://github.com/googleapis/api-client-staging)
-     * **License:** [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 1.  **Group** : com.google.auto. **Name** : auto-common. **Version** : 1.2.2.
      * **Project URL:** [https://github.com/google/auto/tree/main/common](https://github.com/google/auto/tree/main/common)
@@ -1528,26 +1488,6 @@ This report was generated on **Tue Apr 14 15:50:11 EEST 2026** using [Gradle-Lic
      * **Project URL:** [https://detekt.dev](https://detekt.dev)
      * **License:** [The Apache Software License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-1.  **Group** : io.grpc. **Name** : grpc-api. **Version** : 1.59.0.
-     * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
-
-1.  **Group** : io.grpc. **Name** : grpc-core. **Version** : 1.28.1.
-     * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
-
-1.  **Group** : io.grpc. **Name** : grpc-protobuf. **Version** : 1.28.1.
-     * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
-
-1.  **Group** : io.grpc. **Name** : grpc-protobuf-lite. **Version** : 1.28.1.
-     * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
-
-1.  **Group** : io.grpc. **Name** : grpc-stub. **Version** : 1.28.1.
-     * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
-
 1.  **Group** : io.grpc. **Name** : protoc-gen-grpc-java. **Version** : 1.28.1.
      * **Project URL:** [https://github.com/grpc/grpc-java](https://github.com/grpc/grpc-java)
      * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
@@ -1606,10 +1546,6 @@ This report was generated on **Tue Apr 14 15:50:11 EEST 2026** using [Gradle-Lic
 1.  **Group** : io.kotest. **Name** : kotest-runner-junit5-jvm. **Version** : 5.9.1.
      * **Project URL:** [https://github.com/kotest/kotest](https://github.com/kotest/kotest)
      * **License:** [Apache-2.0](https://opensource.org/licenses/Apache-2.0)
-
-1.  **Group** : io.perfmark. **Name** : perfmark-api. **Version** : 0.19.0.
-     * **Project URL:** [https://github.com/perfmark/perfmark](https://github.com/perfmark/perfmark)
-     * **License:** [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
 
 1.  **Group** : it.unimi.dsi. **Name** : fastutil-core. **Version** : 8.5.12.
      * **Project URL:** [http://fastutil.di.unimi.it/](http://fastutil.di.unimi.it/)
@@ -1963,12 +1899,12 @@ This report was generated on **Tue Apr 14 15:50:11 EEST 2026** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 15:50:13 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Apr 22 16:41:13 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.82`
+# Dependencies of `io.spine.chords:spine-chords-core:2.0.0-SNAPSHOT.83`
 
 ## Runtime
 1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.1.
@@ -3002,12 +2938,12 @@ This report was generated on **Tue Apr 14 15:50:13 EEST 2026** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 15:50:14 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Apr 22 16:41:15 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto:2.0.0-SNAPSHOT.82`
+# Dependencies of `io.spine.chords:spine-chords-proto:2.0.0-SNAPSHOT.83`
 
 ## Runtime
 1.  **Group** : cafe.adriel.voyager. **Name** : voyager-core. **Version** : 1.0.1.**No license information found**
@@ -4040,12 +3976,12 @@ This report was generated on **Tue Apr 14 15:50:14 EEST 2026** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 15:50:15 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Apr 22 16:41:16 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-proto-values:2.0.0-SNAPSHOT.82`
+# Dependencies of `io.spine.chords:spine-chords-proto-values:2.0.0-SNAPSHOT.83`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -4839,12 +4775,12 @@ This report was generated on **Tue Apr 14 15:50:15 EEST 2026** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 15:50:16 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Apr 22 16:41:17 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine.chords:spine-chords-runtime:2.0.0-SNAPSHOT.82`
+# Dependencies of `io.spine.chords:spine-chords-runtime:2.0.0-SNAPSHOT.83`
 
 ## Runtime
 1.  **Group** : com.google.code.findbugs. **Name** : jsr305. **Version** : 3.0.2.
@@ -5608,4 +5544,4 @@ This report was generated on **Tue Apr 14 15:50:16 EEST 2026** using [Gradle-Lic
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Tue Apr 14 15:50:17 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
+This report was generated on **Wed Apr 22 16:41:18 EEST 2026** using [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
