@@ -10,7 +10,7 @@ all modules and does not describe the project structure per-subproject.
  -->
 <groupId>io.spine.chords</groupId>
 <artifactId>Chords</artifactId>
-<version>2.0.0-SNAPSHOT.82</version>
+<version>2.0.0-SNAPSHOT.83</version>
 
 <inceptionYear>2015</inceptionYear>
 
@@ -61,14 +61,20 @@ all modules and does not describe the project structure per-subproject.
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
-    <artifactId>spine-money</artifactId>
-    <version>1.5.0</version>
+    <artifactId>spine-client</artifactId>
+    <version>1.9.1</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
-    <artifactId>spine-server</artifactId>
+    <artifactId>spine-core</artifactId>
     <version>1.9.1</version>
+    <scope>compile</scope>
+  </dependency>
+  <dependency>
+    <groupId>io.spine</groupId>
+    <artifactId>spine-money</artifactId>
+    <version>1.5.0</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
