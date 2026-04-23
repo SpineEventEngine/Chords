@@ -79,7 +79,6 @@ fun doForceVersions(configurations: ConfigurationContainer) {
 
             resolutionStrategy {
                 force(
-                    Grpc.api,
                     reflect.lib,
                     base.lib,
                     base.annotations,
@@ -166,6 +165,7 @@ private fun ResolutionStrategy.forceTransitiveDependencies() {
         CommonsCli.lib,
         CommonsCodec.lib,
         CommonsLogging.lib,
+        Grpc.api,
         Grpc.bom,
         Grpc.stub,
         Gson.lib,
