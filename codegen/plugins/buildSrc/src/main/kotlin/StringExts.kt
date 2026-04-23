@@ -25,7 +25,7 @@
  */
 
 public fun String.capitalized(): String = if (this.isNotEmpty()) {
-    this[0].toUpperCase() + this.substring(1)
+    this[0].uppercaseChar() + this.substring(1)
 } else {
     this
 }

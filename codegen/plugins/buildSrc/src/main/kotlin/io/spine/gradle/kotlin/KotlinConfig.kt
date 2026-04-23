@@ -53,8 +53,8 @@ fun KotlinJvmProjectExtension.applyJvmToolchain(version: String) =
  */
 @Suppress("unused")
 fun KotlinCompile.setFreeCompilerArgs() {
-    kotlinOptions {
-        freeCompilerArgs = listOf(
+    compilerOptions {
+        freeCompilerArgs.addAll(
             "-Xskip-prerelease-check",
             "-Xjvm-default=all",
             "-Xinline-classes",

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,13 @@ import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.getByType
 
 /**
- * This file contains extension methods and properties for the Gradle `Project`.
+ * Logs the result of the function using the project logger at `INFO` level.
  */
+fun Project.log(message: () -> String) {
+    if (logger.isInfoEnabled) {
+        logger.info(message.invoke())
+    }
+}
 
 /**
  * Obtains the Java plugin extension of the project.
@@ -50,12 +55,7 @@ val Project.javaPluginExtension: JavaPluginExtension
  * Obtains source set container of the Java project.
  */
 val Project.sourceSets: SourceSetContainer
-    get() {
-        val javaPluginConvention = convention.getPlugin(
-            org.gradle.api.plugins.JavaPluginConvention::class.java
-        )
-        return javaPluginConvention.sourceSets
-    }
+    get() = javaPluginExtension.sourceSets
 
 /**
  * Applies the specified Gradle plugin to this project by the plugin [class][cls].
@@ -73,7 +73,7 @@ fun Project.applyPlugin(cls: Class<out Plugin<*>>) {
  * the generic parameter `T`.
  */
 @Suppress("UNCHECKED_CAST")     /* See the method docs. */
-fun <T : Task> Project.findTask(name: String): T {
+fun <T : Task> Project.getTask(name: String): T {
     val task = this.tasks.findByName(name)
         ?: error("Unable to find a task named `$name` in the project `${this.name}`.")
     return task as T
@@ -82,8 +82,9 @@ fun <T : Task> Project.findTask(name: String): T {
 /**
  * Obtains Maven artifact ID of this [Project].
  *
- * The method checks if [SpinePublishing] extension is configured upon this project. If yes,
- * returns [SpinePublishing.artifactId] for the project. Otherwise, a project's name is returned.
+ * The property getter checks if [SpinePublishing] extension is configured upon this project.
+ * If yes, it returns [SpinePublishing.artifactId] for the project.
+ * Otherwise, a project's name is returned.
  */
 val Project.artifactId: String
     get() {

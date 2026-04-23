@@ -179,11 +179,6 @@ fun Project.configureTaskDependencies() {
         sourcesJar.dependOn(launchProtoData)
         sourcesJar.dependOn(createVersionFile)
         sourcesJar.dependOn("prepareProtocConfigVersions")
-        //val dokkaHtml = "dokkaHtml"
-        //dokkaHtml.dependOn(generateProto)
-        //dokkaHtml.dependOn(launchProtoData)
-        //"dokkaJavadoc".dependOn(launchProtoData)
-        //"publishPluginJar".dependOn(createVersionFile)
     }
 }
 

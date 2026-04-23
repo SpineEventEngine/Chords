@@ -33,7 +33,7 @@ package io.spine.dependency.lib
 )
 object Protobuf {
     const val group = "com.google.protobuf"
-    const val version       = "3.25.1"
+    const val version = "4.34.1"
     /**
      * The Java library containing proto definitions of Google Protobuf.
      */
@@ -53,7 +53,7 @@ object Protobuf {
          *
          * When changing the version, also change the version used in the `build.gradle.kts`.
          */
-        const val version = "0.9.4"
+        const val version = "0.9.6"
         const val id = "com.google.protobuf"
         const val lib = "${group}:protobuf-gradle-plugin:${version}"
     }

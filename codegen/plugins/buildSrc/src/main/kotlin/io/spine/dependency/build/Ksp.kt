@@ -33,8 +33,8 @@ package io.spine.dependency.build
  */
 object Ksp {
     /**
-     * The latest version compatible with Kotlin v1.8.22, which is bundled with Gradle 7.6.4.
+     * KSP2 release line compatible with Kotlin 2.3.x.
      */
-    const val version = "1.8.22-1.0.11"
+    const val version = "2.3.4"
     const val id = "com.google.devtools.ksp"
 }

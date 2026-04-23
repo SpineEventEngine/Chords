@@ -1,3 +1,6 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 /*
  * Copyright 2025, TeamDev. All rights reserved.
  *
@@ -41,7 +44,7 @@ repositories {
  * Please keep this value in sync. with `io.spine.internal.dependency.Jackson.version`.
  * It's not a requirement, but would be good in terms of consistency.
  */
-val jacksonVersion = "2.13.4"
+val jacksonVersion = "2.17.2"
 
 /**
  * The version of the Kotlin Gradle plugin.
@@ -49,7 +52,7 @@ val jacksonVersion = "2.13.4"
  * Please check that this value matches one defined in
  *  [i o.spine.internal.dependency.Kotlin.version].
  */
-val kotlinVersion = "1.8.22"
+val kotlinVersion = "2.3.20"
 
 /**
  * The version of Guava used in `buildSrc`.
@@ -67,7 +70,7 @@ val guavaVersion = "32.1.2-jre"
  * @see <a href="https://github.com/tbroyer/gradle-errorprone-plugin/releases">
  *     Error Prone Gradle Plugin Releases</a>
  */
-val errorPronePluginVersion = "3.1.0"
+val errorPronePluginVersion = "4.2.0"
 
 /**
  * The version of Protobuf Gradle Plugin.
@@ -77,7 +80,7 @@ val errorPronePluginVersion = "3.1.0"
  * @see <a href="https://github.com/google/protobuf-gradle-plugin/releases">
  *     Protobuf Gradle Plugins Releases</a>
  */
-val protobufPluginVersion = "0.9.4"
+val protobufPluginVersion = "0.9.6"
 
 /**
  * The version of Detekt Gradle Plugin.
@@ -119,15 +122,15 @@ configurations.all {
     }
 }
 
-val jvmVersion = JavaLanguageVersion.of(11)
+val jvmVersion = JavaLanguageVersion.of(25)
 
 java {
     toolchain.languageVersion.set(jvmVersion)
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = jvmVersion.toString()
+tasks.withType<KotlinCompile> {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.fromTarget(jvmVersion.toString()))
     }
 }
 
