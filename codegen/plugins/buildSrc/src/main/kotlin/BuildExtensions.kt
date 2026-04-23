@@ -32,7 +32,6 @@ import io.spine.dependency.build.Ksp
 import io.spine.dependency.lib.Protobuf
 import io.spine.dependency.local.McJava
 import io.spine.dependency.local.ProtoData
-import io.spine.dependency.local.ProtoTap
 import io.spine.dependency.local.Spine
 import io.spine.dependency.test.Kotest
 import io.spine.dependency.test.Kover
@@ -120,9 +119,6 @@ val PluginDependenciesSpec.errorprone: PluginDependencySpec
 
 val PluginDependenciesSpec.protobuf: PluginDependencySpec
     get() = id(Protobuf.GradlePlugin.id)
-
-val PluginDependenciesSpec.prototap: PluginDependencySpec
-    get() = id(ProtoTap.gradlePluginId).version(ProtoTap.version)
 
 val PluginDependenciesSpec.`gradle-doctor`: PluginDependencySpec
     get() = id(GradleDoctor.pluginId).version(GradleDoctor.version)

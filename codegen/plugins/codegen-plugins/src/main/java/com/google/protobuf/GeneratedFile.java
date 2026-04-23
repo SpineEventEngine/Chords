@@ -38,7 +38,7 @@ package com.google.protobuf;
  *
  * <p>As a result, javac fails while resolving those generated Spine classes,
  * even though they do not rely on any behavior from {@code GeneratedFile}
- * itself. In practice it is only a marker superclass in this build.
+ * itself. In practice, it is only a marker superclass in this build.
  *
  * <p>This shim keeps the compile classpath compatible until the upstream Spine
  * artifacts are regenerated against a protobuf runtime that no longer emits

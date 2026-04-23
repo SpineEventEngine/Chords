@@ -26,8 +26,6 @@
 
 package io.spine.dependency.local
 
-import io.spine.dependency.Dependency
-
 /**
  * Spine Time library.
  *
@@ -38,9 +36,9 @@ import io.spine.dependency.Dependency
     "ConstPropertyName" /* We use custom convention for artifact properties. */,
     "MemberVisibilityCanBePrivate" /* The properties are used directly by other subprojects. */,
 )
-object Time : Dependency() {
-    override val group = Spine.group
-    override val version = "2.0.0-SNAPSHOT.235"
+object Time {
+    const val group = Spine.group
+    const val version = "2.0.0-SNAPSHOT.235"
     private const val infix = "spine-time"
 
     fun lib(version: String): String = "$group:$infix:$version"
@@ -56,7 +54,7 @@ object Time : Dependency() {
     fun testLib(version: String): String = "${Spine.toolsGroup}:time-testlib:$version"
     val testLib get() = testLib(version)
 
-    override val modules: List<String>
+    val modules: List<String>
         get() = listOf(
             lib,
             javaExtensions,

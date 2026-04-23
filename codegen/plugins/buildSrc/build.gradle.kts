@@ -1,6 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 /*
  * Copyright 2026, TeamDev. All rights reserved.
  *
@@ -26,6 +23,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     java
@@ -57,15 +56,15 @@ val kotlinVersion = "2.3.20"
 /**
  * The version of Guava used in `buildSrc`.
  *
- * Always use the same version as the one specified in [io.spine.internal.dependency.Guava].
+ * Always use the same version as the one specified in [io.spine.dependency.lib.Guava].
  * Otherwise, when testing Gradle plugins, clashes may occur.
  */
-val guavaVersion = "32.1.2-jre"
+val guavaVersion = "33.5.0-jre"
 
 /**
  * The version of ErrorProne Gradle plugin.
  *
- * Please keep in sync. with [io.spine.internal.dependency.ErrorProne.GradlePlugin.version].
+ * Please keep in sync. with [io.spine.dependency.build.ErrorProne.GradlePlugin.version].
  *
  * @see <a href="https://github.com/tbroyer/gradle-errorprone-plugin/releases">
  *     Error Prone Gradle Plugin Releases</a>
@@ -75,7 +74,7 @@ val errorPronePluginVersion = "4.2.0"
 /**
  * The version of Protobuf Gradle Plugin.
  *
- * Please keep in sync. with [io.spine.internal.dependency.Protobuf.GradlePlugin.version].
+ * Please keep in sync. with [io.spine.dependency.lib.Protobuf.GradlePlugin.version].
  *
  * @see <a href="https://github.com/google/protobuf-gradle-plugin/releases">
  *     Protobuf Gradle Plugins Releases</a>
@@ -95,9 +94,9 @@ val detektVersion = "2.0.0-alpha.1"
 val kotestJvmPluginVersion = "0.4.10"
 
 /**
- * @see [io.spine.internal.dependency.Kover]
+ * @see [io.spine.dependency.test.Kover]
  */
-val koverVersion = "0.7.2"
+val koverVersion = "0.9.1"
 
 /**
  * The version of Google Artifact Registry used by `buildSrc`.
