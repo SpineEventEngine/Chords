@@ -26,15 +26,33 @@
 
 package io.spine.dependency.build
 
+import io.spine.dependency.Dependency
+
 /**
  * Kotlin Symbol Processing API.
  *
  * @see <a href="https://github.com/google/ksp">KSP GitHub repository</a>
  */
-object Ksp {
-    /**
-     * KSP2 release line compatible with Kotlin 2.3.x.
-     */
-    const val version = "2.3.4"
+@Suppress("unused")
+object Ksp : Dependency() {
+    override val version = "2.3.6"
+    val dogfoodingVersion = version
+    override val group = "com.google.devtools.ksp"
+
     const val id = "com.google.devtools.ksp"
+    const val gradlePluginArtifactName = "com.google.devtools.ksp.gradle.plugin"
+
+    val symbolProcessingApi = "$group:symbol-processing-api"
+    val symbolProcessing = "$group:symbol-processing"
+    val symbolProcessingAaEmb = "$group:symbol-processing-aa-embeddable"
+    val symbolProcessingCommonDeps = "$group:symbol-processing-common-deps"
+    val gradlePlugin = "$group:symbol-processing-gradle-plugin"
+
+    override val modules = listOf(
+        symbolProcessingApi,
+        symbolProcessing,
+        symbolProcessingAaEmb,
+        symbolProcessingCommonDeps,
+        gradlePlugin,
+    )
 }

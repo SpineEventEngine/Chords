@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@
 import io.spine.dependency.build.CheckerFramework
 import io.spine.dependency.build.ErrorProne
 import io.spine.dependency.build.FindBugs
-import io.spine.dependency.build.Ksp
 import io.spine.dependency.lib.Asm
 import io.spine.dependency.lib.AutoCommon
 import io.spine.dependency.lib.AutoService
@@ -71,7 +70,7 @@ fun doForceVersions(configurations: ConfigurationContainer) {
     val reflect = io.spine.dependency.local.Reflect
     val base = io.spine.dependency.local.Base
     val toolBase = io.spine.dependency.local.ToolBase
-    val coreJava = io.spine.dependency.local.CoreJava
+    val coreJvm = io.spine.dependency.local.CoreJvm
     val time = io.spine.dependency.local.Time
 
     configurations {
@@ -80,12 +79,12 @@ fun doForceVersions(configurations: ConfigurationContainer) {
 
             resolutionStrategy {
                 force(
-                    io.spine.dependency.lib.Grpc.api,
+                    Grpc.api,
                     reflect.lib,
                     base.lib,
                     base.annotations,
                     toolBase.lib,
-                    coreJava.server,
+                    coreJvm.server,
                     protoData.pluginLib,
                     logging.lib,
                     logging.middleware,

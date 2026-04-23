@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,10 +87,10 @@ val protobufPluginVersion = "0.9.6"
  *
  * @see <a href="https://github.com/detekt/detekt/releases">Detekt Releases</a>
  */
-val detektVersion = "1.23.0"
+val detektVersion = "2.0.0-alpha.1"
 
 /**
- * @see [io.spine.internal.dependency.Kotest]
+ * @see [io.spine.dependency.test.Kotest]
  */
 val kotestJvmPluginVersion = "0.4.10"
 
@@ -122,15 +122,14 @@ configurations.all {
     }
 }
 
-val jvmVersion = JavaLanguageVersion.of(25)
-
 java {
-    toolchain.languageVersion.set(jvmVersion)
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
-tasks.withType<KotlinCompile> {
+kotlin {
     compilerOptions {
-        jvmTarget.set(JvmTarget.fromTarget(jvmVersion.toString()))
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
@@ -147,7 +146,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
 
-    implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detektVersion")
+    implementation("dev.detekt:detekt-gradle-plugin:$detektVersion")
     implementation("com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion")
 
     // https://github.com/srikanth-lingala/zip4j

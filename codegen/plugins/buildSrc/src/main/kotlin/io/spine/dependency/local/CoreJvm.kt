@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,8 @@ object CoreJvm {
     const val core = "$group:$coreArtifact:$version"
     const val client = "$group:$clientArtifact:$version"
     const val server = "$group:$serverArtifact:$version"
+
+    const val server_1_9 = "$group:$serverArtifact:1.9.0"
 
     @Deprecated("Use `serverTestLib` instead.", ReplaceWith("serverTestLib"))
     const val testUtilServer = "${Spine.toolsGroup}:spine-server-testlib:$version"

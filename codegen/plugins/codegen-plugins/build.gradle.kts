@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,19 @@ val copyWorkspaceResources = tasks.register("copyWorkspaceResources") {
 
 tasks.named("compileKotlin") {
     dependsOn(copyWorkspaceResources)
+    dependsOn("kspKotlin")
+}
+
+tasks.named("compileTestKotlin") {
+    dependsOn("kspTestKotlin")
+}
+
+tasks.matching { it.name == "kspKotlin" }.configureEach {
+    dependsOn("launchProtoData")
+}
+
+tasks.matching { it.name == "kspTestKotlin" }.configureEach {
+    dependsOn("launchTestProtoData")
 }
 
 /**
