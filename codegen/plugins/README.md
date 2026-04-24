@@ -1,21 +1,22 @@
 # `codegen-plugins`
 
 A separate Gradle project with ProtoData plugins which generate
-[MessageField](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageField.kt),
-[MessageOneof](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageOneof.kt),
-and [MessageDef](codegen/runtime/src/main/kotlin/io/spine/chords/runtime/MessageDef.kt)
+[MessageField](../runtime/src/main/kotlin/io/spine/chords/runtime/MessageField.kt),
+[MessageOneof](../runtime/src/main/kotlin/io/spine/chords/runtime/MessageOneof.kt),
+and [MessageDef](../runtime/src/main/kotlin/io/spine/chords/runtime/MessageDef.kt)
 implementations for Proto messages. Also, some other useful Kotlin extensions are generated, 
 e.g. `ValidatingBuilder.messageDef()` that returns the instance of `MessageDef` implementation
 for the current message builder.
 
-The separate Gradle project is needed because the ProtoData plugins, 
-which generate the code, require the newer version of Gradle, `7.6.x` at the moment,
-comparing to Chords-based projects, which require Gradle version `6.9.x`.
+The separate Gradle project is needed because the `ProtoData` plugins, 
+which generate the code, require the newer version of Gradle, `9.4.x` at the moment,
+and Java 17, comparing to Chords-based projects, which require Gradle version `6.9.x` and Java 11.
 
 ### Requirements
 
-- Java 11
-- Gradle `7.6.x`
+- Java 17
+- Gradle `9.4.x`
+- Kotlin `2.3.20`
 
 ### How to use
 
