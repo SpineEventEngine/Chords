@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.dependency.local.CoreJava
+import io.spine.dependency.local.CoreJvm
 import io.spine.gradle.standardToSpineSdk
 
 // Apply ProtoData directly, without Spine's Model Compiler.
@@ -49,7 +49,7 @@ val sourceModuleDir = project.properties["sourceModuleDir"] as String
 
 dependencies {
     // The generated code relies onto `ValidatingBuilder` from Spine `1.9.x`.
-    implementation(CoreJava.server_1_9)
+    implementation(CoreJvm.server_1_9)
     protoData(codegenPluginsArtifact)
 }
 

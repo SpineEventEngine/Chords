@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,26 @@ package io.spine.dependency.build
  *
  * @see <a href="https://github.com/google/ksp">KSP GitHub repository</a>
  */
+@Suppress("unused")
 object Ksp {
-    /**
-     * The latest version compatible with Kotlin v1.8.22, which is bundled with Gradle 7.6.4.
-     */
-    const val version = "1.8.22-1.0.11"
+    const val version = "2.3.6"
+    const val dogfoodingVersion = version
+    const val group = "com.google.devtools.ksp"
+
     const val id = "com.google.devtools.ksp"
+    const val gradlePluginArtifactName = "com.google.devtools.ksp.gradle.plugin"
+
+    const val symbolProcessingApi = "$group:symbol-processing-api"
+    const val symbolProcessing = "$group:symbol-processing"
+    const val symbolProcessingAaEmb = "$group:symbol-processing-aa-embeddable"
+    const val symbolProcessingCommonDeps = "$group:symbol-processing-common-deps"
+    const val gradlePlugin = "$group:symbol-processing-gradle-plugin"
+
+    val modules = listOf(
+        symbolProcessingApi,
+        symbolProcessing,
+        symbolProcessingAaEmb,
+        symbolProcessingCommonDeps,
+        gradlePlugin,
+    )
 }

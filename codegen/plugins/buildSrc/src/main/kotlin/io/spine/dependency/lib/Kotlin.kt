@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ object Kotlin {
      * When changing the version, also change the version used in the `buildSrc/build.gradle.kts`.
      */
     @Suppress("MemberVisibilityCanBePrivate") // used directly from the outside.
-    const val version = "1.8.22"
+    const val version = "2.3.20"
 
     /**
      * The version of the JetBrains annotations library, which is a transitive
@@ -56,6 +56,7 @@ object Kotlin {
     @Deprecated("Please use `stdLib` instead.")
     const val stdLibJdk8   = "${group}:kotlin-stdlib-jdk8:${version}"
 
+    const val bom    = "${group}:kotlin-bom:${version}"
     const val reflect    = "${group}:kotlin-reflect:${version}"
     const val testJUnit5 = "${group}:kotlin-test-junit5:${version}"
 

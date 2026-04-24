@@ -29,14 +29,18 @@ package io.spine.dependency.local
 /**
  * Spine Base module.
  *
- * @see <a href="https://github.com/SpineEventEngine/base">spine-base</a>
+ * @see <a href="https://github.com/SpineEventEngine/base-libraries">spine-base-libraries</a>
  */
-@Suppress("ConstPropertyName")
+@Suppress("ConstPropertyName", "unused")
 object Base {
-    const val version = "2.0.0-SNAPSHOT.242"
-    const val versionForBuildScript = "2.0.0-SNAPSHOT.242"
+    const val version = "2.0.0-SNAPSHOT.387"
+    const val versionForBuildScript = "2.0.0-SNAPSHOT.387"
     const val group = Spine.group
-    const val artifact = "spine-base"
-    const val lib = "$group:$artifact:$version"
-    const val libForBuildScript = "$group:$artifact:$versionForBuildScript"
+    private const val prefix = "spine"
+    const val libModule = "$prefix-base"
+    const val lib = "$group:$libModule:$version"
+    const val libForBuildScript = "$group:$libModule:$versionForBuildScript"
+    const val annotations = "$group:$prefix-annotations:$version"
+    const val environment = "$group:$prefix-environment:$version"
+    const val format = "$group:$prefix-format:$version"
 }

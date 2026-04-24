@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,6 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion
  * throughout the project.
  */
 object BuildSettings {
-    private const val JVM_VERSION = 11
+    private const val JVM_VERSION = 17
     val javaVersion: JavaLanguageVersion = JavaLanguageVersion.of(JVM_VERSION)
 }

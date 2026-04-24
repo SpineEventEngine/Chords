@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,12 +34,14 @@ import io.spine.dependency.lib.AutoValue
 import io.spine.dependency.lib.CommonsCli
 import io.spine.dependency.lib.CommonsCodec
 import io.spine.dependency.lib.CommonsLogging
+import io.spine.dependency.lib.Grpc
 import io.spine.dependency.lib.Gson
 import io.spine.dependency.lib.Guava
 import io.spine.dependency.lib.J2ObjC
 import io.spine.dependency.lib.Jackson
 import io.spine.dependency.lib.JavaDiffUtils
 import io.spine.dependency.lib.Kotlin
+import io.spine.dependency.lib.KotlinPoet
 import io.spine.dependency.lib.KotlinX
 import io.spine.dependency.lib.Protobuf
 import io.spine.dependency.lib.Slf4J
@@ -68,7 +70,7 @@ fun doForceVersions(configurations: ConfigurationContainer) {
     val reflect = io.spine.dependency.local.Reflect
     val base = io.spine.dependency.local.Base
     val toolBase = io.spine.dependency.local.ToolBase
-    val coreJava = io.spine.dependency.local.CoreJava
+    val coreJvm = io.spine.dependency.local.CoreJvm
     val time = io.spine.dependency.local.Time
 
     configurations {
@@ -77,17 +79,18 @@ fun doForceVersions(configurations: ConfigurationContainer) {
 
             resolutionStrategy {
                 force(
-                    io.spine.dependency.lib.Grpc.api,
                     reflect.lib,
                     base.lib,
+                    base.annotations,
                     toolBase.lib,
-                    coreJava.server,
+                    coreJvm.server,
                     protoData.pluginLib,
-                    protoData.lib,
                     logging.lib,
                     logging.middleware,
                     time.lib,
+                    toolBase.oldLib,
                     validation.runtime,
+                    validation.oldRuntime,
                     validation.javaBundle
                 )
             }
@@ -121,6 +124,8 @@ private fun ResolutionStrategy.forceProductionDependencies() {
         FindBugs.annotations,
         Gson.lib,
         Guava.lib,
+        KotlinPoet.lib,
+        Kotlin.bom,
         Kotlin.reflect,
         Kotlin.stdLib,
         Kotlin.stdLibCommon,
@@ -160,6 +165,9 @@ private fun ResolutionStrategy.forceTransitiveDependencies() {
         CommonsCli.lib,
         CommonsCodec.lib,
         CommonsLogging.lib,
+        Grpc.api,
+        Grpc.bom,
+        Grpc.stub,
         Gson.lib,
         Hamcrest.core,
         J2ObjC.annotations,

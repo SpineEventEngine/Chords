@@ -33,7 +33,7 @@ package io.spine.dependency.lib
  */
 @Suppress("unused", "ConstPropertyName")
 object KotlinPoet {
-    private const val version = "1.15.2"
+    private const val version = "2.0.0"
 
     const val lib = "com.squareup:kotlinpoet:${version}"
 }

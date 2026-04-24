@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,20 +31,33 @@ package io.spine.dependency.local
  *
  * See [`SpineEventEngine/validation`](https://github.com/SpineEventEngine/validation/).
  */
-@Suppress("ConstPropertyName")
+@Suppress("ConstPropertyName", "unused")
 object Validation {
     /**
      * The version of the Validation library artifacts.
      */
-    const val version = "2.0.0-SNAPSHOT.197"
+    const val version = "2.0.0-SNAPSHOT.409"
 
-    const val group = "io.spine.validation"
-    private const val prefix = "spine-validation"
+    /**
+     * The last version of Validation compatible with ProtoData.
+     */
+    const val pdCompatibleVersion = "2.0.0-SNAPSHOT.342"
 
-    const val runtimeModule = "$group:$prefix-java-runtime"
-    const val runtime = "$runtimeModule:$version"
-    const val java = "$group:$prefix-java:$version"
+    const val group = Spine.toolsGroup
+    private const val prefix = "validation"
 
+    const val gradlePluginLib = "$group:$prefix-gradle-plugin:$version"
+
+    const val runtimeModule = "${Spine.group}:spine-$prefix-jvm-runtime"
+
+    fun runtime(version: String) = "$runtimeModule:$version"
+    val runtime = runtime(version)
+
+    @Deprecated("Use `runtime` instead.", ReplaceWith("runtime"))
+    const val oldRuntime = "io.spine.validation:spine-validation-java-runtime:2.0.0-SNAPSHOT.354"
+
+    const val javaModule = "$group:$prefix-java"
+    const val java = "$javaModule:$version"
     const val javaBundleModule = "$group:$prefix-java-bundle"
 
     /** Obtains the artifact for the `java-bundle` artifact of the given version. */
@@ -53,5 +66,7 @@ object Validation {
     val javaBundle = javaBundle(version)
 
     const val model = "$group:$prefix-model:$version"
-    const val config = "$group:$prefix-configuration:$version"
+
+    const val configModule = "$group:$prefix-configuration"
+    const val context = "$group:$prefix-context:$version"
 }

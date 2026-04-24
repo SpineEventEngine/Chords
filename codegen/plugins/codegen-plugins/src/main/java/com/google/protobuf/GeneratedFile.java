@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,15 +24,28 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.dependency.build
+package com.google.protobuf;
 
 /**
- * Helps optimize Gradle Builds by ensuring recommendations at build time.
+ * Compatibility shim for protobuf-generated classes compiled against an older
+ * protobuf Java runtime.
  *
- * See [plugin site](https://runningcode.github.io/gradle-doctor) for features and usage.
+ * <p>Some transitive Spine artifacts on this module's compile classpath still
+ * contain generated classes such as {@code io.spine.option.OptionsProto} that
+ * extend {@code com.google.protobuf.GeneratedFile}. That base class existed in
+ * older protobuf Java runtimes, but it is no longer present in protobuf 4.x,
+ * which this module uses.
+ *
+ * <p>As a result, javac fails while resolving those generated Spine classes,
+ * even though they do not rely on any behavior from {@code GeneratedFile}
+ * itself. In practice, it is only a marker superclass in this build.
+ *
+ * <p>This shim keeps the compile classpath compatible until the upstream Spine
+ * artifacts are regenerated against a protobuf runtime that no longer emits
+ * references to {@code GeneratedFile}. Once those dependencies are updated,
+ * this class should be removed.
  */
-@Suppress("unused", "ConstPropertyName")
-object GradleDoctor {
-    const val version = "0.8.1"
-    const val pluginId = "com.osacky.doctor"
+public abstract class GeneratedFile {
+    protected GeneratedFile() {
+    }
 }

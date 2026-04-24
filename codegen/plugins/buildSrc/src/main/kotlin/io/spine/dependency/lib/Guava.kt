@@ -37,7 +37,7 @@ package io.spine.dependency.lib
  */
 @Suppress("unused", "ConstPropertyName")
 object Guava {
-    private const val version = "32.1.2-jre"
+    private const val version = "33.5.0-jre"
     const val lib     = "com.google.guava:guava:${version}"
     const val testLib = "com.google.guava:guava-testlib:${version}"
 }

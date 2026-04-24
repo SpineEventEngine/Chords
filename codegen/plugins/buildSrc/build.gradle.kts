@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     java
     `kotlin-dsl`
@@ -41,7 +43,7 @@ repositories {
  * Please keep this value in sync. with `io.spine.internal.dependency.Jackson.version`.
  * It's not a requirement, but would be good in terms of consistency.
  */
-val jacksonVersion = "2.13.4"
+val jacksonVersion = "2.17.2"
 
 /**
  * The version of the Kotlin Gradle plugin.
@@ -49,52 +51,52 @@ val jacksonVersion = "2.13.4"
  * Please check that this value matches one defined in
  *  [i o.spine.internal.dependency.Kotlin.version].
  */
-val kotlinVersion = "1.8.22"
+val kotlinVersion = "2.3.20"
 
 /**
  * The version of Guava used in `buildSrc`.
  *
- * Always use the same version as the one specified in [io.spine.internal.dependency.Guava].
+ * Always use the same version as the one specified in [io.spine.dependency.lib.Guava].
  * Otherwise, when testing Gradle plugins, clashes may occur.
  */
-val guavaVersion = "32.1.2-jre"
+val guavaVersion = "33.5.0-jre"
 
 /**
  * The version of ErrorProne Gradle plugin.
  *
- * Please keep in sync. with [io.spine.internal.dependency.ErrorProne.GradlePlugin.version].
+ * Please keep in sync. with [io.spine.dependency.build.ErrorProne.GradlePlugin.version].
  *
  * @see <a href="https://github.com/tbroyer/gradle-errorprone-plugin/releases">
  *     Error Prone Gradle Plugin Releases</a>
  */
-val errorPronePluginVersion = "3.1.0"
+val errorPronePluginVersion = "4.2.0"
 
 /**
  * The version of Protobuf Gradle Plugin.
  *
- * Please keep in sync. with [io.spine.internal.dependency.Protobuf.GradlePlugin.version].
+ * Please keep in sync. with [io.spine.dependency.lib.Protobuf.GradlePlugin.version].
  *
  * @see <a href="https://github.com/google/protobuf-gradle-plugin/releases">
  *     Protobuf Gradle Plugins Releases</a>
  */
-val protobufPluginVersion = "0.9.4"
+val protobufPluginVersion = "0.9.6"
 
 /**
  * The version of Detekt Gradle Plugin.
  *
  * @see <a href="https://github.com/detekt/detekt/releases">Detekt Releases</a>
  */
-val detektVersion = "1.23.0"
+val detektVersion = "2.0.0-alpha.1"
 
 /**
- * @see [io.spine.internal.dependency.Kotest]
+ * @see [io.spine.dependency.test.Kotest]
  */
 val kotestJvmPluginVersion = "0.4.10"
 
 /**
- * @see [io.spine.internal.dependency.Kover]
+ * @see [io.spine.dependency.test.Kover]
  */
-val koverVersion = "0.7.2"
+val koverVersion = "0.9.1"
 
 /**
  * The version of Google Artifact Registry used by `buildSrc`.
@@ -119,15 +121,14 @@ configurations.all {
     }
 }
 
-val jvmVersion = JavaLanguageVersion.of(11)
-
 java {
-    toolchain.languageVersion.set(jvmVersion)
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = jvmVersion.toString()
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
@@ -144,7 +145,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
 
-    implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detektVersion")
+    implementation("dev.detekt:detekt-gradle-plugin:$detektVersion")
     implementation("com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion")
 
     // https://github.com/srikanth-lingala/zip4j

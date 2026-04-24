@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,15 +27,11 @@
 @file:Suppress("UnusedReceiverParameter", "unused", "TopLevelPropertyNaming", "ObjectPropertyName")
 
 import io.spine.dependency.build.ErrorProne
-import io.spine.dependency.build.GradleDoctor
 import io.spine.dependency.build.Ksp
 import io.spine.dependency.lib.Protobuf
 import io.spine.dependency.local.McJava
 import io.spine.dependency.local.ProtoData
-import io.spine.dependency.local.ProtoTap
-import io.spine.dependency.local.Spine
 import io.spine.dependency.test.Kotest
-import io.spine.dependency.test.Kover
 import io.spine.gradle.standardToSpineSdk
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -73,7 +69,7 @@ fun ScriptHandlerScope.standardSpineSdkRepositories() {
 private const val ABOUT_DEPENDENCY_EXTENSIONS = ""
 
 /**
- * Shortcut to [Spine.McJava] dependency object.
+ * Shortcut to [McJava] dependency object.
  *
  * This plugin is not published to Gradle Portal and cannot be applied directly to a project.
  * Firstly, it should be put to buildscript's classpath and then applied by ID only.
@@ -121,19 +117,10 @@ val PluginDependenciesSpec.errorprone: PluginDependencySpec
 val PluginDependenciesSpec.protobuf: PluginDependencySpec
     get() = id(Protobuf.GradlePlugin.id)
 
-val PluginDependenciesSpec.prototap: PluginDependencySpec
-    get() = id(ProtoTap.gradlePluginId).version(ProtoTap.version)
-
-val PluginDependenciesSpec.`gradle-doctor`: PluginDependencySpec
-    get() = id(GradleDoctor.pluginId).version(GradleDoctor.version)
-
 val PluginDependenciesSpec.kotest: PluginDependencySpec
     get() = Kotest.MultiplatformGradlePlugin.let {
         return id(it.id).version(it.version)
     }
-
-val PluginDependenciesSpec.kover: PluginDependencySpec
-    get() = id(Kover.id).version(Kover.version)
 
 val PluginDependenciesSpec.ksp: PluginDependencySpec
     get() = id(Ksp.id).version(Ksp.version)
@@ -179,11 +166,6 @@ fun Project.configureTaskDependencies() {
         sourcesJar.dependOn(launchProtoData)
         sourcesJar.dependOn(createVersionFile)
         sourcesJar.dependOn("prepareProtocConfigVersions")
-        //val dokkaHtml = "dokkaHtml"
-        //dokkaHtml.dependOn(generateProto)
-        //dokkaHtml.dependOn(launchProtoData)
-        //"dokkaJavadoc".dependOn(launchProtoData)
-        //"publishPluginJar".dependOn(createVersionFile)
     }
 }
 

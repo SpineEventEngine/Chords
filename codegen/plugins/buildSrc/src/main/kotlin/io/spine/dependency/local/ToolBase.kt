@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,18 +29,40 @@ package io.spine.dependency.local
 /**
  * Artifacts of the `tool-base` module.
  *
- * @see <a href="https://github.com/SpineEventEngine/tool-base">spine-tool-base</a>
+ * @see <a href="https://github.com/SpineEventEngine/tool-base">tool-base</a>
  */
 @Suppress("ConstPropertyName", "unused")
 object ToolBase {
     const val group = Spine.toolsGroup
-    const val version = "2.0.0-SNAPSHOT.246"
+    const val version = "2.0.0-SNAPSHOT.376"
+    const val dogfoodingVersion = "2.0.0-SNAPSHOT.376"
 
-    const val lib = "$group:spine-tool-base:$version"
-    const val pluginBase = "$group:spine-plugin-base:$version"
-    const val pluginTestlib = "$group:spine-plugin-testlib:$version"
+    const val lib = "$group:tool-base:$version"
+    const val oldLib = "$group:spine-tool-base:2.0.0-SNAPSHOT.332"
+    const val classicCodegen = "$group:classic-codegen:$version"
+    const val pluginBase = "$group:plugin-base:$version"
+    const val pluginTestlib = "$group:plugin-testlib:$version"
 
+    const val intellijPlatform = "$group:intellij-platform:$version"
     const val intellijPlatformJava = "$group:intellij-platform-java:$version"
 
-    const val psiJava = "$group:spine-psi-java:$version"
+    const val psi = "$group:psi:$version"
+    const val psiJavaArtifactName = "psi-java"
+    const val psiJava = "$group:$psiJavaArtifactName:$version"
+
+    const val rootGradlePlugins = "$group:root-gradle-plugins:$version"
+    const val gradlePluginApi = "$group:gradle-plugin-api:$version"
+    const val gradlePluginApiTestFixtures = "$group:gradle-plugin-api-test-fixtures:$version"
+
+    const val jvmTools = "$group:jvm-tools:$version"
+    const val jvmToolPluginDogfooding = "$group:jvm-tool-plugins-all:$dogfoodingVersion"
+    const val jvmToolPlugins = "$group:jvm-tool-plugins-all:$version"
+
+    const val protobufSetupPlugins = "$group:protobuf-setup-plugins:$version"
+
+    object JavadocFilter {
+        const val group = ToolBase.group
+        const val version = "2.0.0-SNAPSHOT.75"
+        const val artifact = "$group:spine-javadoc-filter:$version"
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,12 @@
 
 @file:Suppress("RemoveRedundantQualifierName")
 
-import Build_gradle.Module
 import io.spine.dependency.lib.Protobuf
 import io.spine.gradle.javac.configureJavac
 import io.spine.gradle.kotlin.applyJvmToolchain
 import io.spine.gradle.kotlin.setFreeCompilerArgs
 import io.spine.gradle.standardToSpineSdk
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
@@ -47,13 +47,8 @@ buildscript {
 plugins {
     kotlin("jvm")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.92.11"
+    id("io.spine.protodata") version "0.96.4"
     idea
-}
-
-object BuildSettings {
-    private const val JAVA_VERSION = 11
-    val javaVersion: JavaLanguageVersion = JavaLanguageVersion.of(JAVA_VERSION)
 }
 
 allprojects {
@@ -123,8 +118,8 @@ fun Module.configureKotlin() {
     }
 
     tasks.withType<KotlinCompile> {
-        kotlinOptions {
-            jvmTarget = BuildSettings.javaVersion.toString()
+        compilerOptions {
+            jvmTarget.set(JvmTarget.fromTarget(BuildSettings.javaVersion.toString()))
         }
         setFreeCompilerArgs()
     }
