@@ -41,7 +41,7 @@ buildscript {
     standardSpineSdkRepositories()
 
     plugins {
-        id("io.spine.chords") version "1.9.20"
+        id("io.spine.chords") version "1.9.22"
     }
 }
 
