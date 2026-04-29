@@ -43,12 +43,12 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.text.TextStyle
 import com.google.protobuf.Message
 import io.spine.base.FieldPath
-import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputContext
 import io.spine.chords.core.ValidationErrorText
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.recompositionWorkaroundReadonly
 import io.spine.chords.proto.form.MessageForm.Companion.Multipart
 import io.spine.chords.proto.form.MessageForm.Companion.create
@@ -65,6 +65,7 @@ import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.chords.runtime.messageDef
+import io.spine.chords.runtime.safeCast
 import io.spine.protobuf.ValidatingBuilder
 import io.spine.validate.ConstraintViolation
 import io.spine.validate.ValidationException
@@ -458,11 +459,6 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          *   declaration site.
          */
         @Composable
-        @Suppress(
-            // Explicit casts are needed since we cannot parameterize
-            // `MessageFormCompanionBase` with the `M` type parameter.
-            "UNCHECKED_CAST"
-        )
         public operator fun <M : Message, B : ValidatingBuilder<out M>> invoke(
             value: MutableState<M?>,
             builder: () -> B,
@@ -470,13 +466,13 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = declareInstance(
-            value as MutableState<Message?>,
+            value.safeCast(),
             builder,
-            props as Props<MessageForm<Message>>,
+            props.safeCast(),
             onBeforeBuild
         ) {
-            content(this as FormPartScope<M>)
-        } as MessageForm<M>
+            content(this.safeCast())
+        }.safeCast()
 
         /**
          * Declares a `MessageForm` instance, which is automatically bound to
@@ -507,16 +503,11 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          */
         context(FormFieldsScope<PM>)
         @Composable
-        @Suppress(
-            // Explicit casts are needed since we cannot parameterize
-            // `MessageFormCompanionBase` with the `M` type parameter.
-            "UNCHECKED_CAST"
-        )
         public operator fun <
                 PM : Message,
                 M : Message,
                 B : ValidatingBuilder<out M>
-        > invoke(
+                > invoke(
             field: MessageField<PM, M>,
             builder: () -> B,
             props: Props<MessageForm<M>> = Props {},
@@ -524,14 +515,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = declareInstance(
-            field as MessageField<PM, Message>,
+            field.safeCast() as MessageField<PM, Message>,
             builder,
-            props as Props<MessageForm<Message>>,
+            props.safeCast(),
             defaultValue,
             onBeforeBuild
         ) {
-            content(this as FormPartScope<M>)
-        } as MessageForm<M>
+            content(this.safeCast())
+        }.safeCast()
 
         /**
          * Declares a multipart `MessageForm` instance, which edits a value
@@ -557,25 +548,20 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          *   declaration site.
          */
         @Composable
-        @Suppress(
-            // Explicit casts are needed since we cannot parameterize
-            // `MessageFormCompanionBase` with the `M` type parameter.
-            "UNCHECKED_CAST"
-        )
-        public fun <M : Message, B: ValidatingBuilder<out M>> Multipart(
+        public fun <M : Message, B : ValidatingBuilder<out M>> Multipart(
             value: MutableState<M?>,
             builder: () -> B,
             props: Props<MessageForm<M>> = Props {},
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = declareMultipartInstance(
-            value as MutableState<Message?>,
+            value.safeCast(),
             builder,
-            props as Props<MessageForm<Message>>,
+            props.safeCast(),
             onBeforeBuild
         ) {
-            content(this as MultipartFormScope<M>)
-        } as MessageForm<M>
+            content(this.safeCast())
+        }.safeCast()
 
         /**
          * Declares a multipart `MessageForm` instance, which is automatically
@@ -608,16 +594,11 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          */
         context(FormFieldsScope<PM>)
         @Composable
-        @Suppress(
-            // Explicit casts are needed since we cannot parameterize
-            // `MessageFormCompanionBase` with the `M` type parameter.
-            "UNCHECKED_CAST"
-        )
         public fun <
                 PM : Message,
                 M : Message,
                 B : ValidatingBuilder<out M>
-        > Multipart(
+                > Multipart(
             field: MessageField<PM, M>,
             builder: () -> B,
             props: Props<MessageForm<M>> = Props {},
@@ -625,14 +606,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = declareMultipartInstance(
-            field as MessageField<PM, Message>,
+            field.safeCast() as MessageField<PM, Message>,
             builder,
-            props as Props<MessageForm<Message>>,
+            props.safeCast(),
             defaultValue,
             onBeforeBuild
         ) {
-            content(this as MultipartFormScope<M>)
-        } as MessageForm<M>
+            content(this.safeCast())
+        }.safeCast()
 
         /**
          * Creates a [MessageForm] instance without rendering it in
@@ -665,22 +646,17 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @return A form's instance that has been created for this
          *   declaration site.
          */
-        @Suppress(
-            // Explicit casts are needed since we cannot parameterize
-            // `MessageFormCompanionBase` with the `M` type parameter.
-            "UNCHECKED_CAST"
-        )
-        public fun <M : Message, B: ValidatingBuilder<out M>> create(
+        public fun <M : Message, B : ValidatingBuilder<out M>> create(
             value: MutableState<M?>,
             builder: () -> B,
             onBeforeBuild: (B) -> Unit = {},
             props: Props<MessageForm<M>> = Props {}
         ): MessageForm<M> = createInstance(
-            value as MutableState<Message?>,
+            value.safeCast(),
             builder,
             onBeforeBuild,
-            props as Props<MessageForm<Message>>
-        ) as MessageForm<M>
+            props.safeCast()
+        ).safeCast()
     }
 
     /**
@@ -752,7 +728,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param fieldSelector A field selector component
          *   (such as [OneofRadioButton]).
          */
-        internal fun <F: MessageFieldValue> registerFieldSelector(
+        internal fun <F : MessageFieldValue> registerFieldSelector(
             field: MessageField<M, F>,
             fieldSelector: FocusableComponent
         ) {
@@ -763,7 +739,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             )
             check(oneof.fields.contains(field as MessageField<M, MessageFieldValue>)) {
                 "The oneof field (${field.name}) being registered doesn't " +
-                "belong to this oneof (${oneof.name})"
+                        "belong to this oneof (${oneof.name})"
             }
             fieldSelectors[field] = fieldSelector
         }
@@ -1217,8 +1193,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * A [MultipartFormScope] instance, which is an outermost scope for
      * declarations within this form.
      */
-    @Suppress("LeakingThis" /* Leaking this shouldn't be a problem
-        since this field is designed for post-construction usage. */)
+    @Suppress(
+        "LeakingThis" /* Leaking this shouldn't be a problem
+        since this field is designed for post-construction usage. */
+    )
     private val formScope = MultipartFormScopeImpl(this)
 
     /**
@@ -1501,7 +1479,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     private fun updateDirty() {
         val dirty =
             fields.values.any { it.effectivelyDirty } ||
-            oneofs.values.any { it.selectedMessageField.value != null }
+                    oneofs.values.any { it.selectedMessageField.value != null }
         if (!_dirty && dirty) {
             enteringNonNullValue.value = true
         }
@@ -1725,10 +1703,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             } ?: run {
                 val formOneof = oneofs.values.firstOrNull {
                     it.validationMessage.value != null ||
-                    it.let {
-                        val selectedField = it.selectedFormField
-                        selectedField != null && selectedField.value.value == null
-                    }
+                            it.let {
+                                val selectedField = it.selectedFormField
+                                selectedField != null && selectedField.value.value == null
+                            }
                 }
                 formOneof?.selectedFormField
                     ?: formOneof?.fields?.values?.firstOrNull()
