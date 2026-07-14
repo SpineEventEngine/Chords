@@ -1,0 +1,7 @@
+interface:
+  display_name: "Security Reviewer"
+  short_description: "Review Chords credential, supply-chain, and agent-config safety"
+  default_prompt: >
+    Use $security-reviewer after reading AGENTS.md and .agents/project.md to
+    review credential handling, workflow secrets, dependency provenance, or
+    agent prompt/configuration safety in a scoped Chords change.

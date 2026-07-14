@@ -1,0 +1,7 @@
+interface:
+  display_name: "Component Engineer"
+  short_description: "Implement Chords UI component changes"
+  default_prompt: >
+    Use $component-engineer after reading AGENTS.md, README.md,
+    .agents/project.md, and the nearest README for the area being changed to
+    implement a scoped Chords component change.

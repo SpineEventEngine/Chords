@@ -1,0 +1,7 @@
+interface:
+  display_name: "Build Engineer"
+  short_description: "Implement Chords Gradle, publishing, or version changes"
+  default_prompt: >
+    Use $build-engineer after reading AGENTS.md, README.md, and
+    .agents/project.md to implement a scoped Chords build or
+    release-plumbing change.
