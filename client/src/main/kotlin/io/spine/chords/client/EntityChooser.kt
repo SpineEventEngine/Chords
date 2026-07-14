@@ -96,6 +96,9 @@ public abstract class EntityChooser<
     /**
      * A set of entity IDs that should be excluded from the drop-down list,
      * and thus cannot be selected by the user.
+     *
+     * It's up to the subclasses of this component to expose this property
+     * with an appropriate name and visibility.
      */
     protected var excludedEntityIds: Set<I> by mutableStateOf(setOf())
 
