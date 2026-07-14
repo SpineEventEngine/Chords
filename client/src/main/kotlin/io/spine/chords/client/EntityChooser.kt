@@ -97,7 +97,7 @@ public abstract class EntityChooser<
      * A set of entity IDs that should be excluded from the drop-down list,
      * and thus cannot be selected by the user.
      */
-    protected var excludedEntities: Set<I> by mutableStateOf(setOf())
+    protected var excludedEntityIds: Set<I> by mutableStateOf(setOf())
 
     /**
      * Identifies a type specified for the [E] type parameter by the
@@ -111,7 +111,7 @@ public abstract class EntityChooser<
         val entityStateType =
             parameterizedEntityChooserType.arguments[TypeParameters.ENTITY_STATE.index].type
         checkNotNull(entityStateType) {
-            "The V type parameter (entity value type) cannot be a star <*> projection. "
+            "The E type parameter (entity state type) cannot be a star <*> projection. "
         }
 
         @Suppress(
@@ -208,7 +208,7 @@ public abstract class EntityChooser<
             entityStatesByIds[entityId(it)] = it
         }
         items.value = entityStates.value.filter {
-            entityId(it) !in excludedEntities
+            entityId(it) !in excludedEntityIds
         }.map { entityId(it) }
     }
 }
