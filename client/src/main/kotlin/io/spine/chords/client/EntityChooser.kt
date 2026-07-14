@@ -30,7 +30,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import io.spine.chords.core.appshell.app
 import io.spine.base.EntityState
 import io.spine.chords.core.DropdownSelector
@@ -90,6 +92,12 @@ public abstract class EntityChooser<
     override val items: MutableState<Iterable<I>> = mutableStateOf(listOf())
     private val entityStates = app.client.readAndObserve(entityStateClass, ::entityId)
     private val entityStatesByIds: HashMap<I, E> = hashMapOf()
+
+    /**
+     * A set of entity IDs that should be excluded from the drop-down list,
+     * and thus cannot be selected by the user.
+     */
+    protected var excludedEntities: Set<I> by mutableStateOf(setOf())
 
     /**
      * Identifies a type specified for the [E] type parameter by the
@@ -195,10 +203,13 @@ public abstract class EntityChooser<
     @ReadOnlyComposable
     override fun beforeComposeContent() {
         super.beforeComposeContent()
+        val includedEntityStates = entityStates.value.filter {
+            entityId(it) !in excludedEntities
+        }
         entityStatesByIds.clear()
-        entityStates.value.forEach {
+        includedEntityStates.forEach {
             entityStatesByIds[entityId(it)] = it
         }
-        items.value = entityStates.value.map { entityId(it) }
+        items.value = includedEntityStates.map { entityId(it) }
     }
 }
