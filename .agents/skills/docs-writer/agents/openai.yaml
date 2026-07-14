@@ -1,0 +1,7 @@
+interface:
+  display_name: "Docs Writer"
+  short_description: "Write or update Chords documentation"
+  default_prompt: >
+    Use $docs-writer after reading AGENTS.md, README.md, and
+    .agents/project.md to write or update Chords documentation with claims
+    verified against the code.

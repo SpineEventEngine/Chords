@@ -1,0 +1,7 @@
+interface:
+  display_name: "Code Reviewer"
+  short_description: "Review Chords component, codegen, or build changes"
+  default_prompt: >
+    Use $code-reviewer after reading AGENTS.md, README.md, .agents/project.md,
+    and the nearest README for the area being changed to review a scoped
+    Chords implementation change.

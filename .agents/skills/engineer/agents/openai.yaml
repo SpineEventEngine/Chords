@@ -1,0 +1,7 @@
+interface:
+  display_name: "Engineer"
+  short_description: "Route mixed or unclear Chords implementation work"
+  default_prompt: >
+    Use $engineer after reading AGENTS.md, README.md, and .agents/project.md
+    to route a Chords implementation task to the narrowest area-specific
+    skill.

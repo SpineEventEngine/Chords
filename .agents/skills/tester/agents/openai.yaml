@@ -1,0 +1,6 @@
+interface:
+  display_name: "Tester"
+  short_description: "Author or verify Chords tests"
+  default_prompt: >
+    Use $tester after reading AGENTS.md, README.md, and .agents/project.md to
+    author tests or run verification for a scoped Chords change.

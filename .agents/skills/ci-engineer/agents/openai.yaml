@@ -1,0 +1,6 @@
+interface:
+  display_name: "CI Engineer"
+  short_description: "Author or review Chords GitHub Actions workflows"
+  default_prompt: >
+    Use $ci-engineer after reading AGENTS.md and .agents/project.md to author
+    or review a scoped change to the GitHub Actions workflows of Chords.

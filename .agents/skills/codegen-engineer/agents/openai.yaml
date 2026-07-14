@@ -1,0 +1,7 @@
+interface:
+  display_name: "Codegen Engineer"
+  short_description: "Implement Chords code generation or Protobuf model changes"
+  default_prompt: >
+    Use $codegen-engineer after reading AGENTS.md, README.md,
+    .agents/project.md, and codegen/plugins/README.md to implement a scoped
+    Chords code generation change.
