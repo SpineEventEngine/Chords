@@ -203,13 +203,12 @@ public abstract class EntityChooser<
     @ReadOnlyComposable
     override fun beforeComposeContent() {
         super.beforeComposeContent()
-        val includedEntityStates = entityStates.value.filter {
-            entityId(it) !in excludedEntities
-        }
         entityStatesByIds.clear()
-        includedEntityStates.forEach {
+        entityStates.value.forEach {
             entityStatesByIds[entityId(it)] = it
         }
-        items.value = includedEntityStates.map { entityId(it) }
+        items.value = entityStates.value.filter {
+            entityId(it) !in excludedEntities
+        }.map { entityId(it) }
     }
 }
