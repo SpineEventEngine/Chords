@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,5 @@ package io.spine.chords.runtime
  * Helps avoid the `UNCHECKED_CAST` warning.
  */
 public inline fun <reified T : Any> Any.safeCast(): T {
-    return if (this is T) this
-    else error("Cannot cast `$this` to `${T::class}`.")
+    return this as? T ?: error("Cannot cast `$this` to `${T::class}`.")
 }

@@ -274,4 +274,3 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
             props.run { configure() }
         }
 }
-

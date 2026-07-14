@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import io.spine.chords.core.appshell.app
 import io.spine.base.EntityState
 import io.spine.chords.core.DropdownSelector
@@ -92,6 +94,15 @@ public abstract class EntityChooser<
     private val entityStatesByIds: HashMap<I, E> = hashMapOf()
 
     /**
+     * A set of entity IDs that should be excluded from the drop-down list,
+     * and thus cannot be selected by the user.
+     *
+     * It's up to the subclasses of this component to expose this property
+     * with an appropriate name and visibility.
+     */
+    protected var excludedEntityIds: Set<I> by mutableStateOf(setOf())
+
+    /**
      * Identifies a type specified for the [E] type parameter by the
      * implementation of the actual component's instance.
      */
@@ -103,7 +114,7 @@ public abstract class EntityChooser<
         val entityStateType =
             parameterizedEntityChooserType.arguments[TypeParameters.ENTITY_STATE.index].type
         checkNotNull(entityStateType) {
-            "The V type parameter (entity value type) cannot be a star <*> projection. "
+            "The E type parameter (entity state type) cannot be a star <*> projection. "
         }
 
         @Suppress(
@@ -199,6 +210,8 @@ public abstract class EntityChooser<
         entityStates.value.forEach {
             entityStatesByIds[entityId(it)] = it
         }
-        items.value = entityStates.value.map { entityId(it) }
+        items.value = entityStates.value.filter {
+            entityId(it) !in excludedEntityIds
+        }.map { entityId(it) }
     }
 }

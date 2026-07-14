@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -516,7 +516,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 PM : Message,
                 M : Message,
                 B : ValidatingBuilder<out M>
-        > invoke(
+                > invoke(
             field: MessageField<PM, M>,
             builder: () -> B,
             props: Props<MessageForm<M>> = Props {},
@@ -617,7 +617,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 PM : Message,
                 M : Message,
                 B : ValidatingBuilder<out M>
-        > Multipart(
+                > Multipart(
             field: MessageField<PM, M>,
             builder: () -> B,
             props: Props<MessageForm<M>> = Props {},
@@ -763,7 +763,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             )
             check(oneof.fields.contains(field as MessageField<M, MessageFieldValue>)) {
                 "The oneof field (${field.name}) being registered doesn't " +
-                "belong to this oneof (${oneof.name})"
+                        "belong to this oneof (${oneof.name})"
             }
             fieldSelectors[field] = fieldSelector
         }
@@ -1501,7 +1501,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     private fun updateDirty() {
         val dirty =
             fields.values.any { it.effectivelyDirty } ||
-            oneofs.values.any { it.selectedMessageField.value != null }
+                    oneofs.values.any { it.selectedMessageField.value != null }
         if (!_dirty && dirty) {
             enteringNonNullValue.value = true
         }
@@ -1725,10 +1725,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             } ?: run {
                 val formOneof = oneofs.values.firstOrNull {
                     it.validationMessage.value != null ||
-                    it.let {
-                        val selectedField = it.selectedFormField
-                        selectedField != null && selectedField.value.value == null
-                    }
+                            it.let {
+                                val selectedField = it.selectedFormField
+                                selectedField != null && selectedField.value.value == null
+                            }
                 }
                 formOneof?.selectedFormField
                     ?: formOneof?.fields?.values?.firstOrNull()
