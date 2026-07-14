@@ -265,7 +265,7 @@ public abstract class Table<E> : Component() {
         val sortedEntities = sortedEntities()
         val tableColumns = columns.toMutableList()
         if (rowActions != null) {
-            tableColumns.add(rowActionsColumn(rowActions!!))
+            tableColumns.add(rowActionsColumn(rowActions!!, ::changeSelectedEntity))
         }
         Column(
             modifier = Modifier.fillMaxSize()
@@ -773,10 +773,13 @@ private fun <E> TableRow(
  * Clicking the button opens the row actions menu.
  *
  * @param rowActionsConfig The configuration for row actions.
+ * @param onRowActionsClicked A callback invoked with the row's entity when its
+ *   actions menu is opened.
  * @return A `TableColumn` with a "More" button for triggering row actions.
  */
 private fun <E> rowActionsColumn(
-    rowActionsConfig: RowActionsConfig<E>
+    rowActionsConfig: RowActionsConfig<E>,
+    onRowActionsClicked: (E) -> Unit
 ): TableColumn<E> {
     return TableColumn(
         name = "",
@@ -789,7 +792,8 @@ private fun <E> rowActionsColumn(
             RowActionsButton(
                 entity,
                 rowActionsConfig,
-                rowActionsVisible
+                rowActionsVisible,
+                onRowActionsClicked
             )
         }
     }
@@ -807,16 +811,20 @@ private fun <E> rowActionsColumn(
  *   and their appearance.
  * @param visibility A state that controls the visibility
  *   of the dropdown menu.
+ * @param onRowActionsClicked A callback invoked with the [entity] when the menu
+ *   is opened.
  */
 @Composable
 private fun <E> RowActionsButton(
     entity: E,
     config: RowActionsConfig<E>,
     visibility: MutableState<Boolean>,
+    onRowActionsClicked: (E) -> Unit,
 ) {
     IconButton(
         modifier = Modifier.size(48.dp),
         onClick = {
+            onRowActionsClicked(entity)
             visibility.value = true
         }
     ) {
