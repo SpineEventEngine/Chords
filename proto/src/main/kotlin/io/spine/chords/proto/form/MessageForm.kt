@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,12 +43,12 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.text.TextStyle
 import com.google.protobuf.Message
 import io.spine.base.FieldPath
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputContext
 import io.spine.chords.core.ValidationErrorText
-import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.recompositionWorkaroundReadonly
 import io.spine.chords.proto.form.MessageForm.Companion.Multipart
 import io.spine.chords.proto.form.MessageForm.Companion.create
@@ -65,7 +65,6 @@ import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.chords.runtime.messageDef
-import io.spine.chords.runtime.safeCast
 import io.spine.protobuf.ValidatingBuilder
 import io.spine.validate.ConstraintViolation
 import io.spine.validate.ValidationException
@@ -459,6 +458,11 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          *   declaration site.
          */
         @Composable
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public operator fun <M : Message, B : ValidatingBuilder<out M>> invoke(
             value: MutableState<M?>,
             builder: () -> B,
@@ -466,13 +470,13 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = declareInstance(
-            value.safeCast(),
+            value as MutableState<Message?>,
             builder,
-            props.safeCast(),
+            props as Props<MessageForm<Message>>,
             onBeforeBuild
         ) {
-            content(this.safeCast())
-        }.safeCast()
+            content(this as FormPartScope<M>)
+        } as MessageForm<M>
 
         /**
          * Declares a `MessageForm` instance, which is automatically bound to
@@ -503,6 +507,11 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          */
         context(FormFieldsScope<PM>)
         @Composable
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public operator fun <
                 PM : Message,
                 M : Message,
@@ -515,14 +524,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable FormPartScope<M>.() -> Unit
         ): MessageForm<M> = declareInstance(
-            field.safeCast() as MessageField<PM, Message>,
+            field as MessageField<PM, Message>,
             builder,
-            props.safeCast(),
+            props as Props<MessageForm<Message>>,
             defaultValue,
             onBeforeBuild
         ) {
-            content(this.safeCast())
-        }.safeCast()
+            content(this as FormPartScope<M>)
+        } as MessageForm<M>
 
         /**
          * Declares a multipart `MessageForm` instance, which edits a value
@@ -548,20 +557,25 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          *   declaration site.
          */
         @Composable
-        public fun <M : Message, B : ValidatingBuilder<out M>> Multipart(
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
+        public fun <M : Message, B: ValidatingBuilder<out M>> Multipart(
             value: MutableState<M?>,
             builder: () -> B,
             props: Props<MessageForm<M>> = Props {},
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = declareMultipartInstance(
-            value.safeCast(),
+            value as MutableState<Message?>,
             builder,
-            props.safeCast(),
+            props as Props<MessageForm<Message>>,
             onBeforeBuild
         ) {
-            content(this.safeCast())
-        }.safeCast()
+            content(this as MultipartFormScope<M>)
+        } as MessageForm<M>
 
         /**
          * Declares a multipart `MessageForm` instance, which is automatically
@@ -594,6 +608,11 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          */
         context(FormFieldsScope<PM>)
         @Composable
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
         public fun <
                 PM : Message,
                 M : Message,
@@ -606,14 +625,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             onBeforeBuild: (B) -> Unit = {},
             content: @Composable MultipartFormScope<M>.() -> Unit
         ): MessageForm<M> = declareMultipartInstance(
-            field.safeCast() as MessageField<PM, Message>,
+            field as MessageField<PM, Message>,
             builder,
-            props.safeCast(),
+            props as Props<MessageForm<Message>>,
             defaultValue,
             onBeforeBuild
         ) {
-            content(this.safeCast())
-        }.safeCast()
+            content(this as MultipartFormScope<M>)
+        } as MessageForm<M>
 
         /**
          * Creates a [MessageForm] instance without rendering it in
@@ -646,17 +665,22 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @return A form's instance that has been created for this
          *   declaration site.
          */
-        public fun <M : Message, B : ValidatingBuilder<out M>> create(
+        @Suppress(
+            // Explicit casts are needed since we cannot parameterize
+            // `MessageFormCompanionBase` with the `M` type parameter.
+            "UNCHECKED_CAST"
+        )
+        public fun <M : Message, B: ValidatingBuilder<out M>> create(
             value: MutableState<M?>,
             builder: () -> B,
             onBeforeBuild: (B) -> Unit = {},
             props: Props<MessageForm<M>> = Props {}
         ): MessageForm<M> = createInstance(
-            value.safeCast(),
+            value as MutableState<Message?>,
             builder,
             onBeforeBuild,
-            props.safeCast()
-        ).safeCast()
+            props as Props<MessageForm<Message>>
+        ) as MessageForm<M>
     }
 
     /**
@@ -728,7 +752,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param fieldSelector A field selector component
          *   (such as [OneofRadioButton]).
          */
-        internal fun <F : MessageFieldValue> registerFieldSelector(
+        internal fun <F: MessageFieldValue> registerFieldSelector(
             field: MessageField<M, F>,
             fieldSelector: FocusableComponent
         ) {
@@ -1193,10 +1217,8 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * A [MultipartFormScope] instance, which is an outermost scope for
      * declarations within this form.
      */
-    @Suppress(
-        "LeakingThis" /* Leaking this shouldn't be a problem
-        since this field is designed for post-construction usage. */
-    )
+    @Suppress("LeakingThis" /* Leaking this shouldn't be a problem
+        since this field is designed for post-construction usage. */)
     private val formScope = MultipartFormScopeImpl(this)
 
     /**
