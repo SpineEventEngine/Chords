@@ -1544,17 +1544,17 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * @param updateValidationErrors Specifies whether a failure to create
      *   a message should be accompanied by displaying the respective
      *   validation errors.
-     * @param focusInvalidField Specifies whether the first field that has
+     * @param focusInvalidPart Specifies whether the first field that has
      *   caused a validation failure (if any) should receive a focus.
      */
     private fun updateMessage(
         updateValidationErrors: Boolean = true,
-        focusInvalidField: Boolean = true
+        focusInvalidPart: Boolean = true
     ) {
         if (updateValidationErrors) {
             clearValidationDisplay()
             fields.values.forEach {
-                it.editor?.updateValidationDisplay(focusInvalidField)
+                it.editor?.updateValidationDisplay(focusInvalidPart)
             }
         }
 
@@ -1575,7 +1575,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         } catch (e: ValidationException) {
             if (updateValidationErrors) {
                 showConstraintViolations(e.constraintViolations)
-                if (focusInvalidField) {
+                if (focusInvalidPart) {
                     focusInvalidField()
                 }
                 recoveringFromManualValidationErrors = true
@@ -1595,7 +1595,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         }
         valid.value = !nestedErrorsPresent
         value.value = if (nestedErrorsPresent) {
-            if (focusInvalidField) {
+            if (focusInvalidPart) {
                 focusInvalidField()
             }
             null
@@ -1712,11 +1712,31 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     }
 
     /**
-     * Focuses the form by focusing its first field.
+     * Specifies that the focus request that this form is about to receive was
+     * made in order to focus the field that has caused a validation failure.
      *
-     * This is the focusing that is expected when the form is displayed to
-     * the user for the first time (e.g., when a dialog containing the form is
-     * opened), so the user can start filling the form in from its first field.
+     * Focus requests are dispatched asynchronously (see [focusRequest]), and
+     * a nested form receives them via its [focus] method. This flag is how
+     * a form that focuses an invalid field whose editor is a nested form tells
+     * that form to focus its invalid field as well, instead of its first one.
+     *
+     * The flag is cleared as soon as it is read in [focus].
+     *
+     * @see focusInvalidField
+     */
+    private var focusInvalidFieldRequested = false
+
+    /**
+     * Focuses the form.
+     *
+     * More precisely, the form's first field is focused, unless this form has
+     * been asked to focus the field that has caused a validation failure, in
+     * which case [focusInvalidField] is invoked.
+     *
+     * Focusing the first field is what is expected when the form is displayed
+     * to the user for the first time (e.g., when a dialog containing the form
+     * is opened), so the user can start filling the form in from its
+     * first field.
      *
      * Note that a field being empty doesn't make it invalid in this context:
      * all fields of a form that has just been displayed are typically empty,
@@ -1727,6 +1747,11 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * @see focusInvalidField
      */
     override fun focus() {
+        if (focusInvalidFieldRequested) {
+            focusInvalidFieldRequested = false
+            focusInvalidField()
+            return
+        }
         val firstField = fields.values.firstOrNull()
 
         // If the first field is a oneof field, make sure that the
@@ -1743,6 +1768,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * This is the focusing that is expected once the form's validation has
      * been triggered, so the user can fix the entry that has caused it
      * to fail.
+     *
+     * If the field to be focused is edited by a nested form, that form is
+     * asked to focus its invalid field as well, so that the invalid entry is
+     * focused however deeply it is nested.
      *
      * @see focus
      */
@@ -1763,11 +1792,12 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                     ?: formOneof?.fields?.values?.firstOrNull()
             }
 
-        if (fieldToFocus != null) {
-            fieldToFocus.focusEditor()
-        } else {
+        if (fieldToFocus == null) {
             focus()
+            return
         }
+        (fieldToFocus.editor as? MessageForm<*>)?.focusInvalidFieldRequested = true
+        fieldToFocus.focusEditor()
     }
 }
 
