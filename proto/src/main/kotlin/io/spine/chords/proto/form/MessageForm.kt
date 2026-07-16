@@ -1576,7 +1576,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             if (updateValidationErrors) {
                 showConstraintViolations(e.constraintViolations)
                 if (focusInvalidField) {
-                    focus()
+                    focusInvalidField()
                 }
                 recoveringFromManualValidationErrors = true
             }
@@ -1596,7 +1596,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         valid.value = !nestedErrorsPresent
         value.value = if (nestedErrorsPresent) {
             if (focusInvalidField) {
-                focus()
+                focusInvalidField()
             }
             null
         } else {
@@ -1712,12 +1712,41 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     }
 
     /**
-     * Focuses the form.
+     * Focuses the form by focusing its first field.
      *
-     * More precisely, it focuses the first field, or the first invalid field
-     * (if there's at least one invalid field).
+     * This is the focusing that is expected when the form is displayed to
+     * the user for the first time (e.g., when a dialog containing the form is
+     * opened), so the user can start filling the form in from its first field.
+     *
+     * Note that a field being empty doesn't make it invalid in this context:
+     * all fields of a form that has just been displayed are typically empty,
+     * and some of them can be reported as invalid merely because of this. Use
+     * [focusInvalidField] to focus the field whose entry has actually caused
+     * a validation failure.
+     *
+     * @see focusInvalidField
      */
     override fun focus() {
+        val firstField = fields.values.firstOrNull()
+
+        // If the first field is a oneof field, make sure that the
+        // selected oneof option actually gets the focus by default.
+        val fieldToFocus = firstField?.formOneof?.selectedFormField ?: firstField
+
+        fieldToFocus?.focusEditor()
+    }
+
+    /**
+     * Focuses the first field that has caused a validation failure, and falls
+     * back to focusing the form's first field if there's no such field.
+     *
+     * This is the focusing that is expected once the form's validation has
+     * been triggered, so the user can fix the entry that has caused it
+     * to fail.
+     *
+     * @see focus
+     */
+    protected fun focusInvalidField() {
         val fieldToFocus =
             fields.values.firstOrNull { field ->
                 !field.valueValid.value ||
@@ -1732,15 +1761,13 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 }
                 formOneof?.selectedFormField
                     ?: formOneof?.fields?.values?.firstOrNull()
-            } ?: run {
-                val firstField = fields.values.firstOrNull()
-
-                // If the first field is a oneof field, make sure that the
-                // selected oneof option actually gets the focus by default.
-                firstField?.formOneof?.selectedFormField ?: firstField
             }
 
-        fieldToFocus?.focusEditor()
+        if (fieldToFocus != null) {
+            fieldToFocus.focusEditor()
+        } else {
+            focus()
+        }
     }
 }
 
