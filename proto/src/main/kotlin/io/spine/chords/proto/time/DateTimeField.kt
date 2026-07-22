@@ -112,6 +112,24 @@ public class DateTimeField : InputField<Timestamp>() {
         parseDateTime(rawText, dateTimePattern, WallClock.zoneOffset)
 }
 
+/**
+ * Parses date and time from raw input field text into a Protobuf [Timestamp].
+ *
+ * The [rawText] contains only editable characters of the date/time value. The
+ * separators specified by [dateTimePattern] are restored before parsing. The
+ * resulting local date/time is interpreted at [zoneOffset].
+ *
+ * @param rawText
+ *         the editable characters entered into the input field.
+ * @param dateTimePattern
+ *         the pattern used to restore separators and parse the date/time.
+ * @param zoneOffset
+ *         the offset used to convert the local date/time into an instant.
+ * @return the parsed date/time represented as a Protobuf timestamp.
+ * @throws ParseException
+ *         if the text cannot be parsed or the resulting instant is outside
+ *         the range supported by Protobuf timestamps.
+ */
 internal fun parseDateTime(
     rawText: String,
     dateTimePattern: DateTimePattern,
