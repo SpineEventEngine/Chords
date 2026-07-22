@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,23 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      */
     private var commandMessageForm: CommandMessageForm<C> by writeOnce()
 
+    /**
+     * Stores the dirty state reported by the [commandMessageForm].
+     *
+     * Its value is exposed to consumers through [dirty].
+     */
+    private val dirtyState = mutableStateOf(false)
+
+    /**
+     * Has a value of `true` when the command form is in the "dirty" state.
+     *
+     * A "dirty" state means that at least one of the form's fields currently
+     * displays some data, either valid or invalid. A value of `false` means
+     * that none of the fields displays any data.
+     */
+    public val dirty: Boolean
+        get() = dirtyState.value
+
     override fun updateProps() {
         super.updateProps()
         submitting = postingState.value
@@ -104,6 +121,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
             onBeforeBuild = ::beforeBuild,
             props = {
                 validationDisplayMode = MANUAL
+                onDirtyStateChange = { dirtyState.value = it }
                 createCommandConsequences = this@CommandDialog.createCommandConsequences
                 commandConsequences = {
                     (this as ModalCommandConsequencesScope<C>).run {
