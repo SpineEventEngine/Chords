@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,10 +59,10 @@ import io.spine.chords.proto.value.time.DefaultDatePattern
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatter.ofPattern
 import java.time.format.DateTimeParseException
-import java.util.*
 
 private const val DefaultDateTimeFormat = "$DefaultDatePattern HH:mm"
 
@@ -108,18 +108,49 @@ public class DateTimeField : InputField<Timestamp>() {
         )
     }
 
-    override fun parseValue(rawText: String): Timestamp {
-        val offsetDateTime = try {
-            LocalDateTime.parse(
-                complementWithPattern(rawText, dateTimePattern).string,
-                ofPattern(dateTimePattern)
-            )
-        } catch (e: DateTimeParseException) {
-            throw ParseException("Enter a valid value", e)
-        }
-        val millis = Date.from(offsetDateTime.toInstant(WallClock.zoneOffset)).time
-        return Timestamps.fromMillis(millis)
+    override fun parseValue(rawText: String): Timestamp =
+        parseDateTime(rawText, dateTimePattern, WallClock.zoneOffset)
+}
+
+/**
+ * Parses date and time from raw input field text into a Protobuf [Timestamp].
+ *
+ * The [rawText] contains only editable characters of the date/time value. The
+ * separators specified by [dateTimePattern] are restored before parsing. The
+ * resulting local date/time is interpreted at [zoneOffset].
+ *
+ * @param rawText
+ *         the editable characters entered into the input field.
+ * @param dateTimePattern
+ *         the pattern used to restore separators and parse the date/time.
+ * @param zoneOffset
+ *         the offset used to convert the local date/time into an instant.
+ * @return the parsed date/time represented as a Protobuf timestamp.
+ * @throws ParseException
+ *         if the text cannot be parsed or the resulting instant is outside
+ *         the range supported by Protobuf timestamps.
+ */
+internal fun parseDateTime(
+    rawText: String,
+    dateTimePattern: DateTimePattern,
+    zoneOffset: ZoneOffset
+): Timestamp {
+    val localDateTime = try {
+        LocalDateTime.parse(
+            complementWithPattern(rawText, dateTimePattern).string,
+            ofPattern(dateTimePattern)
+        )
+    } catch (e: DateTimeParseException) {
+        throw ParseException("Enter a valid value", e)
     }
+    val instant = localDateTime.toInstant(zoneOffset)
+    if (!Timestamps.isValid(instant.epochSecond, instant.nano)) {
+        throw ParseException("Enter a date/time within the supported range")
+    }
+    return Timestamp.newBuilder()
+        .setSeconds(instant.epochSecond)
+        .setNanos(instant.nano)
+        .build()
 }
 
 /**
