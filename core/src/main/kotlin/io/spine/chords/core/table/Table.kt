@@ -129,19 +129,15 @@ import io.spine.chords.core.table.TableSortingDirection.DESCENDING
  *         columns = listOf(
  *             TableColumn(
  *                 name = "Name",
- *                 sorting = TableColumnSorting(compareBy(User::name))
- *             ) { user ->
- *                 Text(user.name)
- *             },
+ *                 value = User::name
+ *             ),
  *             TableColumn(
  *                 name = "Created",
+ *                 value = User::createdAt,
  *                 sorting = TableColumnSorting(
- *                     comparator = compareBy(User::createdAt),
  *                     initialDirection = DESCENDING
  *                 )
- *             ) { user ->
- *                 Text(user.createdAt.toString())
- *             }
+ *             )
  *         )
  *     }
  *
@@ -378,7 +374,10 @@ public abstract class Table<E> : Component() {
  * @param columnKey A stable identifier of the column used to keep track of the sorting state.
  *   By default, the column [name] is used.
  * @param sorting Optional sorting configuration for this column.
- *   If `null`, the header is rendered without interactive sorting support.
+ *   If omitted for a column with a [value], natural ascending sorting is used.
+ * @param value An optional function that extracts this column's value from an entity.
+ *   Values returned for different entities must be mutually comparable. When specified,
+ *   it supplies the default sorting comparator and allows [cellContent] to be omitted.
  * @param cellContent A callback that specifies what element to display
  *   inside each cell of this column.
  */
@@ -389,8 +388,72 @@ public data class TableColumn<E>(
     val padding: PaddingValues = PaddingValues(),
     val columnKey: Any = name,
     val sorting: TableColumnSorting<E>? = null,
+    val value: ((E) -> Comparable<*>?)?,
     val cellContent: @Composable (E) -> Unit
-)
+) {
+
+    /**
+     * Creates a column with explicitly defined cell content and no column value.
+     *
+     * This constructor preserves the original, value-less column declaration API.
+     */
+    public constructor(
+        name: String,
+        horizontalArrangement: Horizontal = Center,
+        weight: Float = 1F,
+        padding: PaddingValues = PaddingValues(),
+        columnKey: Any = name,
+        sorting: TableColumnSorting<E>? = null,
+        cellContent: @Composable (E) -> Unit
+    ) : this(
+        name,
+        horizontalArrangement,
+        weight,
+        padding,
+        columnKey,
+        sorting,
+        null,
+        cellContent
+    )
+
+    /**
+     * Creates a valued column with a default text-based cell renderer.
+     *
+     * @param name The name of the column to be displayed in a header.
+     * @param value A function that extracts this column's value from an entity.
+     * @param horizontalArrangement The horizontal arrangement of the column's content.
+     * @param weight The proportional width to allocate to this column.
+     * @param padding The padding values of each cell's content in this column.
+     * @param columnKey A stable identifier used to keep track of the sorting state.
+     * @param sorting Optional sorting configuration. Natural ascending sorting is used
+     *   when this parameter is omitted.
+     */
+    public constructor(
+        name: String,
+        value: (E) -> Comparable<*>?,
+        horizontalArrangement: Horizontal = Center,
+        weight: Float = 1F,
+        padding: PaddingValues = PaddingValues(),
+        columnKey: Any = name,
+        sorting: TableColumnSorting<E>? = null
+    ) : this(
+        name,
+        horizontalArrangement,
+        weight,
+        padding,
+        columnKey,
+        sorting,
+        value,
+        { entity -> Text(value(entity)?.toString().orEmpty()) }
+    )
+
+    internal val effectiveSorting: TableColumnSorting<E>? =
+        sorting?.resolvedFor(value) ?: value?.let {
+            TableColumnSorting<E>().resolvedFor(it)
+        }
+
+    internal val sortable: Boolean = effectiveSorting != null
+}
 
 /**
  * Defines sorting rules for a table column.
@@ -401,7 +464,62 @@ public data class TableColumn<E>(
 public data class TableColumnSorting<E>(
     val comparator: Comparator<E>,
     val initialDirection: TableSortingDirection = ASCENDING
-)
+) {
+
+    /**
+     * Creates sorting configuration that compares values extracted by the column.
+     *
+     * This constructor can only be used for a [TableColumn] that defines a value.
+     *
+     * @param initialDirection The direction applied the first time the column is activated.
+     */
+    public constructor(
+        initialDirection: TableSortingDirection = ASCENDING
+    ) : this(columnValueComparatorMarker(), initialDirection)
+
+    internal val usesColumnValue: Boolean
+        get() = comparator === columnValueComparatorMarker
+
+    internal fun resolvedFor(
+        columnValue: ((E) -> Comparable<*>?)?
+    ): TableColumnSorting<E> {
+        if (!usesColumnValue) {
+            return this
+        }
+        return TableColumnSorting(
+            comparator = comparatorFor(checkNotNull(columnValue) {
+                "A TableColumnSorting without a comparator requires a column value."
+            }),
+            initialDirection = initialDirection
+        )
+    }
+
+    private companion object {
+        val columnValueComparatorMarker: Comparator<Any?> = Comparator { _, _ ->
+            error("The column value comparator must be resolved before it is used.")
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        fun <E> columnValueComparatorMarker(): Comparator<E> =
+            columnValueComparatorMarker as Comparator<E>
+
+        fun <E> comparatorFor(value: (E) -> Comparable<*>?): Comparator<E> =
+            Comparator { leftEntity, rightEntity ->
+                compareColumnValues(value(leftEntity), value(rightEntity))
+            }
+
+        @Suppress("UNCHECKED_CAST")
+        fun compareColumnValues(
+            left: Comparable<*>?,
+            right: Comparable<*>?
+        ): Int = when {
+            left === right -> 0
+            left == null -> -1
+            right == null -> 1
+            else -> (left as Comparable<Any?>).compareTo(right)
+        }
+    }
+}
 
 /**
  * Sorting direction used by the table.
@@ -488,7 +606,7 @@ public class TableSortingState<E>(
      * If the column is not sortable, the state remains unchanged.
      */
     public fun toggle(column: TableColumn<E>) {
-        val columnSorting = column.sorting ?: return
+        val columnSorting = column.effectiveSorting ?: return
         val nextDirection = if (currentSorting?.columnKey == column.columnKey) {
             currentSorting!!.direction.reverse()
         } else {
@@ -623,7 +741,7 @@ private fun <E> HeaderTableRow(
     TableRow(
         columns = columns,
         cellModifier = { column ->
-            if (column.sorting != null) {
+            if (column.sortable) {
                 Modifier
                     .pointerHoverIcon(Hand)
                     .clickable(
@@ -659,7 +777,7 @@ private fun <E> HeaderCell(
     column: TableColumn<E>,
     sortingState: TableSortingState<E>
 ) {
-    val isSortable = column.sorting != null
+    val isSortable = column.sortable
     var isHovered by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
