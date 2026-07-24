@@ -88,6 +88,12 @@ step 6), then:
 
 - This is a public open-source repository (Apache 2.0). Do not add secrets,
   credentials, tokens, private keys, or TeamDev-internal data to it.
+- Pull requests and issues opened in this repository are public. Keep their
+  titles, descriptions, comments, and linked references free of any information
+  about dependent private projects. Do not name those projects, describe their
+  domain or business logic, link to their issues, PRs, or repositories, or
+  reference their internal identifiers. Describe the change only in terms of
+  this repository's own libraries and public API.
 - Do not modify files under the `config/` Git submodule; it is owned by the
   [SpineEventEngine/config](https://github.com/SpineEventEngine/config)
   repository, and changes belong upstream.
