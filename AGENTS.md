@@ -35,6 +35,55 @@ leave changes unstaged, show the diff or summarize it, and let the user decide.
 
 When moving or renaming tracked files, use `git mv` so file history is preserved.
 
+## Committing and Pushing
+
+The Commit and History Safety rules above apply throughout this procedure.
+
+1. **Confirm authorization.** Commit or push only when the current prompt
+   explicitly asks for it, per "Commit and History Safety" above.
+2. **Choose the branch.**
+   - If the current branch is `master`, create a new branch; never commit
+     directly to `master`.
+   - If the current branch name does not match the task, ask whether to branch
+     from the current branch or from `master` before committing.
+   - If the current branch name matches the task, keep using it.
+   - Name new branches after the task, in the repository's kebab-case style
+     (for example, `dialog-form-dirty-state`); do not include `codex` or other
+     agent-specific identifiers in branches you create.
+3. **Check the version and reports.** Apply "Versioning and Reports" above:
+   inspect the commits and local state, bump `chordsVersion` in
+   `version.gradle.kts` if the changeset has not bumped it yet, and if the
+   generated `pom.xml` and `dependencies.md` reports are not updated yet, run
+   `./gradlew build` and include the regenerated reports in the changeset.
+4. **Commit in logical steps.** Create one or more logical commits; split the
+   work only when each commit is independently coherent. Commit the version
+   bump together with the regenerated `pom.xml` and `dependencies.md`, using
+   the repository's established message format
+   ``Bump version —> `<new-version>`.`` — its position in the sequence does
+   not matter.
+5. **Push.** Push the branch to its remote (for example,
+   `git push -u origin <branch>`).
+6. **Offer a pull request.** Ask whether to open a pull request, unless the
+   prompt already requested one.
+
+## Creating a Pull Request
+
+Open the PR only once it is authorized (see "Committing and Pushing",
+step 6), then:
+
+1. **Create it as a draft** (`gh pr create --draft`), targeting `master` as the
+   base branch unless the task specifies otherwise.
+2. **Assign it to the authenticated GitHub user** (`--assignee @me`).
+3. **Write the description** with a `## Summary` section followed by a
+   `## Changes` section. Optional sections such as `## Important notes` or
+   `## Reviewer notes` may follow when useful. Do not add a "Verifications"
+   section or any agent-attribution section such as `Created by <agent>`.
+4. **Link resolved issues.** For each issue the PR implements or fixes, add a
+   GitHub closing keyword in the description (for example, `Fixes #123`) so the
+   issue appears under "Successfully merging this pull request may close these
+   issues" on GitHub.
+5. **Report the PR URL** in the final response.
+
 ## Safety Rules
 
 - This is a public open-source repository (Apache 2.0). Do not add secrets,
@@ -142,6 +191,15 @@ If verification cannot be run, state the reason clearly in the final response.
 - Get the `config` submodule content with
   `git submodule update --init --recursive` before building.
 
+## Bug Fixes
+
+When fixing a bug, fix the root cause rather than adding a workaround. If the
+root cause cannot be fixed, ask for confirmation before implementing a
+workaround and explain why the root cause cannot be addressed.
+
+Cover the fix with a test that reproduces the bug and fails without the fix. If
+a test cannot be added, state this in the final response and explain why.
+
 ## Code Review
 
 For reviews, lead with findings ordered by severity and include file/line
@@ -165,7 +223,15 @@ Start each task by forming an agent-owned plan before editing or running
 non-trivial commands. While composing that plan, identify missing requirements,
 risks, affected areas, and verification needs.
 
-Ask all clarification questions needed to close uncovered spots in the plan.
-Group related questions together when they are blocking the same decision.
-Prefer a reasonable assumption only when the answer would not materially change
-the plan, implementation, safety posture, or verification path.
+Ask the clarification questions needed to close uncovered spots in the plan,
+following these rules:
+
+- Ask at most one question per message. When a decision has a small set of
+  options, include those options in that question.
+- Do not bundle unrelated questions. Ask the next one only after the user
+  answers the previous.
+- Apply this both when you need clarification and when the prompt means
+  "ask questions".
+- Prefer a reasonable assumption over another question when the answer would
+  not materially change the plan, implementation, safety posture, or
+  verification path.
