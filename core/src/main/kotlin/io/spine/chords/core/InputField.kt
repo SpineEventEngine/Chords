@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation.Companion.None
-import io.spine.chords.core.InputReviser.Companion.maxLength
 import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
 import io.spine.chords.core.keyboard.KeyRange.Companion.Whitespace
 import io.spine.chords.core.keyboard.matches
@@ -493,7 +492,9 @@ public open class InputField<V> : InputComponent<V>() {
             modifier = modifier(modifier)
                 .focusRequester(focusRequester)
                 .preventWidthAutogrowing()
-                .onPreviewKeyEvent { inputReviser?.filterKeyEvent(it) == true }
+                .onPreviewKeyEvent {
+                    handleKeyEvent(it) || inputReviser?.filterKeyEvent(it) == true
+                }
         )
     }
 
@@ -543,7 +544,52 @@ public open class InputField<V> : InputComponent<V>() {
             currentRawTextContent,
             newRawTextContentCandidate
         ) ?: newRawTextContentCandidate
-        val newText = revisedTextContent.text
+        commitRawText(
+            revisedTextContent.text,
+            revisedTextContent.selection,
+            currentRawTextContent.text
+        )
+    }
+
+    /**
+     * Sets the field's [value] programmatically, updating the field's displayed
+     * text, validation, and dirty state as if the user had entered the text that
+     * corresponds to [newValue].
+     *
+     * The text produced by [formatValue] for [newValue] replaces whatever the
+     * field currently contains, including any incomplete or invalid entry, and
+     * is placed with the cursor at its end. The value is passed through the same
+     * validation as the user's own input (both [parseValue] and [onValidate]),
+     * and the relevant callbacks ([onChange], [onDirtyStateChange]) are invoked
+     * accordingly.
+     *
+     * Unlike assigning [value] directly, this method ensures that the text shown
+     * in the field is refreshed and that any previously displayed validation
+     * error is cleared.
+     *
+     * @param newValue The value to be set into the field.
+     */
+    protected fun applyValue(newValue: V) {
+        val rawText = formatValue(newValue)
+        val prevText = invalidValueText ?: value.value?.let { formatValue(it) } ?: ""
+        commitRawText(rawText, TextRange(rawText.length), prevText)
+    }
+
+    /**
+     * Applies a new raw text to the field, running the same parsing, validation,
+     * and state bookkeeping that a user's edit would trigger.
+     *
+     * @param newText The new raw text to be applied as the field's content.
+     * @param newSelection The cursor/selection to be applied along with
+     *   [newText].
+     * @param prevText The raw text the field had before this change, used to
+     *   detect a transition of the dirty state.
+     */
+    private fun commitRawText(
+        newText: String,
+        newSelection: TextRange,
+        prevText: String
+    ) {
         var validationErrorMessage: String? = null
         val validatedValue: V? = try {
             if (newText.isNotEmpty()) {
@@ -560,12 +606,12 @@ public open class InputField<V> : InputComponent<V>() {
         val prevValue = value.value
         value.value = validatedValue.takeIf { valid }
         invalidValueText = newText.takeIf { !valid }
-        selection = revisedTextContent.selection
+        selection = newSelection
 
         this.valid.value = valid
         ownValidationMessage.value = validationErrorMessage
 
-        val prevTextEmpty = currentRawTextContent.text.isEmpty()
+        val prevTextEmpty = prevText.isEmpty()
         val newTextEmpty = newText.isEmpty()
         if (newTextEmpty != prevTextEmpty) {
             onDirtyStateChange?.invoke(prevTextEmpty)
@@ -574,6 +620,23 @@ public open class InputField<V> : InputComponent<V>() {
             onChange?.invoke(value.value)
         }
     }
+
+    /**
+     * Handles a key event that occurs while the field is focused, before it is
+     * processed by the field's text editing and by [inputReviser].
+     *
+     * Subclasses can override this method to implement field-specific keyboard
+     * shortcuts. Returning `true` consumes the event and stops its further
+     * propagation (so it doesn't reach the text editor); returning `false`
+     * lets the event be processed as usual.
+     *
+     * The default implementation doesn't handle any events and returns `false`.
+     *
+     * @param keyEvent The key event that has occurred within the field.
+     * @return `true` if the event was handled and should be consumed,
+     *   `false` otherwise.
+     */
+    protected open fun handleKeyEvent(keyEvent: KeyEvent): Boolean = false
 
     /**
      * Parses and validates the field's text content.

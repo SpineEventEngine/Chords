@@ -26,28 +26,22 @@
 
 package io.spine.chords.core.time
 
+import io.kotest.core.spec.DisplayName
+import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
+import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
 import java.time.Instant
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
+import org.junit.jupiter.api.Test
 
-/**
- * The client's local time characteristics.
- */
-public object WallClock {
+@DisplayName("`WallClock` should")
+internal class WallClockSpec {
 
-    /**
-     * Local time zone offset.
-     */
-    public val zoneOffset: ZoneOffset
-        get() = OffsetDateTime.now().offset
+    @Test
+    fun `provide the current moment`() {
+        val before = Instant.now()
+        val now = WallClock.now
+        val after = Instant.now()
 
-    /**
-     * The current moment on the client, as an [Instant].
-     *
-     * This is the single point through which the current time should be
-     * obtained, so that time-dependent behavior stays consistent with the other
-     * client time characteristics modeled here (such as [zoneOffset]).
-     */
-    public val now: Instant
-        get() = Instant.now()
+        now shouldBeGreaterThanOrEqualTo before
+        now shouldBeLessThanOrEqualTo after
+    }
 }
