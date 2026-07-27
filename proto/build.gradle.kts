@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ dependencies {
     implementation(project(":core"))
     api(Spine.money)
     implementation(compose.desktop.currentOs)
+    implementation(compose.materialIconsExtended)
     implementation(Material3.Desktop.lib)
     implementation(project(":proto-values"))
     testImplementation(Kotest.runnerJUnit5)

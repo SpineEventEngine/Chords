@@ -79,4 +79,30 @@ internal class DateTimeFieldSpec {
 
         result shouldBe expected
     }
+
+    @Test
+    fun `fill the current moment truncated to the field's pattern`() {
+        val instant = Instant.parse("2025-07-01T12:30:45.123456789Z")
+
+        val text = formatDateTime(instant.toTimestamp(), TestDateTimePattern, ZoneOffset.UTC)
+        val stored = parseDateTime(text, TestDateTimePattern, ZoneOffset.UTC)
+
+        stored shouldBe Timestamp.newBuilder()
+            .setSeconds(Instant.parse("2025-07-01T12:30:00Z").epochSecond)
+            .build()
+    }
+
+    @Test
+    fun `preserve sub-second precision when the pattern includes a fraction`() {
+        val pattern = "yyyy-MM-dd HH:mm:ss.SSS"
+        val instant = Instant.parse("2025-07-01T12:30:45.123Z")
+
+        val text = formatDateTime(instant.toTimestamp(), pattern, ZoneOffset.UTC)
+        val stored = parseDateTime(text, pattern, ZoneOffset.UTC)
+
+        stored shouldBe Timestamp.newBuilder()
+            .setSeconds(Instant.parse("2025-07-01T12:30:45Z").epochSecond)
+            .setNanos(123_000_000)
+            .build()
+    }
 }

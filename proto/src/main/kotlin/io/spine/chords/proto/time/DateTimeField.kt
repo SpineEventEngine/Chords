@@ -26,15 +26,45 @@
 
 package io.spine.chords.proto.time
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.pointer.PointerEventType.Companion.Enter
+import androidx.compose.ui.input.pointer.PointerEventType.Companion.Exit
+import androidx.compose.ui.input.pointer.PointerEventType.Companion.Press
+import androidx.compose.ui.input.pointer.PointerEventType.Companion.Release
+import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
+import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
@@ -43,10 +73,13 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.getSelectedText
+import androidx.compose.ui.unit.dp
 import com.google.protobuf.Timestamp
 import com.google.protobuf.util.Timestamps
 import io.spine.chords.core.ComponentSetup
+import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.KeyRange
+import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.InputField
 import io.spine.chords.core.InputReviser
@@ -54,6 +87,7 @@ import io.spine.chords.core.InputReviser.Companion.DigitsOnly
 import io.spine.chords.core.InputReviser.Companion.maxLength
 import io.spine.chords.core.RawTextContent
 import io.spine.chords.core.ParseException
+import io.spine.chords.core.layout.WithTooltip
 import io.spine.chords.core.time.WallClock
 import io.spine.chords.proto.value.time.DefaultDatePattern
 import java.time.Instant
@@ -67,12 +101,59 @@ import java.time.format.DateTimeParseException
 private const val DefaultDateTimeFormat = "$DefaultDatePattern HH:mm"
 
 /**
+ * The text used both as the accessibility description and the tooltip of the
+ * [DateTimeField]'s default "now" button.
+ */
+private const val NowButtonDescription = "Set to the current date and time"
+
+/**
+ * The opacity of the "now" button's state layer while it is hovered.
+ */
+private const val HoveredStateLayerAlpha = 0.08f
+
+/**
+ * The opacity of the "now" button's state layer while it is pressed.
+ */
+private const val PressedStateLayerAlpha = 0.12f
+
+/**
+ * The overall size of the "now" button (its round state layer).
+ *
+ * It matches the height of a single text line, so that the button doesn't
+ * enlarge the field.
+ */
+private val NowButtonSize = 24.dp
+
+/**
+ * The size of the "now" button's icon, kept smaller than [NowButtonSize] so that
+ * the round state layer remains visible around it.
+ */
+private val NowButtonIconSize = 20.dp
+
+/**
  * Date/time pattern as defined by [DateTimeFormatter].
  */
 public typealias DateTimePattern = String
 
 /**
  * A field that allows specifying date and time.
+ *
+ * ### The "now" option
+ *
+ * When [nowOptionEnabled] is set to `true`, the field offers an optional
+ * affordance for filling it with the current date and time, so that the user
+ * doesn't have to type it by hand when recording something at the moment it
+ * happens. The current moment is obtained through
+ * [WallClock][io.spine.chords.core.time.WallClock].
+ *
+ * Since the field always keeps its value consistent with the text it displays,
+ * the filled value is truncated to the resolution of [dateTimePattern] — for
+ * example, to the minute with the default pattern, which has no seconds field.
+ *
+ * The affordance is available both as a button displayed within the field
+ * (while it is focused or already contains a value), and as the Ctrl+N keyboard
+ * shortcut while the field is focused. The button's appearance can be customized
+ * via [nowOptionAffordance].
  */
 public class DateTimeField : InputField<Timestamp>() {
     public companion object : ComponentSetup<DateTimeField>()
@@ -82,6 +163,37 @@ public class DateTimeField : InputField<Timestamp>() {
      * [DateTimeFormatter], no spaces are allowed).
      */
     public var dateTimePattern: DateTimePattern by mutableStateOf(DefaultDateTimeFormat)
+
+    /**
+     * Enables an optional "now" affordance that fills the field with the current
+     * date and time (see the class documentation).
+     *
+     * When set to `true`, the field displays a button (while it is focused or
+     * already contains a value) that fills it with the current date and time
+     * (truncated to the resolution of [dateTimePattern]), and the same can be
+     * done with the Ctrl+N keyboard shortcut while the field is focused.
+     *
+     * It is `false` by default, so that the affordance appears only where
+     * a "current moment" value makes sense.
+     *
+     * @see nowOptionAffordance
+     */
+    public var nowOptionEnabled: Boolean by mutableStateOf(false)
+
+    /**
+     * An optional custom renderer for the "now" affordance, used instead of the
+     * default button when [nowOptionEnabled] is `true`.
+     *
+     * The provided composable receives a `fillNow` callback, which sets the
+     * field to the current date and time; it should be invoked when the user
+     * activates the custom affordance.
+     *
+     * When this property is `null` (by default), a default button is displayed.
+     *
+     * @see nowOptionEnabled
+     */
+    public var nowOptionAffordance: (@Composable (fillNow: () -> Unit) -> Unit)?
+            by mutableStateOf(null)
 
     init {
         label = "Date/time"
@@ -99,17 +211,227 @@ public class DateTimeField : InputField<Timestamp>() {
                 it.text, dateTimePattern
             ).toTransformedString(secondaryColor)
         }
+        suffix = if (nowOptionEnabled) {
+            {
+                val customAffordance = nowOptionAffordance
+                if (customAffordance != null) {
+                    customAffordance(::fillNow)
+                } else {
+                    NowButton(enabled = enabled, onClick = ::fillNow)
+                }
+            }
+        } else {
+            null
+        }
     }
 
-    override fun formatValue(value: Timestamp): String {
-        val instant = Instant.ofEpochSecond(value.seconds)
-        return ofPattern(purifiedPattern(dateTimePattern)).format(
-            OffsetDateTime.ofInstant(instant, WallClock.zoneOffset)
-        )
+    override fun handleKeyEvent(keyEvent: KeyEvent): Boolean {
+        if (nowOptionEnabled && enabled && keyEvent matches Ctrl(Key.N.key).down) {
+            fillNow()
+            return true
+        }
+        return false
     }
+
+    /**
+     * Fills the field with the current date and time, obtained through
+     * [WallClock].
+     *
+     * The stored value is truncated to the resolution of [dateTimePattern], so
+     * that it stays consistent with the text displayed in the field.
+     */
+    private fun fillNow() {
+        if (enabled) {
+            applyValue(WallClock.now.toTimestamp())
+        }
+    }
+
+    override fun formatValue(value: Timestamp): String =
+        formatDateTime(value, dateTimePattern, WallClock.zoneOffset)
 
     override fun parseValue(rawText: String): Timestamp =
         parseDateTime(rawText, dateTimePattern, WallClock.zoneOffset)
+}
+
+/**
+ * The default button of the [DateTimeField]'s "now" affordance.
+ *
+ * It is a compact clickable icon (rather than a full-sized
+ * [androidx.compose.material3.IconButton]), so that it doesn't increase the
+ * height of the field. A round state layer behind the icon is lightened on hover
+ * or focus and darkened while pressed, to give the usual visual feedback.
+ *
+ * The control exposes button semantics (a button role, an accessible click
+ * action, a disabled state, keyboard focusability, and Enter/Space activation),
+ * so that it is discoverable and operable via assistive technologies and
+ * keyboard traversal.
+ *
+ * Mouse activation is handled with low-level pointer events (a primary-button
+ * press on the icon followed by a release over it; a non-primary button or a
+ * press dragged away before release does not activate it). This is used instead
+ * of [androidx.compose.foundation.clickable] because the latter's gesture is
+ * intermittently cancelled when placed inside the text field's decoration, where
+ * the field competes for the same pointer events.
+ *
+ * @param enabled
+ *         whether the button is enabled for interaction.
+ * @param onClick
+ *         a callback invoked when the button is clicked.
+ */
+@Composable
+@OptIn(ExperimentalComposeUiApi::class)
+private fun NowButton(enabled: Boolean, onClick: () -> Unit) {
+    var hovered by remember { mutableStateOf(false) }
+    var pressed by remember { mutableStateOf(false) }
+    var focused by remember { mutableStateOf(false) }
+    val stateLayerColor = nowButtonStateLayerColor(
+        enabled, pressed, hovered || focused, colorScheme.onSurface
+    )
+    WithTooltip(tooltip = NowButtonDescription) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(NowButtonSize)
+                .clip(CircleShape)
+                .background(stateLayerColor)
+                .nowButtonSemantics(enabled, onClick)
+                .onFocusChanged { focused = it.isFocused }
+                .onActivationKeys(enabled, onClick)
+                .focusable(enabled)
+                .pointerHoverIcon(Hand)
+                .nowButtonPointerInput(
+                    enabled,
+                    setHovered = { hovered = it },
+                    isPressed = { pressed },
+                    setPressed = { pressed = it },
+                    onClick = onClick
+                )
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Schedule,
+                contentDescription = null,
+                modifier = Modifier.size(NowButtonIconSize)
+            )
+        }
+    }
+}
+
+/**
+ * The color of the "now" button's state layer for the given interaction state.
+ */
+private fun nowButtonStateLayerColor(
+    enabled: Boolean,
+    pressed: Boolean,
+    active: Boolean,
+    baseColor: Color
+): Color = when {
+    !enabled -> Color.Transparent
+    pressed -> baseColor.copy(alpha = PressedStateLayerAlpha)
+    active -> baseColor.copy(alpha = HoveredStateLayerAlpha)
+    else -> Color.Transparent
+}
+
+/**
+ * Adds button semantics to the "now" button, so that it is exposed to assistive
+ * technologies as an actionable, optionally disabled, button.
+ */
+private fun Modifier.nowButtonSemantics(
+    enabled: Boolean,
+    onClick: () -> Unit
+): Modifier = semantics(mergeDescendants = true) {
+    role = Role.Button
+    contentDescription = NowButtonDescription
+    if (!enabled) {
+        disabled()
+    }
+    onClick(label = NowButtonDescription) {
+        if (enabled) {
+            onClick()
+        }
+        enabled
+    }
+}
+
+/**
+ * Activates the "now" button with the Enter or Space key while it is focused.
+ */
+private fun Modifier.onActivationKeys(
+    enabled: Boolean,
+    onActivate: () -> Unit
+): Modifier = onKeyEvent { event ->
+    if (enabled &&
+        (event matches Key.Enter.key.down || event matches Key.Spacebar.key.down)
+    ) {
+        onActivate()
+        true
+    } else {
+        false
+    }
+}
+
+/**
+ * Handles mouse interaction with the "now" button, invoking [onClick] on a
+ * primary-button press on the button followed by a release over it, and
+ * reporting the hover and press states via [setHovered] and [setPressed].
+ */
+@OptIn(ExperimentalComposeUiApi::class)
+private fun Modifier.nowButtonPointerInput(
+    enabled: Boolean,
+    setHovered: (Boolean) -> Unit,
+    isPressed: () -> Boolean,
+    setPressed: (Boolean) -> Unit,
+    onClick: () -> Unit
+): Modifier =
+    onPointerEvent(Enter) { setHovered(true) }
+        .onPointerEvent(Exit) {
+            setHovered(false)
+            setPressed(false)
+        }
+        .onPointerEvent(Press) { event ->
+            setPressed(enabled && event.buttons.isPrimaryPressed)
+        }
+        .onPointerEvent(Release) {
+            if (isPressed()) {
+                setPressed(false)
+                onClick()
+            }
+        }
+
+/**
+ * Converts this [Instant] into a Protobuf [Timestamp].
+ */
+internal fun Instant.toTimestamp(): Timestamp =
+    Timestamp.newBuilder()
+        .setSeconds(epochSecond)
+        .setNanos(nano)
+        .build()
+
+/**
+ * Formats the given [value] into the input field's raw text (the editable
+ * characters only) according to [dateTimePattern].
+ *
+ * Only the components present in [dateTimePattern] are emitted, so any finer
+ * resolution of [value] (e.g. seconds or nanoseconds when the pattern has
+ * minute resolution) is not represented in the resulting text. This is the
+ * inverse of [parseDateTime].
+ *
+ * @param value
+ *         the timestamp to format.
+ * @param dateTimePattern
+ *         the pattern used to format the date/time.
+ * @param zoneOffset
+ *         the offset used to convert the instant into a local date/time.
+ * @return the raw text representation of [value].
+ */
+internal fun formatDateTime(
+    value: Timestamp,
+    dateTimePattern: DateTimePattern,
+    zoneOffset: ZoneOffset
+): String {
+    val instant = Instant.ofEpochSecond(value.seconds, value.nanos.toLong())
+    return ofPattern(purifiedPattern(dateTimePattern)).format(
+        OffsetDateTime.ofInstant(instant, zoneOffset)
+    )
 }
 
 /**
