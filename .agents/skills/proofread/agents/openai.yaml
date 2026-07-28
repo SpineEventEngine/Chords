@@ -1,0 +1,7 @@
+interface:
+  display_name: "Proofread"
+  short_description: "Proofread Chords comments and documentation"
+  default_prompt: >-
+    Use $proofread to fix English grammar, punctuation, and spelling errors in
+    Chords comments and documentation. Pass `all` for a full sweep, a path for
+    a scoped sweep, or no argument to check the current branch.

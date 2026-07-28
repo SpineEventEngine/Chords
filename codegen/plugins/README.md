@@ -1,6 +1,6 @@
 # `codegen-plugins`
 
-A separate Gradle project with ProtoData plugins which generate
+A separate Gradle project with ProtoData plugins that generate
 [MessageField](../runtime/src/main/kotlin/io/spine/chords/runtime/MessageField.kt),
 [MessageOneof](../runtime/src/main/kotlin/io/spine/chords/runtime/MessageOneof.kt),
 and [MessageDef](../runtime/src/main/kotlin/io/spine/chords/runtime/MessageDef.kt)

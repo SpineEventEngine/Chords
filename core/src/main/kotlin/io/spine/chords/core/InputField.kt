@@ -92,12 +92,12 @@ public typealias RawTextContent = TextFieldValue
  *
  * A [parseValue] and [formatValue] of `null` means that no custom parsing and
  * formatting takes place, and raw text will reflect whatever is stored in
- * [value] (and vice versa). [parseValue] and [formatValue] are  allowed to be
+ * [value] (and vice versa). [parseValue] and [formatValue] are allowed to be
  * `null` only when [V] is `String`.
  *
  * ### Advanced formatting
  *
- * There are some advanced configuration options that allow to configure how
+ * There are some advanced configuration options that allow configuring how
  * the text entered by the user is processed, parsed/formatted, and displayed.
  * This concerns the optional [inputReviser] and [visualTransformation]
  * properties and their relationship with what is called a raw text (see below).
@@ -158,8 +158,8 @@ public typealias RawTextContent = TextFieldValue
  * Whenever the user makes any change within the field, the field undergoes
  * a two-stage validation mechanism:
  *
- *  - The [value] state is updated Field's raw text is parsed using [parseValue]
- *    to obtain value of type [V].
+ *  - Field's raw text is parsed using [parseValue]
+ *    to obtain a value of type [V].
  *
  *    The value in the [value] [MutableState] is set to a non-`null` value of
  *    type [V] whenever the currently edited field's text (raw text) can
@@ -220,7 +220,7 @@ public typealias RawTextContent = TextFieldValue
  * When both `placeholder` and `promptText` properties are specified, then only
  * the `placeholder` is used.
  *
- * @param V A type of values that an input field allows to edit.
+ * @param V A type of values that an input field allows editing.
  *
  * @constructor A constructor, which is used internally by the input component's
  *   implementation. Use [companion object's][ComponentSetup]
@@ -906,9 +906,9 @@ public interface InputReviser {
      *
      * @param current A [RawTextContent], which represents the
      *   current value of text that field has, before user modification.
-     * @param candidate A [RawTextContent] which holds raw text
+     * @param candidate A [RawTextContent] that holds raw text
      *   content that was just modified by the user.
-     * @return [RawTextContent] which holds revised user input text.
+     * @return [RawTextContent] that holds revised user input text.
      */
     public fun reviseRawTextContent(
         current: RawTextContent,
@@ -917,7 +917,7 @@ public interface InputReviser {
 
     /**
      * A function, which is invoked when user presses any key inside
-     * input field, which has ability to stop further propagation of pressed
+     * input field, which has an ability to stop further propagation of pressed
      * key event.
      *
      * This function should only make decision whether to stop propagation of
@@ -926,7 +926,7 @@ public interface InputReviser {
      * for implementing sophisticated key processing logic for purposes
      * other than key event filtering.
      *
-     * @param keyEvent A key event which occurs when user presses key.
+     * @param keyEvent A key event that occurs when user presses key.
      * @return `true` if [keyEvent] should be stopped from
      *         further propagation, `false` otherwise.
      */

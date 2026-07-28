@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import androidx.compose.ui.focus.focusRequester
  *   of receiving such a request.
  *
  *   @param focusRequester
- *           [FocusRequester] which should receive focus requests, if specified.
+ *           [FocusRequester] that should receive focus requests, if specified.
  */
 public class FocusRequestDispatcher(focusRequester: FocusRequester? = null) {
     private val lazyRequester = lazy { focusRequester ?: FocusRequester() }

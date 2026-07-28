@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import com.google.protobuf.Timestamp
 import java.time.format.DateTimeFormatter
 
 /**
- * Renders the given timestamp with the pattern which includes the date
+ * Renders the given timestamp with the pattern that includes the date
  * and time values being interpreted in the system time zone.
  *
  * @param dateTime A dateTime value that should be displayed as text.

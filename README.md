@@ -23,7 +23,7 @@ contents and usage:
 - [Chords Codegen Runtime](codegen/runtime) — an auxiliary library, which is
   technically needed at runtime by the Chords Proto and Chords Client libraries
   for them to be able to gain advantage of Chords code generation facilities
-  which enrich the Protobuf message APIs.
+  that enrich the Protobuf message APIs.
 
 # Supported environment
 

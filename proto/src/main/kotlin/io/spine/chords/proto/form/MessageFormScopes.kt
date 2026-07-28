@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,7 +116,7 @@ internal class MultipartFormScopeImpl<M : Message>(
  * A kind of scope where form field editors can be declared
  * (using the [Field] function).
  *
- * This is a base type which roots its more concrete ancestors, which represent
+ * This is a base type that roots its more concrete ancestors, which represent
  * different contexts where fields can be declared (see [FormPartScope]
  * and [OneOfFieldsScope]).
  *
@@ -360,10 +360,10 @@ public sealed interface FormFieldScope<V : MessageFieldValue> {
 
     /**
      * If the value editor is implemented as a class-based component (descendant
-     * from [InputComponent]), it's recommended to register registers the given
+     * from [InputComponent]), it's recommended to register the given
      * `ValueEditor` instance by invoking this function.
      *
-     * Such registration allows to perform deep hierarchical validation
+     * Such registration allows performing deep hierarchical validation
      * activities that need to work on the whole hierarchy of forms (or other
      * value editors).
      */

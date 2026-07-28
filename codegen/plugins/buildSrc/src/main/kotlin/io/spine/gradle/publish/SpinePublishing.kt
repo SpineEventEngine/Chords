@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ import org.gradle.kotlin.dsl.findByType
  * }
  * ```
  *
- * It is worth to mention, that publishing of a module can be configured only from a single place.
+ * It is worth mentioning, that publishing of a module can be configured only from a single place.
  * For example, declaring `subprojectA` as published in a root project and opening
  * `spinePublishing` extension within `subprojectA` itself would lead to an exception.
  *

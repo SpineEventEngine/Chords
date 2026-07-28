@@ -450,7 +450,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
-         * @param onBeforeBuild A lambda that allows to amend the message
+         * @param onBeforeBuild A lambda that allows amending the message
          *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
@@ -498,7 +498,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param props A lambda that can set any additional props on the form.
          * @param defaultValue A value that should be displayed in the form
          *   by default.
-         * @param onBeforeBuild A lambda that allows to amend the message
+         * @param onBeforeBuild A lambda that allows amending the message
          *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
@@ -549,7 +549,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
          * @param props A lambda that can set any additional props on the form.
-         * @param onBeforeBuild A lambda that allows to amend the message
+         * @param onBeforeBuild A lambda that allows amending the message
          *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
@@ -599,7 +599,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param props A lambda that can set any additional props on the form.
          * @param defaultValue A value that should be displayed in the form
          *   by default.
-         * @param onBeforeBuild A lambda that allows to amend the message
+         * @param onBeforeBuild A lambda that allows amending the message
          *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
@@ -640,7 +640,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          *
          * This method can be used to create a form's instance outside
          * a composable context, and render it separately. A form's instance
-         * created in this way, has to be rendered  explicitly by calling either
+         * created in this way, has to be rendered explicitly by calling either
          * its [Content] method (for singlepart forms) or its
          * [MultipartContent] method (for rendering a multipart form) in
          * a composable context where it needs to be displayed.
@@ -659,7 +659,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * @param value The message value to be edited within the form.
          * @param builder A lambda that should create and return a new builder
          *   for a message of type [M].
-         * @param onBeforeBuild A lambda that allows to amend the message
+         * @param onBeforeBuild A lambda that allows amending the message
          *   after any valid field is entered to it.
          * @param props A lambda that can set any additional props on the form.
          * @return A form's instance that has been created for this
@@ -1077,7 +1077,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     public var validationDisplayMode: ValidationDisplayMode by mutableStateOf(DEFAULT)
 
     /**
-     * Allows to programmatically amend the message builder before the message
+     * Allows programmatically amending the message builder before the message
      * is built.
      *
      * See the "The `onBeforeBuild` callback" section in the
@@ -1227,7 +1227,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * A "dirty" state means that a component currently displays any data
      * (either valid or invalid). For the form this means that any of its fields
      * display any valid or invalid data (e.g. even if the user has entered
-     * something which is not valid so far).
+     * something that is not valid so far).
      *
      * A value of `false` means that neither of the form's fields displays
      * any data.
@@ -1534,7 +1534,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * form's validation is also considered to fail.
      *
      * This method states a validation error (sets [valid] to `true`, and
-     * [value] to `null`),  if any of the validation constraints fail during
+     * [value] to `null`), if any of the validation constraints fail during
      * `vBuild()`, or if any fields have their internal validation errors.
      * The form's status is updated to reflect the validation failures before
      * the exception is thrown, which can include focusing the respective field
@@ -1832,7 +1832,7 @@ public enum class ValidationDisplayMode {
      * the [LIVE] value.
      *
      * If there is a parent form, the validation display mode is the same as
-     * that of the parent form. Thus, this allows to "inherit" validation
+     * that of the parent form. Thus, this allows "inheriting" validation
      * behavior from the parent form. For convenience, in `MessageForm`
      * documentation, the form's mode when it is either set to [LIVE] explicitly
      * or is set to [DEFAULT] but inherits [LIVE] from the parent is said to be

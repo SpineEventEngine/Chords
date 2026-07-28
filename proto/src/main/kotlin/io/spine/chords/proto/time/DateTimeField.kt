@@ -619,7 +619,7 @@ private fun complementWithPattern(rawStr: String, pattern: DateTimePattern): Mas
  * to stop propagation of specific key events for [DateTimeField].
  *
  * @property dateTimePattern
- *         a date/time pattern which is used by [DateTimeField].
+ *         a date/time pattern that is used by [DateTimeField].
  */
 internal class DateTimeFieldReviser(
     private val dateTimePattern: DateTimePattern
@@ -657,7 +657,7 @@ internal class DateTimeFieldReviser(
      *   text input value and cursor position.
      * @param rawTextContentCandidate A [RawTextContent] that encapsulates
      *   updated text input value and updated cursor position.
-     * @return [RawTextContent] which contains updated text input and
+     * @return [RawTextContent] that contains updated text input and
      *   updated cursor input position.
      */
     private fun updateCandidateWhenTextIsSelected(
@@ -720,7 +720,7 @@ internal class DateTimeFieldReviser(
      *   text input value and cursor position.
      * @param rawTextContentCandidate A [RawTextContent] that encapsulates
      *   updated text input value and updated cursor position.
-     * @return [RawTextContent] which contains updated text input and
+     * @return [RawTextContent] that contains updated text input and
      *   updated cursor input position.
      */
     private fun updateCandidateWhenTextIsNotSelected(
@@ -769,7 +769,7 @@ internal class DateTimeFieldReviser(
      * @param rawTextContentCandidate
      *         a [RawTextContent] that encapsulates updated text input value
      *         and updated cursor position.
-     * @return [RawTextContent] which contains updated text input and
+     * @return [RawTextContent] that contains updated text input and
      *         updated cursor input position.
      */
     private fun updateRawTextContent(

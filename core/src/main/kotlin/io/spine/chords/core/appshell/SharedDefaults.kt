@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ public interface SharedDefaultsScope {
 /**
  * An implementation of [SharedDefaultsScope], which serves as a registry for
  * component defaults that were configured to be applicable across the entire
- * application, and provides an API that allows to apply the default properties
+ * application, and provides an API that allows applying the default properties
  * to components.
  */
 internal class SharedDefaults : SharedDefaultsScope {

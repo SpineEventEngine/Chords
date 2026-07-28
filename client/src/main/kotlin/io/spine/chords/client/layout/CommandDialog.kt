@@ -208,7 +208,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     protected abstract fun ModalCommandConsequencesScope<C>.commandConsequences()
 
     /**
-     * Allows to programmatically amend the command message builder before
+     * Allows programmatically amending the command message builder before
      * the command is built.
      *
      * This function is invoked upon every attempt to build the command edited

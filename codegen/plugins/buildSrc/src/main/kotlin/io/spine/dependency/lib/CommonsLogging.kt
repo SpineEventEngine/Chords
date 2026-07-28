@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ package io.spine.dependency.lib
 
 /**
  * [Commons Logging](https://commons.apache.org/proper/commons-logging/) is a transitive
- * dependency which we don't use directly. This object is used for forcing the version.
+ * dependency that we don't use directly. This object is used for forcing the version.
  */
 @Suppress("unused", "ConstPropertyName")
 object CommonsLogging {

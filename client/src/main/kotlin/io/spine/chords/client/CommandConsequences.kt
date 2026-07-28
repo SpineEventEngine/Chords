@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -323,7 +323,7 @@ public open class CommandConsequencesScopeImpl<out C: CommandMessage>(
 ) : CommandConsequencesScope<C> {
 
     /**
-     * Allows to manage subscriptions made in this scope.
+     * Allows managing subscriptions made in this scope.
      */
     private val subscriptions: EventSubscriptions = object : EventSubscriptions {
         override fun cancelAll() {

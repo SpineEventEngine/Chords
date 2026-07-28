@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -246,7 +246,7 @@ public interface Client {
      *
      * @param command The command that should be posted.
      * @param consequences A configuration of possible consequences and their
-     *   respective  handlers.
+     *   respective handlers.
      * @return An object, which allows managing (e.g. cancelling) all event
      *   subscriptions made by this method according to the
      *   [consequences] parameter.

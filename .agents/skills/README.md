@@ -25,6 +25,8 @@ routing source of truth.
 - `docs-writer`: documentation authoring, editing, restructuring, and claim
   checks.
 - `docs-reviewer`: documentation review for prose, examples, and comments.
+- `proofread`: minimal English grammar, punctuation, and spelling corrections
+  in project-owned comments and documentation.
 
 ## Skill Directory Layout
 

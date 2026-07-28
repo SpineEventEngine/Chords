@@ -1,5 +1,5 @@
 /*
- * Copyright 2023, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 package io.spine.gradle.publish
 
 /**
- * A DSL element of [SpinePublishing] extension which allows enabling publishing
+ * A DSL element of [SpinePublishing] extension that allows enabling publishing
  * of [testJar] artifact.
  *
  * This artifact contains compilation output of `test` source set. By default, it is not published.
@@ -50,7 +50,7 @@ class TestJar {
 }
 
 /**
- * A DSL element of [SpinePublishing] extension which allows disabling publishing
+ * A DSL element of [SpinePublishing] extension that allows disabling publishing
  * of [protoJar] artifact.
  *
  * This artifact contains all the `.proto` definitions from `sourceSets.main.proto`. By default,

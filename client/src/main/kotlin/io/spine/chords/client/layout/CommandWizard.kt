@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,7 +182,7 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
     protected abstract fun ModalCommandConsequencesScope<C>.commandConsequences()
 
     /**
-     * Allows to programmatically amend the command message builder before
+     * Allows programmatically amending the command message builder before
      * the command is built.
      *
      * This function is invoked upon every attempt to build the command edited

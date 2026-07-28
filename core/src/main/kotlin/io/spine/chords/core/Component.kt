@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -541,7 +541,7 @@ import kotlinx.coroutines.launch
  *
  * These recommendations are optional, but can be considered in cases when UI's
  * performance becomes an issue for some components or when you're creating
- * components which are going to be widely reusable.
+ * components that are going to be widely reusable.
  *
  * Just like for any other composable function, Compose decides whether to
  * invoke the [Component.content] function along with the parent's composition
@@ -615,7 +615,7 @@ public abstract class Component : DefaultPropsOwnerBase() {
     internal var props: Props<Component>? = null
 
     /**
-     * A state variable which specifies whether the component's [initialize]
+     * A state variable that specifies whether the component's [initialize]
      * method has been called.
      */
     private val initialized = mutableStateOf(false)

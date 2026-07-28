@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ import java.awt.Dimension
  * @param signInScreenContent A content for the [SignInScreen].
  * @param views The list of [AppView]s that will be selectively displayed
  * on the [MainScreen] screen.
- * @param initialView Allows to specify a view from the list of `views`, if any
+ * @param initialView Allows specifying a view from the list of `views`, if any
  *   view other than the first one has to be displayed when
  *   the application starts.
  * @param onCloseRequest An action that should be performed on window closing.

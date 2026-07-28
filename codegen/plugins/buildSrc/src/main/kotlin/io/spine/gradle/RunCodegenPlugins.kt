@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.os.OperatingSystem
 
 /**
- * A Gradle task which runs `codegen-plugins` in a separate Gradle process.
+ * A Gradle task that runs `codegen-plugins` in a separate Gradle process.
  *
  * Launches Gradle wrapper under a [workspaceDir] with the
  * specified [taskNames] and [dependencies].
