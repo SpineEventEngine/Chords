@@ -74,15 +74,17 @@ step 6), then:
 1. **Create it as a draft** (`gh pr create --draft`), targeting `master` as the
    base branch unless the task specifies otherwise.
 2. **Assign it to the authenticated GitHub user** (`--assignee @me`).
-3. **Write the description** with a `## Summary` section followed by a
+3. **Omit a trailing period.** Do not end a pull request title with a period
+   (`.`).
+4. **Write the description** with a `## Summary` section followed by a
    `## Changes` section. Optional sections such as `## Important notes` or
    `## Reviewer notes` may follow when useful. Do not add a "Verifications"
    section or any agent-attribution section such as `Created by <agent>`.
-4. **Link resolved issues.** For each issue the PR implements or fixes, add a
+5. **Link resolved issues.** For each issue the PR implements or fixes, add a
    GitHub closing keyword in the description (for example, `Fixes #123`) so the
    issue appears under "Successfully merging this pull request may close these
    issues" on GitHub.
-5. **Report the PR URL** in the final response.
+6. **Report the PR URL** in the final response.
 
 ## Safety Rules
 
