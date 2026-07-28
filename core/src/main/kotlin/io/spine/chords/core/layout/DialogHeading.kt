@@ -24,7 +24,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.core.layout
+
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+
 /**
- * The version of all Chords libraries.
+ * Displays explanatory dialog text with the standard gap below it.
+ *
+ * @param content The heading content.
  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.95")
+@Composable
+public fun DialogHeading(
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 24.dp),
+        content = content
+    )
+}

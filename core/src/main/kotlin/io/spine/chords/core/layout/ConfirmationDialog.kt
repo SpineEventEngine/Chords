@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,22 +37,6 @@ import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.appshell.Props
 import kotlinx.coroutines.CompletableDeferred
-
-/**
- * Default width of the [ConfirmationDialog].
- */
-private val DefaultDialogWidth = 450.dp
-
-/**
- * Default height of the [ConfirmationDialog].
- */
-private val DefaultDialogHeight = 220.dp
-
-/**
- * The value used to reduce the dialog's height
- * when the description field is empty.
- */
-private val ReservedDescriptionHeight = 32.dp
 
 /**
  * A dialog that prompts the user either to make a boolean decision
@@ -160,8 +144,6 @@ public class ConfirmationDialog : Dialog() {
 
         yesButtonText = "Yes"
         noButtonText = "No"
-        width = DefaultDialogWidth
-        height = DefaultDialogHeight
     }
 
     /**
@@ -203,12 +185,6 @@ public class ConfirmationDialog : Dialog() {
      * makes a decision.
      */
     public suspend fun showConfirmation(): Boolean {
-        // TODO:2025-04-18:oleg.melnik: Remove the code below after automatic
-        //  size detection is implemented for dialogs.
-        //  https://github.com/SpineEventEngine/Chords/issues/118
-        if (description.isBlank() && height == DefaultDialogHeight) {
-            height -= ReservedDescriptionHeight
-        }
         var confirmed = false
         val dialogClosure = CompletableDeferred<Unit>()
         onBeforeSubmit = {

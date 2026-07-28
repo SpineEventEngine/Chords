@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,16 +29,29 @@ package io.spine.chords.core.layout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,12 +59,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntOffset.Companion.Zero
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.window.DialogState
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.Popup
@@ -86,12 +102,30 @@ public sealed class WindowType {
 
         @Composable
         override fun dialogWindow(dialog: Dialog) {
+            val initialSize = DpSize(dialog.width, dialog.height)
+            val state = remember(dialog, initialSize) {
+                DialogState(size = initialSize)
+            }
+            var contentFittedSize by remember(dialog, initialSize) {
+                mutableStateOf<DpSize?>(null)
+            }
+            LaunchedEffect(state.size) {
+                if (
+                    contentFittedSize == null &&
+                    state.size.width.isSpecified &&
+                    state.size.height.isSpecified
+                ) {
+                    val candidate = state.size
+                    withFrameNanos {}
+                    if (state.size == candidate) {
+                        contentFittedSize = candidate
+                    }
+                }
+            }
             DialogWindow(
                 title = dialog.title,
                 resizable = resizable,
-                state = DialogState(
-                    size = DpSize(dialog.width, dialog.height)
-                ),
+                state = state,
                 onCloseRequest = { dialog.cancel() },
                 onKeyEvent = { event ->
                     if (dialog.cancelAvailableInternal && event matches cancelShortcutKey.down) {
@@ -103,17 +137,49 @@ public sealed class WindowType {
                     false
                 }
             ) {
+                DesktopDialogContent(dialog, state, contentFittedSize)
+            }
+        }
+
+        @Composable
+        private fun DesktopDialogContent(
+            dialog: Dialog,
+            state: DialogState,
+            contentFittedSize: DpSize?
+        ) {
+            BoxWithConstraints {
+                val resized =
+                    resizable && contentFittedSize?.let { state.size != it } == true
+                val sizeModifier = if (resized) {
+                    Modifier.fillMaxSize()
+                } else {
+                    Modifier.dialogSize(
+                        dialog.width,
+                        dialog.height,
+                        maxWidth,
+                        maxHeight,
+                        fillSpecifiedDimensions = true
+                    )
+                }
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier = sizeModifier
                         .background(colorScheme.background),
                 ) {
+                    val heightMode =
+                        if (dialog.height.isSpecified || contentFittedSize != null) {
+                            DialogContentHeightMode.Exact
+                        } else {
+                            DialogContentHeightMode.AtMost
+                        }
+                    val contentModifier = if (heightMode == DialogContentHeightMode.Exact) {
+                        Modifier.fillMaxSize()
+                    } else {
+                        Modifier.fillMaxWidth()
+                    }
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(dialog.look.padding),
+                        modifier = contentModifier.padding(dialog.look.padding),
                     ) {
-                        dialog.windowContentInternal()
+                        dialog.windowContentInternal(heightMode)
                         dialog.nestedDialog?.Content()
                     }
                 }
@@ -171,12 +237,14 @@ public sealed class WindowType {
                     }
                 }
             ) {
-                Box(
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(backdropColor),
                     contentAlignment = Center
                 ) {
+                    val availableWidth = maxWidth
+                    val availableHeight = maxHeight
                     val modifier = if (dialog.isBottomDialog) {
                         Modifier.pointerInput(dialog) {
                             detectTapGestures(onPress = {})
@@ -185,27 +253,45 @@ public sealed class WindowType {
                         Modifier
                     }
                     Box(modifier = modifier) {
-                        dialogFrame(dialog)
+                        dialogFrame(dialog, availableWidth, availableHeight)
                     }
                 }
             }
         }
 
         @Composable
-        private fun dialogFrame(dialog: Dialog) {
+        private fun dialogFrame(
+            dialog: Dialog,
+            maxWidth: Dp,
+            maxHeight: Dp
+        ) {
             Column(
                 modifier = Modifier
                     .clip(shapes.large)
-                    .size(dialog.width, dialog.height)
+                    .dialogSize(
+                        dialog.width,
+                        dialog.height,
+                        maxWidth,
+                        maxHeight,
+                        fillSpecifiedDimensions = false
+                    )
                     .background(colorScheme.background),
             ) {
+                val heightMode = if (dialog.height.isSpecified) {
+                    DialogContentHeightMode.Exact
+                } else {
+                    DialogContentHeightMode.AtMost
+                }
+                val contentModifier = if (heightMode == DialogContentHeightMode.Exact) {
+                    Modifier.fillMaxSize()
+                } else {
+                    Modifier.fillMaxWidth()
+                }
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(dialog.look.padding),
+                    modifier = contentModifier.padding(dialog.look.padding),
                 ) {
                     DialogTitle(dialog.title, dialog.look.titlePadding)
-                    dialog.windowContentInternal()
+                    dialog.windowContentInternal(heightMode)
                     dialog.nestedDialog ?.Content()
                 }
             }
@@ -254,6 +340,55 @@ public sealed class WindowType {
 
     }
 }
+
+/**
+ * The minimum width used for automatically-sized dialogs.
+ *
+ * This prevents short text from producing impractically narrow windows while
+ * still allowing wider form layouts to determine their preferred width.
+ */
+private val DefaultDialogMinWidth = 400.dp
+
+/**
+ * Measures unspecified dimensions from the content and caps them at the
+ * available window size.
+ *
+ * Minimum intrinsic width is intentional: it keeps text-based dialogs compact
+ * instead of expanding them to the width of an unwrapped paragraph.
+ */
+private fun Modifier.dialogSize(
+    width: Dp,
+    height: Dp,
+    maxWidth: Dp,
+    maxHeight: Dp,
+    fillSpecifiedDimensions: Boolean
+): Modifier =
+    then(
+        if (width.isSpecified) {
+            if (fillSpecifiedDimensions) {
+                Modifier.fillMaxWidth()
+            } else {
+                Modifier.width(width)
+            }
+        } else {
+            Modifier
+                .width(IntrinsicSize.Min)
+                .widthIn(
+                    min = minOf(DefaultDialogMinWidth, maxWidth),
+                    max = maxWidth
+                )
+        }
+    ).then(
+        if (height.isSpecified) {
+            if (fillSpecifiedDimensions) {
+                Modifier.fillMaxHeight()
+            } else {
+                Modifier.height(height)
+            }
+        } else {
+            Modifier.heightIn(max = maxHeight)
+        }
+    )
 
 /**
  * A [PopupPositionProvider], which makes a lightweight popup to appear at

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,9 @@ package io.spine.chords.core.layout
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.appshell.Props
 import kotlinx.coroutines.CompletableDeferred
@@ -81,8 +78,6 @@ public class MessageDialog : Dialog() {
 
     init {
         submitAvailable = true
-        width = 550.dp
-        height = 205.dp
     }
 
     /**
@@ -123,9 +118,7 @@ public class MessageDialog : Dialog() {
         val textStyle = typography.bodyLarge
 
         Column {
-            Row(
-                modifier = Modifier.padding(bottom = 6.dp)
-            ) {
+            Row {
                 Text(
                     text = message,
                     style = textStyle
