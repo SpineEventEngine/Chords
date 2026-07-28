@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ public var app: Application by writeOnce(false)
  * @param name An application's name, which is in particular displayed in
  *   the application window's title.
  * @param views The list of application's views.
- * @param initialView Allows to specify a view from the list of [views], if any
+ * @param initialView Allows specifying a view from the list of [views], if any
  *   view other than the first one has to be displayed when the application starts.
  * @param minWindowSize The minimal size of the application window.
  */

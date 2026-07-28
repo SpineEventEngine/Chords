@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,7 +217,7 @@ public open class KeyRange internal constructor(
         }
 
     /**
-     * Creates [KeyRange] which checks whether the key that triggered
+     * Creates [KeyRange] that checks whether the key that triggered
      * the passed [KeyEvent] belongs to any of the keys represented
      * by this [KeyRange] or any of the keys represented by [other] [KeyRange].
      *
@@ -231,7 +231,7 @@ public open class KeyRange internal constructor(
     }
 
     /**
-     * Creates [KeyRange] which checks whether the key that triggered
+     * Creates [KeyRange] that checks whether the key that triggered
      * the passed [KeyEvent] belongs to any of the keys represented
      * by this [KeyRange] and any of the keys represented by [other] [KeyRange].
      *
@@ -245,7 +245,7 @@ public open class KeyRange internal constructor(
     }
 
     /**
-     * Creates [KeyRange] which checks whether the key that triggered
+     * Creates [KeyRange] that checks whether the key that triggered
      * the passed [KeyEvent] doesn't belong to any of the keys represented
      * by this [KeyRange].
      *

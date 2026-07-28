@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,7 +153,7 @@ public interface InputContext {
  *
  * #### The "dirty" state
  *
- * An input component also discerns a so called "dirty" state.  An input
+ * An input component also discerns a so-called "dirty" state. An input
  * component is considered to be "dirty" if it contains any entry relative to
  * its `null` [value] state, regardless of whether it is classified to be valid
  * or not.
@@ -171,7 +171,7 @@ public interface InputContext {
  * Whenever the input component transitions from/to the dirty state, it has
  * to invoke the [onDirtyStateChange] callback.
  *
- * @param V A type of values that this input component allows to edit.
+ * @param V A type of values that this input component allows editing.
  *
  * @constructor A constructor, which is used internally by the input component's
  *   implementation. Use [companion object's][ComponentSetup]

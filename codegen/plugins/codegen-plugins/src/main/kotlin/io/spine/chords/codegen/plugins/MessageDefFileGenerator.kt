@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ internal class MessageDefFileGenerator(
     }
 
     /**
-     * The list of [FileFragmentGenerator]s which are used to generate the file.
+     * The list of [FileFragmentGenerator]s that are used to generate the file.
      */
     private val codeGenerators = listOf(
         MessageDefObjectGenerator(messageTypeName, fields, typeSystem),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ import java.util.*
  * An implementation of the concrete component has to provide the following:
  * - Implement the [items] property to provide a list of items to choose from.
  * - Implement the [itemText] method to provide a text item's representation,
- *   which is displayed in the drop-down list by default, and which is usedThe
+ *   which is displayed in the drop-down list by default, and which is used
  *   when searching items by typing their content.
  * - By default, dropdown items display the respective item's text as defined by
  *   [itemText], but it's possible to display an arbitrary composable content in
@@ -351,7 +351,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
      * Invoked when the user enters new text in a field in [DropdownSelector].
      *
      * @param searchValue
-     *         a [TextFieldValue] which holds raw text content that was
+     *         a [TextFieldValue] that holds raw text content that was
      *         just modified by the user.
      */
     private fun handleDropdownInputChange(searchValue: TextFieldValue) {
@@ -449,7 +449,7 @@ private fun DropdownListBoxScope.TrailingIcons(
 
 
 /**
- * The `DropdownSelector`'s trailing icon, which allows to clear
+ * The `DropdownSelector`'s trailing icon, which allows clearing
  * the current selection.
  *
  * @param containsValue

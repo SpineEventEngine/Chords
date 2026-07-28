@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import cafe.adriel.voyager.navigator.Navigator
  * functionality provided by the Voyager multiplatform navigation library.
  * See [AppWindow] for detail on how to display a screen.
  *
- * Provides internal API which allows selecting one of the [AppView]s
+ * Provides internal API that allows selecting one of the [AppView]s
  * to be displayed on the main screen.
  *
  * @param appViews The list of [AppView]s that will be selectively displayed on the screen.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      * @param builder A lambda that should create and return a new builder for
      *   a message of type [M].
      * @param props A lambda that can set any additional props on the form.
-     * @param onBeforeBuild A lambda that allows to amend the message
+     * @param onBeforeBuild A lambda that allows amending the message
      *   after any valid field is entered to it.
      * @param content A form's content, which can contain an arbitrary
      *   layout along with field editor declarations.
@@ -101,7 +101,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      * @param props A lambda that can set any additional props on the form.
      * @param defaultValue A value that should be displayed in the form
      *   by default.
-     * @param onBeforeBuild A lambda that allows to amend the message
+     * @param onBeforeBuild A lambda that allows amending the message
      *   after any valid field is entered to it.
      * @param content A form's content, which can contain an arbitrary
      *   layout along with field editor declarations.
@@ -140,7 +140,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      * @param builder A lambda that should create and return a new builder
      *   for a message of type [M].
      * @param props A lambda that can set any additional props on the form.
-     * @param onBeforeBuild A lambda that allows to amend the message
+     * @param onBeforeBuild A lambda that allows amending the message
      *   after any valid field is entered to it.
      * @param content A form's content, which can contain an arbitrary
      *   layout along with field editor declarations.
@@ -192,7 +192,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      *   for a message of type [M].
      * @param props A lambda that can set any additional props on the form.
      * @param defaultValue A value that should be displayed in the form by default.
-     * @param onBeforeBuild A lambda that allows to amend the message
+     * @param onBeforeBuild A lambda that allows amending the message
      *   after any valid field is entered to it.
      * @param content A form's content, which can contain an arbitrary
      *   layout along with field editor declarations.
@@ -233,7 +233,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      *
      * This method can be used to create a form's instance outside
      * a composable context, and render it separately. A form's instance
-     * created in this way, has to be rendered  explicitly by calling either
+     * created in this way, has to be rendered explicitly by calling either
      * its [Content][MessageForm.Content] method (for singlepart forms) or its
      * [MultipartContent][MessageForm.MultipartContent] method (for rendering a
      * multipart form) in a composable context where it needs to be displayed.
@@ -251,7 +251,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      * @param value The message value to be edited within the form.
      * @param builder A lambda that should create and return a new builder
      *   for a message of type [M].
-     * @param onBeforeBuild A lambda that allows to amend the message
+     * @param onBeforeBuild A lambda that allows amending the message
      *   after any valid field is entered to it.
      * @param props A lambda that can set any additional props on the form.
      * @return A form's instance that has been created for this

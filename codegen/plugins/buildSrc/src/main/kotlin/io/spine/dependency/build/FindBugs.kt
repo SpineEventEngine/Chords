@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ package io.spine.dependency.build
  * The FindBugs project is dead since 2017. It has a successor called SpotBugs, but we don't use it.
  * We use ErrorProne for static analysis instead. The only reason for having this dependency is
  * the annotations for null-checking introduced by JSR-305. These annotations are troublesome,
- * but no alternatives are known for some of them so far.  Please see
+ * but no alternatives are known for some of them so far. Please see
  * [this issue](https://github.com/SpineEventEngine/base/issues/108) for more details.
  */
 @Suppress("unused", "ConstPropertyName")

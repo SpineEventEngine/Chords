@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
 import kotlin.time.Duration
 
 /**
- * A specialized type of [CommandConsequences] which simplify specifying
+ * A specialized type of [CommandConsequences] that simplifies specifying
  * command consequences for commands posted by model UIs (such as dialogs
  * or wizards).
  *
@@ -133,7 +133,7 @@ import kotlin.time.Duration
  * @param postingState A "posting" state of the UI that backs this object.
  * @param close A lambda that closes the UI that backs this object.
  * @param consequences A lambda, which uses the [ModalCommandConsequencesScope]
- *   API to define consequences which are possible as a result of posting
+ *   API to define consequences that are possible as a result of posting
  *   commands of type [C] along with respective handlers.
  */
 @Suppress("UNCHECKED_CAST")
@@ -202,7 +202,7 @@ public open class ModalCommandConsequences<C : CommandMessage>(
          *   this object.
          * @param close A lambda that closes the UI that backs this object.
          * @param consequences A lambda, which uses the
-         *   [ModalCommandConsequencesScope] API to define consequences which
+         *   [ModalCommandConsequencesScope] API to define consequences that
          *   are possible as a result of posting commands of type [C] along with
          *   respective handlers.
          * @return The [ModalCommandConsequences] instance that was created.

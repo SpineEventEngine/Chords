@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ fun applyWithStandard(
  * @param shortRepositoryName
  *          the short name of the GitHub repository (e.g. "core-java")
  * @param project
- *          the project which is going to consume artifacts from the repository
+ *          the project that is going to consume artifacts from the repository
  * @see applyGitHubPackages
  */
 @Suppress("unused")
@@ -115,7 +115,7 @@ fun doApplyStandard(repositories: RepositoryHandler) = repositories.standardToSp
  * @param shortRepositoryName
  *          short names of the GitHub repository (e.g. "base", "core-java", "model-tools")
  * @param project
- *          the project which is going to consume artifacts from repositories
+ *          the project that is going to consume artifacts from repositories
  */
 fun RepositoryHandler.applyGitHubPackages(shortRepositoryName: String, project: Project) {
     val repository = gitHub(shortRepositoryName)
@@ -136,7 +136,7 @@ fun RepositoryHandler.applyGitHubPackages(shortRepositoryName: String, project: 
  * @param shortRepositoryName
  *          the short name of the GitHub repository (e.g. "core-java")
  * @param project
- *          the project which is going to consume or publish artifacts from
+ *          the project that is going to consume or publish artifacts from
  *          the registered repository
  */
 fun RepositoryHandler.applyGitHubPackages(project: Project, vararg shortRepositoryName: String) {

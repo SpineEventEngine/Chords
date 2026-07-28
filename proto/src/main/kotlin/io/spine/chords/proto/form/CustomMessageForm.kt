@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import io.spine.chords.core.Component
  * A base class, which should be used for implementing custom form components
  * that edit values of some specific type [M].
  *
- * Custom components which extend this class can have the same capabilities as
+ * Custom components that extend this class can have the same capabilities as
  * [MessageForm], but they would typically not require the user (developer) to
  * provide a message's builder and the content (message field editors) for the
  * form, since they would be a part of the custom form's implementation itself.

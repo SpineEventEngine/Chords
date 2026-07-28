@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -323,7 +323,7 @@ internal class MoneyFieldReviser(
      *   text input value and cursor position.
      * @param candidate A [RawTextContent] that encapsulates
      *   updated text input value and updated cursor position.
-     * @return [RawTextContent] which contains updated text input and updated
+     * @return [RawTextContent] that contains updated text input and updated
      *   cursor input position.
      */
     private fun updateCandidateWhenTextIsSelected(
@@ -374,7 +374,7 @@ internal class MoneyFieldReviser(
      *   value and cursor position.
      * @param candidate A [RawTextContent] that encapsulates updated text input
      *   value and updated cursor position.
-     * @return [RawTextContent] which contains updated text input and
+     * @return [RawTextContent] that contains updated text input and
      *   updated cursor input position.
      */
     private fun updateCandidateWhenTextIsNotSelected(
@@ -430,7 +430,7 @@ internal class MoneyFieldReviser(
      *   value and cursor position.
      * @param rawCandidate A [RawTextContent] that encapsulates updated text
      *   input value and updated cursor position.
-     * @return [RawTextContent] which contains revised text input and
+     * @return [RawTextContent] that contains revised text input and
      *   updated cursor input position.
      */
     private fun updateDecimalPart(
@@ -498,7 +498,7 @@ internal class MoneyFieldReviser(
      *   value and cursor position.
      * @param candidate A [RawTextContent] that encapsulates updated text input
      *   value and cursor position that should be sanitized.
-     * @return [RawTextContent] which holds updated cursor position and
+     * @return [RawTextContent] that holds updated cursor position and
      *         sanitized modification of [rawTextCandidate] text value.
      */
     private fun sanitizeMoneyField(
@@ -536,19 +536,19 @@ internal class MoneyFieldReviser(
 
     /**
      * Sanitizes amount part of money string, which includes removing
-     * non-digit characters which are not first detected decimal separator
+     * non-digit characters that are not first detected decimal separator
      * character, and based on those removed characters calculates by how much
      * input cursor position should be updated.
      *
-     * Calculates an input cursor offset which represents number of whitespace
+     * Calculates an input cursor offset that represents a number of whitespace
      * characters that can be trimmed in new text input value, and it calculates
-     * trim start offset which is number of whitespace characters
+     * trim start offset that is a number of whitespace characters
      * at the beginning of new text input value.
      *
      * @param currentRawTextContent
      *         a current [RawTextContent], which is used to determine if user
      *         has selected part of input text that starts from the beginning
-     *         of the input which is getting modified. If yes, then check is
+     *         of the input that is getting modified. If yes, then check is
      *         being done to see if there are any whitespace characters at
      *         the beginning of new text input value [rawTextCandidate].
      * @param rawTextContentCandidate
@@ -626,7 +626,7 @@ internal class MoneyFieldReviser(
     }
 
     /**
-     * Returns amount after decimal separator which is filled with additional
+     * Returns amount after decimal separator that is filled with additional
      * '0's if size of decimal part candidate is less than it is defined by
      * currency, or empty string if currency doesn't have decimal separator.
      *

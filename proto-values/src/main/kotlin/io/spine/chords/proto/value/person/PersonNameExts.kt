@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public fun KClass<PersonName>.parse(nameString: String): PersonName {
  * of [PersonName]. Values of other fields are not taken into account.
  *
  * @receiver a person name that should be formatted as a string.
- * @return a string which contains the given name and family name from
+ * @return a string that contains the given name and family name from
  *         the [PersonName] value on which this function was invoked.
  */
 public fun PersonName.format(): String {

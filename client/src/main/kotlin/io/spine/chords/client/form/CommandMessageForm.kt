@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import io.spine.protobuf.ValidatingBuilder
  * the respective command.
  *
  * It can be used in the same way as the [MessageForm] class, and adds
- * the [postCommand] function, which post the command with the entered field
+ * the [postCommand] function, which posts the command with the entered field
  * values, and awaits for receiving the feedback upon its processing.
  *
  * Please see the [MessageForm]'s documentation, which applies to
@@ -175,7 +175,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
          * @param builder A lambda that should create and return a new builder
          *   for a command of type [C].
          * @param value The command message value to be edited within the form.
-         * @param onBeforeBuild A lambda that allows to amend the command
+         * @param onBeforeBuild A lambda that allows amending the command
          *   message after any valid field is entered to it.
          * @param props A lambda that can set any additional props on the form.
          * @param content A form's content, which can contain an arbitrary
@@ -220,7 +220,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
          * @param value The command message value to be edited within the form.
          * @param builder A lambda that should create and return a new builder
          *   for a command message of type [C].
-         * @param onBeforeBuild A lambda that allows to amend the command
+         * @param onBeforeBuild A lambda that allows amending the command
          *   message after any valid field is entered to it.
          * @param props A lambda that can set any additional props on the form.
          * @param content A form's content, which can contain an arbitrary
@@ -255,7 +255,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
          *
          * This method can be used to create a form's instance outside
          * a composable context, and render it separately. A form's instance
-         * created in this way, has to be rendered  explicitly by calling either
+         * created in this way, has to be rendered explicitly by calling either
          * its [Content] method (for single-part forms) or its
          * [MultipartContent] method (for rendering a multipart form) in
          * a composable context where it needs to be displayed.
@@ -273,7 +273,7 @@ public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {
          * @param builder A lambda that should create and return a new builder
          *   for a command of type [C].
          * @param value The command message value to be edited within the form.
-         * @param onBeforeBuild A lambda that allows to amend the command
+         * @param onBeforeBuild A lambda that allows amending the command
          *   message after any valid field is entered to it. Note that this
          *   callback is invoked repeatedly as the user edits the form and its
          *   implementation should avoid long or performance-intensive

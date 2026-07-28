@@ -181,7 +181,7 @@ public abstract class Table<E> : Component() {
     public var columns: List<TableColumn<E>> by mutableStateOf(listOf())
 
     /**
-     * A callback that allows to modify any row behaviour and style.
+     * A callback that allows modifying any row behavior and style.
      *
      * An entity displayed in a row comes as a parameter of a callback.
      */

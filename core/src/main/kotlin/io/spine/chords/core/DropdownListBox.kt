@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,7 +228,7 @@ public class DropdownListBox<I> : Component() {
     public var noneItemText: String = "<None>"
 
     /**
-     * Boolean which indicates if drop-down list should contain none item.
+     * Boolean that indicates if drop-down list should contain none item.
      */
     public var noneItemEnabled: Boolean = true
 
@@ -505,7 +505,7 @@ public class DropdownListBox<I> : Component() {
     }
 
     /**
-     * Determines should the drop-down list be shown above or below layout which
+     * Determines should the drop-down list be shown above or below layout that
      * expands it and maximum available height that drop-down list can have.
      */
     private fun calculateDropdownListPosition() {
@@ -587,7 +587,7 @@ public class DropdownListBox<I> : Component() {
      * Handles user's click on drop-down list item.
      *
      * @param item
-     *         the drop-down list item which is clicked.
+     *         the drop-down list item that is clicked.
      */
     private fun handleItemClick(item: I) {
         onSelectItem(item)
@@ -598,7 +598,7 @@ public class DropdownListBox<I> : Component() {
      * Handles user's key presses whether drop-down list is expanded or not.
      *
      * @param event
-     *         a key event which occurs when user presses key.
+     *         a key event that occurs when user presses key.
      */
     private fun handleDropdownKeyEvent(event: KeyEvent): Boolean {
         if (expanded.value) {
@@ -636,7 +636,7 @@ public class DropdownListBox<I> : Component() {
      * Handles user's key presses when drop-down list is expanded.
      *
      * @param event
-     *         a key event which occurs when user presses key.
+     *         a key event that occurs when user presses key.
      */
     private fun handleKeyEventWhenDropdownExpanded(event: KeyEvent): Boolean {
         var stopPropagation = false
@@ -711,7 +711,7 @@ public class DropdownListBox<I> : Component() {
      * Handles user's printable key presses when drop-down list is expanded.
      *
      * @param event
-     *         a key event which occurs when user presses key.
+     *         a key event that occurs when user presses key.
      */
     private fun handleKeyEvent(event: KeyEvent) {
         val keyEvent = event.awtEventOrNull
@@ -727,7 +727,7 @@ public class DropdownListBox<I> : Component() {
      * Handles user's key presses when search selection field is shown.
      *
      * @param event
-     *         a key event which occurs when user presses key.
+     *         a key event that occurs when user presses key.
      */
     private fun handleKeyEventWhenSearchSelectionIsShown(event: KeyEvent): Boolean {
         var stopPropagation = false
@@ -1057,7 +1057,7 @@ public class DropdownListBox<I> : Component() {
  * Trim whitespace characters except space from input string.
  *
  * @param input
- *         a string which should be trimmed.
+ *         a string that should be trimmed.
  * @return trimmed string.
  */
 private fun trimWhitespacesExceptSpace(input: String): String {
@@ -1079,7 +1079,7 @@ public interface DropdownListBoxScope {
      * by invoking this function.
      *
      * @param event
-     *         a key event which occurs when user presses key.
+     *         a key event that occurs when user presses key.
      */
     public fun handleKeyEvent(event: KeyEvent): Boolean
 
@@ -1095,7 +1095,7 @@ public interface DropdownListBoxScope {
      * if the invoker has any.
      *
      * Function that should be called by [Modifier.onGloballyPositioned]
-     * modifier of [Text] composable which represents supporting text of the
+     * modifier of [Text] composable that represents supporting text of the
      * invoker that is placed inside the scope.
      */
     public fun adjustPositionBasedOnSupportingTextHeight(height: Int)
@@ -1116,15 +1116,15 @@ public interface DropdownListBoxScope {
  * Implementation of [DropdownListBoxScope], which is used by [DropdownListBox].
  *
  * @property onInvokerKeyEvent
- *         a callback which is invoked when user presses key.
+ *         a callback that is invoked when user presses key.
  * @property onInvokerClick
- *         a callback which is invoked when user presses mouse inside the
+ *         a callback that is invoked when user presses mouse inside the
  *         invoker of [DropdownListBox].
  * @property onAdjustPositionBasedOnSupportingTextHeight
- *         a callback which is invoked if the invoker of [DropdownListBox]
+ *         a callback that is invoked if the invoker of [DropdownListBox]
  *         has supporting text.
  * @property onClearSelectedItemPress
- *         a callback which is invoked when user presses mouse on clear
+ *         a callback that is invoked when user presses mouse on clear
  *         selected item icon inside the invoker of [DropdownListBox].
  */
 private class DropdownListBoxScopeImpl(
@@ -1157,7 +1157,7 @@ private class DropdownListBoxScopeImpl(
  * @param onClick
  *         the callback that is triggered when the item is clicked.
  * @param onMeasureHeight
- *         callback which is invoked when item is positioned.
+ *         callback that is invoked when item is positioned.
  * @param color
  *         the background color of drop-down list item.
  * @param content
@@ -1227,7 +1227,7 @@ private fun DropdownListNoItems(content: @Composable (() -> Unit)) {
  * @param color
  *         the background color of drop-down list none item.
  * @param onMeasureHeight
- *         callback which is invoked when item is positioned.
+ *         callback that is invoked when item is positioned.
  * @param onClick
  *         the callback that is triggered when the item is clicked.
  */
