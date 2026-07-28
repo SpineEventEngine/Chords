@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ package io.spine.chords.core.layout
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
@@ -46,22 +46,6 @@ import kotlinx.coroutines.CompletableDeferred
  * The default number of lines for the input text component.
  */
 private const val InputComponentNoOfLines = 3
-
-/**
- * Default width of the [InputTextDialog].
- */
-private val DefaultDialogWidth = 450.dp
-
-/**
- * Default height of the [InputTextDialog].
- */
-private val DefaultDialogHeight = 300.dp
-
-/**
- * The value used to reduce the dialog's height
- * when the description field is empty.
- */
-private val ReservedDescriptionHeight = 24.dp
 
 /**
  * A dialog that allows input of a text value.
@@ -198,8 +182,6 @@ public class InputTextDialog : Dialog() {
     init {
         submitAvailable = true
         cancelAvailable = true
-        width = DefaultDialogWidth
-        height = DefaultDialogHeight
     }
 
     /**
@@ -209,33 +191,32 @@ public class InputTextDialog : Dialog() {
     protected override fun contentSection() {
         val textStyle = typography.bodyLarge
         Column {
-            Row {
-                Text(
-                    text = message,
-                    style = textStyle
-                )
-            }
-            if (description.isNotBlank()) {
-                Row(
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
+            DialogHeading {
+                Column {
                     Text(
-                        text = description,
+                        text = message,
                         style = textStyle
                     )
+                    if (description.isNotBlank()) {
+                        Row(
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Text(
+                                text = description,
+                                style = textStyle
+                            )
+                        }
+                    }
                 }
             }
-            Row(
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
+            Row {
                 text.value = defaultText
                 StringField {
                     label = textFieldLabel
                     multiline = noOfTextLines > 1
                     minLines = noOfTextLines
                     maxLines = noOfTextLines
-                    modifier = Modifier.fillMaxSize()
-                        .padding(end = 8.dp)
+                    modifier = Modifier.fillMaxWidth()
                     value = text
                 }
             }
@@ -256,12 +237,6 @@ public class InputTextDialog : Dialog() {
      * pressing the submit button, or `null`, if the user cancels the input.
      */
     private suspend fun show(): String? {
-        // TODO:2025-04-18:oleg.melnik: Remove the code below after automatic
-        //  size detection is implemented for dialogs.
-        //  https://github.com/SpineEventEngine/Chords/issues/118
-        if (description.isBlank() && height == DefaultDialogHeight) {
-            height -= ReservedDescriptionHeight
-        }
         var dialogCancelled = false
         val dialogClosure = CompletableDeferred<Unit>()
         onBeforeSubmit = {

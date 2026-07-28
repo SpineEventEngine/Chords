@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,21 +30,28 @@ import androidx.compose.foundation.layout.Arrangement.End
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment.Companion.Bottom
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key.Companion.Enter
 import androidx.compose.ui.input.key.Key.Companion.Escape
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
@@ -66,6 +73,19 @@ internal val submitShortcutKey = Ctrl(Enter.key)
 internal val cancelShortcutKey = Escape.key
 
 /**
+ * Describes the height constraints applied to the dialog content.
+ */
+internal enum class DialogContentHeightMode {
+    Natural,
+    AtMost,
+    Exact
+}
+
+private val LocalDialogContentHeightMode = staticCompositionLocalOf {
+    DialogContentHeightMode.Natural
+}
+
+/**
  * A base class for creating modal dialog windows, e.g. ones for displaying,
  * entering or editing some information, making decisions, etc.
  *
@@ -79,10 +99,6 @@ internal val cancelShortcutKey = Escape.key
  *     public companion object : DialogSetup<MyDialog>({ MyDialog() })
  *
  *     init {
- *         // Set up own dialog's properties if/as needed.
- *         width = 650.dp
- *         height = 400.dp
- *
  *         // Include the Submit/Cancel buttons
  *         submitAvailable = true
  *         cancelAvailable = true
@@ -229,16 +245,25 @@ public abstract class Dialog : Component() {
     /**
      * The width of the dialog.
      *
-     * The default value is `700.dp`.
+     * By default, the width is determined automatically from the dialog's
+     * content. Assign a specified [Dp] value to use a fixed width instead.
+     *
+     * Automatic width detection uses intrinsic measurement to keep text-based
+     * dialogs compact. Content implemented with `SubcomposeLayout`, such as a
+     * lazy list, does not support intrinsic measurement in Compose 1.5.12 and
+     * therefore requires an explicitly specified width.
      */
-    public var width: Dp = 700.dp
+    public var width: Dp by mutableStateOf(Dp.Unspecified)
 
     /**
      * The height of the dialog.
      *
-     * The default value is `450.dp`.
+     * By default, the height is determined automatically from the dialog's
+     * content. Assign a specified [Dp] value to use a fixed height instead.
+     * Automatically-sized content is capped by the available window height
+     * and becomes scrollable when it no longer fits.
      */
-    public var height: Dp = 450.dp
+    public var height: Dp by mutableStateOf(Dp.Unspecified)
 
     /**
      * Specifies appearance-related parameters.
@@ -499,7 +524,17 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected open fun ColumnScope.windowContent() {
-        Column(Modifier.weight(1F)) {
+        val heightMode = LocalDialogContentHeightMode.current
+        val contentModifier = when (heightMode) {
+            DialogContentHeightMode.Natural -> Modifier
+            DialogContentHeightMode.AtMost -> Modifier
+                .weight(1F, fill = false)
+                .verticalScroll(rememberScrollState())
+            DialogContentHeightMode.Exact -> Modifier
+                .weight(1F)
+                .verticalScroll(rememberScrollState())
+        }
+        Column(contentModifier) {
             contentSection()
         }
         buttonsSection()
@@ -510,8 +545,10 @@ public abstract class Dialog : Component() {
      */
     context(ColumnScope)
     @Composable
-    internal fun windowContentInternal() {
-        windowContent()
+    internal fun windowContentInternal(heightMode: DialogContentHeightMode) {
+        CompositionLocalProvider(LocalDialogContentHeightMode provides heightMode) {
+            windowContent()
+        }
     }
 
     /**
@@ -542,6 +579,7 @@ public abstract class Dialog : Component() {
             verticalAlignment = Bottom
         ) {
             Row(
+                modifier = Modifier.width(IntrinsicSize.Max),
                 horizontalArrangement = spacedBy(look.buttonsSpacing)
             ) {
                 buttons()
@@ -698,7 +736,12 @@ private fun DialogButton(
         Row(
             verticalAlignment = CenterVertically
         ) {
-            Text(label)
+            Text(
+                text = label,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

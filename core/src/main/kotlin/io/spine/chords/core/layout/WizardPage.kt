@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 
 package io.spine.chords.core.layout
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.Start
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
@@ -101,7 +102,7 @@ public fun SubheaderText(text: String) {
 }
 
 /**
- * Column layout for wizard's page input fields.
+ * Column layout for input fields.
  *
  * @param padding
  *          padding to be applied to the column.
@@ -123,7 +124,7 @@ public fun InputColumn(
 }
 
 /**
- * Row layout for wizard's page input fields.
+ * Row layout for input fields.
  *
  * @param padding
  *         padding to be applied to the row.
@@ -133,10 +134,34 @@ public fun InputRow(
     padding: PaddingValues = PaddingValues(),
     content: @Composable () -> Unit
 ) {
+    InputRow(
+        modifier = Modifier,
+        horizontalArrangement = spacedBy(40.dp),
+        padding = padding,
+        content = content
+    )
+}
+
+/**
+ * Configurable row layout for input fields.
+ *
+ * @param modifier
+ *         [Modifier] to be applied to the row.
+ * @param horizontalArrangement
+ *         horizontal arrangement of the row's fields.
+ * @param padding
+ *         padding to be applied to the row.
+ */
+@Composable
+public fun InputRow(
+    modifier: Modifier,
+    horizontalArrangement: Arrangement.Horizontal,
+    padding: PaddingValues = PaddingValues(),
+    content: @Composable () -> Unit
+) {
     Row(
-        modifier = Modifier
-            .padding(padding),
-        horizontalArrangement = spacedBy(40.dp)
+        modifier = modifier.padding(padding),
+        horizontalArrangement = horizontalArrangement
     ) {
         content()
     }

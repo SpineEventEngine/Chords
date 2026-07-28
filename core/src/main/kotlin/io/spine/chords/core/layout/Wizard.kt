@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,10 @@ import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -73,7 +72,7 @@ import io.spine.chords.core.primitive.HorizontalScrollbar
 import io.spine.chords.core.primitive.VerticalScrollbar
 
 /**
- * Constants for the min and max size of the wizard's content pane.
+ * Bounds of the wizard's content pane.
  */
 private object WizardContentSize {
     val width = 670.dp
@@ -166,13 +165,14 @@ public abstract class Wizard : Component() {
     @Composable
     override fun content() {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .width(width)
+                .heightIn(minHeight, maxHeight),
             contentAlignment = Center
         ) {
             Column(
                 modifier = Modifier
-                    .widthIn(width, width)
-                    .heightIn(minHeight, maxHeight)
+                    .fillMaxWidth()
                     .padding(32.dp),
                 verticalArrangement = spacedBy(16.dp)
             ) {
@@ -181,7 +181,7 @@ public abstract class Wizard : Component() {
                 }
                 Column(
                     Modifier
-                        .weight(1F)
+                        .weight(1F, fill = false)
                         .on(Ctrl(Enter.key).up) {
                             submitPage(currentPage)
                         }
@@ -348,11 +348,11 @@ private fun PageContainer(page: WizardPage) {
     val stateVertical = rememberScrollState(0, page)
     val stateHorizontal = rememberScrollState(0, page)
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .verticalScroll(stateVertical)
                 .horizontalScroll(stateHorizontal),
             horizontalAlignment = Start
