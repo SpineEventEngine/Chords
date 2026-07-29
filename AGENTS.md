@@ -153,6 +153,36 @@ Useful root commands (run from the repository root, JDK 11):
 ./gradlew publishToMavenLocal
 ```
 
+### Apple Silicon Workstations
+
+On Apple Silicon, run the root build with an x86_64 distribution of JDK 11.
+The exact JDK 11 patch version may differ between workstations. Verify the
+active JVM before running Gradle:
+
+```bash
+java -version
+java -XshowSettings:properties -version 2>&1 |
+    rg 'java.home|java.version|os.arch'
+```
+
+Expect Java 11 and `os.arch = x86_64`. Do not set `JAVA_HOME` using
+`/usr/libexec/java_home -v 11` on an affected workstation: when macOS cannot find a
+registered JDK 11, that command may silently select a newer ARM JDK instead.
+If the shell bypasses jEnv, select an installed JDK 11 with jEnv and run Gradle
+as follows:
+
+```bash
+jenv shell 11
+JAVA_HOME="$(jenv prefix)" ./gradlew :<module>:check
+```
+
+This architecture matters because some code generation paths in the pinned
+Spine toolchain resolve `io.grpc:protoc-gen-grpc-java:1.28.1`. That artifact
+provides a macOS x86_64 executable but no `osx-aarch_64` executable. Using an
+ARM JVM makes Protobuf generation fail during dependency resolution.
+
+### Module-Specific Verification
+
 Module names for Gradle paths: `core`, `proto`, `proto-values`, `client`,
 `runtime` (located at `codegen/runtime`), and `codegen-tests` (located at
 `codegen/tests`).
