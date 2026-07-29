@@ -49,7 +49,7 @@ import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputContext
 import io.spine.chords.core.ValidationErrorText
-import io.spine.chords.core.recompositionWorkaroundReadonly
+import io.spine.chords.core.recompositionWorkaround
 import io.spine.chords.proto.form.MessageForm.Companion.Multipart
 import io.spine.chords.proto.form.MessageForm.Companion.create
 import io.spine.chords.proto.form.MessageForm.Companion.invoke
@@ -963,6 +963,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * a cached value is needed.
          */
         private var _effectivelyDirty: Boolean? = null
+
+        /**
+         * The last effective dirty state reported to the enclosing form.
+         */
         private var lastObservedEffectivelyDirty: Boolean? = null
 
         init {
@@ -1005,6 +1009,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             checkEffectivelyDirtyStateChange()
         }
 
+        /**
+         * Selects this field in its enclosing oneof, if it belongs to one.
+         */
         private fun selectThisOneofField() {
             val oneof = formOneof
             if (oneof != null) {
@@ -1030,6 +1037,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             checkEffectivelyDirtyStateChange()
         }
 
+        /**
+         * Recalculates the effective dirty state and propagates a change to the form.
+         */
         private fun checkEffectivelyDirtyStateChange() {
             _effectivelyDirty = null
             val effectivelyDirty = effectivelyDirty
@@ -1096,6 +1106,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         required = true
     }
 
+    /**
+     * The generated definition of the message edited by this form.
+     */
     private val messageDef by lazy { builder().messageDef() }
 
     /**
@@ -1132,6 +1145,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * that has been posted is being handled.
      */
     public val editorsEnabled: State<Boolean> get() = editorsEnabledInternal
+
+    /**
+     * The mutable backing state exposed through [editorsEnabled].
+     */
     private lateinit var editorsEnabledInternal: MutableState<Boolean>
 
     /**
@@ -1233,6 +1250,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * any data.
      */
     public val dirty: Boolean get() = _dirty
+
+    /**
+     * The mutable backing value exposed through [dirty].
+     */
     private var _dirty = false
 
     override fun initialize() {
@@ -1354,7 +1375,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
-    override fun content(): Unit = recompositionWorkaroundReadonly {
+    override fun content(): Unit = recompositionWorkaround {
         updateBeforeRendering()
 
         formScope.customMultipartContent()
@@ -1409,6 +1430,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         editorsEnabledInternal.value = shouldEnableEditors
     }
 
+    /**
+     * Determines whether the form starts dirty for the given message value.
+     */
     private fun identifyInitialDirtyState(initialMessageValue: M?): Boolean = when {
         initialMessageValue == null ->
             false
@@ -1425,6 +1449,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             false
     }
 
+    /**
+     * Determines whether the form should initially produce a non-null message.
+     */
     private fun identifyInitialEnteringNonNullValue(): Boolean = when {
         required || value.value != null ->
             true
@@ -1498,6 +1525,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         FormOneof(oneof, initialSelectedField)
     }
 
+    /**
+     * Recalculates and publishes the form-wide dirty state.
+     */
     private fun updateDirty() {
         val dirty =
             fields.values.any { it.effectivelyDirty } ||
@@ -1647,6 +1677,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 "(${super.toString()})"
     }
 
+    /**
+     * Clears all form-wide, field, and oneof validation messages.
+     */
     private fun clearValidationDisplay() {
         formValidationError.value = null
         fields.values.forEach {
@@ -1657,6 +1690,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         }
     }
 
+    /**
+     * Creates a builder populated with the valid values currently entered in the form.
+     */
     private fun builderWithCurrentFields(): ValidatingBuilder<out M> {
         val builder = builder()
         fields.values.forEach { formField ->
@@ -1677,6 +1713,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         return builder
     }
 
+    /**
+     * Displays the given constraint violations at their corresponding form locations.
+     */
     private fun showConstraintViolations(
         constraintViolations: List<ConstraintViolation>
     ) {
@@ -1690,9 +1729,15 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         }
     }
 
+    /**
+     * Finds a registered form field by its Protobuf field name.
+     */
     private fun formFieldByName(fieldName: String): FormField? =
         fields.values.find { it.field.name == fieldName }
 
+    /**
+     * Displays a constraint violation associated with a field or oneof.
+     */
     private fun showFieldConstraintViolation(
         fieldPath: FieldPath,
         constraintViolation: ConstraintViolation

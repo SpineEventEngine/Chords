@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,8 @@
 
 package io.spine.chords.client
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import com.google.protobuf.Message
+import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Status.Code.UNAVAILABLE
 import io.grpc.StatusRuntimeException
@@ -45,15 +43,24 @@ import io.spine.client.EventFilter.eq
 import io.spine.client.Subscription
 import io.spine.core.UserId
 import java.lang.Runtime.getRuntime
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.time.Duration
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+
+/**
+ * Allows active gRPC streams time to finish after the client channel is closed.
+ */
+private const val ChannelShutdownTimeoutSeconds = 5L
 
 /**
  * Provides API to interact with the application server via gRPC.
@@ -67,21 +74,61 @@ import kotlinx.coroutines.runBlocking
  *   If the callback return `null` the client will send requests
  *   to the server on behalf of the guest user.
  */
+@Suppress(
+    "TooManyFunctions" /* The functions implement the public Client contract. */
+)
 public class DesktopClient(
     host: String,
     port: Int,
     private val user: () -> UserId? = { null }
 ) : Client {
-    private val spineClient: io.spine.client.Client
+
+    /**
+     * The gRPC channel used for all requests to the server.
+     */
+    private val channel: ManagedChannel = ManagedChannelBuilder
+        .forAddress(host, port)
+        .usePlaintext()
+        .build()
+
+    /**
+     * The underlying Spine client that performs server requests.
+     */
+    private val spineClient: io.spine.client.Client =
+        io.spine.client.Client.usingChannel(channel).build()
+
+    /**
+     * Coordinates recovery of active data observations after connection loss.
+     */
+    private val recoveryCoordinator = ObservationRecoveryCoordinator()
+
+    /**
+     * Runs best-effort subscription cancellation requests.
+     */
+    private val cancellationScope = CoroutineScope(IO + SupervisorJob())
+
+    /**
+     * Prevents the client resources from being closed more than once.
+     */
+    private val closed = AtomicBoolean(false)
+
+    /**
+     * Observes channel state changes and reports connection status updates.
+     */
+    private val connectionMonitor = ConnectionMonitor(
+        { requestConnection -> channel.getState(requestConnection) },
+        { source, callback -> channel.notifyWhenStateChanged(source, callback) },
+        recoveryCoordinator::onConnectionStatusChanged
+    )
+
     override val isOpen: Boolean get() = spineClient.isOpen
+    override val connectionStatus: StateFlow<ConnectionStatus>
+        get() = connectionMonitor.status
     override val userId: UserId? get() = user()
 
     init {
-        val channel = ManagedChannelBuilder
-            .forAddress(host, port)
-            .usePlaintext()
-            .build()
-        spineClient = io.spine.client.Client.usingChannel(channel).build()
+        recoveryCoordinator.start()
+        connectionMonitor.start()
 
         getRuntime().addShutdownHook(Thread {
             close()
@@ -89,81 +136,92 @@ public class DesktopClient(
     }
 
     override fun close() {
-        spineClient.close()
+        if (!closed.compareAndSet(false, true)) {
+            return
+        }
+        recoveryCoordinator.close()
+        connectionMonitor.close()
+        cancellationScope.cancel()
+        closeChannel()
     }
 
     override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any
-    ): State<List<E>> {
-        val listState = mutableStateOf(listOf<E>())
-        listState.value = clientRequest().select(entityClass).run()
-        clientRequest()
-            .subscribeTo(entityClass)
-            .observe { entity ->
-                runBlocking(Main) {
-                    updateList(listState, entity, extractId)
-                }
-            }
-            .post()
-        return listState
-    }
+    ): DataObservation<List<E>> = createObservation(
+        initialValue = emptyList(),
+        read = {
+            clientRequest()
+                .select(entityClass)
+                .run()
+        },
+        subscribe = { onUpdate, onError ->
+            subscribeTo(entityClass, onUpdate, onError)
+        },
+        applyUpdate = { entities, entity ->
+            updateList(entities, entity, extractId)
+        }
+    )
 
     override fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
         queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter,
-        onNext: (List<E>) -> Unit
-    ) {
-        val initialResult: List<E> = clientRequest()
-            .select(entityClass)
-            .where(queryFilter)
-            .run()
-        onNext(initialResult)
-        val observedEntities = mutableStateOf(initialResult)
-        clientRequest()
-            .subscribeTo(entityClass)
-            .observe { updatedEntity ->
-                updateList(observedEntities, updatedEntity, extractId)
-                runBlocking(Main) {
-                    onNext(observedEntities.value)
-                }
-            }
-            .where(observeFilter)
-            .post()
-    }
+        observeFilter: CompositeEntityStateFilter
+    ): DataObservation<List<E>> = createObservation(
+        initialValue = emptyList(),
+        read = {
+            clientRequest()
+                .select(entityClass)
+                .where(queryFilter)
+                .run()
+        },
+        subscribe = { onUpdate, onError ->
+            subscribeTo(entityClass, onUpdate, onError, observeFilter)
+        },
+        applyUpdate = { entities, entity ->
+            updateList(entities, entity, extractId)
+        }
+    )
+
+    override fun <E : EntityState> readOneAndObserve(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter
+    ): DataObservation<E?> = createObservation(
+        initialValue = null,
+        read = {
+            clientRequest()
+                .select(entityClass)
+                .where(queryFilter)
+                .run()
+                .firstOrNull()
+        },
+        subscribe = { onUpdate, onError ->
+            subscribeTo(entityClass, onUpdate, onError, observeFilter)
+        },
+        applyUpdate = { _, entity -> entity }
+    )
 
     override fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
         observeFilter: CompositeEntityStateFilter,
-        defaultValue: E?
-    ): State<E> {
-        val initialList = clientRequest()
-            .select(entityClass)
-            .where(queryFilter)
-            .run()
-        val initialValue = initialList.getOrNull(0) ?: defaultValue
-        if (initialValue == null) {
-            throw NoMatchingDataException(
-                "No entity could be found that matches the specified criteria, and no " +
-                        "`defaultValue` has been provided. Entity class: ${entityClass.name}"
-            )
-        }
-        val state = mutableStateOf(initialValue)
-
-        clientRequest()
-            .subscribeTo(entityClass)
-            .observe {
-                runBlocking(Main) {
-                    state.value = it
-                }
-            }
-            .where(observeFilter)
-            .post()
-        return state
-    }
+        defaultValue: E
+    ): DataObservation<E> = createObservation(
+        initialValue = defaultValue,
+        read = {
+            clientRequest()
+                .select(entityClass)
+                .where(queryFilter)
+                .run()
+                .firstOrNull() ?: defaultValue
+        },
+        subscribe = { onUpdate, onError ->
+            subscribeTo(entityClass, onUpdate, onError, observeFilter)
+        },
+        applyUpdate = { _, entity -> entity }
+    )
 
     override fun <E : EntityState, M : Message> read(
         entityClass: Class<E>,
@@ -212,9 +270,9 @@ public class DesktopClient(
         onNetworkError: ((Throwable) -> Unit)?,
         onEvent: (E) -> Unit
     ): EventSubscription {
-        val eventSubscription = EventSubscriptionImpl(spineClient)
+        val eventSubscription = EventSubscriptionImpl(::cancelSubscription)
         try {
-            eventSubscription.subscription = clientRequest()
+            val subscription = clientRequest()
                 .subscribeToEvent(event)
                 .where(eq(field, fieldValue))
                 .observe { evt ->
@@ -222,14 +280,14 @@ public class DesktopClient(
                     onEvent(evt)
                 }
                 .onStreamingError({ err ->
-                    if (!eventSubscription.canceled) {
-                        eventSubscription.cancel()
+                    if (eventSubscription.onStreamingFailure()) {
                         onNetworkError?.invoke(err)
                     }
                 })
                 .post()
+            eventSubscription.install(subscription)
         } catch (e: StatusRuntimeException) {
-            if (!eventSubscription.canceled) {
+            if (eventSubscription.onStreamingFailure()) {
                 onNetworkError?.invoke(e)
             }
         }
@@ -248,7 +306,86 @@ public class DesktopClient(
     }
 
     /**
-     * Updates the content of [targetList] by merging in the given [entity]
+     * Closes the channel without asking Spine Client to cancel all subscriptions.
+     *
+     * Spine Client retains subscriptions whose streams ended because the connection
+     * failed. Its standard `close()` method would try to cancel these stale
+     * subscriptions, which the server has already removed. Immediately shutting
+     * down the channel terminates active streams without sending invalid
+     * cancellation requests.
+     */
+    private fun closeChannel() {
+        try {
+            channel.shutdownNow()
+                .awaitTermination(ChannelShutdownTimeoutSeconds, SECONDS)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+    }
+
+    /**
+     * Creates, initializes, and registers a recoverable data observation.
+     */
+    private fun <T, U> createObservation(
+        initialValue: T,
+        read: () -> T,
+        subscribe: (
+            onUpdate: (U) -> Unit,
+            onError: (Throwable) -> Unit
+        ) -> ObservationSubscription,
+        applyUpdate: (T, U) -> T
+    ): DataObservation<T> {
+        val observation = DataObservationImpl(
+            initialValue,
+            read,
+            subscribe,
+            applyUpdate,
+            { connectionStatus.value },
+            recoveryCoordinator::unregister,
+            recoveryCoordinator::retryWhileConnected
+        )
+        observation.initialize()
+        recoveryCoordinator.register(observation, connectionStatus.value)
+        return observation
+    }
+
+    /**
+     * Creates an entity subscription with uniform update and failure handling.
+     */
+    private fun <E : EntityState> subscribeTo(
+        entityClass: Class<E>,
+        onUpdate: (E) -> Unit,
+        onError: (Throwable) -> Unit,
+        filter: CompositeEntityStateFilter? = null
+    ): ObservationSubscription {
+        val request = clientRequest()
+            .subscribeTo(entityClass)
+            .observe(onUpdate)
+            .onStreamingError(onError)
+        filter?.let {
+            request.where(it)
+        }
+        val subscription = request.post()
+        return ObservationSubscription {
+            cancelSubscription(subscription)
+        }
+    }
+
+    /**
+     * Sends a best-effort cancellation request without blocking the caller.
+     */
+    private fun cancelSubscription(subscription: Subscription) {
+        cancellationScope.launch {
+            try {
+                spineClient.subscriptions().cancel(subscription)
+            } catch (_: Exception) {
+                // The stream or channel may have failed before cancellation.
+            }
+        }
+    }
+
+    /**
+     * Updates the content of [entities] by merging in the given [entity]
      * into it.
      *
      * The merging here is either an addition of the new item specified by
@@ -256,46 +393,52 @@ public class DesktopClient(
      * ID in the field identified by [extractId], a replacement of
      * the corresponding item with the one passed in [entity].
      *
-     * @param targetList A [MutableState] that contains a list to be updated.
+     * @param entities A list to be updated.
      * @param entity An item that has to be merged into the list.
      * @param extractId A function that, given a list item, or a value of
      *   [entity], retrieves its ID.
      */
     private fun <E : EntityState> updateList(
-        targetList: MutableState<List<E>>,
+        entities: List<E>,
         entity: E,
         extractId: (E) -> Any
-    ) {
-        val prevList = targetList.value
-        val existingItemIndex = prevList.indexOfFirst { e ->
+    ): List<E> {
+        val existingItemIndex = entities.indexOfFirst { e ->
             extractId(e) == extractId(entity)
         }
 
-        val newList = if (existingItemIndex != -1) {
-            prevList.subList(0, existingItemIndex) +
+        return if (existingItemIndex != -1) {
+            entities.subList(0, existingItemIndex) +
                     entity +
-                    prevList.subList(existingItemIndex + 1, prevList.size)
+                    entities.subList(existingItemIndex + 1, entities.size)
         } else {
-            prevList + entity
+            entities + entity
         }
-
-        targetList.value = newList
     }
 }
 
 /**
  * An [EventSubscription] implementation.
  *
- * @param spineClient A Spine Event Engine's [Client][io.spine.client.Client]
- *   instance where the subscription is being registered.
+ * @param cancelSubscriptionRequest Sends an explicit subscription cancellation
+ *   request to the server.
  */
 internal open class EventSubscriptionImpl(
-    private val spineClient: io.spine.client.Client
+    private val cancelSubscriptionRequest: (Subscription) -> Unit
 ) : EventSubscription {
-    override val active: Boolean get() = subscription != null
 
     /**
-     * A flag specifying whether the subscription has been canceled.
+     * Guards the mutable subscription state.
+     */
+    private val stateLock = Any()
+
+    override val active: Boolean
+        get() = synchronized(stateLock) {
+            subscription != null
+        }
+
+    /**
+     * A flag specifying whether the subscription has been cancelled or failed.
      *
      * It is the same as ![active] with one difference. Since the subscription
      * activation can take a notable period of time (especially with network
@@ -306,14 +449,30 @@ internal open class EventSubscriptionImpl(
      * It is only needed internally because [Client.onEvent] returns only after
      * the subscription has been activated or after its activation has failed.
      */
-    internal var canceled = false
+    internal val canceled: Boolean
+        get() = synchronized(stateLock) {
+            isCancelled
+        }
+
+    /**
+     * Indicates whether this subscription handle has reached a terminal state.
+     */
+    private var isCancelled = false
+
+    /**
+     * Requests cancellation when an asynchronously created subscription is installed.
+     */
+    private var cancelWhenInstalled = false
 
     /**
      * A Spine [Subscription], which was made, or `null` if it either hasn't
      * been made yet, or cancelled already.
      */
-    var subscription: Subscription? = null
+    private var subscription: Subscription? = null
 
+    /**
+     * The currently scheduled subscription timeout, if any.
+     */
     private var timeoutJob: Job? = null
 
     @OptIn(
@@ -351,19 +510,89 @@ internal open class EventSubscriptionImpl(
         cancelTimeout()
     }
 
+    /**
+     * Installs a successfully created subscription unless this handle has
+     * already received a failure or cancellation.
+     */
+    internal fun install(newSubscription: Subscription) {
+        val shouldCancel = synchronized(stateLock) {
+            if (!isCancelled) {
+                subscription = newSubscription
+                false
+            } else {
+                val pendingCancellation = cancelWhenInstalled
+                cancelWhenInstalled = false
+                pendingCancellation
+            }
+        }
+        if (shouldCancel) {
+            sendCancellationSafely(newSubscription)
+        }
+    }
+
+    /**
+     * Marks the subscription as inactive after its stream has failed.
+     *
+     * No cancellation request is sent because the server has already ended
+     * and removed the failed subscription.
+     *
+     * @return `true` if this is the first terminal signal for the subscription.
+     */
+    internal fun onStreamingFailure(): Boolean {
+        val failureAccepted = synchronized(stateLock) {
+            if (isCancelled) {
+                false
+            } else {
+                isCancelled = true
+                cancelWhenInstalled = false
+                subscription = null
+                true
+            }
+        }
+        if (failureAccepted) {
+            cancelTimeout()
+        }
+        return failureAccepted
+    }
+
     override fun cancel() {
         cancelSubscription()
         cancelTimeout()
     }
 
+    /**
+     * Marks this handle as cancelled and cancels an installed subscription.
+     */
     private fun cancelSubscription() {
-        if (subscription != null) {
-            spineClient.subscriptions().cancel(subscription!!)
+        val previousSubscription = synchronized(stateLock) {
+            if (isCancelled) {
+                return@synchronized null
+            }
+            val current = subscription
             subscription = null
+            isCancelled = true
+            cancelWhenInstalled = current == null
+            current
         }
-        canceled = true
+        if (previousSubscription != null) {
+            sendCancellationSafely(previousSubscription)
+        }
     }
 
+    /**
+     * Sends a best-effort cancellation request for the given [subscription].
+     */
+    private fun sendCancellationSafely(subscription: Subscription) {
+        try {
+            cancelSubscriptionRequest(subscription)
+        } catch (_: Exception) {
+            // The server may already have removed a failed subscription.
+        }
+    }
+
+    /**
+     * Cancels and clears the currently scheduled timeout.
+     */
     private fun cancelTimeout() {
         if (timeoutJob != null) {
             timeoutJob?.cancel()

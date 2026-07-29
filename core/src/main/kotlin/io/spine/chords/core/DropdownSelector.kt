@@ -200,7 +200,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     }
 
     @Composable
-    override fun content() {
+    override fun content(): Unit = recompositionWorkaround {
         if (!::fieldColors.isInitialized) {
             fieldColors = TextFieldDefaults.colors()
         }
@@ -226,6 +226,9 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
         }
     }
 
+    /**
+     * Renders the editable field that opens and filters the drop-down list.
+     */
     @Composable
     @OptIn(ExperimentalComposeUiApi::class)
     private fun DropdownListBoxScope.SelectorField() {

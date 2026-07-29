@@ -27,6 +27,7 @@
 package io.spine.chords.client
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
@@ -90,7 +91,15 @@ public abstract class EntityChooser<
     }
 
     override val items: MutableState<Iterable<I>> = mutableStateOf(listOf())
+
+    /**
+     * The live observation that supplies entity states for this chooser.
+     */
     private val entityStates = app.client.readAndObserve(entityStateClass, ::entityId)
+
+    /**
+     * The latest observed entity states indexed by their IDs.
+     */
     private val entityStatesByIds: HashMap<I, E> = hashMapOf()
 
     /**
@@ -200,6 +209,16 @@ public abstract class EntityChooser<
     override fun itemContent(entityId: I, entityItemText: String) {
         val entityState = entityById(entityId)
         itemContent(entityId, entityState, entityItemText)
+    }
+
+    @Composable
+    override fun content() {
+        DisposableEffect(entityStates) {
+            onDispose {
+                entityStates.cancel()
+            }
+        }
+        super.content()
     }
 
     @Composable

@@ -37,6 +37,7 @@ import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.core.UserId
 import kotlin.time.Duration
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Provides an API for interacting with the application server.
@@ -51,36 +52,53 @@ public interface Client {
     public val isOpen: Boolean
 
     /**
+     * The current status of the connection with the server.
+     *
+     * This status is independent from [isOpen]. An open client can temporarily
+     * have an unavailable connection and reconnect later.
+     */
+    public val connectionStatus: StateFlow<ConnectionStatus>
+
+    /**
      * The ID of the user on whose behalf this `Client` should send requests to
      * the server.
      */
     public val userId: UserId?
 
     /**
-     * Reads the list of entities with the [entityClass] class and returns the
-     * respective [State], which is maintained to contain an up-to-date list.
+     * Reads the list of entities with the [entityClass] class and returns an
+     * observation that maintains an up-to-date list.
+     *
+     * If the connection with the server is lost, the returned observation
+     * retains the last received list. It automatically re-reads the complete
+     * list and creates a new subscription when the connection is restored.
+     * Call [DataObservation.cancel] when the observation is no longer needed.
      *
      * @param E A type of entities being read and observed.
      *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of
      *   the entity's ID.
-     * @return A [State] that contains a list whose content should be populated
-     *   and kept up to date by this function.
+     * @return An observation that contains the current list and its
+     *   observation status.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any
-    ): State<List<E>>
+    ): DataObservation<List<E>>
 
     /**
      * Reads all entities of type [entityClass] that match the given
-     * [queryFilter] and invokes the [onNext] callback with the initial list of
-     * entities. Then sets up observation to receive future updates to the
+     * [queryFilter]. Then sets up observation to receive future updates to the
      * entities, filtering the observed updates using the provided
-     * [observeFilter]. Each time any entity that matches the [observeFilter]
-     * changes, the [onNext] callback will be invoked again with the updated
-     * list of entities.
+     * [observeFilter].
+     *
+     * If the connection with the server is lost, the returned observation
+     * retains the last received list. It automatically re-reads the complete
+     * list and creates a new subscription when the connection is restored.
+     * Call [DataObservation.cancel] when the observation is no longer needed.
+     *
+     * @param E A type of entities being read and observed.
      *
      * @param entityClass A class of entities that should be read and observed.
      * @param extractId A callback that should read the value of the entity's ID.
@@ -88,30 +106,30 @@ public interface Client {
      *   of entities.
      * @param observeFilter A filter to apply when observing updates to
      *   the entities, whose criteria should match the ones in [queryFilter].
-     * @param onNext A callback function that is called with the list of
-     *   entities after the initial query completes, and each time any of the
-     *   observed entities is updated.
+     * @return An observation that contains the current list and its
+     *   observation status.
      */
     public fun <E : EntityState> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
         queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter,
-        onNext: (List<E>) -> Unit
-    )
+        observeFilter: CompositeEntityStateFilter
+    ): DataObservation<List<E>>
 
     /**
-     * Returns a [State], which maintains an up-to-date entity value according
-     * to the given filter parameters.
+     * Returns an observation that maintains an up-to-date nullable entity value
+     * according to the given filter parameters.
      *
      * Note the following specifics of how special cases are handled:
      * - If more than one entity matches the criteria specified by [queryFilter]
-     * or [observeFilter] parameters, then the returned [State] gets the first
-     * matching value.
-     * - If no entries match the specified criteria, then the
-     * state gets the value of the [defaultValue] parameter, provided that it
-     * contains non-`null` value.
-     * - If [defaultValue] is `null`, then [NoMatchingDataException] is thrown.
+     *   or [observeFilter], the returned observation gets the first matching
+     *   value.
+     * - If no entries match the specified criteria, the value is `null`.
+     *
+     * If the connection with the server is lost, the returned observation
+     * retains the last received value. It automatically re-reads the value and
+     * creates a new subscription when the connection is restored.
+     * Call [DataObservation.cancel] when the observation is no longer needed.
      *
      * @param E A type of entity being read and observed.
      *
@@ -120,20 +138,44 @@ public interface Client {
      * @param queryFilter A filter to use for querying the initial entity value.
      * @param observeFilter A filter to use for observing entity updates, whose
      *   criteria should match the ones in [queryFilter].
-     * @param defaultValue Specifying a non-`null` value prevents this function
-     *   from thrown an exception if no matching records were found by using
-     *   this value as a result.
-     * @return A [State] that contains an up-to-date entity value according to
-     *   the given criteria.
-     * @throws NoMatchingDataException If there is no entity that matches the
-     *   given criteria and there's no non-`null` [defaultValue] provided.
+     * @return An observation that contains an up-to-date entity value according
+     *   to the given criteria, or `null` if no matching entity exists.
+     */
+    public fun <E : EntityState> readOneAndObserve(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter
+    ): DataObservation<E?>
+
+    /**
+     * Returns an observation that maintains an up-to-date entity value
+     * according to the given filter parameters.
+     *
+     * This overload guarantees a non-null value by using [defaultValue] when no
+     * entity matches. If several entities match, the first one is used.
+     *
+     * If the connection with the server is lost, the returned observation
+     * retains the last received value. It automatically re-reads the value and
+     * creates a new subscription when the connection is restored.
+     * Call [DataObservation.cancel] when the observation is no longer needed.
+     *
+     * @param E A type of entity being read and observed.
+     *
+     * @param entityClass A class of entity value that should be
+     *   read and observed.
+     * @param queryFilter A filter to use for querying the initial entity value.
+     * @param observeFilter A filter to use for observing entity updates, whose
+     *   criteria should match the ones in [queryFilter].
+     * @param defaultValue A value to use when no matching records were found.
+     * @return An observation that always contains either a matching entity or
+     *   [defaultValue].
      */
     public fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
         queryFilter: CompositeQueryFilter,
         observeFilter: CompositeEntityStateFilter,
-        defaultValue: E? = null
-    ): State<E>
+        defaultValue: E
+    ): DataObservation<E>
 
     /**
      * Retrieves an entity of the specified class with the given ID.
@@ -150,13 +192,11 @@ public interface Client {
      * Posts a command to the server.
      *
      * @param command A command that has to be posted.
-     * @throws ServerCommunicationException If a net work error has occurred
-     *   when posting a command.
      * @throws ServerError If the command couldn't be acknowledged due to an
      *   error on the server.
      * @throws ServerCommunicationException In case of a network communication
      *   failure that has occurred during posting of the command. It is unknown
-     *   whether the command has been acknowledged or no in this case.
+     *   whether the command has been acknowledged in this case.
      */
     public fun <C: CommandMessage> postCommand(command: C)
 
@@ -303,6 +343,121 @@ public interface Client {
 }
 
 /**
+ * The current connection status of a [Client].
+ */
+public enum class ConnectionStatus {
+
+    /**
+     * The connection is not currently used.
+     */
+    IDLE,
+
+    /**
+     * The client is establishing a connection.
+     */
+    CONNECTING,
+
+    /**
+     * The connection is ready to carry requests.
+     */
+    CONNECTED,
+
+    /**
+     * The connection is temporarily unavailable.
+     */
+    UNAVAILABLE,
+
+    /**
+     * The client is permanently closed and will not try to reconnect.
+     *
+     * This status lets applications distinguish a deliberate client shutdown
+     * from a temporary connection failure and stop showing reconnection UI.
+     */
+    CLOSED
+}
+
+/**
+ * The status of a [DataObservation].
+ */
+public sealed class DataObservationStatus {
+
+    /**
+     * The observation is receiving updates.
+     */
+    public object Active : DataObservationStatus()
+
+    /**
+     * The observation is retaining its last value until the connection is
+     * restored.
+     */
+    public object WaitingForConnection : DataObservationStatus()
+
+    /**
+     * The observation is re-reading its data and creating a new subscription.
+     */
+    public object Refreshing : DataObservationStatus()
+
+    /**
+     * The observation could not read data or create a subscription.
+     *
+     * This status is terminal for automatic connection recovery because the
+     * failure was not classified as a temporary connection loss. After
+     * resolving the cause, call [DataObservation.refresh] explicitly to retry.
+     *
+     * @property error The failure that has occurred.
+     */
+    public data class Failed(
+        public val error: Throwable
+    ) : DataObservationStatus()
+
+    /**
+     * The observation has been cancelled permanently.
+     */
+    public object Cancelled : DataObservationStatus()
+}
+
+/**
+ * Maintains live server data and recovers it after a temporary connection
+ * failure.
+ *
+ * A `DataObservation` is also a Compose [State], so its current [value] can be
+ * read directly or with Kotlin property delegation. An observation in
+ * [DataObservationStatus.WaitingForConnection] automatically re-reads the
+ * complete value and creates a new subscription when the server connection is
+ * restored. An observation in [DataObservationStatus.Failed] is not retried
+ * automatically and requires an explicit [refresh] call.
+ *
+ * The caller owns the observation lifecycle and should call [cancel] when the
+ * observation is no longer needed.
+ *
+ * @param T The type of the observed value.
+ */
+public interface DataObservation<out T> : State<T> {
+
+    /**
+     * The current observation status.
+     */
+    public val status: State<DataObservationStatus>
+
+    /**
+     * Re-reads the complete value and replaces the current subscription.
+     *
+     * Request failures are exposed through [status] instead of being thrown
+     * from this function. Coroutine cancellation is propagated to the caller
+     * without being converted into an observation failure.
+     */
+    public suspend fun refresh()
+
+    /**
+     * Permanently cancels this observation.
+     *
+     * A cancelled observation is excluded from automatic recovery and cannot
+     * be refreshed again.
+     */
+    public fun cancel()
+}
+
+/**
  * A subscription for an event.
  */
 public interface EventSubscription {
@@ -361,6 +516,9 @@ public interface EventSubscriptions {
  */
 public class ServerCommunicationException(cause: Throwable) : RuntimeException(cause) {
     public companion object {
+        /**
+         * Identifies the serialized form of this exception.
+         */
         private const val serialVersionUID: Long = -5438430153458733051L
     }
 }
@@ -372,15 +530,9 @@ public class ServerCommunicationException(cause: Throwable) : RuntimeException(c
  */
 public class ServerError(public val error: Error) : RuntimeException(error.message) {
     public companion object {
+        /**
+         * Identifies the serialized form of this exception.
+         */
         private const val serialVersionUID: Long = -5438430153458733051L
-    }
-}
-
-/**
- * Signifies a failure to obtain data matching the requested criteria.
- */
-public class NoMatchingDataException(message: String) : RuntimeException(message) {
-    public companion object {
-        private const val serialVersionUID: Long = 2459671723206505789L
     }
 }
