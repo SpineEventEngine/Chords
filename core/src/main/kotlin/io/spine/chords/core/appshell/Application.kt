@@ -176,6 +176,9 @@ public open class Application(
      */
     internal val sharedDefaults = SharedDefaults()
 
+    /**
+     * The UI API initialized when the application window is created.
+     */
     private var _ui: ApplicationUI? = null
 
     /**
@@ -251,6 +254,9 @@ public open class Application(
     protected open fun SharedDefaultsScope.sharedDefaults() {
     }
 
+    /**
+     * Creates the main application window with this application's configuration.
+     */
     private fun createAppWindow(onCloseRequest: () -> Unit): AppWindow {
         return AppWindow(
             signInScreenContent = {

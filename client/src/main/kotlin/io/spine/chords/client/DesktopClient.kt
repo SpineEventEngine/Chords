@@ -82,15 +82,39 @@ public class DesktopClient(
     port: Int,
     private val user: () -> UserId? = { null }
 ) : Client {
+
+    /**
+     * The gRPC channel used for all requests to the server.
+     */
     private val channel: ManagedChannel = ManagedChannelBuilder
         .forAddress(host, port)
         .usePlaintext()
         .build()
+
+    /**
+     * The underlying Spine client that performs server requests.
+     */
     private val spineClient: io.spine.client.Client =
         io.spine.client.Client.usingChannel(channel).build()
+
+    /**
+     * Coordinates recovery of active data observations after connection loss.
+     */
     private val recoveryCoordinator = ObservationRecoveryCoordinator()
+
+    /**
+     * Runs best-effort subscription cancellation requests.
+     */
     private val cancellationScope = CoroutineScope(IO + SupervisorJob())
+
+    /**
+     * Prevents the client resources from being closed more than once.
+     */
     private val closed = AtomicBoolean(false)
+
+    /**
+     * Observes channel state changes and reports connection status updates.
+     */
     private val connectionMonitor = ConnectionMonitor(
         { requestConnection -> channel.getState(requestConnection) },
         { source, callback -> channel.notifyWhenStateChanged(source, callback) },
@@ -403,6 +427,9 @@ internal open class EventSubscriptionImpl(
     private val cancelSubscriptionRequest: (Subscription) -> Unit
 ) : EventSubscription {
 
+    /**
+     * Guards the mutable subscription state.
+     */
     private val stateLock = Any()
 
     override val active: Boolean
@@ -427,7 +454,14 @@ internal open class EventSubscriptionImpl(
             isCancelled
         }
 
+    /**
+     * Indicates whether this subscription handle has reached a terminal state.
+     */
     private var isCancelled = false
+
+    /**
+     * Requests cancellation when an asynchronously created subscription is installed.
+     */
     private var cancelWhenInstalled = false
 
     /**
@@ -436,6 +470,9 @@ internal open class EventSubscriptionImpl(
      */
     private var subscription: Subscription? = null
 
+    /**
+     * The currently scheduled subscription timeout, if any.
+     */
     private var timeoutJob: Job? = null
 
     @OptIn(
@@ -523,6 +560,9 @@ internal open class EventSubscriptionImpl(
         cancelTimeout()
     }
 
+    /**
+     * Marks this handle as cancelled and cancels an installed subscription.
+     */
     private fun cancelSubscription() {
         val previousSubscription = synchronized(stateLock) {
             if (isCancelled) {
@@ -539,6 +579,9 @@ internal open class EventSubscriptionImpl(
         }
     }
 
+    /**
+     * Sends a best-effort cancellation request for the given [subscription].
+     */
     private fun sendCancellationSafely(subscription: Subscription) {
         try {
             cancelSubscriptionRequest(subscription)
@@ -547,6 +590,9 @@ internal open class EventSubscriptionImpl(
         }
     }
 
+    /**
+     * Cancels and clears the currently scheduled timeout.
+     */
     private fun cancelTimeout() {
         if (timeoutJob != null) {
             timeoutJob?.cancel()

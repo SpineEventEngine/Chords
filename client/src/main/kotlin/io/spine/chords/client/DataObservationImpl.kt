@@ -102,26 +102,74 @@ internal interface RecoverableDataObservation {
 )
 internal class DataObservationImpl<T, U>(
     initialValue: T,
+    /**
+     * Reads the complete current value from the server.
+     */
     private val read: () -> T,
+    /**
+     * Creates a server subscription and registers its update and failure callbacks.
+     */
     private val subscribe: (
         onUpdate: (U) -> Unit,
         onError: (Throwable) -> Unit
     ) -> ObservationSubscription,
+    /**
+     * Applies one subscription update to the current complete value.
+     */
     private val applyUpdate: (T, U) -> T,
+    /**
+     * Obtains the latest client connection status.
+     */
     private val connectionStatus: () -> ConnectionStatus,
+    /**
+     * Unregisters this observation after permanent cancellation.
+     */
     private val onCancelled: (RecoverableDataObservation) -> Unit,
+    /**
+     * Requests a delayed retry when a stream fails on a connected channel.
+     */
     private val onRecoveryNeeded: (RecoverableDataObservation) -> Unit = {}
 ) : DataObservation<T>, RecoverableDataObservation {
 
+    /**
+     * Stores the complete value exposed as Compose state.
+     */
     private val mutableValue: MutableState<T> = mutableStateOf(initialValue)
+
+    /**
+     * Stores the observation lifecycle status exposed as Compose state.
+     */
     private val mutableStatus: MutableState<DataObservationStatus> =
         mutableStateOf(Refreshing)
+
+    /**
+     * Guards lifecycle fields shared by request and callback threads.
+     */
     private val stateLock = Any()
+
+    /**
+     * Prevents concurrent refresh operations for this observation.
+     */
     private val refreshMutex = Mutex()
 
+    /**
+     * Identifies the current lifecycle generation so stale callbacks can be ignored.
+     */
     private var generation: Long = 0
+
+    /**
+     * Holds the currently installed server subscription, if any.
+     */
     private var subscription: ObservationSubscription? = null
+
+    /**
+     * Tracks in-flight subscriptions that became obsolete because the connection failed.
+     */
     private val abandonedSubscriptionGenerations = mutableSetOf<Long>()
+
+    /**
+     * Permanently prevents further refreshes after cancellation.
+     */
     private var cancelled: Boolean = false
 
     override val value: T
@@ -194,6 +242,9 @@ internal class DataObservationImpl<T, U>(
         }
     }
 
+    /**
+     * Performs the blocking subscription and read operations for one refresh.
+     */
     @Suppress(
         "ReturnCount" /* Each failed network phase returns its distinct result immediately. */
     )
@@ -242,6 +293,9 @@ internal class DataObservationImpl<T, U>(
         cancel(cancelSubscription = false)
     }
 
+    /**
+     * Permanently stops this observation and optionally cancels its server subscription.
+     */
     private fun cancel(cancelSubscription: Boolean) {
         val previousSubscription: ObservationSubscription?
         val notifyCancelled: Boolean
@@ -287,6 +341,9 @@ internal class DataObservationImpl<T, U>(
             !cancelled && mutableStatus.value == WaitingForConnection
         }
 
+    /**
+     * Starts a new generation and detaches the previous subscription.
+     */
     private fun beginRefresh(): Long? {
         val previousSubscription: ObservationSubscription?
         val refreshGeneration: Long
@@ -304,6 +361,9 @@ internal class DataObservationImpl<T, U>(
         return refreshGeneration
     }
 
+    /**
+     * Replaces the complete value if [refreshGeneration] is still current.
+     */
     private fun setValue(refreshGeneration: Long, newValue: T): Boolean {
         synchronized(stateLock) {
             if (!isCurrent(refreshGeneration)) {
@@ -314,6 +374,9 @@ internal class DataObservationImpl<T, U>(
         }
     }
 
+    /**
+     * Buffers [update] during refresh or applies it to the active value afterward.
+     */
     private fun bufferOrApplyUpdate(
         refreshGeneration: Long,
         pendingUpdates: PendingUpdates<U>,
@@ -331,6 +394,9 @@ internal class DataObservationImpl<T, U>(
         }
     }
 
+    /**
+     * Buffers [cause] during refresh or handles it immediately afterward.
+     */
     private fun bufferOrHandleFailure(
         refreshGeneration: Long,
         pendingUpdates: PendingUpdates<U>,
@@ -354,6 +420,9 @@ internal class DataObservationImpl<T, U>(
         }
     }
 
+    /**
+     * Installs [newSubscription] if its refresh generation is still current.
+     */
     private fun installSubscription(
         refreshGeneration: Long,
         newSubscription: ObservationSubscription
@@ -374,6 +443,9 @@ internal class DataObservationImpl<T, U>(
         return installed
     }
 
+    /**
+     * Publishes the refreshed value together with updates received during its read.
+     */
     private fun completeRefresh(
         refreshGeneration: Long,
         refreshedValue: T,
@@ -401,6 +473,9 @@ internal class DataObservationImpl<T, U>(
         }
     }
 
+    /**
+     * Attempts to preserve readable data after a non-connection subscription failure.
+     */
     private fun readAfterSubscriptionFailure(
         subscriptionFailure: Exception
     ): ReadValue<T>? {
@@ -415,6 +490,9 @@ internal class DataObservationImpl<T, U>(
         }
     }
 
+    /**
+     * Transitions this observation to a waiting or failed state for [cause].
+     */
     private fun handleFailure(
         refreshGeneration: Long,
         cause: Throwable,
@@ -446,9 +524,15 @@ internal class DataObservationImpl<T, U>(
         }
     }
 
+    /**
+     * Tells whether [refreshGeneration] still owns this observation's callbacks.
+     */
     private fun isCurrent(refreshGeneration: Long): Boolean =
         !cancelled && generation == refreshGeneration
 
+    /**
+     * Tells whether [cause] represents a temporary connection failure.
+     */
     private fun isConnectionFailure(cause: Throwable): Boolean {
         return when (Status.fromThrowable(cause).code) {
             Status.Code.CANCELLED,
@@ -461,6 +545,9 @@ internal class DataObservationImpl<T, U>(
     }
 }
 
+/**
+ * Tells whether this throwable or one of its causes carries a gRPC status.
+ */
 private fun Throwable.hasGrpcStatus(): Boolean {
     var current: Throwable? = this
     while (current != null) {
@@ -472,38 +559,74 @@ private fun Throwable.hasGrpcStatus(): Boolean {
     return false
 }
 
+/**
+ * Collects subscription callbacks until the complete refresh value is ready.
+ */
 private class PendingUpdates<U> {
+
+    /**
+     * Updates received before the refreshed value is published.
+     */
     val updates: MutableList<U> = mutableListOf()
+
+    /**
+     * Tells whether callbacks must still be accumulated.
+     */
     var buffering: Boolean = true
+
+    /**
+     * The first stream failure received while buffering, if any.
+     */
     var failure: Throwable? = null
 }
 
+/**
+ * Describes the result of the blocking portion of a refresh.
+ */
 private sealed class RefreshResult<out T> {
 
+    /**
+     * Contains a new subscription and the complete value read after creating it.
+     */
     data class Success<T>(
         val subscription: ObservationSubscription,
         val value: T
     ) : RefreshResult<T>()
 
+    /**
+     * Contains a created subscription whose subsequent complete read failed.
+     */
     data class ReadFailed(
         val subscription: ObservationSubscription,
         val cause: Exception
     ) : RefreshResult<Nothing>()
 
+    /**
+     * Contains a subscription failure and any complete value read afterward.
+     */
     data class SubscriptionFailed<T>(
         val cause: Exception,
         val value: ReadValue<T>?
     ) : RefreshResult<T>()
 }
 
+/**
+ * Wraps a possibly nullable value so it can be distinguished from no read result.
+ */
 private data class ReadValue<out T>(val value: T)
 
+/**
+ * Propagates coroutine cancellation instead of converting it to observation failure.
+ */
 private fun rethrowCancellation(exception: Exception) {
     if (exception is CancellationException) {
         throw exception
     }
 }
 
+/**
+ * Cancels this subscription without propagating a best-effort request failure.
+ */
 private fun ObservationSubscription?.cancelSafely() {
     try {
         this?.cancel()

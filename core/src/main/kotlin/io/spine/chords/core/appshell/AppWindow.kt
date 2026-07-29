@@ -222,6 +222,9 @@ public class AppWindow(
 
 /**
  * A sign-in screen of the application.
+ *
+ * @param content The composable content displayed by the screen.
+ * @param onSuccessAuthentication Invoked after successful authentication.
  */
 private class SignInScreen(
     private val content: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,

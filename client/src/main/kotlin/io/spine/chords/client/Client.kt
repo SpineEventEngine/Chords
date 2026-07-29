@@ -516,6 +516,9 @@ public interface EventSubscriptions {
  */
 public class ServerCommunicationException(cause: Throwable) : RuntimeException(cause) {
     public companion object {
+        /**
+         * Identifies the serialized form of this exception.
+         */
         private const val serialVersionUID: Long = -5438430153458733051L
     }
 }
@@ -527,6 +530,9 @@ public class ServerCommunicationException(cause: Throwable) : RuntimeException(c
  */
 public class ServerError(public val error: Error) : RuntimeException(error.message) {
     public companion object {
+        /**
+         * Identifies the serialized form of this exception.
+         */
         private const val serialVersionUID: Long = -5438430153458733051L
     }
 }

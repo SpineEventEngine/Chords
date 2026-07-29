@@ -50,19 +50,53 @@ internal class ObservationRecoveryCoordinator(
     coroutineContext: CoroutineContext = IO
 ) {
 
+    /**
+     * Runs connection processing and observation recovery tasks.
+     */
     private val scope =
         CoroutineScope(coroutineContext.minusKey(Job) + SupervisorJob())
+
+    /**
+     * The observations managed by this coordinator.
+     */
     private val observations =
         ConcurrentHashMap.newKeySet<RecoverableDataObservation>()
+
+    /**
+     * The observations that currently have a connection-aware retry loop.
+     */
     private val retryingObservations =
         ConcurrentHashMap.newKeySet<RecoverableDataObservation>()
+
+    /**
+     * Guards connection status transition state.
+     */
     private val stateLock = Any()
+
+    /**
+     * Serializes connection status changes for ordered processing.
+     */
     private val connectionStatusChanges =
         Channel<ConnectionStatus>(Channel.UNLIMITED)
+
+    /**
+     * Prevents the status-processing coroutine from being started more than once.
+     */
     private val started = AtomicBoolean(false)
+
+    /**
+     * Indicates whether this coordinator has stopped accepting work.
+     */
     private val closed = AtomicBoolean(false)
 
+    /**
+     * Indicates that an unavailable status has not yet been followed by reconnection.
+     */
     private var connectionWasUnavailable = false
+
+    /**
+     * The latest connection status processed by this coordinator.
+     */
     private var connectionStatus = ConnectionStatus.IDLE
 
     /**
@@ -156,6 +190,9 @@ internal class ObservationRecoveryCoordinator(
         scope.cancel()
     }
 
+    /**
+     * Applies a connection [status] transition to all registered observations.
+     */
     private fun processConnectionStatus(status: ConnectionStatus) {
         val connectionLost: Boolean
         synchronized(stateLock) {
@@ -183,12 +220,18 @@ internal class ObservationRecoveryCoordinator(
         }
     }
 
+    /**
+     * Refreshes the given [observation] in the coordinator scope.
+     */
     private fun refresh(observation: RecoverableDataObservation) {
         scope.launch {
             observation.refresh()
         }
     }
 
+    /**
+     * Checks whether the given [observation] still needs a connected retry.
+     */
     private fun shouldRetry(observation: RecoverableDataObservation): Boolean {
         val connected = synchronized(stateLock) {
             connectionStatus == ConnectionStatus.CONNECTED

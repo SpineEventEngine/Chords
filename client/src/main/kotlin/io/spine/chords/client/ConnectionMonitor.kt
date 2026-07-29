@@ -41,16 +41,36 @@ import kotlinx.coroutines.flow.asStateFlow
  * Observes the connectivity state of a gRPC channel.
  */
 internal class ConnectionMonitor(
+    /**
+     * Obtains the current channel state and optionally requests a connection.
+     */
     private val getState: (requestConnection: Boolean) -> ConnectivityState,
+    /**
+     * Registers a callback to run after the channel leaves the supplied state.
+     */
     private val notifyWhenStateChanged: (
         source: ConnectivityState,
         callback: Runnable
     ) -> Unit,
+    /**
+     * Receives each distinct connection status published by this monitor.
+     */
     private val onStatusChanged: (ConnectionStatus) -> Unit
 ) {
 
+    /**
+     * Prevents callbacks from restarting observation after the monitor is closed.
+     */
     private val closed = AtomicBoolean(false)
+
+    /**
+     * Serializes status updates with the terminal transition to `CLOSED`.
+     */
     private val stateLock = Any()
+
+    /**
+     * Stores the latest public connection status.
+     */
     private val mutableStatus = MutableStateFlow(ConnectionStatus.IDLE)
 
     /**
@@ -74,6 +94,9 @@ internal class ConnectionMonitor(
         }
     }
 
+    /**
+     * Publishes [channelState] and arranges observation of its next transition.
+     */
     private fun observe(channelState: ConnectivityState) {
         if (closed.get()) {
             return
@@ -90,6 +113,9 @@ internal class ConnectionMonitor(
         })
     }
 
+    /**
+     * Publishes [newStatus] unless it duplicates the current or terminal status.
+     */
     private fun updateStatus(newStatus: ConnectionStatus) {
         synchronized(stateLock) {
             if (closed.get() && newStatus != ConnectionStatus.CLOSED) {
@@ -104,6 +130,9 @@ internal class ConnectionMonitor(
     }
 }
 
+/**
+ * Converts a gRPC connectivity state to the corresponding Chords status.
+ */
 private fun ConnectivityState.toConnectionStatus(): ConnectionStatus = when (this) {
     IDLE -> ConnectionStatus.IDLE
     CONNECTING -> ConnectionStatus.CONNECTING
