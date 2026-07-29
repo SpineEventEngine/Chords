@@ -27,6 +27,9 @@ frontmatter matches the task.
 
 ## Commit and History Safety
 
+Before committing changes or opening a pull request, agents must re-read this
+`AGENTS.md` policy in full, even if they read it earlier in the task.
+
 Do not commit, push, tag, rebase, merge, cherry-pick, or otherwise write to Git
 history unless the user's current prompt explicitly asks for it.
 
@@ -50,11 +53,12 @@ The Commit and History Safety rules above apply throughout this procedure.
    - Name new branches after the task, in the repository's kebab-case style
      (for example, `dialog-form-dirty-state`); do not include `codex` or other
      agent-specific identifiers in branches you create.
-3. **Check the version and reports.** Apply "Versioning and Reports" above:
+3. **Check the version and reports.** Apply "Versioning and Reports" below:
    inspect the commits and local state, bump `chordsVersion` in
    `version.gradle.kts` if the changeset has not bumped it yet, and if the
    generated `pom.xml` and `dependencies.md` reports are not updated yet, run
-   `./gradlew build` and include the regenerated reports in the changeset.
+   the focused report-regeneration command in that section and include changed
+   reports in the changeset.
 4. **Commit in logical steps.** Create one or more logical commits; split the
    work only when each commit is independently coherent. Commit the version
    bump together with the regenerated `pom.xml` and `dependencies.md`, using
@@ -77,9 +81,11 @@ step 6), then:
 3. **Omit a trailing period.** Do not end a pull request title with a period
    (`.`).
 4. **Write the description** with a `## Summary` section followed by a
-   `## Changes` section. Optional sections such as `## Important notes` or
-   `## Reviewer notes` may follow when useful. Do not add a "Verifications"
-   section or any agent-attribution section such as `Created by <agent>`.
+   `## Changes` section. Add optional sections such as `## Important notes` or
+   `## Reviewer notes` only when they contain material information that
+   reviewers need; omit routine, empty, or redundant sections. Do not add a
+   "Verifications" section or any agent-attribution section such as
+   `Created by <agent>`.
 5. **Link resolved issues.** For each issue the PR implements or fixes, add a
    GitHub closing keyword in the description (for example, `Fixes #123`) so the
    issue appears under "Successfully merging this pull request may close these
@@ -128,10 +134,35 @@ the `Check version increment` workflow). The version scheme is
 `2.0.0-SNAPSHOT.<N>` where `<N>` grows monotonically.
 
 The `pom.xml` and `dependencies.md` files at the repository root are generated
-reports that must stay in sync with the changeset (enforced by the
-`Ensure license reports updated` workflow). They are regenerated as part of
-`./gradlew build`. When your change affects the version or dependencies, make
-sure regenerated reports are part of the changeset.
+reports that must stay in sync with the changeset. The
+`Ensure license reports updated` workflow requires both files to be modified
+in every pull request. Both embed `chordsVersion`, so a version bump alone
+changes them.
+
+After bumping the version or changing dependencies, regenerate the reports
+from the repository root, without running the full build:
+
+```bash
+find . -path '*/build/reports/dependency-license' -type d -prune \
+    -exec rm -rf {} +
+./gradlew generatePom mergeAllLicenseReports
+```
+
+On Apple Silicon workstations, prefix the Gradle command with
+`JAVA_HOME="$(jenv prefix)"`; see "Apple Silicon Workstations" under
+"Verification and Quality".
+
+The `generatePom` task regenerates `pom.xml`, and `mergeAllLicenseReports`
+merges the per-module license reports into `dependencies.md`. Deleting the
+per-module reports first is required: otherwise Gradle considers
+`generateLicenseReport` up to date, and the merge silently reuses reports
+that still carry the previous version, leaving `dependencies.md` unchanged
+and the workflow failing.
+
+Afterwards, confirm that the `# Dependencies of ...` headings in
+`dependencies.md` carry the new version, and include both regenerated reports
+in the changeset. A full `./gradlew build` regenerates the files as well, but
+is unnecessary solely for this purpose.
 
 Source files carry a copyright header; when modifying a file, keep the header
 year current (files touched in a given year carry that year).
