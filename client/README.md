@@ -33,6 +33,44 @@ which includes a server connection. This way, a `Client` API is made accessible
 via the [app.client](src/main/kotlin/io/spine/chords/client/appshell/ClientApplication.kt)
 property, which is available globally.
 
+### Observing server data and connection status
+
+The `readAndObserve()` and `readOneAndObserve()` functions return a
+[`DataObservation`](src/main/kotlin/io/spine/chords/client/Client.kt). A data
+observation is a Compose `State`, so it supports ordinary property delegation:
+
+```kotlin
+val projects by app.client.readAndObserve(
+    Project::class.java,
+    Project::getId
+)
+```
+
+If the server connection is lost, an observation retains its last value. After
+the connection is restored, it automatically re-reads its complete value and
+creates a new subscription. Consumers can inspect `DataObservation.status`
+when they need to distinguish active, waiting, refreshing, failed, and
+cancelled observations.
+
+The caller owns each observation's lifecycle. Call `DataObservation.cancel()`
+when an observation is no longer needed so its server subscription and
+automatic recovery registration can be released.
+
+Failures that are not classified as temporary connection loss produce a
+`DataObservationStatus.Failed` status. They are not retried during later
+connection cycles. After resolving the cause, call `DataObservation.refresh()`
+explicitly to retry the observation.
+
+Applications can collect `Client.connectionStatus` to show connection-wide UI:
+
+```kotlin
+val connectionStatus by app.client.connectionStatus.collectAsState()
+```
+
+The status distinguishes connecting, connected, temporarily unavailable, and
+closed clients. It lets applications notify users while ordinary data
+observations recover automatically.
+
 ### Server-aware components
 
 This library also introduces some components that leverage 

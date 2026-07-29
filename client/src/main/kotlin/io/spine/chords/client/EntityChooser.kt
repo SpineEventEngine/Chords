@@ -27,6 +27,7 @@
 package io.spine.chords.client
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
@@ -200,6 +201,16 @@ public abstract class EntityChooser<
     override fun itemContent(entityId: I, entityItemText: String) {
         val entityState = entityById(entityId)
         itemContent(entityId, entityState, entityItemText)
+    }
+
+    @Composable
+    override fun content() {
+        DisposableEffect(entityStates) {
+            onDispose {
+                entityStates.cancel()
+            }
+        }
+        super.content()
     }
 
     @Composable

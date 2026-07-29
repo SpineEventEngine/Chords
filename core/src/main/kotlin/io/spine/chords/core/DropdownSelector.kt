@@ -200,7 +200,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     }
 
     @Composable
-    override fun content() {
+    override fun content(): Unit = recompositionWorkaround {
         if (!::fieldColors.isInitialized) {
             fieldColors = TextFieldDefaults.colors()
         }

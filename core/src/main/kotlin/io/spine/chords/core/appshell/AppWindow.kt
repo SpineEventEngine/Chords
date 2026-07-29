@@ -28,6 +28,8 @@ package io.spine.chords.core.appshell
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -67,13 +69,16 @@ import java.awt.Dimension
  *   the application starts.
  * @param onCloseRequest An action that should be performed on window closing.
  * @param minWindowSize The minimal size of the application window.
+ * @param windowOverlay Content displayed over the current screen and under
+ *   application dialogs.
  */
 public class AppWindow(
     private val signInScreenContent: @Composable (onSuccessAuthentication: () -> Unit) -> Unit,
     views: List<AppView>,
     initialView: AppView?,
     private val onCloseRequest: () -> Unit,
-    private val minWindowSize: Dimension
+    private val minWindowSize: Dimension,
+    private val windowOverlay: @Composable BoxScope.() -> Unit = {}
 ) {
 
     /**
@@ -130,12 +135,15 @@ public class AppWindow(
                 window.minimumSize = minWindowSize
             }
             Box(
-                modifier = Modifier.background(MaterialTheme.colorScheme.background)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 Navigator(signInScreen) {
                     screenNavigator = it
                     CurrentScreen()
                 }
+                windowOverlay()
             }
             bottomDialog?.Content()
         }
