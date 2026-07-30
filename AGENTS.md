@@ -42,6 +42,12 @@ When moving or renaming tracked files, use `git mv` so file history is preserved
 
 The Commit and History Safety rules above apply throughout this procedure.
 
+Do not repeat tests, checks, builds, or other verification solely because the
+user asks to commit or push. Rely on verification already performed for the
+change unless the current prompt explicitly requests additional verification.
+Required report regeneration under "Versioning and Reports" remains part of
+this procedure.
+
 1. **Confirm authorization.** Commit or push only when the current prompt
    explicitly asks for it, per "Commit and History Safety" above.
 2. **Choose the branch.**
@@ -73,7 +79,8 @@ The Commit and History Safety rules above apply throughout this procedure.
 ## Creating a Pull Request
 
 Open the PR only once it is authorized (see "Committing and Pushing",
-step 6), then:
+step 6). Creating a PR does not authorize additional verification; follow the
+verification rule in that section.
 
 1. **Create it as a draft** (`gh pr create --draft`), targeting `master` as the
    base branch unless the task specifies otherwise.
@@ -83,8 +90,9 @@ step 6), then:
 4. **Write the description** with a `## Summary` section followed by a
    `## Changes` section. Add optional sections such as `## Important notes` or
    `## Reviewer notes` only when they contain material information that
-   reviewers need; omit routine, empty, or redundant sections. Do not add a
-   "Verifications" section or any agent-attribution section such as
+   reviewers need; omit routine, empty, or redundant sections. Do not include
+   verification, testing, build, or check information anywhere in the PR
+   description. Do not add any agent-attribution section such as
    `Created by <agent>`.
 5. **Link resolved issues.** For each issue the PR implements or fixes, add a
    GitHub closing keyword in the description (for example, `Fixes #123`) so the
@@ -107,7 +115,9 @@ step 6), then:
   repository, and changes belong upstream.
 - Do not publish artifacts or trigger publishing tasks (`publish`,
   `publishCodegenPlugins`) unless the user's current prompt explicitly asks for
-  it. Publishing is normally performed by CI on pushes to `master`.
+  it. Publishing is normally performed by CI on pushes to `master`. This does
+  not restrict `publishToMavenLocal` or `publishCodegenPluginsToMavenLocal`,
+  which stay on the workstation and are part of routine verification.
 - Do not edit the encrypted key files under `.github/keys/` or the decryption
   scripts' credential wiring.
 - Do not auto-update external dependencies outside dedicated update tasks. The
@@ -263,6 +273,8 @@ If verification cannot be run, state the reason clearly in the final response.
 - Tests are named `*Spec.kt`, use JUnit Jupiter with Truth/AssertK/Kotest
   matchers depending on the owning module, and keep fixtures in `Given.kt`-style
   files near the test.
+- Test methods may use Kotlin backtick names to match the style of the
+  surrounding test class.
 - Dependency coordinates live in `buildSrc/src/main/kotlin/io/spine/internal/dependency/`;
   add or change them there, following the existing object-per-library pattern.
 - Get the `config` submodule content with
@@ -280,8 +292,8 @@ a test cannot be added, state this in the final response and explain why.
 ## Code Review
 
 For reviews, lead with findings ordered by severity and include file/line
-references. Focus on bugs, regressions, public API breaks, missing tests, and
-convention violations.
+references. Focus on bugs, regressions, public API breaks, missing tests,
+security risks, release hazards, and convention violations.
 
 Skip routine review of generated or vendored files, including:
 
