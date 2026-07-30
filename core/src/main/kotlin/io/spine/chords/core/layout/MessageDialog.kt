@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.appshell.Props
 import kotlinx.coroutines.CompletableDeferred
@@ -117,7 +118,9 @@ public class MessageDialog : Dialog() {
     protected override fun contentSection() {
         val textStyle = typography.bodyLarge
 
-        Column {
+        Column(
+            modifier = Modifier.preferUnwrappedWidth()
+        ) {
             Row {
                 Text(
                     text = message,

@@ -31,7 +31,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -59,6 +58,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.IntrinsicMeasurable
+import androidx.compose.ui.layout.IntrinsicMeasureScope
+import androidx.compose.ui.layout.LayoutModifier
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
@@ -66,6 +73,7 @@ import androidx.compose.ui.unit.IntOffset.Companion.Zero
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.constrain
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.window.DialogState
@@ -74,6 +82,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import io.spine.chords.core.keyboard.matches
+import kotlin.math.ceil
 
 /**
  * Defines the way that a dialog is displayed on the screen (e.g. as a separate
@@ -347,16 +356,18 @@ public sealed class WindowType {
  * This prevents short text from producing impractically narrow windows while
  * still allowing wider form layouts to determine their preferred width.
  */
-private val DefaultDialogMinWidth = 400.dp
+internal val DefaultDialogMinWidth = 400.dp
 
 /**
  * Measures unspecified dimensions from the content and caps them at the
  * available window size.
  *
  * Minimum intrinsic width is intentional: it keeps text-based dialogs compact
- * instead of expanding them to the width of an unwrapped paragraph.
+ * instead of expanding them to the width of an unwrapped paragraph. A text that
+ * should still be displayed on a single line requests such a width explicitly
+ * (see [preferUnwrappedWidth]).
  */
-private fun Modifier.dialogSize(
+internal fun Modifier.dialogSize(
     width: Dp,
     height: Dp,
     maxWidth: Dp,
@@ -372,7 +383,7 @@ private fun Modifier.dialogSize(
             }
         } else {
             Modifier
-                .width(IntrinsicSize.Min)
+                .then(WindowSafeMinIntrinsicWidth)
                 .widthIn(
                     min = minOf(DefaultDialogMinWidth, maxWidth),
                     max = maxWidth
@@ -389,6 +400,74 @@ private fun Modifier.dialogSize(
             Modifier.heightIn(max = maxHeight)
         }
     )
+
+/**
+ * Sizes the content to its minimum intrinsic width, rounded up so that
+ * the window that displays this content is guaranteed to be wide enough
+ * for it.
+ *
+ * This modifier is an analog of `Modifier.width(IntrinsicSize.Min)`, which
+ * additionally accounts for the fact that a window's size is measured in whole
+ * [Dp] units, while its content is measured in pixels. The conversion of the
+ * content's width into the window's width discards the fractional part of
+ * a [Dp] value, so a window whose size is derived from the content can end up
+ * narrower than the content that it was measured from.
+ *
+ * Such a window makes its content squeeze into the space that is smaller than
+ * the one that the content has reported as needed, which, e.g., renders
+ * the dialog's button labels with an ellipsis (see [Dialog]).
+ */
+private object WindowSafeMinIntrinsicWidth : LayoutModifier {
+
+    /**
+     * Measures the content with the width that it reports as its minimum
+     * intrinsic one, extended up to the window-safe width, and limited with
+     * the incoming constraints.
+     */
+    override fun MeasureScope.measure(
+        measurable: Measurable,
+        constraints: Constraints
+    ): MeasureResult {
+        val width = windowSafeWidth(measurable.minIntrinsicWidth(constraints.maxHeight))
+        val placeable = measurable.measure(
+            constraints.constrain(Constraints.fixedWidth(width))
+        )
+        return layout(placeable.width, placeable.height) {
+            placeable.placeRelative(IntOffset.Zero)
+        }
+    }
+
+    /**
+     * Reports the width that this modifier makes the content occupy.
+     */
+    override fun IntrinsicMeasureScope.minIntrinsicWidth(
+        measurable: IntrinsicMeasurable,
+        height: Int
+    ): Int = windowSafeWidth(measurable.minIntrinsicWidth(height))
+
+    /**
+     * Reports the same width as [minIntrinsicWidth] does, since this modifier
+     * makes the content occupy that width in either case.
+     */
+    override fun IntrinsicMeasureScope.maxIntrinsicWidth(
+        measurable: IntrinsicMeasurable,
+        height: Int
+    ): Int = windowSafeWidth(measurable.minIntrinsicWidth(height))
+
+    /**
+     * Extends the given width, which is expressed in pixels, up to the width
+     * that survives being converted into the whole [Dp] units of a window's
+     * size and then back into the pixels of that window's content.
+     *
+     * @receiver The density that converts between pixels and [Dp] units.
+     * @param width The width in pixels that the content needs.
+     * @return The width in pixels, which is not less than [width].
+     */
+    private fun Density.windowSafeWidth(width: Int): Int {
+        val windowWidth = ceil(width / density)
+        return ceil(windowWidth * density).toInt()
+    }
+}
 
 /**
  * A [PopupPositionProvider], which makes a lightweight popup to appear at
@@ -417,7 +496,9 @@ private fun DialogTitle(
     padding: PaddingValues
 ) {
     Text(
-        modifier = Modifier.padding(padding),
+        modifier = Modifier
+            .padding(padding)
+            .preferUnwrappedWidth(),
         text = text,
         style = typography.headlineLarge
     )

@@ -249,9 +249,11 @@ public abstract class Dialog : Component() {
      * content. Assign a specified [Dp] value to use a fixed width instead.
      *
      * Automatic width detection uses intrinsic measurement to keep text-based
-     * dialogs compact. Content implemented with `SubcomposeLayout`, such as a
-     * lazy list, does not support intrinsic measurement in Compose 1.5.12 and
-     * therefore requires an explicitly specified width.
+     * dialogs compact. The detected width fits the dialog's buttons section,
+     * and is capped with the space that is available on the screen. Content
+     * implemented with `SubcomposeLayout`, such as a lazy list, does not
+     * support intrinsic measurement in Compose 1.5.12 and therefore requires
+     * an explicitly specified width.
      */
     public var width: Dp by mutableStateOf(Dp.Unspecified)
 
