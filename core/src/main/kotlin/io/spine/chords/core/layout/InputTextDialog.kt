@@ -192,7 +192,9 @@ public class InputTextDialog : Dialog() {
         val textStyle = typography.bodyLarge
         Column {
             DialogHeading {
-                Column {
+                Column(
+                    modifier = Modifier.preferUnwrappedWidth()
+                ) {
                     Text(
                         text = message,
                         style = textStyle

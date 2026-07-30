@@ -153,7 +153,9 @@ public class ConfirmationDialog : Dialog() {
     protected override fun contentSection() {
         val textStyle = typography.bodyLarge
 
-        Column {
+        Column(
+            modifier = Modifier.preferUnwrappedWidth()
+        ) {
             Row {
                 Text(
                     text = message,
