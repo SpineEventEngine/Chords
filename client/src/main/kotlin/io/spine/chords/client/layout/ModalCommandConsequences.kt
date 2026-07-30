@@ -38,8 +38,10 @@ import io.spine.chords.client.CommandConsequences
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.CommandConsequencesScopeImpl
 import io.spine.chords.client.EventSubscription
+import io.spine.chords.client.ServerCommunicationException
 import io.spine.chords.core.appshell.Application
 import io.spine.chords.core.layout.MessageDialog.Companion.showMessage
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
 /**
@@ -89,44 +91,40 @@ import kotlin.time.Duration
  * consist of first invoking [predefinedConsequences] followed by
  * invoking the [consequences] lambda.
  *
- * If you need to change [predefinedConsequences] for all
- * [ModalCommandConsequences] instances in the application (and thus change the
- * way how errors and posting progress display is implemented in all modal UIs),
- * you can do this using the [Application]'s
- * [shared defaults][Application.sharedDefaults] feature like this:
+ * By default, a network communication error clears the posting state, displays
+ * [networkErrorMessage], and keeps the modal UI open. Chords does not retry the
+ * command automatically because the server may have accepted it before the
+ * connection failed. Applications should verify the operation status before
+ * allowing a manual retry.
+ *
+ * Network error handling can be customized for all
+ * `ModalCommandConsequences` instances using the [Application]'s
+ * [shared defaults][Application.sharedDefaults] feature:
  *
  * ```
  *     override fun SharedDefaultsScope.sharedDefaults() {
  *         ModalCommandConsequences::class defaultsTo {
- *             predefinedConsequences = {
- *                 onBeforePost {
- *                     // Custom `onBeforePost` handler.
- *                     posting = true
- *                 }
- *                 onServerError {
- *                     // Custom `onServerError` handler.
- *                     showMessage("Unexpected server error has occurred.")
- *                     close()
- *                 }
- *                 onNetworkError {
- *                     // Custom `onNetworkError` handler.
- *                     showMessage("Server connection failed.")
- *                     close()
- *                 }
- *                 onDefaultTimeout {
- *                     // Custom `onDefaultTimeout` handler.
- *                     showMessage("The operation takes unexpectedly long to process. " +
- *                             "Please check the status of its execution later.")
- *                     close()
- *                 }
+ *             networkErrorMessage = "The server is temporarily unavailable."
+ *             networkErrorPresentation = { error ->
+ *                 showMessage(
+ *                     if (error.acknowledgementReceived) {
+ *                         "Connection lost while waiting for the operation result."
+ *                     } else {
+ *                         networkErrorMessage
+ *                     }
+ *                 )
  *             }
  *         }
  *     }
  * ```
- * Note that this way you replace the whole [predefinedConsequences] handler for
- * predefined consequences for all [ModalCommandConsequences] in the
- * application, so a new set of consequences should be sufficient to replace the
- * default one.
+ *
+ * The same properties can be supplied for one [CommandDialog] or
+ * [CommandWizard] through its `commandConsequencesProps`.
+ *
+ * Replacing [predefinedConsequences] remains available for broader
+ * customization. Doing so opts out of the focused network error properties,
+ * acknowledgement tracking, and Chords' duplicate presentation guard because
+ * the replacement defines the complete predefined behavior.
  *
  * @param C A type of commands whose consequences are specified.
  *
@@ -147,17 +145,78 @@ public open class ModalCommandConsequences<C : CommandMessage>(
     override fun createConsequencesScope(command: C): ModalCommandConsequencesScope<C> =
         ModalCommandConsequencesScope(command, postingState, close, defaultTimeout)
 
+    /**
+     * Specifies whether a network communication error closes the modal UI
+     * after [networkErrorPresentation] finishes.
+     *
+     * The default is `false`, so the UI remains open and preserves its form
+     * data. Setting this property to `true` restores the previous close
+     * request. A [CommandWizard] closes only when its host handles
+     * [onCloseRequest][io.spine.chords.core.layout.Wizard.onCloseRequest].
+     *
+     * When a custom [networkErrorPresentation] opens nested modal UI, it must
+     * not return until that UI is dismissed. Otherwise, closing a
+     * [CommandDialog] while its nested dialog is open can fail.
+     */
+    public var closeOnNetworkError: Boolean = false
+
+    /**
+     * The text displayed by the default [networkErrorPresentation].
+     *
+     * The message warns against immediately repeating a command because a
+     * communication failure can leave the operation status unknown.
+     */
+    public var networkErrorMessage: String =
+        "Server connection failed. Please try again when the connection is restored."
+
+    /**
+     * Presents a network communication error to the user.
+     *
+     * Chords resets the posting state before invoking this callback and applies
+     * [closeOnNetworkError] after it returns. The callback customizes
+     * presentation only and cannot bypass either lifecycle operation.
+     *
+     * If this callback opens nested modal UI while [closeOnNetworkError] is
+     * `true`, it must suspend until that UI is dismissed.
+     */
+    public var networkErrorPresentation: suspend (ModalCommandNetworkError) -> Unit = {
+        showMessage(networkErrorMessage)
+    }
+
+    /**
+     * Defines the common consequences registered before component-specific
+     * consequences.
+     *
+     * Replacing this property defines the complete predefined behavior and
+     * therefore opts out of [closeOnNetworkError], [networkErrorMessage],
+     * [networkErrorPresentation], acknowledgement tracking, and duplicate
+     * presentation and close handling by Chords.
+     */
     public var predefinedConsequences: ModalCommandConsequencesScope<C>.() -> Unit = {
+        val acknowledgementReceived = AtomicBoolean(false)
+        val networkErrorHandled = AtomicBoolean(false)
+
         onBeforePost {
             posting = true
+        }
+        onAcknowledge {
+            acknowledgementReceived.set(true)
         }
         onServerError {
             showMessage("Unexpected server error has occurred.")
             close()
         }
-        onNetworkError {
-            showMessage("Server connection failed.")
-            close()
+        onNetworkError { error ->
+            if (!networkErrorHandled.compareAndSet(false, true)) {
+                return@onNetworkError
+            }
+            posting = false
+            networkErrorPresentation(
+                ModalCommandNetworkError(error, acknowledgementReceived.get())
+            )
+            if (closeOnNetworkError) {
+                close()
+            }
         }
         onDefaultTimeout {
             showMessage("The operation takes unexpectedly long to process. " +
@@ -216,6 +275,20 @@ public open class ModalCommandConsequences<C : CommandMessage>(
         }
     }
 }
+
+/**
+ * Describes a network communication error encountered while processing a
+ * command posted by a modal UI.
+ *
+ * @property exception The exception that reported the communication failure.
+ * @property acknowledgementReceived Whether Chords received the server
+ *   acknowledgement before the failure. A value of `false` does not prove that
+ *   the server rejected or never accepted the command.
+ */
+public class ModalCommandNetworkError(
+    public val exception: ServerCommunicationException,
+    public val acknowledgementReceived: Boolean
+)
 
 /**
  * A [CommandConsequencesScope] variant, which provides an extended API to

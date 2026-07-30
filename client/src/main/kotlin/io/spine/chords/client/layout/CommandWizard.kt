@@ -34,6 +34,8 @@ import io.spine.base.CommandMessage
 import io.spine.chords.client.CommandConsequencesScope
 import io.spine.chords.client.form.CommandMessageForm
 import io.spine.chords.client.layout.ModalCommandConsequences.Companion.consequences
+import io.spine.chords.core.appshell.Application
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.layout.AbstractWizardPage
 import io.spine.chords.core.layout.Wizard
 import io.spine.chords.proto.form.FormFieldsScope
@@ -83,16 +85,37 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      *    customize this on an application level using the
      *    ["shared defaults"][Application.sharedDefaults] feature.
      *
-     *  In cases when the above cases are not enough, and you need to customize
-     *  how `ModelCommandConsequences` is instantiated or configured on a
-     *  per-wizard basis, you can do this by specifying a respective lambda in
-     *  this property. The lambda accepts a consequences configuration function
-     *  and returns the respective [ModalCommandConsequences] created from that
-     *  configuration function.
+     *  Use [commandConsequencesProps] for per-wizard property configuration.
+     *  In cases when a custom `ModalCommandConsequences` subclass or different
+     *  construction is needed, specify a factory in this property. The lambda
+     *  accepts a consequences configuration function and returns the
+     *  respective [ModalCommandConsequences].
      */
     public var createCommandConsequences:
                 (ModalCommandConsequencesScope<C>.() -> Unit) -> ModalCommandConsequences<C> =
         { consequences(postingState, { close() }, it) }
+
+    /**
+     * Configures each [ModalCommandConsequences] created for this wizard.
+     *
+     * These properties are applied after [createCommandConsequences] returns,
+     * including when a consumer replaces that factory. They therefore override
+     * values supplied through application shared defaults.
+     *
+     * By default, a network communication error clears the posting state,
+     * informs the user, and keeps this wizard open without changing its form
+     * data. Use this property to customize that behavior for one wizard:
+     * ```
+     *     commandConsequencesProps = Props {
+     *         closeOnNetworkError = true
+     *         networkErrorMessage = "Connection lost. Please try again."
+     *     }
+     * ```
+     *
+     * When `closeOnNetworkError` is `true`, the wizard's host must handle
+     * [onCloseRequest] to remove the wizard from composition.
+     */
+    public var commandConsequencesProps: Props<ModalCommandConsequences<C>> = Props {}
 
     private var postingState = mutableStateOf(false)
 
@@ -102,7 +125,14 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
             onBeforeBuild = { beforeBuild(it) }
         ) {
             validationDisplayMode = MANUAL
-            createCommandConsequences = this@CommandWizard.createCommandConsequences
+            createCommandConsequences = { consequences ->
+                this@CommandWizard.createCommandConsequences(consequences)
+                    .also {
+                        this@CommandWizard.commandConsequencesProps.run {
+                            it.configure()
+                        }
+                    }
+            }
             commandConsequences = {
                 (this as ModalCommandConsequencesScope<C>).run {
                     commandConsequences()
@@ -169,14 +199,15 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
      * [predefinedConsequences][ModalCommandConsequences.predefinedConsequences]
      * property of [ModalCommandConsequences] instance provided by the
      * [createCommandConsequences] lambda. You can customize this behavior on
-     * a per-instance or application-wide level. See [ModalCommandConsequences]
-     * and [createCommandConsequences].
+     * a per-instance or application-wide level. See [ModalCommandConsequences],
+     * [commandConsequencesProps], and [createCommandConsequences].
      *
      * @receiver [ModalCommandConsequencesScope], which provides an API for
      *   registering command's consequences.
      * @see submit
      * @see cancelActiveSubscriptions
      * @see ModalCommandConsequences
+     * @see commandConsequencesProps
      * @see createCommandConsequences
      */
     protected abstract fun ModalCommandConsequencesScope<C>.commandConsequences()

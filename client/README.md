@@ -80,10 +80,62 @@ the server connectivity:
   a variant of the `MessageForm` component (introduced in the Chords Proto 
   module), which allows creating custom per-field editors of command messages,
   and has built in means of posting the resulting command to the server.
- 
-- [CommandWizard](src/main/kotlin/io/spine/chords/client/form/CommandMessageForm.kt) —
+
+- [CommandDialog](src/main/kotlin/io/spine/chords/client/layout/CommandDialog.kt) —
+  a modal form for constructing and posting a command message.
+
+- [CommandWizard](src/main/kotlin/io/spine/chords/client/layout/CommandWizard.kt) —
   a variant of the `Wizard` component introduced in the Chords Core module,
   which represents a multipage editor for a command message, and allows posting
   the resulting command to the application server.
 
 - etc.
+
+#### Handling network errors in command modals
+
+When posting from a `CommandDialog` or `CommandWizard` fails because of a
+network communication error, Chords clears the posting state and keeps the
+component open by default. The entered form data remains available, and the
+user can retry manually after checking whether repeating the command is safe.
+Chords does not retry commands automatically.
+
+The default message asks the user to retry after the connection is restored.
+Before retrying, the application should account for an uncertain operation
+status: a missing acknowledgement does not prove that the server never
+accepted the command.
+
+Use `commandConsequencesProps` to customize one component:
+
+```kotlin
+commandConsequencesProps = Props {
+    closeOnNetworkError = true
+    networkErrorMessage = "Connection lost. Please check the operation status."
+}
+```
+
+Setting `closeOnNetworkError` to `true` requests the previous close-on-error
+behavior after the error presentation finishes. A `CommandWizard` closes only
+when its host handles `onCloseRequest`.
+
+Use shared defaults to customize all command dialogs and wizards:
+
+```kotlin
+override fun SharedDefaultsScope.sharedDefaults() {
+    ModalCommandConsequences::class defaultsTo {
+        networkErrorMessage = "The server is temporarily unavailable."
+        networkErrorPresentation = { error ->
+            showMessage(
+                if (error.acknowledgementReceived) {
+                    "Connection lost while waiting for the operation result."
+                } else {
+                    networkErrorMessage
+                }
+            )
+        }
+    }
+}
+```
+
+The custom presentation receives `ModalCommandNetworkError`, which contains
+the communication exception and whether Chords received an acknowledgement.
+Chords still resets the posting state and applies `closeOnNetworkError`.
