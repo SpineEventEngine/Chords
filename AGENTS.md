@@ -244,9 +244,17 @@ If verification cannot be run, state the reason clearly in the final response.
   Compose Multiplatform 1.5.12, Spine Event Engine 1.9.0, Gradle 6.9.4 for the
   root project. Do not assume newer language or library features are available.
 - Kotlin explicit API mode is enabled: public declarations require explicit
-  `public` modifiers and public API should have KDoc.
+  `public` modifiers.
+- Every declaration in project-owned source, including declarations explicitly
+  marked `private`, must have a documentation comment in the language's
+  standard format, such as KDoc or Javadoc. Explain its purpose, behavior, or
+  constraints; do not merely restate its name.
 - Configure IntelliJ IDEA Detekt with `quality/detekt-config.yml`.
 - Keep lines within 100 characters (Detekt `MaxLineLength`).
+- Do not introduce constants for text messages unless the user explicitly
+  requests them.
+- Do not add tests that assert text-message content unless the user explicitly
+  requests such tests.
 - UI components follow the class-based component pattern from `core` (see
   `io.spine.chords.core.Component` and its inheritors): composition happens in
   `content()`, pre-composition updates in `beforeComposeContent()`, and
