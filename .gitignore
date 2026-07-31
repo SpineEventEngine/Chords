@@ -98,3 +98,6 @@ pubspec.lock
 
 # Ignore Gradle build output directory
 build
+
+# Pair-workflow scratch documents
+.agents/work/

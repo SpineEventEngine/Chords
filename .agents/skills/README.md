@@ -27,6 +27,8 @@ routing source of truth.
 - `docs-reviewer`: documentation review for prose, examples, and comments.
 - `proofread`: minimal English grammar, punctuation, and spelling corrections
   in project-owned comments and documentation.
+- `pair-workflow`: two-agent plan-review-implement-review protocol for an
+  issue or bug fix, driven by `.agents/workflows/pair.sh`.
 
 ## Skill Directory Layout
 
@@ -44,6 +46,10 @@ Each skill lives in its own directory:
 - `default_prompt`: starter prompt shown by the interface when the skill is invoked
 
 The `name` in `SKILL.md` frontmatter must match the directory name.
+
+A skill may add supporting files its own policy body references — for example,
+`pair-workflow/template.md`, the working-document template its driver copies.
+Policy still belongs in `SKILL.md`.
 
 ## Invocation
 
