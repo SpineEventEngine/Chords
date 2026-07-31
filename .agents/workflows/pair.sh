@@ -67,13 +67,16 @@ Environment:
                          --setting-sources project
                          --model claude-opus-5 --effort high)
   AGENT2_CMD   reviewer
-               (default: codex exec --sandbox workspace-write --ephemeral
+               (default: codex exec --sandbox workspace-write
+                         --add-dir <repo>/.agents/work --ephemeral
                          --ignore-user-config -m gpt-5.6-sol
                          -c model_reasoning_effort="high"
                          -c service_tier="default")
 
 Model and effort are pinned so a review is reproducible. Codex's are passed as
 flags because --ignore-user-config discards ~/.codex/config.toml by design.
+--add-dir is required because that sandbox refuses to write gitignored paths,
+and the working document lives in one. Keep it when overriding AGENT2_CMD.
 
 Exit codes (run):
   0   done — automated tests cover every acceptance criterion
@@ -100,8 +103,16 @@ readonly TEMPLATE="${REPO_ROOT}/.agents/skills/pair-workflow/template.md"
 # tuned against. Codex's settings are passed explicitly because
 # --ignore-user-config deliberately discards ~/.codex/config.toml — the run
 # must not depend on local configuration that differs between machines.
+#
+# --add-dir names WORK_ROOT because Codex's workspace-write sandbox excludes
+# gitignored paths from the writable set, and .agents/work/ is gitignored by
+# design — the working document is a scratch artifact that is never committed.
+# Without it agent2 can read the document but not write its review, and the
+# turn ends with the driver aborting on an unmodified document. This widens
+# the sandbox by exactly one directory inside the repository; it is not a
+# bypass flag, and unsafe_agent_roles() does not treat it as one.
 AGENT1_CMD="${AGENT1_CMD:-claude -p --permission-mode acceptEdits --setting-sources project --model claude-opus-5 --effort high}"
-AGENT2_CMD="${AGENT2_CMD:-codex exec --sandbox workspace-write --ephemeral --ignore-user-config -m gpt-5.6-sol -c model_reasoning_effort=\"high\" -c service_tier=\"default\"}"
+AGENT2_CMD="${AGENT2_CMD:-codex exec --sandbox workspace-write --add-dir ${WORK_ROOT} --ephemeral --ignore-user-config -m gpt-5.6-sol -c model_reasoning_effort=\"high\" -c service_tier=\"default\"}"
 
 readonly DEFAULT_MAX_TURNS=12
 
