@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew :core:test:*)",
+      "Bash(./gradlew :client:test:*)",
+      "Bash(./gradlew :proto:test:*)",
+      "Bash(./gradlew :proto-values:test:*)",
+      "Bash(./gradlew :runtime:test:*)",
+      "Bash(./gradlew :core:check:*)",
+      "Bash(./gradlew :client:check:*)",
+      "Bash(./gradlew :proto:check:*)",
+      "Bash(./gradlew :core:compileKotlin:*)",
+      "Bash(./gradlew :client:compileKotlin:*)",
+      "Bash(./gradlew :proto:compileKotlin:*)",
+      "Bash(./gradlew :core:compileTestKotlin:*)",
+      "Bash(./gradlew :client:compileTestKotlin:*)",
+      "Bash(./gradlew detekt:*)",
+      "Bash(./gradlew generatePom mergeAllLicenseReports:*)",
+      "Bash(./gradlew publishToMavenLocal:*)",
+      "Bash(./gradlew publishCodegenPluginsToMavenLocal:*)",
+      "Bash(java -version)",
+      "Bash(java -XshowSettings:properties -version)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh repo view:*)"
+    ]
+  }
+}
