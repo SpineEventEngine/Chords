@@ -50,4 +50,19 @@ Module Gradle paths: `core`, `proto`, `proto-values`, `client`, `runtime`,
 `codegen-tests`. The `codegen/plugins` project verifies separately from
 `codegen/plugins/` with JDK 17 (`./gradlew build`).
 
+Read the task list, not only the final line. A build whose compile and test
+tasks all report `UP-TO-DATE` finished in seconds without compiling or running
+anything, and its `BUILD SUCCESSFUL` describes a previous build rather than the
+change in the worktree. When that happens, force the work with `--rerun-tasks`
+before reporting a result:
+
+```bash
+./gradlew :<module>:test --tests "…" --rerun-tasks
+```
+
+Gradle's up-to-date check is content-based, so an `UP-TO-DATE` task is normally
+sound. It is misleading only when it stands in as evidence for a change that
+was never built. Report a verification result as green only when the tasks
+covering the change actually executed.
+
 Follow the git-history and safety policy in `AGENTS.md`.

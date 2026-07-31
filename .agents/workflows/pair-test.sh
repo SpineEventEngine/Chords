@@ -279,11 +279,11 @@ cleanup
 
 # --- git guard (RF-02) ----------------------------------------------------
 sandbox; STUB_MISBEHAVE=git-write run "$R" 7
-want "branch creation caught" 1 "wrote to Git"; cleanup
+want "branch creation caught" 1 "Git state moved"; cleanup
 sandbox; STUB_MISBEHAVE=stash run "$R" 7
-want "git stash caught" 1 "wrote to Git"; cleanup
+want "git stash caught" 1 "Git state moved"; cleanup
 sandbox; STUB_MISBEHAVE=restage run "$R" 7
-want "restaged blob caught" 1 "wrote to Git"; cleanup
+want "restaged blob caught" 1 "Git state moved"; cleanup
 
 # --- immutable metadata (RF-05) -------------------------------------------
 sandbox; STUB_MISBEHAVE=rewrite-meta run "$R" 7
@@ -519,7 +519,7 @@ cleanup
 
 # --- re-review: index flags (RR2-10) --------------------------------------
 sandbox; STUB_MISBEHAVE=index-flag run "$R" 7
-want "assume-unchanged caught" 1 "wrote to Git"
+want "assume-unchanged caught" 1 "Git state moved"
 cleanup
 
 # --- re-review: duplicate ids (RR2-09) ------------------------------------

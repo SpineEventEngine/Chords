@@ -24,6 +24,14 @@ Claude Code open in this repository, and four things on your `PATH`: `claude`,
 `codex`, `gh` (run `gh auth status`), and `jq`. If one is missing, the run says
 so and stops before doing anything.
 
+Being on `PATH` is not the same as being signed in, and the driver only checks
+the former. `claude` and `codex` each hold their own credentials, so either can
+be authenticated while the other is not. An unauthenticated CLI produces a turn
+that dies immediately having written nothing — `Not logged in · Please run
+/login` is the whole transcript. Nothing is lost when that happens: fix the
+sign-in and run the same command again, and it resumes from the turn that
+failed.
+
 And an issue that makes two things clear:
 
 - **What to do, or what is wrong** — the functionality to add, or the
@@ -191,6 +199,12 @@ a tripwire, not a barrier. It runs after the fact, a change that is undone
 again passes it, and effects outside this repository leave no local trace.
 It tells you when the rule was broken; it cannot stop the breaking.
 
+It also cannot tell who did it. The check compares the repository before and
+after a turn, and switching branches or committing in another window while a
+run is live produces exactly the diff an offending agent would. So do neither
+during a run — and if the guard trips and the diff is your own doing, that is
+all it is: start the run again and it resumes from the turn that was cut off.
+
 `--cp` does not loosen any of this. That flag lets the *driver* publish once
 the agents have finished.
 
@@ -212,8 +226,9 @@ current ones:
 **Copy one of those and edit it — do not write a command from scratch.** The
 variable replaces the entire default, so anything you leave out is gone: drop
 `--ignore-user-config` and your personal Codex config silently comes back; drop
-`--permission-mode` and Claude's safety boundary changes. Keep every flag you
-are not deliberately changing.
+`--permission-mode` and Claude's safety boundary changes; drop `--add-dir` and
+the reviewer can no longer write the document the whole workflow runs on. Keep
+every flag you are not deliberately changing.
 
 Set it for one run:
 
@@ -241,6 +256,15 @@ Set with `AGENT1_CMD`, using `--model` and `--effort`.
 Values are checked locally. A wrong effort prints a warning that lists the valid
 values and falls back to the default, so a typo costs you nothing.
 
+`--setting-sources project` is what lets the implementer verify its own work.
+It loads `.claude/settings.json` and nothing else — not your personal
+settings, and not `.claude/settings.local.json`. The Gradle and `java` commands
+[`AGENTS.md`](AGENTS.md) prescribes are allowed there for exactly this reason.
+A command missing from that file is refused before it starts, and the run
+continues to a review of code that was never compiled. If you add a
+verification command the workflow should be able to run, add it there rather
+than to your local settings.
+
 ### Codex — the reviewer
 
 Set with `AGENT2_CMD`, using `-m` for the model and `-c key="value"` for the
@@ -253,6 +277,12 @@ rest.
 These are passed as flags rather than read from `~/.codex/config.toml`, because
 the workflow runs Codex with `--ignore-user-config` so a review does not change
 with local configuration.
+
+`--add-dir` is not optional. Codex's sandbox refuses to write gitignored paths,
+and `.agents/work/` — where the working document lives — is gitignored on
+purpose, because the document is scratch and is never committed. Without that
+flag the reviewer reads the plan, forms its findings, and then cannot write
+them down; the run ends with `agent2 did not modify … plan.md`.
 
 **Codex does not check these values locally.** An unrecognised effort is
 accepted, echoed in the run header, and then rejected by the API — so a typo

@@ -110,10 +110,13 @@ That check **detects, it does not prevent**. It runs after your turn has
 already finished, so it is a tripwire, not a boundary: a write followed by a
 restore passes it, an effect outside this repository — a `gh` API call, a PR
 opened from a branch that was already pushed — leaves no local trace at all,
-and a push it does catch has already reached the remote. Nothing here makes a
-Git write impossible; the rule above is what keeps it from happening, and the
-snapshot is only there to notice when the rule was broken. Do not treat the
-absence of an abort as permission.
+and a push it does catch has already reached the remote. It also cannot say
+**who** moved: two snapshots taken around a turn look the same whether an agent
+wrote to Git or the user switched branches in another window, so a tripped
+guard is a fact to investigate, not a verdict against the agent. Nothing here
+makes a Git write impossible; the rule above is what keeps it from happening,
+and the snapshot is only there to notice when the rule was broken. Do not treat
+the absence of an abort as permission.
 
 If a task genuinely cannot proceed without a Git operation, set
 `status: blocked` and `turn: human` and explain why. Never perform the
@@ -510,6 +513,19 @@ grant. Known approval/sandbox bypass flags are refused unless the caller passes
 `--allow-unsafe-agents`, which is only for a credential-free environment
 isolated outside this script.
 
+Two consequences of those modes are load-bearing, and a run fails oddly without
+either:
+
+- **`agent2` needs `--add-dir` naming `.agents/work`.** Codex's
+  `workspace-write` sandbox excludes gitignored paths, and the working document
+  lives in one by design. Without it the reviewer reads everything, writes
+  nothing, and the driver aborts on an unmodified document.
+- **`agent1`'s verification permissions come from `.claude/settings.json`.**
+  `--setting-sources project` loads that file and nothing else, so a Gradle
+  command missing from it is refused before the process starts. An agent that
+  cannot build hands off an implementation it never compiled, and the reviewer
+  spends its round saying so instead of reading the code.
+
 Swap roles or narrow what an agent may do by exporting `AGENT1_CMD` and
-`AGENT2_CMD`; `pair.sh` with no arguments prints both defaults. The Git
-tripwire remains active in every mode.
+`AGENT2_CMD`; `pair.sh` with no arguments prints both defaults. Keep the flags
+above when you do. The Git tripwire remains active in every mode.

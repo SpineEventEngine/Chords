@@ -1297,18 +1297,33 @@ take_turn() {
     # non-zero result must disable it immediately before returning to the
     # caller, which maps that result to a public exit code.
     set -e
+    # The transcript is named because the CLI's own error is the diagnosis and
+    # it goes nowhere else. The two hints cover what actually fails first: a
+    # CLI that is on PATH but not signed in, and a model identifier that only
+    # the API rejects. Both surface as a turn that dies immediately having
+    # written nothing.
     [[ "$rc" -eq 0 ]] \
         || die "${turn} exited ${rc}; document left at status '${status}', "\
-"transcript in ${log#"$REPO_ROOT"/}"
+"transcript in ${log#"$REPO_ROOT"/}. A turn that fails at once usually means "\
+"the CLI is not authenticated or its model identifier was rejected; the "\
+"transcript says which"
 
     # Checked before the document, because a Git write is the more serious
     # violation even on a turn that otherwise did its job.
+    #
+    # This compares two snapshots of the repository; it cannot see who moved
+    # between them. An agent that wrote to Git and a user who switched branches
+    # in another window produce the same diff, so the message reports the
+    # change and leaves the attribution to whoever reads it. Naming the agent
+    # here would accuse it of a violation the driver has no evidence for.
     git_after="$(git_state)"
     if [[ "$git_before" != "$git_after" ]]; then
         info "Git state changed during ${turn}'s turn (- before, + after):"
         diff <(printf '%s\n' "$git_before") <(printf '%s\n' "$git_after") >&2 || true
-        die "${turn} wrote to Git, which this workflow forbids; "\
-"inspect the repository before continuing"
+        die "Git state moved during ${turn}'s turn, which this workflow "\
+"forbids the agents to do; inspect the repository before continuing. If you "\
+"changed branches or committed while the run was live, that is this diff and "\
+"the run can simply be started again"
     fi
 
     after="$(cksum < "$doc")"
