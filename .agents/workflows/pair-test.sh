@@ -608,5 +608,39 @@ run "$R" 7 --cp
 want "retry after task commit failure publishes" 0 "draft pull request"
 cleanup
 
+# --- agent execution environment (RF-11) ----------------------------------
+#
+# These assert the shipped configuration rather than the driver's logic,
+# because both defects they cover already happened and neither is visible
+# until a turn is already running. An agent that cannot write the document or
+# cannot build produces a run that dies several minutes in, with a message
+# about the symptom rather than the cause.
+readonly REPO="${SUITE_DIR}/../.."
+
+# Codex's workspace-write sandbox excludes gitignored paths, and .agents/work/
+# is gitignored by design. Without --add-dir the reviewer reads the document,
+# forms its findings, and cannot write them down.
+#
+# Read the assignment out of the driver rather than its --help output: the
+# usage text describes the flag in prose, so matching that would pass while
+# the default that actually runs had lost it.
+agent2_default="$(grep -m1 '^AGENT2_CMD=' "$DRIVER")"
+check "AGENT2_CMD default makes the work root writable" \
+    "$(printf '%s' "$agent2_default" | grep -q -- '--add-dir ${WORK_ROOT}' \
+        && echo 0 || echo 1)"
+check "the work root is gitignored, which is why --add-dir is needed" \
+    "$(git -C "$REPO" check-ignore -q .agents/work && echo 0 || echo 1)"
+
+# agent1 runs with --setting-sources project, which loads .claude/settings.json
+# and nothing else. A verification command missing from it is refused before
+# the process starts, and the run reviews code that was never compiled.
+check "project settings exist for agent1 to load" \
+    "$([[ -f "${REPO}/.claude/settings.json" ]] && echo 0 || echo 1)"
+for task in ':core:test' ':client:test' 'detekt'; do
+    check "project settings allow ${task}" \
+        "$(grep -qF -- "./gradlew ${task}" "${REPO}/.claude/settings.json" \
+            2>/dev/null && echo 0 || echo 1)"
+done
+
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [[ "$FAIL" -eq 0 ]]
