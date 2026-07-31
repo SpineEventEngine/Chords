@@ -90,8 +90,24 @@ private object WizardContentSize {
  * finished using the wizard, and it needs to be closed. The container where
  * the wizard is placed is responsible for hiding the wizard (excluding it from
  * the composition) upon this event.
+ *
+ * The wizard can be closed along two distinct paths, and they invoke different
+ * callbacks:
+ * - The user presses the "Cancel" button, which invokes [cancel]. It consults
+ *   the [onBeforeCancel] callback, and closes the wizard only if that callback
+ *   permits closing.
+ * - The wizard's submission succeeds, and the wizard's implementation invokes
+ *   [close] directly. This path doesn't consult [onBeforeCancel].
+ *
+ * Both paths end up invoking [onCloseRequest] when the wizard is actually
+ * closed, so a host that only needs to remove the wizard from the composition
+ * can keep handling [onCloseRequest] alone.
  */
 @Stable
+@Suppress(
+    // All functions are apparently appropriate in the class.
+    "TooManyFunctions"
+)
 public abstract class Wizard : Component() {
 
     /**
@@ -106,8 +122,52 @@ public abstract class Wizard : Component() {
      *
      * This callback is triggered when the user closes the wizard or after
      * successful submission.
+     *
+     * It is triggered only when the wizard is actually being closed, so a
+     * cancellation that was rejected by [onBeforeCancel] doesn't trigger it.
+     *
+     * @see onBeforeCancel
      */
     public var onCloseRequest: (() -> Unit)? = null
+
+    /**
+     * A suspending callback, which is invoked upon the wizard's "Cancel" button
+     * click before the wizard is closed.
+     *
+     * The callback should return `true` in order for the wizard to proceed with
+     * closing, and `false` to prevent the wizard from being closed. The wizard
+     * stays in the composition while the callback is suspended, so any data
+     * that has been entered in the wizard's pages is retained, both while the
+     * callback is pending and if it rejects closing.
+     *
+     * The default implementation just returns `true`, and one of the typical
+     * usage scenarios would be to display the confirmation dialog.
+     *
+     * Note that this callback is invoked only when the user cancels the wizard,
+     * and it is not invoked when the wizard is closed after a successful
+     * submission (which happens by invoking [close] directly). A confirmation
+     * displayed in this callback therefore doesn't appear after the wizard's
+     * operation has succeeded.
+     *
+     * For example, in order for the custom `MyWizard` implementation to display
+     * a confirmation before the wizard is closed upon pressing "Cancel", the
+     * following can be done:
+     * ```
+     * public class MyWizard : Wizard() {
+     *
+     *     init {
+     *         onBeforeCancel = {
+     *             ConfirmationDialog.showConfirmation {
+     *                 message = "Are you sure you want to discard the data?"
+     *             }
+     *         }
+     *         ...
+     *     }
+     * ```
+     *
+     * @see cancel
+     */
+    public var onBeforeCancel: suspend () -> Boolean = { true }
 
     public var currentPage: WizardPage
         get() = pages[currentPageIndex]
@@ -157,9 +217,43 @@ public abstract class Wizard : Component() {
 
     /**
      * Closes the wizard.
+     *
+     * This method closes the wizard unconditionally, without consulting the
+     * [onBeforeCancel] callback, and it is the method that the wizard's
+     * implementation is expected to invoke when its submission succeeds.
+     *
+     * Use [cancel] instead to close the wizard on the user's request.
      */
     public open fun close() {
         onCloseRequest?.invoke()
+    }
+
+    /**
+     * Cancels the wizard, which is equivalent to pressing the
+     * "Cancel" button.
+     *
+     * This means invoking the [onBeforeCancel] callback, and closing the wizard
+     * if the callback didn't prevent closing.
+     *
+     * @see onBeforeCancel
+     */
+    public fun cancel(): Unit = launch {
+        requestCancel()
+    }
+
+    /**
+     * Performs the wizard's cancellation, which is the part of [cancel] that
+     * doesn't require a composition-scoped coroutine scope.
+     *
+     * @return `true`, if the wizard was closed, and `false`, if the
+     *   [onBeforeCancel] callback has prevented the wizard from being closed.
+     */
+    internal suspend fun requestCancel(): Boolean {
+        if (!onBeforeCancel()) {
+            return false
+        }
+        close()
+        return true
     }
 
     @Composable
@@ -207,7 +301,7 @@ public abstract class Wizard : Component() {
                     onFinishClick = {
                         handleFinishClick(currentPage)
                     },
-                    onCancelClick = { close() },
+                    onCancelClick = { cancel() },
                     isOnFirstPage = isOnFirstPage(),
                     isOnLastPage = isOnLastPage(),
                     submitting
