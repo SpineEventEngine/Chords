@@ -79,15 +79,28 @@ duplicate its steps.
   generated `MessageField`/`MessageOneof`/`MessageDef` contract between
   `codegen/plugins` and `codegen/runtime`, and Protobuf compatibility in
   `proto-values`.
-- Toolchain violations: language or library features newer than Kotlin 1.8.20
-  / Compose 1.5.12 in root modules (or mixing the `codegen/plugins` toolchain
-  into root code).
+- Kotlin-language and toolchain violations: apply
+  `.agents/skills/kotlin-engineer/SKILL.md` to the changed Kotlin and report
+  what its rules flag. Read it rather than reviewing from memory — several
+  of its rules turn on repository specifics a general Kotlin reading would
+  get wrong, including which toolchain ceiling governs the file and the
+  sanctioned exceptions to otherwise-standard bans.
 - Missing or weak tests for changed logic, extensions, or codegen behavior.
 - Version-policy misses: `chordsVersion` not incremented, or `pom.xml` /
   `dependencies.md` not regenerated when required.
 - Module-ownership violations, leaked state, unjustified reflection, and
   hidden background work.
 - Workarounds that mask a root cause instead of fixing it.
+- Overengineering, per "Design Restraint" in
+  `.agents/skills/engineer/SKILL.md`: an abstraction with a single
+  implementor, an option nothing sets, or an indirection layer that only
+  forwards. A type parameter is a finding only when it preserves no type
+  relationship *and* every use instantiates it identically — a single call
+  site alone is not evidence. Weigh it against the
+  published-extension-point exception before reporting — a `public`
+  abstraction documented as an extension point for consuming applications
+  is intended. The reverse also counts: duplicated non-trivial logic where
+  the changeset already has two call sites.
 
 ## Handoffs
 

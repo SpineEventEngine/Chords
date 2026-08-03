@@ -3,7 +3,11 @@
 This index is a quick orientation aid. Each skill's frontmatter remains the
 routing source of truth.
 
-- `engineer`: routing skill for mixed or unclear implementation work.
+- `engineer`: routing skill for mixed or unclear implementation work, and
+  the home of the shared design-restraint policy.
+- `kotlin-engineer`: the Kotlin language itself — the 1.8.20 ceiling,
+  null-safety, `lateinit`, coroutine scoping, and public-type rules. Pairs
+  with whichever area skill owns the code being changed.
 - `component-engineer`: class-based Compose UI components across `core`,
   `proto`, and `client` — the component model, input components, message
   forms, and server-connected components.
@@ -20,8 +24,10 @@ routing source of truth.
   guard, validation, and publishing pipelines.
 - `code-reviewer`: implementation review for component, codegen, and build
   changes.
-- `tester`: test authoring and verification strategy for all modules,
+- `tester`: what to cover and how to verify it across all modules,
   including codegen correctness tests.
+- `kotlin-jvm-tester`: how a test suite is written — JUnit Jupiter
+  structure, Kotest assertions, naming, fixtures, and `testlib` bases.
 - `docs-writer`: documentation authoring, editing, restructuring, and claim
   checks.
 - `docs-reviewer`: documentation review for prose, examples, and comments.
@@ -48,8 +54,10 @@ Each skill lives in its own directory:
 The `name` in `SKILL.md` frontmatter must match the directory name.
 
 A skill may add supporting files its own policy body references — for example,
-`pair-workflow/template.md`, the working-document template its driver copies.
-Policy still belongs in `SKILL.md`.
+`pair-workflow/template.md`, the working-document template its driver copies,
+or `kotlin-jvm-tester/references/advanced-test-patterns.md`, loaded only when
+a task reaches the shapes it covers. Core policy still belongs in `SKILL.md`;
+a `references/` file carries detail most tasks do not need.
 
 ## Invocation
 

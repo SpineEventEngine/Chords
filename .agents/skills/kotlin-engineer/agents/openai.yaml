@@ -1,0 +1,6 @@
+interface:
+  display_name: "Kotlin Engineer"
+  short_description: "Chords Kotlin language policy and recurring pitfalls"
+  default_prompt: >
+    Use $kotlin-engineer to implement or review this Kotlin change under
+    Chords' language and toolchain rules.

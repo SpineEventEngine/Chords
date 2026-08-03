@@ -38,16 +38,17 @@ build logic, use `.agents/skills/build-engineer/SKILL.md`.
 - Respect module layering: `core` must not depend on `proto` or `client`;
   `proto` must not depend on `client`. Put behavior in the lowest module that
   owns it.
-- All libraries use Kotlin explicit API mode: public declarations need
-  explicit `public` modifiers and public API needs KDoc.
 - Avoid breaking public API: signatures, property names, and visibility of
   published declarations are contracts for external consumers. Prefer additive
   changes; when a member is `protected`, it is part of the API for component
   subclasses.
-- Target the pinned toolchain: Kotlin 1.8.20 and Compose Multiplatform 1.5.12.
-  Do not use newer language features or Compose APIs. Some Compose APIs in use
-  are experimental (`@OptIn(ExperimentalComposeUiApi::class)`); keep such
-  opt-ins localized and documented.
+- Target Compose Multiplatform 1.5.12; do not use newer Compose APIs. Some
+  Compose APIs in use are experimental
+  (`@OptIn(ExperimentalComposeUiApi::class)`); keep such opt-ins localized
+  and documented.
+- For the Kotlin language itself — the 1.8.20 ceiling, explicit API mode,
+  null-safety, `lateinit` in `Props`, and coroutine scoping — follow
+  `.agents/skills/kotlin-engineer/SKILL.md`.
 - Match existing KDoc style: `@param` tags for type parameters and
   constructor-like parameters, backticked identifiers, and wrapped lines
   within 100 characters.
