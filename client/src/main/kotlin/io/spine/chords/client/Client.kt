@@ -69,6 +69,11 @@ public interface Client {
      * Reads the list of entities with the [entityClass] class and returns an
      * observation that maintains an up-to-date list.
      *
+     * This function returns without waiting for the server. The observation is
+     * returned with an empty list and the [DataObservationStatus.Refreshing]
+     * status, and the list read from the server appears in it once the initial
+     * read and subscription complete.
+     *
      * If the connection with the server is lost, the returned observation
      * retains the last received list. It automatically re-reads the complete
      * list and creates a new subscription when the connection is restored.
@@ -92,6 +97,11 @@ public interface Client {
      * [queryFilter]. Then sets up observation to receive future updates to the
      * entities, filtering the observed updates using the provided
      * [observeFilter].
+     *
+     * This function returns without waiting for the server. The observation is
+     * returned with an empty list and the [DataObservationStatus.Refreshing]
+     * status, and the list read from the server appears in it once the initial
+     * read and subscription complete.
      *
      * If the connection with the server is lost, the returned observation
      * retains the last received list. It automatically re-reads the complete
@@ -126,6 +136,11 @@ public interface Client {
      *   value.
      * - If no entries match the specified criteria, the value is `null`.
      *
+     * This function returns without waiting for the server. The observation is
+     * returned with a `null` value and the [DataObservationStatus.Refreshing]
+     * status, and the value read from the server appears in it once the initial
+     * read and subscription complete.
+     *
      * If the connection with the server is lost, the returned observation
      * retains the last received value. It automatically re-reads the value and
      * creates a new subscription when the connection is restored.
@@ -153,6 +168,11 @@ public interface Client {
      *
      * This overload guarantees a non-null value by using [defaultValue] when no
      * entity matches. If several entities match, the first one is used.
+     *
+     * This function returns without waiting for the server. The observation is
+     * returned with [defaultValue] and the [DataObservationStatus.Refreshing]
+     * status, and the value read from the server appears in it once the initial
+     * read and subscription complete.
      *
      * If the connection with the server is lost, the returned observation
      * retains the last received value. It automatically re-reads the value and
@@ -421,7 +441,10 @@ public sealed class DataObservationStatus {
  * failure.
  *
  * A `DataObservation` is also a Compose [State], so its current [value] can be
- * read directly or with Kotlin property delegation. An observation in
+ * read directly or with Kotlin property delegation. A newly created observation
+ * is readable right away: it carries its initial or default value in the
+ * [DataObservationStatus.Refreshing] status until the first read from the server
+ * completes. An observation in
  * [DataObservationStatus.WaitingForConnection] automatically re-reads the
  * complete value and creates a new subscription when the server connection is
  * restored. An observation in [DataObservationStatus.Failed] is not retried

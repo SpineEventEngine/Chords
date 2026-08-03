@@ -39,7 +39,6 @@ import io.spine.chords.client.DataObservationStatus.Refreshing
 import io.spine.chords.client.DataObservationStatus.WaitingForConnection
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -168,6 +167,14 @@ internal class DataObservationImpl<T, U>(
     private val abandonedSubscriptionGenerations = mutableSetOf<Long>()
 
     /**
+     * The generation of the refresh that is currently creating a subscription,
+     * or `null` when no subscription is being created.
+     *
+     * Accessing this field requires holding [stateLock].
+     */
+    private var subscribingGeneration: Long? = null
+
+    /**
      * Permanently prevents further refreshes after cancellation.
      */
     private var cancelled: Boolean = false
@@ -177,15 +184,6 @@ internal class DataObservationImpl<T, U>(
 
     override val status: State<DataObservationStatus>
         get() = mutableStatus
-
-    /**
-     * Performs the initial read and subscription synchronously.
-     */
-    internal fun initialize() {
-        runBlocking {
-            refresh()
-        }
-    }
 
     @Suppress(
         "ReturnCount" /* Each failed or stale recovery phase must stop immediately. */
@@ -236,6 +234,7 @@ internal class DataObservationImpl<T, U>(
                 }
             } finally {
                 synchronized(stateLock) {
+                    finishSubscribing(refreshGeneration)
                     abandonedSubscriptionGenerations.remove(refreshGeneration)
                 }
             }
@@ -295,6 +294,10 @@ internal class DataObservationImpl<T, U>(
 
     /**
      * Permanently stops this observation and optionally cancels its server subscription.
+     *
+     * When the subscription is retained, a subscription that a refresh is still
+     * creating is abandoned as well, so that it is not cancelled individually
+     * once it arrives.
      */
     private fun cancel(cancelSubscription: Boolean) {
         val previousSubscription: ObservationSubscription?
@@ -305,6 +308,9 @@ internal class DataObservationImpl<T, U>(
                 return
             }
             cancelled = true
+            if (!cancelSubscription && subscriptionInFlight) {
+                abandonedSubscriptionGenerations.add(generation)
+            }
             generation++
             previousSubscription = subscription
             subscription = null
@@ -324,12 +330,37 @@ internal class DataObservationImpl<T, U>(
             if (cancelled || mutableStatus.value is Failed) {
                 return
             }
-            if (subscription == null && mutableStatus.value == Refreshing) {
+            if (subscriptionInFlight) {
                 abandonedSubscriptionGenerations.add(generation)
             }
             generation++
             subscription = null
             mutableStatus.value = WaitingForConnection
+        }
+    }
+
+    /**
+     * Tells whether a refresh is currently creating a subscription for the
+     * present generation that has not been installed yet.
+     *
+     * A newly created observation is not subscribing yet, even though it starts
+     * in the [Refreshing] status: its first subscription is only created once
+     * its initial refresh begins.
+     *
+     * Reading this property requires holding [stateLock].
+     */
+    private val subscriptionInFlight: Boolean
+        get() = subscribingGeneration == generation
+
+    /**
+     * Records that the refresh identified by [refreshGeneration] is no longer
+     * creating a subscription.
+     *
+     * Calling this function requires holding [stateLock].
+     */
+    private fun finishSubscribing(refreshGeneration: Long) {
+        if (subscribingGeneration == refreshGeneration) {
+            subscribingGeneration = null
         }
     }
 
@@ -353,6 +384,7 @@ internal class DataObservationImpl<T, U>(
             }
             generation++
             refreshGeneration = generation
+            subscribingGeneration = refreshGeneration
             previousSubscription = subscription
             subscription = null
             mutableStatus.value = Refreshing
@@ -430,6 +462,7 @@ internal class DataObservationImpl<T, U>(
         val installed: Boolean
         val shouldCancel: Boolean
         synchronized(stateLock) {
+            finishSubscribing(refreshGeneration)
             installed = isCurrent(refreshGeneration)
             shouldCancel = !installed &&
                     !abandonedSubscriptionGenerations.remove(refreshGeneration)

@@ -113,13 +113,28 @@ internal class ObservationRecoveryCoordinator(
     }
 
     /**
-     * Registers the given observation for automatic recovery.
+     * Registers the given observation for automatic recovery and brings it in
+     * line with the [connectionStatus] known at the moment of registration.
+     *
+     * An observation that arrives once this coordinator has closed, or that
+     * loses the race with [close], is closed instead of being registered:
+     * leaving it registered would keep it waiting for a recovery that no longer
+     * happens. The closed status is therefore checked after the addition,
+     * because [close] closes the observations it knows about and then clears
+     * them.
+     *
+     * @return `true` if the observation is now managed by this coordinator.
      */
     fun register(
         observation: RecoverableDataObservation,
         connectionStatus: ConnectionStatus
-    ) {
+    ): Boolean {
         observations.add(observation)
+        if (closed.get()) {
+            observations.remove(observation)
+            observation.close()
+            return false
+        }
         val unavailable = synchronized(stateLock) {
             connectionWasUnavailable || connectionStatus == ConnectionStatus.UNAVAILABLE
         }
@@ -130,7 +145,28 @@ internal class ObservationRecoveryCoordinator(
         ) {
             refresh(observation)
         }
+        return true
     }
+
+    /**
+     * Registers the given observation and performs its initial read and
+     * subscription in this coordinator's scope.
+     *
+     * The observation is registered before the initial refresh starts, so that
+     * a refresh which immediately fails on a connected channel can be retried.
+     *
+     * @return The job that performs the initial refresh, or `null` if the
+     *   observation was not registered because this coordinator has closed.
+     */
+    fun registerAndInitialize(
+        observation: RecoverableDataObservation,
+        connectionStatus: ConnectionStatus
+    ): Job? =
+        if (register(observation, connectionStatus)) {
+            refresh(observation)
+        } else {
+            null
+        }
 
     /**
      * Unregisters the given observation.
@@ -222,12 +258,15 @@ internal class ObservationRecoveryCoordinator(
 
     /**
      * Refreshes the given [observation] in the coordinator scope.
+     *
+     * @return The job that performs the refresh. It completes without running
+     *   the refresh if this coordinator has been closed meanwhile, because
+     *   [close] cancels the scope.
      */
-    private fun refresh(observation: RecoverableDataObservation) {
+    private fun refresh(observation: RecoverableDataObservation): Job =
         scope.launch {
             observation.refresh()
         }
-    }
 
     /**
      * Checks whether the given [observation] still needs a connected retry.

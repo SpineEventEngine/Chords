@@ -27,8 +27,11 @@
 package io.spine.chords.client
 
 import io.kotest.matchers.shouldBe
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.SECONDS
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -51,6 +54,85 @@ internal class ObservationRecoveryCoordinatorSpec {
         runCurrent()
         observation.waitCalls shouldBe 1
         coordinator.close()
+    }
+
+    @Test
+    fun `initialize a registered observation outside the calling thread`() = runTest {
+        val coordinator = createCoordinator()
+        val observation = FakeRecoverableObservation()
+
+        val job = requireNotNull(
+            coordinator.registerAndInitialize(observation, ConnectionStatus.CONNECTED)
+        )
+
+        observation.refreshCalls shouldBe 0
+        runCurrent()
+        observation.refreshCalls shouldBe 1
+        job.isCompleted shouldBe true
+        coordinator.close()
+    }
+
+    @Test
+    fun `recover an observation supplied for initialization`() = runTest {
+        val coordinator = createCoordinator()
+        val observation = FakeRecoverableObservation()
+
+        coordinator.registerAndInitialize(observation, ConnectionStatus.CONNECTED)
+        runCurrent()
+        coordinator.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
+        runCurrent()
+        coordinator.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        runCurrent()
+
+        observation.waitCalls shouldBe 1
+        observation.refreshCalls shouldBe 2
+        coordinator.close()
+    }
+
+    @Test
+    fun `close an observation registered after the coordinator has closed`() = runTest {
+        val coordinator = createCoordinator()
+        coordinator.close()
+        val observation = FakeRecoverableObservation()
+
+        coordinator.register(observation, ConnectionStatus.UNAVAILABLE)
+        runCurrent()
+
+        observation.closeCalls shouldBe 1
+        observation.waitCalls shouldBe 0
+    }
+
+    @Test
+    fun `not initialize an observation created after the coordinator closed`() = runTest {
+        val coordinator = createCoordinator()
+        coordinator.close()
+        val observation = FakeRecoverableObservation()
+
+        val job = coordinator.registerAndInitialize(
+            observation,
+            ConnectionStatus.CONNECTED
+        )
+        runCurrent()
+
+        job shouldBe null
+        observation.closeCalls shouldBe 1
+        observation.refreshCalls shouldBe 0
+    }
+
+    @Test
+    fun `unregister an observation closed while it is being registered`() = runTest {
+        val coordinator = createCoordinator()
+        val observation = FakeRecoverableObservation()
+        observation.onWaitForConnection = {
+            coordinator.close()
+        }
+
+        coordinator.register(observation, ConnectionStatus.UNAVAILABLE)
+        coordinator.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        runCurrent()
+
+        observation.closeCalls shouldBe 1
+        observation.refreshCalls shouldBe 0
     }
 
     @Test
@@ -198,6 +280,49 @@ internal class ObservationRecoveryCoordinatorSpec {
     }
 
     @Test
+    fun `return from initialization while the initial subscription is pending`() =
+        runBlocking {
+            val coordinator = ObservationRecoveryCoordinator()
+            coordinator.start()
+            val subscribeStarted = CountDownLatch(1)
+            val allowSubscribe = CountDownLatch(1)
+            val observation = DataObservationImpl<String, String>(
+                "fallback",
+                { "server data" },
+                { _, _ ->
+                    subscribeStarted.countDown()
+                    check(allowSubscribe.await(5, SECONDS)) {
+                        "Timed out waiting to finish subscription setup."
+                    }
+                    ObservationSubscription { }
+                },
+                { _, update -> update },
+                { ConnectionStatus.CONNECTED },
+                coordinator::unregister,
+                coordinator::retryWhileConnected
+            )
+
+            val job = requireNotNull(
+                coordinator.registerAndInitialize(
+                    observation,
+                    ConnectionStatus.CONNECTED
+                )
+            )
+            subscribeStarted.await(5, SECONDS) shouldBe true
+
+            job.isCompleted shouldBe false
+            observation.value shouldBe "fallback"
+            observation.status.value shouldBe DataObservationStatus.Refreshing
+
+            allowSubscribe.countDown()
+            job.join()
+
+            observation.value shouldBe "server data"
+            observation.status.value shouldBe DataObservationStatus.Active
+            coordinator.close()
+        }
+
+    @Test
     fun `close observations without cancelling subscriptions individually`() = runTest {
         val coordinator = createCoordinator()
         val observation = FakeRecoverableObservation()
@@ -228,6 +353,7 @@ private class FakeRecoverableObservation : RecoverableDataObservation {
     var closeCalls: Int = 0
         private set
     var remainWaitingAfterRefresh: Boolean = false
+    var onWaitForConnection: (() -> Unit)? = null
 
     override var needsRecovery: Boolean = false
         private set
@@ -235,6 +361,7 @@ private class FakeRecoverableObservation : RecoverableDataObservation {
     override fun waitForConnection() {
         waitCalls++
         needsRecovery = true
+        onWaitForConnection?.invoke()
     }
 
     override suspend fun refresh() {

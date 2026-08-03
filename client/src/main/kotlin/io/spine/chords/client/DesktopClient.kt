@@ -324,7 +324,12 @@ public class DesktopClient(
     }
 
     /**
-     * Creates, initializes, and registers a recoverable data observation.
+     * Creates and registers a recoverable data observation.
+     *
+     * The observation is returned as soon as it is registered, carrying
+     * [initialValue] and the [DataObservationStatus.Refreshing] status. Its
+     * initial read and subscription run in the recovery coordinator's scope, so
+     * that a slow or unresponsive server does not block the calling thread.
      */
     private fun <T, U> createObservation(
         initialValue: T,
@@ -344,8 +349,7 @@ public class DesktopClient(
             recoveryCoordinator::unregister,
             recoveryCoordinator::retryWhileConnected
         )
-        observation.initialize()
-        recoveryCoordinator.register(observation, connectionStatus.value)
+        recoveryCoordinator.registerAndInitialize(observation, connectionStatus.value)
         return observation
     }
 
