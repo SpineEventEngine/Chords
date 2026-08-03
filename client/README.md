@@ -91,6 +91,34 @@ the server connectivity:
 
 - etc.
 
+#### Confirming cancellation of a command wizard
+
+A `CommandWizard` reports through its `dirty` property whether any data has been
+entered on any of its pages, with the same meaning that `CommandDialog.dirty`
+has. All pages edit the fields of a single command message form, so `dirty`
+stays `true` for the data entered on a page that is not displayed anymore.
+
+The `Wizard.onBeforeCancel` callback is invoked when the user presses "Cancel",
+and returning `false` from it keeps the wizard open. The callback suspends, so
+a confirmation can be awaited inside it, and the wizard keeps the entered data
+while the confirmation is pending:
+
+```kotlin
+val wizard = ImportItemWizard().apply {
+    onCloseRequest = { wizardShown = false }
+    onBeforeCancel = {
+        !dirty || ConfirmationDialog.showConfirmation {
+            message = "Discard the data entered so far?"
+        }
+    }
+}
+```
+
+Successful submission closes the wizard through `close()`, which doesn't consult
+`onBeforeCancel`, so the confirmation above is never displayed after the command
+has been posted successfully. `onCloseRequest` is still invoked on both paths,
+and remains the callback that removes the wizard from the composition.
+
 #### Handling network errors in command modals
 
 When posting from a `CommandDialog` or `CommandWizard` fails because of a

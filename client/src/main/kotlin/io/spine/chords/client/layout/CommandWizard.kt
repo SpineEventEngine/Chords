@@ -119,12 +119,36 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
 
     private var postingState = mutableStateOf(false)
 
+    /**
+     * Stores the dirty state reported by the [commandMessageForm].
+     *
+     * Its value is exposed to consumers through [dirty].
+     */
+    private val dirtyState = mutableStateOf(false)
+
+    /**
+     * Has a value of `true` when the command form is in the "dirty" state.
+     *
+     * A "dirty" state means that at least one of the form's fields currently
+     * displays some data, either valid or invalid. A value of `false` means
+     * that none of the fields displays any data.
+     *
+     * All of the wizard's pages edit the fields of the same command message
+     * form, and the fields that have been edited remain registered in that form
+     * when the user navigates away from their page. This property therefore
+     * reports the data entered on any of the wizard's pages, and not just on
+     * the one that is currently displayed.
+     */
+    public val dirty: Boolean
+        get() = dirtyState.value
+
     internal val commandMessageForm: CommandMessageForm<C> =
         CommandMessageForm.create(
             { createCommandBuilder() },
             onBeforeBuild = { beforeBuild(it) }
         ) {
             validationDisplayMode = MANUAL
+            onDirtyStateChange = { dirtyState.value = it }
             createCommandConsequences = { consequences ->
                 this@CommandWizard.createCommandConsequences(consequences)
                     .also {
