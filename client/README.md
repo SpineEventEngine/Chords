@@ -48,11 +48,18 @@ val projects by app.client.readAndObserve(
 
 These functions do not wait for the server. They return an observation that
 already holds its initial or default value — an empty list, `null`, or the
-supplied default — with the `DataObservationStatus.Refreshing` status, while the
-initial read and subscription proceed in the background. The value read from the
-server appears in the observation once they complete, which recomposes the
-Compose code that reads it. Creating an observation therefore never blocks the
-UI thread, even when the server is unreachable.
+supplied default — while the initial read and subscription proceed in the
+background. The value read from the server appears in the observation once they
+complete, which recomposes the Compose code that reads it. Creating an
+observation therefore never blocks the UI thread, even when the server is
+unreachable.
+
+A new observation carries the `DataObservationStatus.Refreshing` status while
+its initial read is in progress. If the connection is already known to be
+unavailable, the observation is instead returned in
+`DataObservationStatus.WaitingForConnection` and is refreshed once the
+connection is restored, without a request being spent on a channel that is
+known to be down.
 
 If the server connection is lost, an observation retains its last value. After
 the connection is restored, it automatically re-reads its complete value and

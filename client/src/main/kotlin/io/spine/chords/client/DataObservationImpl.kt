@@ -55,9 +55,24 @@ internal fun interface ObservationSubscription {
 }
 
 /**
- * An observation managed by the client's automatic recovery coordinator.
+ * The lifecycle operations [DataObservationManager] performs on an observation.
+ *
+ * This is deliberately narrow: five members, against the full surface of
+ * [DataObservationImpl]. Two things follow from that, and both are the reason
+ * the interface exists rather than the manager holding implementations
+ * directly:
+ *
+ * - The manager keeps observations of *different value types* in one set.
+ *   [DataObservationImpl] is generic in the observed value and the update type,
+ *   while none of the members here mention either, so this interface is what
+ *   lets a single collection hold them all.
+ * - None of these operations belong on the public [DataObservation]. They are
+ *   the manager's side of the contract, not the consumer's.
+ *
+ * A test can therefore drive [DataObservationManager] with a small stub instead
+ * of a fully wired [DataObservationImpl] — see `FakeManagedObservation`.
  */
-internal interface RecoverableDataObservation {
+internal interface ManagedDataObservation {
 
     /**
      * Tells whether this observation should be refreshed after reconnecting.
@@ -92,6 +107,32 @@ internal interface RecoverableDataObservation {
 /**
  * A data observation maintained by [DesktopClient].
  *
+ * Implements the consumer-facing [DataObservation] and the manager-facing
+ * [ManagedDataObservation]; see those types for why the two contracts are
+ * separate. The class itself is not abstract and is not extended — the server
+ * access it needs is injected as the constructor lambdas below, which is what
+ * lets tests drive it without a server.
+ *
+ * ## Keeping a late subscription from corrupting current state
+ *
+ * A refresh subscribes and reads over the network, so a cancellation,
+ * a connection loss, or another refresh can land while it is still in flight.
+ * The result must then be discarded rather than published. Each refresh
+ * therefore takes a *generation* number, and every state-mutating step first
+ * checks that its generation is still current; anything that arrives late is
+ * dropped, and its subscription is cancelled instead of installed.
+ *
+ * The exception is shutdown. When the whole client is closing, the channel ends
+ * every stream anyway, so a late subscription is recorded in
+ * [abandonedSubscriptionGenerations] and left alone rather than cancelled
+ * individually — one request per observation on a connection that is already
+ * going away.
+ *
+ * This bookkeeping is the reason for [stateLock], the generation counter, and
+ * [subscribingGeneration]. They are not layers of abstraction; they are the
+ * state a single refresh needs to decide whether its own result is still
+ * wanted.
+ *
  * @param T The type of the complete observed value.
  * @param U The type of an individual update.
  */
@@ -123,12 +164,12 @@ internal class DataObservationImpl<T, U>(
     /**
      * Unregisters this observation after permanent cancellation.
      */
-    private val onCancelled: (RecoverableDataObservation) -> Unit,
+    private val onCancelled: (ManagedDataObservation) -> Unit,
     /**
      * Requests a delayed retry when a stream fails on a connected channel.
      */
-    private val onRecoveryNeeded: (RecoverableDataObservation) -> Unit = {}
-) : DataObservation<T>, RecoverableDataObservation {
+    private val onRecoveryNeeded: (ManagedDataObservation) -> Unit = {}
+) : DataObservation<T>, ManagedDataObservation {
 
     /**
      * Stores the complete value exposed as Compose state.

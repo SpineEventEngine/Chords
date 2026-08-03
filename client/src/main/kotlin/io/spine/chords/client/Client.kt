@@ -70,9 +70,11 @@ public interface Client {
      * observation that maintains an up-to-date list.
      *
      * This function returns without waiting for the server. The observation is
-     * returned with an empty list and the [DataObservationStatus.Refreshing]
-     * status, and the list read from the server appears in it once the initial
-     * read and subscription complete.
+     * returned with an empty list, and the list read from the server appears in
+     * it once the initial read and subscription complete. Until then its status
+     * is [DataObservationStatus.Refreshing], or
+     * [DataObservationStatus.WaitingForConnection] when the connection is
+     * already known to be unavailable.
      *
      * If the connection with the server is lost, the returned observation
      * retains the last received list. It automatically re-reads the complete
@@ -99,9 +101,11 @@ public interface Client {
      * [observeFilter].
      *
      * This function returns without waiting for the server. The observation is
-     * returned with an empty list and the [DataObservationStatus.Refreshing]
-     * status, and the list read from the server appears in it once the initial
-     * read and subscription complete.
+     * returned with an empty list, and the list read from the server appears in
+     * it once the initial read and subscription complete. Until then its status
+     * is [DataObservationStatus.Refreshing], or
+     * [DataObservationStatus.WaitingForConnection] when the connection is
+     * already known to be unavailable.
      *
      * If the connection with the server is lost, the returned observation
      * retains the last received list. It automatically re-reads the complete
@@ -137,9 +141,11 @@ public interface Client {
      * - If no entries match the specified criteria, the value is `null`.
      *
      * This function returns without waiting for the server. The observation is
-     * returned with a `null` value and the [DataObservationStatus.Refreshing]
-     * status, and the value read from the server appears in it once the initial
-     * read and subscription complete.
+     * returned with a `null` value, and the value read from the server appears
+     * in it once the initial read and subscription complete. Until then its
+     * status is [DataObservationStatus.Refreshing], or
+     * [DataObservationStatus.WaitingForConnection] when the connection is
+     * already known to be unavailable.
      *
      * If the connection with the server is lost, the returned observation
      * retains the last received value. It automatically re-reads the value and
@@ -170,9 +176,11 @@ public interface Client {
      * entity matches. If several entities match, the first one is used.
      *
      * This function returns without waiting for the server. The observation is
-     * returned with [defaultValue] and the [DataObservationStatus.Refreshing]
-     * status, and the value read from the server appears in it once the initial
-     * read and subscription complete.
+     * returned with [defaultValue], and the value read from the server appears
+     * in it once the initial read and subscription complete. Until then its
+     * status is [DataObservationStatus.Refreshing], or
+     * [DataObservationStatus.WaitingForConnection] when the connection is
+     * already known to be unavailable.
      *
      * If the connection with the server is lost, the returned observation
      * retains the last received value. It automatically re-reads the value and
@@ -442,9 +450,8 @@ public sealed class DataObservationStatus {
  *
  * A `DataObservation` is also a Compose [State], so its current [value] can be
  * read directly or with Kotlin property delegation. A newly created observation
- * is readable right away: it carries its initial or default value in the
- * [DataObservationStatus.Refreshing] status until the first read from the server
- * completes. An observation in
+ * is readable right away: it carries its initial or default value until the
+ * first read from the server completes. An observation in
  * [DataObservationStatus.WaitingForConnection] automatically re-reads the
  * complete value and creates a new subscription when the server connection is
  * restored. An observation in [DataObservationStatus.Failed] is not retried
@@ -452,6 +459,24 @@ public sealed class DataObservationStatus {
  *
  * The caller owns the observation lifecycle and should call [cancel] when the
  * observation is no longer needed.
+ *
+ * ## Why this is an interface
+ *
+ * The only production implementation is the internal `DataObservationImpl`,
+ * which cannot appear in this public API at all. The separation is not an
+ * extension point for third parties; it exists because the implementation
+ * carries detail that consumers must not depend on:
+ *
+ * - `DataObservationImpl<T, U>` has a second type parameter, `U`, for the type
+ *   of an individual server update, which differs from the observed value
+ *   (a list observation applies single-entity updates to a `List`). This
+ *   interface is what erases `U` from the public signature.
+ * - The implementation exposes lifecycle operations that only the client's
+ *   observation manager may call. Publishing them would let a consumer corrupt
+ *   the recovery bookkeeping.
+ *
+ * Do not implement this interface outside the library: new members may be added
+ * to it in future versions.
  *
  * @param T The type of the observed value.
  */
