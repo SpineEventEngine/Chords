@@ -1,0 +1,8 @@
+interface:
+  display_name: "Pair Workflow"
+  short_description: "Two-agent plan-review-implement-review protocol"
+  default_prompt: >
+    Use $pair-workflow after reading AGENTS.md, README.md, and
+    .agents/project.md to take the next turn on a Chords GitHub issue driven by
+    two agents. Read the working document at .agents/work/issue-<number>/plan.md,
+    act on the role named by its `turn` field, and advance `status`.

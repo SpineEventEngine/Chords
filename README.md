@@ -70,6 +70,24 @@ each respective library (referred to in the section above).
 ./gradlew clean build
 ```
 
+## Working with AI agents
+
+Hand a GitHub issue to two agents: one plans and implements it, the other
+reviews both the plan and the resulting diff. In Claude Code:
+
+```
+/pair <issue-number>
+```
+
+The same run works from a terminal as
+`.agents/workflows/pair.sh <issue-number>`.
+
+See [PAIR_AGENTS_RUN_GUIDE.md](PAIR_AGENTS_RUN_GUIDE.md) for what the issue
+needs to contain and what to do with the result.
+
+[AGENTS.md](AGENTS.md) holds the repository operating policy that every agent
+follows.
+
 ## Code generation facilities
 
 The Chords libraries employ certain code generation facilities, which are meant
