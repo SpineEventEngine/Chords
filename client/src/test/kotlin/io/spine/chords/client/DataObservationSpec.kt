@@ -37,9 +37,16 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
-internal class DataObservationImplSpec {
+/**
+ * Tests how [DataObservation] publishes data, tracks its status, and
+ * handles cancellation, connection loss, and subscriptions that arrive after
+ * the refresh that created them is no longer current.
+ */
+@DisplayName("`DataObservation` should")
+internal class DataObservationSpec {
 
     @Test
     fun `read initial data and apply subscription updates`() {
@@ -68,7 +75,7 @@ internal class DataObservationImplSpec {
     }
 
     @Test
-    fun `publish initial data in the snapshot that creates the observation`() {
+    fun `publish initial data in the snapshot that refreshes the observation`() {
         val source = FakeObservationSource("initial")
         val snapshot = Snapshot.takeMutableSnapshot()
         try {
@@ -220,6 +227,63 @@ internal class DataObservationImplSpec {
         observation.status.value shouldBe DataObservationStatus.Active
     }
 
+    /**
+     * An initial refresh that cannot reach the server leaves the observation
+     * waiting rather than failed, so a later refresh still brings in the data.
+     */
+    @Test
+    fun `recover after the initial refresh cannot connect`() {
+        val source = FakeObservationSource("server data")
+        source.readFailure = Status.UNAVAILABLE.asRuntimeException()
+        val observation = source.createObservation(
+            initialValue = "fallback",
+            connectionStatus = { ConnectionStatus.UNAVAILABLE }
+        )
+
+        observation.initialize()
+
+        observation.value shouldBe "fallback"
+        observation.status.value shouldBe DataObservationStatus.WaitingForConnection
+        observation.needsRecovery shouldBe true
+
+        source.readFailure = null
+        runBlocking {
+            observation.refresh()
+        }
+
+        observation.value shouldBe "server data"
+        observation.status.value shouldBe DataObservationStatus.Active
+    }
+
+    /**
+     * An observation parked before it ever refreshed — the state in which a
+     * disconnected client hands one out — still reads and subscribes normally
+     * once the connection is restored.
+     */
+    @Test
+    fun `recover after waiting for connection before the first refresh`() {
+        val source = FakeObservationSource("server data")
+        val observation = source.createObservation(
+            initialValue = "fallback",
+            connectionStatus = { ConnectionStatus.UNAVAILABLE }
+        )
+
+        observation.waitForConnection()
+
+        observation.value shouldBe "fallback"
+        observation.status.value shouldBe DataObservationStatus.WaitingForConnection
+        observation.needsRecovery shouldBe true
+
+        runBlocking {
+            observation.refresh()
+        }
+
+        observation.value shouldBe "server data"
+        observation.status.value shouldBe DataObservationStatus.Active
+        source.subscribeCalls shouldBe 1
+        source.cancelCalls shouldBe 0
+    }
+
     @Test
     fun `replace data and subscription when refreshed`() {
         val source = FakeObservationSource("initial")
@@ -321,7 +385,7 @@ internal class DataObservationImplSpec {
     }
 
     @Test
-    fun `cancel subscription created after concurrent cancellation`() = runBlocking {
+    fun `cancel subscription created after concurrent cancellation`(): Unit = runBlocking {
         val subscribeStarted = CountDownLatch(1)
         val allowSubscribe = CountDownLatch(1)
         val cancelCalls = AtomicInteger()
@@ -344,7 +408,7 @@ internal class DataObservationImplSpec {
     }
 
     @Test
-    fun `not cancel subscription created after connection is lost`() = runBlocking {
+    fun `not cancel subscription created after connection is lost`(): Unit = runBlocking {
         val subscribeStarted = CountDownLatch(1)
         val allowSubscribe = CountDownLatch(1)
         val cancelCalls = AtomicInteger()
@@ -367,10 +431,70 @@ internal class DataObservationImplSpec {
         cancelCalls.get() shouldBe 0
     }
 
+    /**
+     * The initial value is readable while the first refresh is still creating
+     * its subscription. This is what lets observation creation return without
+     * waiting for the server.
+     */
+    @Test
+    fun `expose the initial value while the first refresh is pending`(): Unit = runBlocking {
+        val subscribeStarted = CountDownLatch(1)
+        val allowSubscribe = CountDownLatch(1)
+        val cancelCalls = AtomicInteger()
+        val observation = blockingObservation(
+            subscribeStarted,
+            allowSubscribe,
+            cancelCalls,
+            initialValue = "fallback"
+        )
+
+        val refresh = launch(IO) {
+            observation.refresh()
+        }
+        subscribeStarted.await(5, SECONDS) shouldBe true
+
+        observation.value shouldBe "fallback"
+        observation.status.value shouldBe DataObservationStatus.Refreshing
+
+        allowSubscribe.countDown()
+        refresh.join()
+
+        observation.value shouldBe "value"
+        observation.status.value shouldBe DataObservationStatus.Active
+    }
+
+    /**
+     * A subscription arriving after the client closed the observation is left
+     * alone: the whole channel is going away, so cancelling the subscription
+     * individually would be a pointless call on a dying connection.
+     */
+    @Test
+    fun `not cancel subscription created after the client is closed`(): Unit = runBlocking {
+        val subscribeStarted = CountDownLatch(1)
+        val allowSubscribe = CountDownLatch(1)
+        val cancelCalls = AtomicInteger()
+        val observation = blockingObservation(
+            subscribeStarted,
+            allowSubscribe,
+            cancelCalls
+        )
+
+        val refresh = launch(IO) {
+            observation.refresh()
+        }
+        subscribeStarted.await(5, SECONDS) shouldBe true
+        observation.close()
+        allowSubscribe.countDown()
+        refresh.join()
+
+        observation.status.value shouldBe DataObservationStatus.Cancelled
+        cancelCalls.get() shouldBe 0
+    }
+
     @Test
     fun `not cancel subscription that reports failure before installation`() {
         val cancelCalls = AtomicInteger()
-        val observation = DataObservationImpl(
+        val observation = createDataObservation(
             "",
             { "value" },
             { _, onError ->
@@ -391,12 +515,23 @@ internal class DataObservationImplSpec {
     }
 }
 
+/**
+ * Runs the initial refresh of this observation to completion.
+ *
+ * Production code initializes an observation asynchronously in the observation
+ * scope. These tests need the initialized state before they assert on it.
+ */
+private fun DataObservation<*>.initialize() = runBlocking {
+    refresh()
+}
+
 private fun blockingObservation(
     subscribeStarted: CountDownLatch,
     allowSubscribe: CountDownLatch,
-    cancelCalls: AtomicInteger
-): DataObservationImpl<String, String> = DataObservationImpl(
-    "",
+    cancelCalls: AtomicInteger,
+    initialValue: String = ""
+): DataObservation<String> = createDataObservation<String, String>(
+    initialValue,
     { "value" },
     { _, _ ->
         subscribeStarted.countDown()
@@ -433,9 +568,9 @@ private class FakeObservationSource(
     fun createObservation(
         initialValue: String = "",
         connectionStatus: () -> ConnectionStatus = { ConnectionStatus.CONNECTED },
-        onRecoveryNeeded: (RecoverableDataObservation) -> Unit = {},
-        onCancelled: (RecoverableDataObservation) -> Unit = {}
-    ): DataObservationImpl<String, String> = DataObservationImpl(
+        onRecoveryNeeded: (DataObservation<*>) -> Unit = {},
+        onCancelled: (DataObservation<*>) -> Unit = {}
+    ): DataObservation<String> = createDataObservation(
         initialValue,
         {
             readCalls++

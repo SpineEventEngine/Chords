@@ -26,7 +26,6 @@
 
 package io.spine.chords.client
 
-import androidx.compose.runtime.State
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
@@ -69,6 +68,13 @@ public interface Client {
      * Reads the list of entities with the [entityClass] class and returns an
      * observation that maintains an up-to-date list.
      *
+     * This function returns without waiting for the server. The observation is
+     * returned with an empty list, and the list read from the server appears in
+     * it once the initial read and subscription complete. Until then its status
+     * is [DataObservationStatus.Refreshing], or
+     * [DataObservationStatus.WaitingForConnection] when the connection is
+     * already known to be unavailable.
+     *
      * If the connection with the server is lost, the returned observation
      * retains the last received list. It automatically re-reads the complete
      * list and creates a new subscription when the connection is restored.
@@ -92,6 +98,13 @@ public interface Client {
      * [queryFilter]. Then sets up observation to receive future updates to the
      * entities, filtering the observed updates using the provided
      * [observeFilter].
+     *
+     * This function returns without waiting for the server. The observation is
+     * returned with an empty list, and the list read from the server appears in
+     * it once the initial read and subscription complete. Until then its status
+     * is [DataObservationStatus.Refreshing], or
+     * [DataObservationStatus.WaitingForConnection] when the connection is
+     * already known to be unavailable.
      *
      * If the connection with the server is lost, the returned observation
      * retains the last received list. It automatically re-reads the complete
@@ -126,6 +139,13 @@ public interface Client {
      *   value.
      * - If no entries match the specified criteria, the value is `null`.
      *
+     * This function returns without waiting for the server. The observation is
+     * returned with a `null` value, and the value read from the server appears
+     * in it once the initial read and subscription complete. Until then its
+     * status is [DataObservationStatus.Refreshing], or
+     * [DataObservationStatus.WaitingForConnection] when the connection is
+     * already known to be unavailable.
+     *
      * If the connection with the server is lost, the returned observation
      * retains the last received value. It automatically re-reads the value and
      * creates a new subscription when the connection is restored.
@@ -153,6 +173,13 @@ public interface Client {
      *
      * This overload guarantees a non-null value by using [defaultValue] when no
      * entity matches. If several entities match, the first one is used.
+     *
+     * This function returns without waiting for the server. The observation is
+     * returned with [defaultValue], and the value read from the server appears
+     * in it once the initial read and subscription complete. Until then its
+     * status is [DataObservationStatus.Refreshing], or
+     * [DataObservationStatus.WaitingForConnection] when the connection is
+     * already known to be unavailable.
      *
      * If the connection with the server is lost, the returned observation
      * retains the last received value. It automatically re-reads the value and
@@ -414,47 +441,6 @@ public sealed class DataObservationStatus {
      * The observation has been cancelled permanently.
      */
     public object Cancelled : DataObservationStatus()
-}
-
-/**
- * Maintains live server data and recovers it after a temporary connection
- * failure.
- *
- * A `DataObservation` is also a Compose [State], so its current [value] can be
- * read directly or with Kotlin property delegation. An observation in
- * [DataObservationStatus.WaitingForConnection] automatically re-reads the
- * complete value and creates a new subscription when the server connection is
- * restored. An observation in [DataObservationStatus.Failed] is not retried
- * automatically and requires an explicit [refresh] call.
- *
- * The caller owns the observation lifecycle and should call [cancel] when the
- * observation is no longer needed.
- *
- * @param T The type of the observed value.
- */
-public interface DataObservation<out T> : State<T> {
-
-    /**
-     * The current observation status.
-     */
-    public val status: State<DataObservationStatus>
-
-    /**
-     * Re-reads the complete value and replaces the current subscription.
-     *
-     * Request failures are exposed through [status] instead of being thrown
-     * from this function. Coroutine cancellation is propagated to the caller
-     * without being converted into an observation failure.
-     */
-    public suspend fun refresh()
-
-    /**
-     * Permanently cancels this observation.
-     *
-     * A cancelled observation is excluded from automatic recovery and cannot
-     * be refreshed again.
-     */
-    public fun cancel()
 }
 
 /**
