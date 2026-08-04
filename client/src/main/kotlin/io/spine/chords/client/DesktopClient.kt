@@ -102,8 +102,8 @@ public class DesktopClient(
      * their background scope, their reaction to connection changes, and their
      * shutdown.
      */
-    private val observationManager =
-        DataObservationManager({ connectionStatus.value })
+    private val observationScope =
+        DataObservationScope({ connectionStatus.value })
 
     /**
      * Runs best-effort subscription cancellation requests.
@@ -121,7 +121,7 @@ public class DesktopClient(
     private val connectionMonitor = ConnectionMonitor(
         { requestConnection -> channel.getState(requestConnection) },
         { source, callback -> channel.notifyWhenStateChanged(source, callback) },
-        observationManager::onConnectionStatusChanged
+        observationScope::onConnectionStatusChanged
     )
 
     override val isOpen: Boolean get() = spineClient.isOpen
@@ -130,7 +130,7 @@ public class DesktopClient(
     override val userId: UserId? get() = user()
 
     init {
-        observationManager.start()
+        observationScope.start()
         connectionMonitor.start()
 
         getRuntime().addShutdownHook(Thread {
@@ -142,7 +142,7 @@ public class DesktopClient(
         if (!closed.compareAndSet(false, true)) {
             return
         }
-        observationManager.close()
+        observationScope.close()
         connectionMonitor.close()
         cancellationScope.cancel()
         closeChannel()
@@ -330,13 +330,12 @@ public class DesktopClient(
      * Creates and registers a recoverable data observation.
      *
      * The observation is returned as soon as it is registered, carrying
-     * [initialValue]. Its initial read and subscription run in the recovery
-     * coordinator's scope, so that a slow or unresponsive server does not
-     * block the calling thread.
+     * [initialValue]. Its initial read and subscription run in the observation
+     * scope, so a slow or unresponsive server does not block the calling thread.
      *
      * When the connection is already known to be unavailable, no initial read
      * is attempted: the observation is returned waiting for a connection, and
-     * the coordinator refreshes it once the connection is restored.
+     * the scope refreshes it once the connection is restored.
      */
     private fun <T, U> createObservation(
         initialValue: T,
@@ -347,16 +346,16 @@ public class DesktopClient(
         ) -> ObservationSubscription,
         applyUpdate: (T, U) -> T
     ): DataObservation<T> {
-        val observation = DataObservationImpl(
+        val observation = createDataObservation(
             initialValue,
             read,
             subscribe,
             applyUpdate,
             { connectionStatus.value },
-            observationManager::unregister,
-            observationManager::retryWhileConnected
+            observationScope::unregister,
+            observationScope::retryWhileConnected
         )
-        observationManager.registerAndInitialize(observation)
+        observationScope.registerAndInitialize(observation)
         return observation
     }
 

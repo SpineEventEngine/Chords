@@ -36,8 +36,8 @@ property, which is available globally.
 ### Observing server data and connection status
 
 The `readAndObserve()` and `readOneAndObserve()` functions return a
-[`DataObservation`](src/main/kotlin/io/spine/chords/client/Client.kt). A data
-observation is a Compose `State`, so it supports ordinary property delegation:
+[`DataObservation`](src/main/kotlin/io/spine/chords/client/DataObservation.kt).
+A data observation is a Compose `State`, so it supports ordinary property delegation:
 
 ```kotlin
 val projects by app.client.readAndObserve(
