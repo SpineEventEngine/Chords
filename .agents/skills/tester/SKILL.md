@@ -1,22 +1,22 @@
 ---
 name: tester
 description: >
-  Chords test and verification policy. Use for test authoring and verification
-  strategy across core, proto, proto-values, client, the codegen runtime, and
+  Chords test and verification policy. Use to decide what to cover and how to
+  verify it across core, proto, proto-values, client, the codegen runtime, and
   codegen correctness tests, including Gradle verification commands.
+  `kotlin-jvm-tester` owns how a suite is written.
 ---
 
 # Testing
 
 ## Core Policy
 
-- Follow existing local style. Tests are named `*Spec.kt` and use JUnit
-  Jupiter with Truth, AssertK, or Kotest matchers depending on the owning
-  module; check neighboring tests before introducing a new dependency.
+- How a suite is written — naming, JUnit Jupiter structure, Kotest
+  assertions, fixtures, stubs, and `testlib` bases — is owned by
+  `.agents/skills/kotlin-jvm-tester/SKILL.md`. Follow it once the cases are
+  known.
 - Put focused regression tests in the module that owns the behavior, under
   `src/test/kotlin` mirroring the production package.
-- Keep fixtures small and near the tests (`Given.kt`-style files), named after
-  the behavior they represent.
 - Prefer public APIs, generated messages, and observable component state over
   private implementation details.
 - Cover both success and failure paths for validation, value parsing,

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Kotlin JVM Tester"
+  short_description: "Write a Chords test the way this repository writes them"
+  default_prompt: >
+    Use $kotlin-jvm-tester to write or review this test suite under Chords'
+    JUnit Jupiter and Kotest conventions.

@@ -129,6 +129,13 @@ verification rule in that section.
   deliberately in a few places, such as resolving component type parameters).
 - Preserve existing package structure, module boundaries, naming conventions,
   and Gradle patterns.
+- Do not overengineer. Use the simplest construct that satisfies the current
+  requirement, and introduce a base class or interface only once at least two
+  concrete implementors exist. A type parameter is judged instead by whether
+  it preserves a type relationship the signature would otherwise lose.
+  Deliberate public extension points, such as
+  `io.spine.chords.core.Component`, are the exception. See "Design Restraint"
+  in `.agents/skills/engineer/SKILL.md`.
 - Do not manually edit generated sources or build outputs: `generated/`
   folders, codegen workspace outputs (`_out/`), Gradle wrapper files, or the
   generated `pom.xml` / `dependencies.md` reports (regenerate them with Gradle
@@ -270,11 +277,10 @@ If verification cannot be run, state the reason clearly in the final response.
   `content()`, pre-composition updates in `beforeComposeContent()`, and
   instance configuration via the `Props`-style lambdas. Composable functions
   and composable-emitting methods are named in `PascalCase`.
-- Tests are named `*Spec.kt`, use JUnit Jupiter with Truth/AssertK/Kotest
-  matchers depending on the owning module, and keep fixtures in `Given.kt`-style
-  files near the test.
-- Test methods may use Kotlin backtick names to match the style of the
-  surrounding test class.
+- Tests are named `*Spec.kt` and use JUnit Jupiter structure with Kotest
+  matchers. The full convention — engine constraints, naming, fixtures, and
+  `testlib` bases — is `.agents/skills/kotlin-jvm-tester/SKILL.md`; consult
+  it before adding or restructuring a suite.
 - Dependency coordinates live in `buildSrc/src/main/kotlin/io/spine/internal/dependency/`;
   add or change them there, following the existing object-per-library pattern.
 - Get the `config` submodule content with
