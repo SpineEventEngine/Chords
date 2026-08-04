@@ -26,7 +26,6 @@
 
 package io.spine.chords.client
 
-import androidx.compose.runtime.State
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
 import io.spine.base.EntityState
@@ -442,67 +441,6 @@ public sealed class DataObservationStatus {
      * The observation has been cancelled permanently.
      */
     public object Cancelled : DataObservationStatus()
-}
-
-/**
- * Maintains live server data and recovers it after a temporary connection
- * failure.
- *
- * A `DataObservation` is also a Compose [State], so its current [value] can be
- * read directly or with Kotlin property delegation. A newly created observation
- * is readable right away: it carries its initial or default value until the
- * first read from the server completes. An observation in
- * [DataObservationStatus.WaitingForConnection] automatically re-reads the
- * complete value and creates a new subscription when the server connection is
- * restored. An observation in [DataObservationStatus.Failed] is not retried
- * automatically and requires an explicit [refresh] call.
- *
- * The caller owns the observation lifecycle and should call [cancel] when the
- * observation is no longer needed.
- *
- * ## Why this is an interface
- *
- * The only production implementation is the internal `DataObservationImpl`,
- * which cannot appear in this public API at all. The separation is not an
- * extension point for third parties; it exists because the implementation
- * carries detail that consumers must not depend on:
- *
- * - `DataObservationImpl<T, U>` has a second type parameter, `U`, for the type
- *   of an individual server update, which differs from the observed value
- *   (a list observation applies single-entity updates to a `List`). This
- *   interface is what erases `U` from the public signature.
- * - The implementation exposes lifecycle operations that only the client's
- *   observation manager may call. Publishing them would let a consumer corrupt
- *   the recovery bookkeeping.
- *
- * Do not implement this interface outside the library: new members may be added
- * to it in future versions.
- *
- * @param T The type of the observed value.
- */
-public interface DataObservation<out T> : State<T> {
-
-    /**
-     * The current observation status.
-     */
-    public val status: State<DataObservationStatus>
-
-    /**
-     * Re-reads the complete value and replaces the current subscription.
-     *
-     * Request failures are exposed through [status] instead of being thrown
-     * from this function. Coroutine cancellation is propagated to the caller
-     * without being converted into an observation failure.
-     */
-    public suspend fun refresh()
-
-    /**
-     * Permanently cancels this observation.
-     *
-     * A cancelled observation is excluded from automatic recovery and cannot
-     * be refreshed again.
-     */
-    public fun cancel()
 }
 
 /**

@@ -41,12 +41,12 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 /**
- * Tests how [DataObservationImpl] publishes data, tracks its status, and
+ * Tests how [DataObservation] publishes data, tracks its status, and
  * handles cancellation, connection loss, and subscriptions that arrive after
  * the refresh that created them is no longer current.
  */
-@DisplayName("`DataObservationImpl` should")
-internal class DataObservationImplSpec {
+@DisplayName("`DataObservation` should")
+internal class DataObservationSpec {
 
     @Test
     fun `read initial data and apply subscription updates`() {
@@ -494,7 +494,7 @@ internal class DataObservationImplSpec {
     @Test
     fun `not cancel subscription that reports failure before installation`() {
         val cancelCalls = AtomicInteger()
-        val observation = DataObservationImpl(
+        val observation = createDataObservation(
             "",
             { "value" },
             { _, onError ->
@@ -518,11 +518,10 @@ internal class DataObservationImplSpec {
 /**
  * Runs the initial refresh of this observation to completion.
  *
- * Production code initializes an observation asynchronously in the recovery
- * coordinator's scope; these tests need the initialized state to be ready
- * before they assert on it.
+ * Production code initializes an observation asynchronously in the observation
+ * scope. These tests need the initialized state before they assert on it.
  */
-private fun DataObservationImpl<*, *>.initialize() = runBlocking {
+private fun DataObservation<*>.initialize() = runBlocking {
     refresh()
 }
 
@@ -531,7 +530,7 @@ private fun blockingObservation(
     allowSubscribe: CountDownLatch,
     cancelCalls: AtomicInteger,
     initialValue: String = ""
-): DataObservationImpl<String, String> = DataObservationImpl(
+): DataObservation<String> = createDataObservation<String, String>(
     initialValue,
     { "value" },
     { _, _ ->
@@ -569,9 +568,9 @@ private class FakeObservationSource(
     fun createObservation(
         initialValue: String = "",
         connectionStatus: () -> ConnectionStatus = { ConnectionStatus.CONNECTED },
-        onRecoveryNeeded: (ManagedDataObservation) -> Unit = {},
-        onCancelled: (ManagedDataObservation) -> Unit = {}
-    ): DataObservationImpl<String, String> = DataObservationImpl(
+        onRecoveryNeeded: (DataObservation<*>) -> Unit = {},
+        onCancelled: (DataObservation<*>) -> Unit = {}
+    ): DataObservation<String> = createDataObservation(
         initialValue,
         {
             readCalls++

@@ -26,10 +26,13 @@
 
 package io.spine.chords.client
 
+import io.grpc.Status
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit.SECONDS
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
@@ -42,58 +45,54 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 /**
- * Holds a registration open long enough for a concurrently delivered
- * connection transition to be processed, if the two are able to interleave.
- */
-private const val RegistrationWindowMillis = 300L
-
-/**
- * Tests how [DataObservationManager] registers observations, starts their
+ * Tests how [DataObservationScope] registers observations, starts their
  * initial refresh, and recovers or closes them as the connection status and
  * its own lifecycle change.
  */
-@DisplayName("`DataObservationManager` should")
+@DisplayName("`DataObservationScope` should")
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class DataObservationManagerSpec {
+internal class DataObservationScopeSpec {
 
     @Test
     fun `process connection changes outside notifying thread`() = runTest {
-        val manager = createManager()
-        val observation = FakeManagedObservation()
-        manager.register(observation)
+        val scope = createScope()
+        val observation = FakeObservation()
+        scope.register(observation.observation)
 
-        manager.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
+        scope.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
 
-        observation.waitCalls shouldBe 0
+        observation.status shouldBe DataObservationStatus.Refreshing
         runCurrent()
-        observation.waitCalls shouldBe 1
-        manager.close()
+        observation.status shouldBe DataObservationStatus.WaitingForConnection
+        scope.close()
     }
 
     /**
-     * The initial refresh is dispatched to the manager's scope rather than
+     * The initial refresh is dispatched to the coroutine scope rather than
      * run on the registering thread, which is what keeps observation creation
      * from blocking the UI.
      */
     @Test
     fun `initialize a registered observation outside the calling thread`() = runTest {
-        val manager = createManager()
-        val observation = FakeManagedObservation()
+        val scope = createScope()
+        val observation = FakeObservation()
 
         val job = requireNotNull(
-            manager.registerAndInitialize(observation)
+            scope.registerAndInitialize(observation.observation)
         )
 
         observation.refreshCalls shouldBe 0
         runCurrent()
+        observation.awaitRefresh() shouldBe true
+        runCurrent()
         observation.refreshCalls shouldBe 1
         job.isCompleted shouldBe true
-        manager.close()
+        scope.close()
     }
 
     /**
      * Registration parks an observation that arrives while the connection is
-     * unavailable, and the manager refreshes it once the connection is
+     * unavailable, and the scope refreshes it once the connection is
      * restored. Attempting an initial refresh anyway would waste a request on
      * a channel already known to be down, and would move the observation out
      * of [DataObservationStatus.WaitingForConnection] and back again — a
@@ -101,16 +100,16 @@ internal class DataObservationManagerSpec {
      */
     @Test
     fun `not initialize an observation registered while disconnected`() = runTest {
-        val manager = createManager { ConnectionStatus.UNAVAILABLE }
-        val observation = FakeManagedObservation()
+        val scope = createScope { ConnectionStatus.UNAVAILABLE }
+        val observation = FakeObservation()
 
-        val job = manager.registerAndInitialize(observation)
+        val job = scope.registerAndInitialize(observation.observation)
         runCurrent()
 
-        observation.waitCalls shouldBe 1
+        observation.status shouldBe DataObservationStatus.WaitingForConnection
         observation.refreshCalls shouldBe 0
         job shouldBe null
-        manager.close()
+        scope.close()
     }
 
     /**
@@ -131,22 +130,24 @@ internal class DataObservationManagerSpec {
     fun `register against the status current at registration, not at sampling`() =
         runTest {
             var liveStatus = ConnectionStatus.UNAVAILABLE
-            val manager = createManager { liveStatus }
-            val observation = FakeManagedObservation()
+            val scope = createScope { liveStatus }
+            val observation = FakeObservation()
 
             // The connection is restored, and the transition is fully processed
             // before the observation is registered.
             liveStatus = ConnectionStatus.CONNECTED
-            manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+            scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
             runCurrent()
 
-            val job = manager.registerAndInitialize(observation)
+            val job = scope.registerAndInitialize(observation.observation)
+            runCurrent()
+            observation.awaitRefresh() shouldBe true
             runCurrent()
 
-            observation.waitCalls shouldBe 0
+            observation.status shouldBe DataObservationStatus.Active
             observation.refreshCalls shouldBe 1
             job shouldNotBe null
-            manager.close()
+            scope.close()
         }
 
     /**
@@ -168,269 +169,286 @@ internal class DataObservationManagerSpec {
     @Test
     fun `refresh an observation parked while a reconnection is processed`() =
         runBlocking {
-            val manager = DataObservationManager({ ConnectionStatus.UNAVAILABLE })
-            manager.start()
-            val parkingStarted = CountDownLatch(1)
-            val observation = FakeManagedObservation()
-            observation.onParkingStarted = {
-                parkingStarted.countDown()
-                // Hold the observation mid-registration long enough for the
-                // reconnection below to be delivered and applied. Serialized,
-                // the transition waits here; unserialized, it runs now and
-                // passes over an observation that is not parked yet.
-                Thread.sleep(RegistrationWindowMillis)
-            }
+            val registrationStarted = CountDownLatch(1)
+            val continueRegistration = CountDownLatch(1)
+            val scope = DataObservationScope(connectionStatus = {
+                registrationStarted.countDown()
+                check(continueRegistration.await(5, SECONDS)) {
+                    "Timed out waiting to continue observation registration."
+                }
+                ConnectionStatus.UNAVAILABLE
+            })
+            scope.start()
+            val observation = FakeObservation()
 
             val registration = Thread {
-                manager.register(observation)
+                scope.register(observation.observation)
             }
             registration.start()
-            parkingStarted.await(5, SECONDS) shouldBe true
-            manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+            registrationStarted.await(5, SECONDS) shouldBe true
+            scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+            continueRegistration.countDown()
             registration.join()
 
             observation.awaitRefresh() shouldBe true
-            manager.close()
+            scope.close()
         }
 
     /**
-     * An observation initialized through this manager stays under its
-     * recovery management afterwards, so a later disconnect and reconnect
+     * An observation initialized through this scope stays under its
+     * recovery scope afterwards, so a later disconnect and reconnect
      * refreshes it again.
      */
     @Test
     fun `recover an observation supplied for initialization`() = runTest {
-        val manager = createManager()
-        val observation = FakeManagedObservation()
+        val scope = createScope()
+        val observation = FakeObservation()
 
-        manager.registerAndInitialize(observation)
+        scope.registerAndInitialize(observation.observation)
         runCurrent()
-        manager.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
+        observation.awaitRefresh() shouldBe true
         runCurrent()
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        scope.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
+        runCurrent()
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        runCurrent()
+        observation.awaitRefresh() shouldBe true
         runCurrent()
 
-        observation.waitCalls shouldBe 1
         observation.refreshCalls shouldBe 2
-        manager.close()
+        observation.status shouldBe DataObservationStatus.Active
+        scope.close()
     }
 
     /**
      * Registration arriving after shutdown closes the observation instead of
      * retaining it: a registered observation would wait for a recovery that
-     * this manager no longer performs.
+     * this scope no longer performs.
      */
     @Test
-    fun `close an observation registered after the manager has closed`() = runTest {
-        val manager = createManager { ConnectionStatus.UNAVAILABLE }
-        manager.close()
-        val observation = FakeManagedObservation()
+    fun `close an observation registered after the scope has closed`() = runTest {
+        val scope = createScope { ConnectionStatus.UNAVAILABLE }
+        scope.close()
+        val observation = FakeObservation()
 
-        manager.register(observation)
+        scope.register(observation.observation)
         runCurrent()
 
-        observation.closeCalls shouldBe 1
-        observation.waitCalls shouldBe 0
+        observation.status shouldBe DataObservationStatus.Cancelled
     }
 
     /**
-     * Initialization performs no refresh once the manager has closed, and
+     * Initialization performs no refresh once the scope has closed, and
      * reports the absence of an initial refresh by returning no job.
      */
     @Test
-    fun `not initialize an observation created after the manager closed`() = runTest {
-        val manager = createManager()
-        manager.close()
-        val observation = FakeManagedObservation()
+    fun `not initialize an observation created after the scope closed`() = runTest {
+        val scope = createScope()
+        scope.close()
+        val observation = FakeObservation()
 
-        val job = manager.registerAndInitialize(observation)
+        val job = scope.registerAndInitialize(observation.observation)
         runCurrent()
 
         job shouldBe null
-        observation.closeCalls shouldBe 1
+        observation.status shouldBe DataObservationStatus.Cancelled
         observation.refreshCalls shouldBe 0
     }
 
     /**
-     * An observation that loses the race with [DataObservationManager.close]
+     * An observation that loses the race with [DataObservationScope.close]
      * is still closed. The closed status is therefore re-checked after the
      * observation has been added, since `close` closes what it knows about and
      * then clears the set.
      */
     @Test
     fun `unregister an observation closed while it is being registered`() = runTest {
-        val manager = createManager { ConnectionStatus.UNAVAILABLE }
-        val observation = FakeManagedObservation()
-        observation.onParkingStarted = {
-            manager.close()
+        lateinit var scope: DataObservationScope
+        scope = createScope {
+            scope.close()
+            ConnectionStatus.UNAVAILABLE
         }
+        val observation = FakeObservation()
 
-        manager.register(observation)
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        scope.register(observation.observation)
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
         runCurrent()
 
-        observation.closeCalls shouldBe 1
+        observation.status shouldBe DataObservationStatus.Cancelled
         observation.refreshCalls shouldBe 0
     }
 
     @Test
     fun `refresh observations once after connection is restored`() = runTest {
-        val manager = createManager()
-        val first = FakeManagedObservation()
-        val second = FakeManagedObservation()
-        manager.register(first)
-        manager.register(second)
+        val scope = createScope()
+        val first = FakeObservation()
+        val second = FakeObservation()
+        scope.register(first.observation)
+        scope.register(second.observation)
 
-        manager.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
+        scope.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
         runCurrent()
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTING)
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTING)
         runCurrent()
-        manager.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
+        scope.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
         runCurrent()
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTING)
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTING)
         runCurrent()
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        runCurrent()
+        first.awaitRefresh() shouldBe true
+        second.awaitRefresh() shouldBe true
         runCurrent()
 
-        first.waitCalls shouldBe 1
-        second.waitCalls shouldBe 1
         first.refreshCalls shouldBe 1
         second.refreshCalls shouldBe 1
-        manager.close()
+        first.status shouldBe DataObservationStatus.Active
+        second.status shouldBe DataObservationStatus.Active
+        scope.close()
     }
 
     @Test
     fun `not refresh on initial connection`() = runTest {
-        val manager = createManager { ConnectionStatus.CONNECTING }
-        val observation = FakeManagedObservation()
-        manager.register(observation)
+        val scope = createScope { ConnectionStatus.CONNECTING }
+        val observation = FakeObservation()
+        scope.register(observation.observation)
 
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
         runCurrent()
 
         observation.refreshCalls shouldBe 0
-        manager.close()
+        scope.close()
     }
 
     @Test
     fun `recover waiting observation on first successful connection`() = runTest {
-        val manager = createManager { ConnectionStatus.CONNECTING }
-        val observation = FakeManagedObservation()
+        val scope = createScope { ConnectionStatus.CONNECTING }
+        val observation = FakeObservation()
         observation.waitForConnection()
-        manager.register(observation)
+        scope.register(observation.observation)
 
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        runCurrent()
+        observation.awaitRefresh() shouldBe true
         runCurrent()
 
         observation.refreshCalls shouldBe 1
-        manager.close()
+        scope.close()
     }
 
     @Test
     fun `recover observation registered while disconnected`() = runTest {
-        val manager = createManager { ConnectionStatus.UNAVAILABLE }
-        manager.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
+        val scope = createScope { ConnectionStatus.UNAVAILABLE }
+        scope.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
         runCurrent()
-        val observation = FakeManagedObservation()
+        val observation = FakeObservation()
 
-        manager.register(observation)
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        scope.register(observation.observation)
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        runCurrent()
+        observation.awaitRefresh() shouldBe true
         runCurrent()
 
-        observation.waitCalls shouldBe 1
         observation.refreshCalls shouldBe 1
-        manager.close()
+        observation.status shouldBe DataObservationStatus.Active
+        scope.close()
     }
 
     @Test
     fun `retry waiting observation while connection remains available`() = runTest {
-        val manager = createManager()
-        val observation = FakeManagedObservation()
-        manager.register(observation)
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        val scope = createScope()
+        val observation = FakeObservation()
+        scope.register(observation.observation)
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
         runCurrent()
         observation.waitForConnection()
 
-        manager.retryWhileConnected(observation)
-        manager.retryWhileConnected(observation)
+        scope.retryWhileConnected(observation.observation)
+        scope.retryWhileConnected(observation.observation)
         runCurrent()
         advanceTimeBy(1_000)
+        runCurrent()
+        observation.awaitRefresh() shouldBe true
         runCurrent()
 
         observation.refreshCalls shouldBe 1
         observation.needsRecovery shouldBe false
-        manager.close()
+        scope.close()
     }
 
     @Test
     fun `back off between repeated stream recovery attempts`() = runTest {
-        val manager = createManager()
-        val observation = FakeManagedObservation()
+        val scope = createScope()
+        val observation = FakeObservation()
         observation.remainWaitingAfterRefresh = true
-        manager.register(observation)
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        scope.register(observation.observation)
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
         runCurrent()
         observation.waitForConnection()
 
-        manager.retryWhileConnected(observation)
+        scope.retryWhileConnected(observation.observation)
         runCurrent()
         advanceTimeBy(999)
         runCurrent()
         observation.refreshCalls shouldBe 0
         advanceTimeBy(1)
         runCurrent()
+        observation.awaitRefresh() shouldBe true
+        runCurrent()
         observation.refreshCalls shouldBe 1
         advanceTimeBy(1_000)
         runCurrent()
+        observation.awaitRefresh() shouldBe true
+        runCurrent()
         observation.refreshCalls shouldBe 2
-        manager.close()
+        scope.close()
     }
 
     @Test
     fun `exclude unregistered observation from recovery`() = runTest {
-        val manager = createManager()
-        val observation = FakeManagedObservation()
-        manager.register(observation)
-        manager.unregister(observation)
+        val scope = createScope()
+        val observation = FakeObservation()
+        scope.register(observation.observation)
+        scope.unregister(observation.observation)
 
-        manager.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
+        scope.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
         runCurrent()
-        manager.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+        scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
         runCurrent()
 
-        observation.waitCalls shouldBe 0
         observation.refreshCalls shouldBe 0
-        manager.close()
+        observation.status shouldBe DataObservationStatus.Refreshing
+        scope.close()
     }
 
     @Test
     fun `not cancel job supplied in coroutine context`() = runTest {
         val suppliedJob = backgroundScope.coroutineContext[Job]!!
-        val manager = DataObservationManager(
+        val scope = DataObservationScope(
             { ConnectionStatus.CONNECTED },
             backgroundScope.coroutineContext
         )
-        manager.start()
+        scope.start()
 
-        manager.close()
-        manager.onConnectionStatusChanged(ConnectionStatus.CLOSED)
+        scope.close()
+        scope.onConnectionStatusChanged(ConnectionStatus.CLOSED)
 
         suppliedJob.isActive shouldBe true
     }
 
     /**
-     * Exercises a real [DataObservationImpl] against a subscription that blocks:
+     * Exercises a real [DataObservation] against a subscription that blocks:
      * initialization returns while the subscription is still being created, and
      * the observation serves its fallback value until the refresh completes.
      */
     @Test
     fun `return from initialization while the initial subscription is pending`() =
         runBlocking {
-            val manager = DataObservationManager({ ConnectionStatus.CONNECTED })
-            manager.start()
+            val scope = DataObservationScope({ ConnectionStatus.CONNECTED })
+            scope.start()
             val subscribeStarted = CountDownLatch(1)
             val allowSubscribe = CountDownLatch(1)
-            val observation = DataObservationImpl<String, String>(
+            val observation = createDataObservation<String, String>(
                 initialValue = "fallback",
                 read = { "server data" },
                 subscribe = { _, _ ->
@@ -442,12 +460,12 @@ internal class DataObservationManagerSpec {
                 },
                 applyUpdate = { _, update -> update },
                 connectionStatus = { ConnectionStatus.CONNECTED },
-                onCancelled = manager::unregister,
-                onRecoveryNeeded = manager::retryWhileConnected
+                onCancelled = scope::unregister,
+                onRecoveryNeeded = scope::retryWhileConnected
             )
 
             val job = requireNotNull(
-                manager.registerAndInitialize(observation)
+                scope.registerAndInitialize(observation)
             )
             subscribeStarted.await(5, SECONDS) shouldBe true
 
@@ -460,86 +478,108 @@ internal class DataObservationManagerSpec {
 
             observation.value shouldBe "server data"
             observation.status.value shouldBe DataObservationStatus.Active
-            manager.close()
+            scope.close()
         }
 
     @Test
     fun `close observations without cancelling subscriptions individually`() = runTest {
-        val manager = createManager()
-        val observation = FakeManagedObservation()
-        manager.register(observation)
+        val scope = createScope()
+        val observation = FakeObservation()
+        scope.registerAndInitialize(observation.observation)
+        runCurrent()
+        observation.awaitRefresh() shouldBe true
+        runCurrent()
 
-        manager.close()
+        scope.close()
 
-        observation.closeCalls shouldBe 1
         observation.cancelCalls shouldBe 0
+        observation.status shouldBe DataObservationStatus.Cancelled
     }
 }
 
-private fun TestScope.createManager(
+/**
+ * Creates and starts a data observation scope on this test's scheduler.
+ */
+private fun TestScope.createScope(
     connectionStatus: () -> ConnectionStatus = { ConnectionStatus.CONNECTED }
-): DataObservationManager =
-    DataObservationManager(
+): DataObservationScope =
+    DataObservationScope(
         connectionStatus,
         StandardTestDispatcher(testScheduler)
     ).also {
         it.start()
     }
 
-private class FakeManagedObservation : ManagedDataObservation {
+/**
+ * Supplies a concrete observation whose server calls can be counted by scope tests.
+ */
+private class FakeObservation {
 
-    var waitCalls: Int = 0
-        private set
+    /**
+     * Counts attempts to establish a subscription during refresh.
+     */
     var refreshCalls: Int = 0
         private set
+
+    /**
+     * Counts individual subscription cancellations.
+     */
     var cancelCalls: Int = 0
         private set
-    var closeCalls: Int = 0
-        private set
+
+    /**
+     * Makes every refresh fail as a temporary connection failure when set.
+     */
     var remainWaitingAfterRefresh: Boolean = false
 
     /**
-     * Runs at the start of [waitForConnection], *before* this observation
-     * records that it is parked.
-     *
-     * The real implementation performs the whole transition under its own lock,
-     * so this models the instant at which an observation is registered but not
-     * yet parked — the window a concurrent connection transition must not be
-     * able to observe.
+     * Opens once [DataObservation.refresh] starts establishing a subscription.
      */
-    var onParkingStarted: (() -> Unit)? = null
+    private val refreshed = Semaphore(0)
 
-    override var needsRecovery: Boolean = false
-        private set
+    /**
+     * The concrete observation passed to the scope under test.
+     */
+    val observation: DataObservation<String> = createDataObservation(
+        initialValue = "",
+        read = { "value" },
+        subscribe = { _, _ ->
+            refreshCalls++
+            refreshed.release()
+            if (remainWaitingAfterRefresh) {
+                throw Status.UNAVAILABLE.asRuntimeException()
+            }
+            ObservationSubscription {
+                cancelCalls++
+            }
+        },
+        applyUpdate = { _, update: String -> update },
+        connectionStatus = { ConnectionStatus.CONNECTED },
+        onCancelled = {},
+        requestContext = EmptyCoroutineContext
+    )
 
-    override fun waitForConnection() {
-        onParkingStarted?.invoke()
-        waitCalls++
-        needsRecovery = true
-    }
+    /**
+     * The current lifecycle status of [observation].
+     */
+    val status: DataObservationStatus
+        get() = observation.status.value
 
-    override suspend fun refresh() {
-        refreshCalls++
-        needsRecovery = remainWaitingAfterRefresh
-        refreshed.countDown()
+    /**
+     * Tells whether [observation] is waiting to recover.
+     */
+    val needsRecovery: Boolean
+        get() = observation.needsRecovery
+
+    /**
+     * Moves [observation] into its connection-waiting state.
+     */
+    fun waitForConnection() {
+        observation.waitForConnection()
     }
 
     /**
-     * Opens once [refresh] has been called at least once, letting a test on
-     * another thread wait for a refresh dispatched to a real coroutine scope.
+     * Waits for the first refresh attempt, returning `false` if none arrives.
      */
-    private val refreshed = CountDownLatch(1)
-
-    /**
-     * Waits for the first [refresh] call, returning `false` if none arrives.
-     */
-    fun awaitRefresh(): Boolean = refreshed.await(5, SECONDS)
-
-    override fun cancel() {
-        cancelCalls++
-    }
-
-    override fun close() {
-        closeCalls++
-    }
+    fun awaitRefresh(): Boolean = refreshed.tryAcquire(5, SECONDS)
 }

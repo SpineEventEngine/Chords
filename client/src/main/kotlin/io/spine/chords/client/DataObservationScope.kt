@@ -46,12 +46,13 @@ private const val ObservationRetryDelayMillis = 1_000L
 /**
  * Owns the lifecycle of every [DataObservation] created by one [DesktopClient].
  *
- * A [DataObservationImpl] knows how to read, subscribe, and recover *itself*,
+ * A [DataObservation] knows how to read, subscribe, and recover *itself*,
  * but it has no coroutine scope of its own and no knowledge of the connection.
- * This class supplies both, for all observations of a client at once:
+ * This class supplies the client-wide responsibilities for all observations:
  *
- * - **A scope.** Every background refresh runs in this manager's scope, whose
- *   [SupervisorJob] keeps one failing observation from cancelling the others.
+ * - **A coroutine scope.** Every background refresh runs in this lifecycle
+ *   scope. Its [SupervisorJob] keeps one failing observation from cancelling
+ *   the others.
  *   [close] cancels the scope, which is how a closed client stops all pending
  *   work. Without a shared owner, each observation would have to create and
  *   destroy a scope of its own, and closing the client could not reach them.
@@ -64,10 +65,6 @@ private const val ObservationRetryDelayMillis = 1_000L
  *   [registerAndInitialize] until [unregister] or [close]. Membership is what
  *   makes recovery and shutdown reach exactly the live observations.
  *
- * The observations are held as [ManagedDataObservation], the narrow lifecycle
- * contract this manager needs. That keeps the manager independent of the
- * observed value types, which differ per observation.
- *
  * @param connectionStatus Returns the connection status as it is *right now*.
  *   Registration reads it while holding [stateLock] rather than accepting a
  *   value sampled by the caller: a sampled value can go stale before
@@ -77,33 +74,33 @@ private const val ObservationRetryDelayMillis = 1_000L
  * @param coroutineContext The context for the background work, overridable in
  *   tests to make the scheduling deterministic.
  */
-internal class DataObservationManager(
+internal class DataObservationScope(
     private val connectionStatus: () -> ConnectionStatus,
     coroutineContext: CoroutineContext = IO
 ) {
 
     /**
-     * Runs every background task of the managed observations: status
+     * Runs every background task of the included observations: status
      * processing, initial refreshes, recovery, and connected retries.
      *
      * The [SupervisorJob] isolates the observations from each other, so one
      * failing refresh does not cancel the rest. [close] cancels this scope,
      * which stops all pending work at once.
      */
-    private val scope =
+    private val coroutineScope =
         CoroutineScope(coroutineContext.minusKey(Job) + SupervisorJob())
 
     /**
-     * The observations currently managed by this manager.
+     * The observations currently included in this scope.
      */
     private val observations =
-        ConcurrentHashMap.newKeySet<ManagedDataObservation>()
+        ConcurrentHashMap.newKeySet<DataObservation<*>>()
 
     /**
      * The observations that currently have a connection-aware retry loop.
      */
     private val retryingObservations =
-        ConcurrentHashMap.newKeySet<ManagedDataObservation>()
+        ConcurrentHashMap.newKeySet<DataObservation<*>>()
 
     /**
      * Guards connection status transitions *and* registration, so that the two
@@ -117,7 +114,7 @@ internal class DataObservationManager(
      *
      * Observation calls made while this lock is held — `waitForConnection`,
      * `needsRecovery`, `close` — take the observation's own lock, never the
-     * other way round: an observation invokes this manager only from outside
+     * other way round: an observation invokes this scope only from outside
      * its own synchronized blocks. That ordering is what keeps this safe.
      */
     private val stateLock = Any()
@@ -134,7 +131,7 @@ internal class DataObservationManager(
     private val started = AtomicBoolean(false)
 
     /**
-     * Indicates whether this manager has stopped accepting work.
+     * Indicates whether this scope has stopped accepting work.
      */
     private val closed = AtomicBoolean(false)
 
@@ -144,7 +141,7 @@ internal class DataObservationManager(
     private var connectionWasUnavailable = false
 
     /**
-     * The latest connection status this manager has *processed*.
+     * The latest connection status this scope has *processed*.
      *
      * Status changes are queued and applied by a coroutine, so this lags the
      * client's own live status. Callers that know the current status pass it
@@ -157,7 +154,7 @@ internal class DataObservationManager(
      */
     fun start() {
         if (!closed.get() && started.compareAndSet(false, true)) {
-            scope.launch {
+            coroutineScope.launch {
                 for (status in connectionStatusChanges) {
                     processConnectionStatus(status)
                 }
@@ -175,15 +172,15 @@ internal class DataObservationManager(
      * being read and being acted upon. See that field for what goes wrong if
      * the two interleave.
      *
-     * An observation that arrives once this manager has closed, or that loses
+     * An observation that arrives once this scope has closed, or that loses
      * the race with [close], is closed instead of being registered: leaving it
      * registered would keep it waiting for a recovery that no longer happens.
      * The closed status is therefore checked after the addition, because
      * [close] closes the observations it knows about and then clears them.
      *
-     * @return `true` if the observation is now managed by this manager.
+     * @return `true` if the observation is now included in this scope.
      */
-    fun register(observation: ManagedDataObservation): Boolean {
+    fun register(observation: DataObservation<*>): Boolean {
         synchronized(stateLock) {
             observations.add(observation)
             if (closed.get()) {
@@ -207,7 +204,7 @@ internal class DataObservationManager(
 
     /**
      * Registers the given observation and performs its initial read and
-     * subscription in this manager's scope.
+     * subscription in this coroutine scope.
      *
      * The observation is registered before the initial refresh starts, so that
      * a refresh that immediately fails on a connected channel can be retried.
@@ -221,10 +218,10 @@ internal class DataObservationManager(
      * back again.
      *
      * @return The job that performs the initial refresh, or `null` if no
-     *   initial refresh was started — either because this manager has closed,
+     *   initial refresh was started — either because this scope has closed,
      *   or because the observation is waiting for a connection.
      */
-    fun registerAndInitialize(observation: ManagedDataObservation): Job? =
+    fun registerAndInitialize(observation: DataObservation<*>): Job? =
         if (register(observation) && !observation.needsRecovery) {
             refresh(observation)
         } else {
@@ -234,21 +231,21 @@ internal class DataObservationManager(
     /**
      * Unregisters the given observation.
      */
-    fun unregister(observation: ManagedDataObservation) {
+    fun unregister(observation: DataObservation<*>) {
         observations.remove(observation)
     }
 
     /**
      * Retries an observation whose stream failed while the channel remained connected.
      */
-    fun retryWhileConnected(observation: ManagedDataObservation) {
+    fun retryWhileConnected(observation: DataObservation<*>) {
         if (closed.get() ||
             observation !in observations ||
             !retryingObservations.add(observation)
         ) {
             return
         }
-        scope.launch {
+        coroutineScope.launch {
             try {
                 while (shouldRetry(observation)) {
                     delay(ObservationRetryDelayMillis)
@@ -286,7 +283,7 @@ internal class DataObservationManager(
         }
         observations.clear()
         retryingObservations.clear()
-        scope.cancel()
+        coroutineScope.cancel()
     }
 
     /**
@@ -318,21 +315,21 @@ internal class DataObservationManager(
     }
 
     /**
-     * Refreshes the given [observation] in this manager's scope.
+     * Refreshes the given [observation] in this coroutine scope.
      *
      * @return The job that performs the refresh. It completes without running
-     *   the refresh if this manager has been closed meanwhile, because [close]
+     *   the refresh if this scope has been closed meanwhile, because [close]
      *   cancels the scope.
      */
-    private fun refresh(observation: ManagedDataObservation): Job =
-        scope.launch {
+    private fun refresh(observation: DataObservation<*>): Job =
+        coroutineScope.launch {
             observation.refresh()
         }
 
     /**
      * Checks whether the given [observation] still needs a connected retry.
      */
-    private fun shouldRetry(observation: ManagedDataObservation): Boolean {
+    private fun shouldRetry(observation: DataObservation<*>): Boolean {
         val connected = synchronized(stateLock) {
             lastProcessedStatus == ConnectionStatus.CONNECTED
         }
