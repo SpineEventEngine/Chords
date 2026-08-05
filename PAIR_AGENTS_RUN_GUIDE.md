@@ -24,14 +24,16 @@ what happens (see [Safety](#safety)).
 
 Run from the repository root with these tools installed and on `PATH`:
 
-- Git (`git`): install with `brew install git`; check with `git --version`.
-- Claude Code (`claude`): install with `brew install --cask claude-code`; check
-  with `claude auth status` and sign in with `claude auth login`.
-- Codex CLI (`codex`): install with `brew install --cask codex`; check with
-  `codex login status` and sign in with `codex login`.
-- GitHub CLI (`gh`): install with `brew install gh`; check repository access
-  with `gh auth status` and sign in with `gh auth login`.
-- `jq`: install with `brew install jq`; check with `jq --version`.
+| Tool | Homebrew install | Check | Sign in |
+|------|------------------|-------|---------|
+| `git` | `brew install git` | `git --version` | — |
+| `claude` | `brew install --cask claude-code` | `claude auth status` | `claude auth login` |
+| `codex` | `brew install --cask codex` | `codex login status` | `codex login` |
+| `gh` | `brew install gh` | `gh auth status` | `gh auth login` |
+| `jq` | `brew install jq` | `jq --version` | — |
+
+Claude Code requires Anthropic authentication, Codex CLI requires OpenAI
+authentication, and GitHub CLI must have access to this repository.
 
 If a check fails, install or sign in to that tool, then run the workflow command
 again. An existing run resumes from the failed turn.
