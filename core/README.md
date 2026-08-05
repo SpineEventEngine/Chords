@@ -106,5 +106,31 @@ In addition to components, the library includes such facilities:
   [RadioButtonWithText](src/main/kotlin/io/spine/chords/core/primitive/RadioButtonWithText.kt),
   or [WithTooltip](src/main/kotlin/io/spine/chords/core/layout/WithTooltip.kt).
 
+- **A blocking progress overlay** for content that is busy with an
+  asynchronous process
+  ([ProgressOverlay](src/main/kotlin/io/spine/chords/core/layout/ProgressOverlay.kt)).
+  It wraps arbitrary content, and, while it is active, covers that content with
+  a semitransparent layer that displays a progress indicator and prevents the
+  covered content from being operated with a pointing device:
+  ```kotlin
+  ProgressOverlay(saving) {
+      // The content that cannot be operated while it is being saved.
+  }
+  ```
+  The overlay doesn't change the way that the covered content is measured.
+  While it is inactive, no overlay or interaction-intercepting layer is
+  composed, and the wrapped content is composed and behaves exactly as it does
+  without the wrapper. Its background and indicator can be customized with the
+  respective parameters.
+
 - **More complex components** like
     [Wizard](src/main/kotlin/io/spine/chords/core/layout/Wizard.kt). 
+
+- **Automatic submission progress** in
+  [Dialog](src/main/kotlin/io/spine/chords/core/layout/Dialog.kt) and
+  [Wizard](src/main/kotlin/io/spine/chords/core/layout/Wizard.kt). Both apply
+  `ProgressOverlay` to their content whenever their `submitting` property is
+  `true`, which requires no changes at their usage sites. Such content
+  additionally stops receiving key events, so it cannot be edited, navigated,
+  or submitted again while the submission is in progress, while the dialog's
+  Cancel button and the wizard's "Cancel" button keep working.

@@ -207,6 +207,18 @@ private val LocalDialogContentHeightMode = staticCompositionLocalOf {
  * original ones, make sure that they invoke the dialog's [submit] and [cancel]
  * methods respectively.
  *
+ * ## Submission progress
+ *
+ * A dialog whose submission is an asynchronous process can report that this
+ * process is in progress by setting the [submitting] property to `true`, and
+ * back to `false` when it completes.
+ *
+ * While [submitting] is `true`, the dialog covers its content section with
+ * a [ProgressOverlay], which displays a progress indicator and prevents the
+ * content from being edited or submitted again, both with a pointing device
+ * and with the keyboard. The buttons section is not covered, and the Cancel
+ * button, along with the Escape key, keeps cancelling the dialog.
+ *
  * ## Display modes
  *
  * The way that the dialog is displayed can be customized using the
@@ -387,9 +399,15 @@ public abstract class Dialog : Component() {
      * (an asynchronous process upon pressing the "Submit" button has been
      * initiated but not completed yet).
      *
-     * Depending on the dialog's implementation, this property can affect
-     * whether the Submit button and dialog's controls should be disabled
-     * or not. This property is not changed by the [Dialog] component
+     * While this property is `true`, the dialog's content section is covered
+     * with a [ProgressOverlay], and cannot be edited or submitted, neither
+     * with a pointing device, nor with the keyboard (see the "Submission
+     * progress" section in this class's description). The Submit button is
+     * disabled as well, and the dialog's cancellation remains available.
+     *
+     * Besides that, and depending on the dialog's implementation, this
+     * property can affect whether any other dialog's controls should be
+     * disabled or not. This property is not changed by the [Dialog] component
      * automatically, and it should be maintained by the actual dialog's
      * implementation as needed.
      */
@@ -417,9 +435,18 @@ public abstract class Dialog : Component() {
      * Specifies whether the "Submit" button should be displayed.
      */
     protected var submitAvailable: Boolean = false
-    internal var submitAvailableInternal: Boolean
-        get() = submitAvailable
-        set(value) { submitAvailable = value }
+
+    /**
+     * Specifies whether the dialog can currently be submitted with
+     * the submission shortcut (see [submitShortcutKey]).
+     *
+     * The shortcut is available whenever the Submit button is, and, just like
+     * that button, it is unavailable while the dialog is [submitting], so that
+     * the dialog cannot be submitted again while its submission is
+     * in progress.
+     */
+    internal val submitShortcutEnabled: Boolean
+        get() = submitAvailable && !submitting
 
     /**
      * Specifies whether the "Cancel" button should be displayed.
@@ -469,10 +496,23 @@ public abstract class Dialog : Component() {
      * Note that this method does not perform enabling/disabling of dialog's
      * controls and doesn't close the dialog. Any such effects should be a part
      * of the actual dialog's implementation in its [submitContent] method.
+     *
+     * This is a no-op while the dialog is [submitting], so that a submission
+     * cannot be started while another one is in progress. The live property is
+     * checked here rather than being relied upon through the disabled Submit
+     * button, because disabling a button takes effect only in the next
+     * composition, and because a custom [buttonsSection] can invoke this method
+     * from a button of its own, which stays outside the overlay and can remain
+     * enabled for the whole submission.
      */
-    public fun submit(): Unit = launch {
-        if (onBeforeSubmit()) {
-            submitContent()
+    public fun submit() {
+        if (submitting) {
+            return
+        }
+        launch {
+            if (onBeforeSubmit()) {
+                submitContent()
+            }
         }
     }
 
@@ -521,23 +561,36 @@ public abstract class Dialog : Component() {
      * By default, this renders the content section (see [contentSection]),
      * and the buttons section below it (see [buttonsSection]).
      *
+     * The content section is covered with a [ProgressOverlay] while the dialog
+     * is [submitting], and the buttons section is not, so that the dialog can
+     * still be cancelled while its submission is in progress.
+     *
      * @see contentSection
      * @see buttonsSection
      */
     @Composable
     protected open fun ColumnScope.windowContent() {
         val heightMode = LocalDialogContentHeightMode.current
-        val contentModifier = when (heightMode) {
+        val sizeModifier = when (heightMode) {
             DialogContentHeightMode.Natural -> Modifier
-            DialogContentHeightMode.AtMost -> Modifier
-                .weight(1F, fill = false)
-                .verticalScroll(rememberScrollState())
-            DialogContentHeightMode.Exact -> Modifier
-                .weight(1F)
-                .verticalScroll(rememberScrollState())
+            DialogContentHeightMode.AtMost -> Modifier.weight(1F, fill = false)
+            DialogContentHeightMode.Exact -> Modifier.weight(1F)
         }
-        Column(contentModifier) {
-            contentSection()
+        val scrollModifier = if (heightMode == DialogContentHeightMode.Natural) {
+            Modifier
+        } else {
+            Modifier.verticalScroll(rememberScrollState())
+        }
+        ProgressOverlay(submitting, sizeModifier) {
+            Column(
+                scrollModifier.blockKeyEvents(submitting) {
+                    if (cancelAvailable) {
+                        cancel()
+                    }
+                }
+            ) {
+                contentSection()
+            }
         }
         buttonsSection()
     }

@@ -140,7 +140,7 @@ public sealed class WindowType {
                     if (dialog.cancelAvailableInternal && event matches cancelShortcutKey.down) {
                         dialog.cancel()
                     }
-                    if (dialog.submitAvailableInternal && event matches submitShortcutKey.up) {
+                    if (dialog.submitShortcutEnabled && event matches submitShortcutKey.up) {
                         dialog.submit()
                     }
                     false

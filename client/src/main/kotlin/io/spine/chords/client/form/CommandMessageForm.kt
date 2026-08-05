@@ -152,6 +152,47 @@ import io.spine.protobuf.ValidatingBuilder
  * }
  * ```
  *
+ * ## Indicating that the command is being posted
+ *
+ * Unlike [CommandDialog][io.spine.chords.client.layout.CommandDialog] and
+ * [CommandWizard][io.spine.chords.client.layout.CommandWizard], which cover
+ * their content with a progress overlay while they are posting a command, this
+ * form has no posting-state property, so the code that declares it owns and
+ * maintains that state.
+ *
+ * A standalone `CommandMessageForm` therefore remains caller-controlled: wrap
+ * it with
+ * [ProgressOverlay][io.spine.chords.core.layout.ProgressOverlay], and drive
+ * that overlay from the state that the form's own consequence handlers
+ * maintain, like this:
+ *
+ * ```
+ * var posting by remember { mutableStateOf(false) }
+ *
+ * ProgressOverlay(posting) {
+ *     CommandMessageForm(
+ *         { AuthorizeUser.newBuilder() },
+ *         props = {
+ *             enabled = !posting
+ *             commandConsequences = {
+ *                 onBeforePost { posting = true }
+ *                 onServerError { posting = false }
+ *                 onNetworkError { posting = false }
+ *                 onEvent(
+ *                     UserAuthorized::class.java,
+ *                     UserAuthorized.Field.userName(),
+ *                     command.userName
+ *                 ) {
+ *                     posting = false
+ *                 }
+ *             }
+ *         }
+ *     ) {
+ *         // The form's field editors.
+ *     }
+ * }
+ * ```
+ *
  * @param C A type of the command message being edited with the form.
  */
 public class CommandMessageForm<C : CommandMessage> : MessageForm<C>() {

@@ -106,6 +106,46 @@ the server connectivity:
 
 - etc.
 
+#### Indicating that a command is being posted
+
+`CommandDialog` and `CommandWizard` maintain the `submitting` property that
+they inherit from `Dialog` and `Wizard` while a command is being posted and its
+consequences are pending. Those base components cover their content with
+`ProgressOverlay` while that property is `true`, so both display a progress
+indicator and block the covered content without any changes at their usage
+sites.
+
+A standalone `CommandMessageForm` has no posting-state property, so it stays
+caller-controlled. Wrap it with `ProgressOverlay`, and drive the overlay from
+the state that the form's own consequence handlers maintain:
+
+```kotlin
+var posting by remember { mutableStateOf(false) }
+
+ProgressOverlay(posting) {
+    CommandMessageForm(
+        { AuthorizeUser.newBuilder() },
+        props = {
+            enabled = !posting
+            commandConsequences = {
+                onBeforePost { posting = true }
+                onServerError { posting = false }
+                onNetworkError { posting = false }
+                onEvent(
+                    UserAuthorized::class.java,
+                    UserAuthorized.Field.userName(),
+                    command.userName
+                ) {
+                    posting = false
+                }
+            }
+        }
+    ) {
+        // The form's field editors.
+    }
+}
+```
+
 #### Confirming cancellation of a command wizard
 
 A `CommandWizard` reports through its `dirty` property whether any data has been
