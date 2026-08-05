@@ -102,6 +102,11 @@ private object WizardContentSize {
  * Both paths end up invoking [onCloseRequest] when the wizard is actually
  * closed, so a host that only needs to remove the wizard from the composition
  * can keep handling [onCloseRequest] alone.
+ *
+ * A wizard whose submission is asynchronous reports that this process is in
+ * progress with the [submitting] property, which makes the wizard cover its
+ * page with a [ProgressOverlay] and block the page's editing, navigation, and
+ * repeated submission until the process completes.
  */
 @Stable
 @Suppress(
@@ -180,6 +185,12 @@ public abstract class Wizard : Component() {
     /**
      * Specifies whether the wizard is in the submission state, which means
      * that an asynchronous form submission has started, but not completed yet.
+     *
+     * While this property is `true`, the wizard covers its page area with
+     * a [ProgressOverlay], and the page cannot be edited, navigated, or
+     * submitted again, neither with a pointing device, nor with the keyboard.
+     * The navigation panel is not covered, and its "Cancel" button keeps
+     * cancelling the wizard, while its other buttons are disabled.
      */
     protected var submitting: Boolean by mutableStateOf(false)
 
@@ -273,26 +284,28 @@ public abstract class Wizard : Component() {
                 if (title != null) {
                     Title(title!!)
                 }
-                Column(
-                    Modifier
-                        .weight(1F, fill = false)
-                        .on(Ctrl(Enter.key).up) {
-                            submitPage(currentPage)
-                        }
-                        .on(Alt(DirectionLeft.key).up) {
-                            handlePreviousClick()
-                        }
-                        .on(Alt(DirectionRight.key).up) {
-                            if (!isOnLastPage()) {
+                ProgressOverlay(submitting, Modifier.weight(1F, fill = false)) {
+                    Column(
+                        Modifier
+                            .blockKeyEvents(submitting)
+                            .on(Ctrl(Enter.key).up) {
                                 submitPage(currentPage)
                             }
+                            .on(Alt(DirectionLeft.key).up) {
+                                handlePreviousClick()
+                            }
+                            .on(Alt(DirectionRight.key).up) {
+                                if (!isOnLastPage()) {
+                                    submitPage(currentPage)
+                                }
+                            }
+                    ) {
+                        key(currentPage) {
+                            PageContainer(currentPage)
                         }
-                ) {
-                    key(currentPage) {
-                        PageContainer(currentPage)
-                    }
-                    LaunchedEffect(currentPage) {
-                        currentPage.show()
+                        LaunchedEffect(currentPage) {
+                            currentPage.show()
+                        }
                     }
                 }
                 NavigationPanel(
@@ -310,23 +323,70 @@ public abstract class Wizard : Component() {
         }
     }
 
-    private fun Wizard.submitPage(currentPage: WizardPage) {
+    /**
+     * Completes the given page, which either navigates the wizard to the next
+     * page, or submits the wizard, if [currentPage] is the last one.
+     *
+     * This is a no-op while the wizard is [submitting], so that the page that
+     * has already been submitted cannot be submitted or left again.
+     *
+     * @param currentPage The page that is displayed currently.
+     */
+    private fun submitPage(currentPage: WizardPage) {
+        if (submitting) {
+            return
+        }
         if (isOnLastPage()) {
-            launch {
-                handleFinishClick(currentPage)
-            }
+            handleFinishClick(currentPage)
         } else {
             handleNextClick(currentPage)
         }
     }
 
-    private fun Wizard.handleFinishClick(currentPage: WizardPage) = launch {
-        if (currentPage.validate()) {
-            submit()
+    /**
+     * Submits the wizard, if the given page is valid.
+     *
+     * This is a no-op while the wizard is [submitting], so that the wizard
+     * whose submission is in progress cannot be submitted again. The live
+     * property is checked here rather than being relied upon through the
+     * disabled "Finish" button, because disabling a button takes effect only
+     * in the next composition, and this method is also invoked by the
+     * navigation panel directly.
+     *
+     * @param currentPage The page that is displayed currently.
+     */
+    private fun handleFinishClick(currentPage: WizardPage) {
+        if (submitting) {
+            return
+        }
+        launch {
+            if (currentPage.validate()) {
+                submit()
+            }
         }
     }
 
+    /**
+     * Exposes [handleFinishClick] within the `internal` visibility scope, so
+     * that a test can exercise the navigation panel's submission path without
+     * locating the "Finish" button on the screen.
+     */
+    internal fun handleFinishClickInternal() {
+        handleFinishClick(currentPage)
+    }
+
+    /**
+     * Navigates the wizard to the next page, if the given page is valid.
+     *
+     * This is a no-op while the wizard is [submitting], so that the page whose
+     * submission is in progress cannot be left.
+     *
+     * @param currentPage The page that is displayed currently.
+     */
     private fun handleNextClick(currentPage: WizardPage) {
+        if (submitting) {
+            return
+        }
         if (currentPage.validate()) {
             if (!isOnLastPage()) {
                 currentPageIndex += 1
@@ -336,8 +396,14 @@ public abstract class Wizard : Component() {
 
     /**
      * Navigates the wizard to the previous page.
+     *
+     * This is a no-op while the wizard is [submitting], so that the page whose
+     * submission is in progress cannot be left.
      */
     private fun handlePreviousClick() {
+        if (submitting) {
+            return
+        }
         if (!isOnFirstPage()) {
             currentPageIndex -= 1
         }
@@ -422,7 +488,7 @@ private fun NavigationPanel(
                     Text("Finish")
                 }
             } else {
-                TextButton(onClick = onNextClick) {
+                TextButton(onClick = onNextClick, enabled = !submitting) {
                     Text("Next")
                 }
             }
