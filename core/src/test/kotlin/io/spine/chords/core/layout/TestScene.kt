@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import java.awt.EventQueue.invokeAndWait
+import java.awt.EventQueue.isDispatchThread as isEventDispatchThread
 import java.awt.Panel
 import java.awt.event.KeyEvent.CHAR_UNDEFINED
 import java.awt.event.KeyEvent.KEY_PRESSED
@@ -60,6 +62,13 @@ import org.jetbrains.skia.Surface
  * ready to be interacted with. Note that a state change made by a test is
  * applied to the content only upon the subsequent [render] call, just like it
  * is applied only in the next frame of a running application.
+ *
+ * The scene itself is composed, rendered, and operated on the AWT event
+ * dispatch thread, like the scene of a running application is. That thread is
+ * where Compose Desktop delivers the apply notifications of the global
+ * snapshot, so keeping the scene there is what makes a state change that
+ * a test makes reach the composition within the [render] call that follows it,
+ * rather than racing with the notification that announces the change.
  *
  * The scene has to be [closed][close] when a test is done with it, e.g. by
  * using the [use][kotlin.io.use] function.
@@ -83,7 +92,7 @@ internal class TestScene(
     /**
      * The scene that composes and lays out the content.
      */
-    private val scene = ComposeScene(density = density)
+    private val scene = onUiThread { ComposeScene(density = density) }
 
     /**
      * The in-memory surface that the content is rendered onto.
@@ -99,12 +108,14 @@ internal class TestScene(
     private var frames = 0L
 
     init {
-        scene.constraints = with(density) {
-            Constraints(maxWidth = width.roundToPx(), maxHeight = height.roundToPx())
-        }
-        scene.setContent {
-            MaterialTheme {
-                content()
+        onUiThread {
+            scene.constraints = with(density) {
+                Constraints(maxWidth = width.roundToPx(), maxHeight = height.roundToPx())
+            }
+            scene.setContent {
+                MaterialTheme {
+                    content()
+                }
             }
         }
         render()
@@ -114,13 +125,13 @@ internal class TestScene(
      * The size that the content occupies.
      */
     val contentSize: IntSize
-        get() = scene.contentSize
+        get() = onUiThread { scene.contentSize }
 
     /**
      * Renders the next frame, which applies all the state changes that have
      * been made since the previous one.
      */
-    fun render() {
+    fun render() = onUiThread {
         frames += 1
         scene.render(surface.canvas, frames * FrameIntervalNanos)
     }
@@ -140,7 +151,7 @@ internal class TestScene(
      *
      * @param position The position to click at, in pixels.
      */
-    fun click(position: Offset) {
+    fun click(position: Offset) = onUiThread {
         scene.sendPointerEvent(Press, position)
         scene.sendPointerEvent(Release, position)
     }
@@ -154,7 +165,7 @@ internal class TestScene(
      * @param modifiers The mask of the modifier keys that are held while the
      *   key is pressed, as defined by [java.awt.event.KeyEvent].
      */
-    fun pressKey(keyCode: Int, modifiers: Int = NoModifierKeys) {
+    fun pressKey(keyCode: Int, modifiers: Int = NoModifierKeys) = onUiThread {
         scene.sendKeyEvent(keyEvent(KEY_PRESSED, keyCode, modifiers))
     }
 
@@ -167,7 +178,7 @@ internal class TestScene(
      * @param modifiers The mask of the modifier keys that are held while the
      *   key is released, as defined by [java.awt.event.KeyEvent].
      */
-    fun releaseKey(keyCode: Int, modifiers: Int = NoModifierKeys) {
+    fun releaseKey(keyCode: Int, modifiers: Int = NoModifierKeys) = onUiThread {
         scene.sendKeyEvent(keyEvent(KEY_RELEASED, keyCode, modifiers))
     }
 
@@ -179,19 +190,19 @@ internal class TestScene(
      * @param y The vertical coordinate of the pixel.
      * @return The pixel's color, in the ARGB format.
      */
-    fun pixelAt(x: Dp, y: Dp): Int {
+    fun pixelAt(x: Dp, y: Dp): Int = onUiThread {
         val bitmap = Bitmap()
         bitmap.allocN32Pixels(surface.width, surface.height)
         check(surface.readPixels(bitmap, 0, 0)) {
             "Cannot read the pixels rendered by the test scene."
         }
-        return bitmap.getColor(x.value.toInt(), y.value.toInt())
+        bitmap.getColor(x.value.toInt(), y.value.toInt())
     }
 
     /**
      * Closes the scene along with the surface that it renders onto.
      */
-    override fun close() {
+    override fun close() = onUiThread {
         scene.close()
         surface.close()
     }
@@ -218,6 +229,29 @@ internal class TestScene(
         const val FrameIntervalNanos = 16_000_000L
 
     }
+}
+
+/**
+ * Runs the given action on the AWT event dispatch thread, and returns
+ * its result.
+ *
+ * The action is run right away when the calling thread is that thread already.
+ *
+ * @param T The type of the action's result.
+ * @param action The action to run.
+ * @return The value returned by the action.
+ */
+private fun <T> onUiThread(action: () -> T): T {
+    if (isEventDispatchThread()) {
+        return action()
+    }
+    var outcome: Result<T>? = null
+    invokeAndWait {
+        outcome = runCatching(action)
+    }
+    return checkNotNull(outcome) {
+        "The event dispatch thread has not run the action."
+    }.getOrThrow()
 }
 
 /**

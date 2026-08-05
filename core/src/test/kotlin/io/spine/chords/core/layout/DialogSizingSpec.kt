@@ -29,6 +29,7 @@ package io.spine.chords.core.layout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -49,12 +50,14 @@ import androidx.compose.ui.unit.dp
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 /**
  * Tests the way that a dialog, whose size is detected automatically,
  * measures its width.
  */
+@DisplayName("An automatically sized `Dialog` should")
 internal class DialogSizingSpec {
 
     /**
@@ -86,13 +89,7 @@ internal class DialogSizingSpec {
     fun `provide the width that the dialog's buttons need`() {
         val dialog = dialogWithLongButtonLabels()
 
-        val buttonsWidth = measureWidth {
-            MaterialTheme {
-                Box(modifier = Modifier.width(IntrinsicSize.Max)) {
-                    dialog.buttonsSectionInternal()
-                }
-            }
-        }
+        val buttonsWidth = buttonsWidth(dialog)
         val width = dialogWidth {
             DialogContent(dialog)
         }
@@ -172,6 +169,49 @@ internal class DialogSizingSpec {
     }
 
     /**
+     * A dialog that opts into neither the Submit nor the Cancel button has
+     * to be measurable just like any other one.
+     *
+     * Its buttons section used to place the buttons into a row spaced with
+     * `Look.buttonsSpacing`, and such a row with no children reports an
+     * intrinsic width of minus that spacing, which fails the measure pass.
+     */
+    @Test
+    fun `measure a dialog that displays no buttons`() {
+        val dialog = TestDialog()
+
+        val width = dialogWidth {
+            DialogContent(dialog)
+        }
+
+        width shouldBe with(density) { DefaultDialogMinWidth.roundToPx() }
+    }
+
+    /**
+     * Making an empty buttons section measurable must not cost the buttons
+     * that a dialog does display their spacing, so the space that separates
+     * them is pinned here: two buttons stay apart by `Look.buttonsSpacing`,
+     * and a single button, having nothing to be separated from, is not
+     * padded by it.
+     */
+    @Test
+    fun `keep the spacing between the buttons that a dialog displays`() {
+        val spacing = Dialog.Look().buttonsSpacing
+
+        val twoButtons = buttonsWidth(dialogWithButtons(submit = true, cancel = true))
+        val twoUnspacedButtons = buttonsWidth(
+            dialogWithButtons(submit = true, cancel = true, buttonsSpacing = 0.dp)
+        )
+        val singleButton = buttonsWidth(dialogWithButtons(cancel = true))
+        val singleUnspacedButton = buttonsWidth(
+            dialogWithButtons(cancel = true, buttonsSpacing = 0.dp)
+        )
+
+        twoButtons - twoUnspacedButtons shouldBe with(density) { spacing.roundToPx() }
+        singleButton shouldBe singleUnspacedButton
+    }
+
+    /**
      * Creates a [ConfirmationDialog], whose buttons are wider than
      * the minimum width of an automatically sized dialog.
      */
@@ -179,6 +219,37 @@ internal class DialogSizingSpec {
         message = "Proceed?"
         noButtonText = "Continue editing the command"
         yesButtonText = "Discard all the changes made so far"
+    }
+
+    /**
+     * Creates a dialog that displays the requested buttons with the given
+     * space between them.
+     *
+     * @param submit Whether the dialog has to display the Submit button.
+     * @param cancel Whether the dialog has to display the Cancel button.
+     * @param buttonsSpacing The space to separate the dialog's buttons with.
+     */
+    private fun dialogWithButtons(
+        submit: Boolean = false,
+        cancel: Boolean = false,
+        buttonsSpacing: Dp = Dialog.Look().buttonsSpacing
+    ) = TestDialog(submit, cancel).apply {
+        look = look.copy(buttonsSpacing = buttonsSpacing)
+    }
+
+    /**
+     * Measures the width, in pixels, that the buttons section of the given
+     * dialog asks for.
+     *
+     * @param dialog The dialog whose buttons section is to be measured.
+     * @return The measured width of the buttons section.
+     */
+    private fun buttonsWidth(dialog: Dialog): Int = measureWidth {
+        MaterialTheme {
+            Box(modifier = Modifier.width(IntrinsicSize.Max)) {
+                dialog.buttonsSectionInternal()
+            }
+        }
     }
 
     /**
@@ -330,6 +401,36 @@ internal class DialogSizingSpec {
         )
     }
 
+    /**
+     * A minimal [Dialog] implementation, whose content is narrower than
+     * the minimum width of an automatically sized dialog, so that the width
+     * measured for it is defined by the dialog rather than by its content.
+     *
+     * @param submitAvailable Whether the dialog has to display the Submit
+     *   button.
+     * @param cancelAvailable Whether the dialog has to display the Cancel
+     *   button.
+     */
+    private class TestDialog(
+        submitAvailable: Boolean = false,
+        cancelAvailable: Boolean = false
+    ) : Dialog() {
+
+        override val title: String = "Test"
+
+        init {
+            this.submitAvailable = submitAvailable
+            this.cancelAvailable = cancelAvailable
+        }
+
+        @Composable
+        override fun contentSection() {
+            Box(modifier = Modifier.size(ContentWidth, ContentHeight))
+        }
+
+        override suspend fun submitContent(): Unit = Unit
+    }
+
     private companion object {
 
         /**
@@ -337,6 +438,17 @@ internal class DialogSizingSpec {
          * like the one of a high-resolution display.
          */
         val density = Density(2f)
+
+        /**
+         * The width of the content section of [TestDialog], which is narrower
+         * than [DefaultDialogMinWidth].
+         */
+        val ContentWidth = 200.dp
+
+        /**
+         * The height of the content section of [TestDialog].
+         */
+        val ContentHeight = 100.dp
 
         /**
          * The width that is available to the dialog being measured.
