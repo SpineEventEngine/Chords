@@ -958,6 +958,64 @@ AGENT2_CMD="${SANDBOX}/bin/stub-agent2 --sandbox danger-full-access" \
 want "swapped unsafe agent command is still refused" 1 "allow-unsafe-agents"
 cleanup
 
+# --- sandboxed implementer verification access ----------------------------
+# Codex under workspace-write cannot start the root Gradle build: the wrapper
+# locks inside the Gradle user home, and gradle.properties forces a forked
+# daemon that binds a loopback port. An implementer that cannot build reaches
+# review having compiled nothing, and the run ends `blocked` rather than done.
+sandbox
+export GRADLE_USER_HOME="${SANDBOX}/gradle-home"
+mkdir -p "$GRADLE_USER_HOME"
+export AGENT1_CMD="${SANDBOX}/bin/codex exec --sandbox workspace-write"
+export AGENT2_CMD="${SANDBOX}/bin/claude"
+run "$R" start 7
+want "a sandboxed Codex implementer starts a task" 0
+: > "$STUB_AGENT_ARGS_RECORD"
+run "$R" step 7
+want "the implementer grant is announced, not silent" 0 "implementer sandbox widened"
+check "the implementer can reach the Gradle user home" \
+    "$(grep -qF -- "<--add-dir> <${GRADLE_USER_HOME}>" \
+        "$STUB_AGENT_ARGS_RECORD" && echo 0 || echo 1)"
+check "the implementer sandbox admits the Gradle daemon socket" \
+    "$(grep -qF -- '<-c> <sandbox_workspace_write.network_access=true>' \
+        "$STUB_AGENT_ARGS_RECORD" && echo 0 || echo 1)"
+unset GRADLE_USER_HOME
+cleanup
+
+# The reviewer never builds, so the widening must not follow Codex into that
+# seat — this is what keeps the default configuration unchanged.
+sandbox
+export GRADLE_USER_HOME="${SANDBOX}/gradle-home"
+mkdir -p "$GRADLE_USER_HOME"
+export AGENT1_CMD="${SANDBOX}/bin/claude"
+export AGENT2_CMD="${SANDBOX}/bin/codex exec --sandbox workspace-write"
+run "$R" start 7
+want "a Codex reviewer starts a task" 0
+run "$R" step 7
+want "the Claude implementer takes its turn" 0
+: > "$STUB_AGENT_ARGS_RECORD"
+run "$R" step 7
+want "the Codex reviewer takes its turn" 0
+check "a Codex reviewer keeps the narrower sandbox" \
+    "$(grep -q 'network_access' "$STUB_AGENT_ARGS_RECORD" && echo 1 || echo 0)"
+check "a Codex reviewer is not given the Gradle user home" \
+    "$(grep -qF -- "<--add-dir> <${GRADLE_USER_HOME}>" \
+        "$STUB_AGENT_ARGS_RECORD" && echo 1 || echo 0)"
+unset GRADLE_USER_HOME
+cleanup
+
+# A Gradle user home that does not exist yet is a warning, not an abort: the
+# run is still worth taking, it just cannot verify at the end.
+sandbox
+export GRADLE_USER_HOME="${SANDBOX}/never-populated"
+export AGENT1_CMD="${SANDBOX}/bin/codex exec --sandbox workspace-write"
+export AGENT2_CMD="${SANDBOX}/bin/claude"
+run "$R" 7
+want "a missing Gradle user home warns without failing the run" 0 \
+    "no Gradle user home"
+unset GRADLE_USER_HOME
+cleanup
+
 # --- answers (RS-06) ------------------------------------------------------
 sandbox
 STUB_MISBEHAVE=ask run "$R" 7

@@ -102,6 +102,11 @@ flags because --ignore-user-config discards ~/.codex/config.toml by design.
 --add-dir is required because that sandbox refuses to write gitignored paths,
 and the working document lives in one. Keep it when overriding AGENT2_CMD.
 
+A Codex command that holds the implementer seat — where --swap-agents puts the
+default reviewer — is additionally given the Gradle user home and sandbox
+network access, because the root build cannot start without either. The grant
+is announced when it happens and is never extended to the reviewer.
+
 Exit codes (run):
   0   done — automated tests cover every acceptance criterion
   1   aborted: a guard tripped, or an agent failed
@@ -138,6 +143,11 @@ readonly TEMPLATE="${REPO_ROOT}/.agents/skills/pair-workflow/template.md"
 # bypass flag, and unsafe_agent_roles() does not treat it as one.
 AGENT1_CMD="${AGENT1_CMD:-claude -p --permission-mode acceptEdits --setting-sources project --model claude-opus-5 --effort high}"
 AGENT2_CMD="${AGENT2_CMD:-codex exec --sandbox workspace-write --add-dir .agents/work --ephemeral --ignore-user-config -m gpt-5.6-sol -c model_reasoning_effort=\"high\" -c service_tier=\"default\"}"
+
+# Codex's setting for network access inside the workspace-write sandbox. Named
+# once because grant_implementer_verification_access() both tests for it and
+# appends it, and a typo in either place would be silent.
+readonly CODEX_SANDBOX_NETWORK="sandbox_workspace_write.network_access=true"
 
 # Engine-specific selections requested on the command line. They are separate
 # from role assignment: --swap-agents exchanges the complete configured
@@ -2644,6 +2654,68 @@ validate_agent_permissions() {
     return 0
 }
 
+# Where the root build keeps its wrapper distributions, caches, and daemon
+# registry. Honors GRADLE_USER_HOME so a machine that relocates it is still
+# described accurately.
+gradle_user_home() { printf '%s' "${GRADLE_USER_HOME:-${HOME}/.gradle}"; }
+
+# Gives a sandboxed Codex implementer the two things the root build needs and
+# `--sandbox workspace-write` withholds. Both are outside the workspace:
+#
+#   * The wrapper takes a lock inside the Gradle user home
+#     (wrapper/dists/…/gradle-<version>-bin.zip.lck) before it starts anything,
+#     and the sandbox denies that write.
+#   * gradle.properties sets `org.gradle.jvmargs`, so Gradle 6.9.4 always runs
+#     the build in a forked daemon — `--no-daemon` only makes that daemon
+#     single-use — and the daemon binds a loopback TCP port the sandbox denies.
+#     Matching the JVM arguments from the client does not avoid the fork, so
+#     there is no socket-free way to run this build.
+#
+# Without both, the implementer reaches `## Implementation` having compiled
+# nothing and the run ends `blocked` on the verification rule instead of
+# `done`. The default configuration never hits this because Claude holds the
+# implementer seat; --swap-agents is what moves Codex into it.
+#
+# Scoped to agent1 deliberately. Network access inside the sandbox is a real
+# widening, and the reviewer does not build, so it has no claim on it.
+grant_implementer_verification_access() {
+    [[ "$(agent_command_engine "$AGENT1_CMD")" == codex ]] || return 0
+    case " $AGENT1_CMD " in
+        *" --sandbox workspace-write "*) ;;
+        *) return 0 ;;
+    esac
+
+    local home; home="$(gradle_user_home)"
+    # Agent commands are whitespace-delimited when they are split for
+    # execution, so a path with a space cannot be passed through as one word.
+    # Say so rather than appending an argument that would silently truncate.
+    if [[ "$home" == *[[:space:]]* ]]; then
+        info "warning: Gradle user home '${home}' contains whitespace; the "\
+"sandboxed implementer cannot be given access to it and will not be able to "\
+"verify"
+        return 0
+    fi
+    if [[ ! -d "$home" ]]; then
+        info "warning: no Gradle user home at '${home}'; the sandboxed "\
+"implementer cannot verify until the root build has populated it once"
+        return 0
+    fi
+
+    local granted=""
+    if [[ " $AGENT1_CMD " != *" --add-dir ${home} "* ]]; then
+        AGENT1_CMD+=" --add-dir ${home}"
+        granted="the Gradle user home"
+    fi
+    if [[ " $AGENT1_CMD " != *" -c ${CODEX_SANDBOX_NETWORK} "* ]]; then
+        AGENT1_CMD+=" -c ${CODEX_SANDBOX_NETWORK}"
+        granted="${granted:+${granted} and }sandbox network access"
+    fi
+    [[ -z "$granted" ]] \
+        || info "implementer sandbox widened so the root build can start: "\
+"${granted}"
+    return 0
+}
+
 cmd_step() {
     local slug; slug="$(resolve_slug "${1:-}")" || exit "$EXIT_ERROR"; shift || true
     while [[ $# -gt 0 ]]; do
@@ -2681,6 +2753,7 @@ cmd_step() {
     validate_agent_selection "$(doc_for "$slug")"
     prepare_saved_engine_settings "$(doc_for "$slug")"
     validate_agent_permissions
+    grant_implementer_verification_access
 
     local rc ec=0
     set +e; take_turn "$slug"; rc=$?; set -e
@@ -2787,6 +2860,7 @@ cmd_run() {
     fi
 
     validate_agent_permissions
+    grant_implementer_verification_access
 
     local i rc ec
     for (( i = 1; i <= max_turns; i++ )); do

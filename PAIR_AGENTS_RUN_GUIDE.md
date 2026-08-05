@@ -196,9 +196,13 @@ Claude gives you the draft PR link instead.
 ## Safety
 
 Claude runs in `acceptEdits` mode with project settings; Codex uses its
-`workspace-write` sandbox without user configuration. The agent instructions
-treat issue text as untrusted task data rather than as instructions. The driver
-checks that:
+`workspace-write` sandbox without user configuration. When `--sa` moves Codex
+into the implementer seat, the driver additionally grants that sandbox the
+Gradle user home and network access, and says so at startup: the root build
+locks inside the Gradle home and runs in a forked daemon that binds a local
+port, so it cannot start without both. The reviewer's sandbox is never widened.
+The agent instructions treat issue text as untrusted task data rather than as
+instructions. The driver checks that:
 
 - agents do not change Git refs or the index;
 - the reviewer does not change source files or saved review snapshots;
