@@ -613,11 +613,28 @@ either:
   `workspace-write` sandbox excludes gitignored paths, and the working document
   lives in one by design. Without it the reviewer reads everything, writes
   nothing, and the driver aborts on an unmodified document.
-- **`agent1`'s verification permissions come from `.claude/settings.json`.**
-  `--setting-sources project` loads that file and nothing else, so a Gradle
-  command missing from it is refused before the process starts. An agent that
-  cannot build hands off an implementation it never compiled, and the reviewer
-  spends its round saying so instead of reading the code.
+- **`agent1`'s verification permissions depend on which engine holds the
+  seat.** Either way, an implementer that cannot build hands off code it never
+  compiled, and the reviewer spends its round saying so instead of reading it.
+  - _Claude in the seat_ (the default): permissions come from
+    `.claude/settings.json`. `--setting-sources project` loads that file and
+    nothing else, so a Gradle command missing from it is refused before the
+    process starts.
+  - _Codex in the seat_ (`--swap-agents`): its `workspace-write` sandbox
+    blocks the root build outright — the wrapper locks inside the Gradle user
+    home, and `gradle.properties` forces a forked daemon that binds a loopback
+    port. The driver adds `--add-dir <Gradle user home>` and
+    `sandbox_workspace_write.network_access=true` to that command and announces
+    the grant at startup. It applies only to a command that names
+    `workspace-write` itself, and never to the reviewer.
+
+  The Codex grant is a genuine widening, not a formality: the implementer can
+  write anywhere under the Gradle user home — which is outside the repository
+  and shared with every other build on the machine — and can reach the network
+  from inside the sandbox, so a prompt-injected instruction to exfiltrate is no
+  longer stopped by the sandbox. The Git tripwire and the review checks are the
+  remaining guards, and neither is an isolation boundary. Prefer the default
+  seating unless a run needs Codex as the implementer.
 
 Pass `--swap-agents` or `--sa` to exchange `agent1` and `agent2`. Repeat the
 option when resuming the task; the driver checks the choice against the agent

@@ -982,6 +982,70 @@ check "the implementer sandbox admits the Gradle daemon socket" \
 unset GRADLE_USER_HOME
 cleanup
 
+# Codex accepts one sandbox policy under several spellings. A customized
+# command using any of them must be recognized: matching only the long
+# separated form leaves the implementer unwidened, and the run then fails the
+# root build with nothing in the output naming the cause.
+for spelling in "-s workspace-write" "-s=workspace-write" \
+    "-sworkspace-write" "--sandbox=workspace-write"; do
+    sandbox
+    export GRADLE_USER_HOME="${SANDBOX}/gradle-home"
+    mkdir -p "$GRADLE_USER_HOME"
+    export AGENT1_CMD="${SANDBOX}/bin/codex exec ${spelling}"
+    export AGENT2_CMD="${SANDBOX}/bin/claude"
+    run "$R" start 7
+    : > "$STUB_AGENT_ARGS_RECORD"
+    run "$R" step 7
+    want "'${spelling}' is recognized as workspace-write" 0 \
+        "implementer sandbox widened"
+    check "'${spelling}' reaches the Gradle user home" \
+        "$(grep -qF -- "<--add-dir> <${GRADLE_USER_HOME}>" \
+            "$STUB_AGENT_ARGS_RECORD" && echo 0 || echo 1)"
+    unset GRADLE_USER_HOME
+    cleanup
+done
+
+# The mirror of the above: recognizing spellings must not decay into matching
+# the words anywhere in the command. A policy that is not workspace-write has
+# no claim on the widening, whether or not the phrase appears elsewhere.
+for spelling in "-s read-only" "--sandbox read-only" \
+    "-s read-only -c sandbox_workspace_write.network_access=false"; do
+    sandbox
+    export GRADLE_USER_HOME="${SANDBOX}/gradle-home"
+    mkdir -p "$GRADLE_USER_HOME"
+    export AGENT1_CMD="${SANDBOX}/bin/codex exec ${spelling}"
+    export AGENT2_CMD="${SANDBOX}/bin/claude"
+    run "$R" start 7
+    : > "$STUB_AGENT_ARGS_RECORD"
+    run "$R" step 7
+    check "'${spelling}' is not widened" \
+        "$(grep -qF -- "<--add-dir> <${GRADLE_USER_HOME}>" \
+            "$STUB_AGENT_ARGS_RECORD" && echo 1 || echo 0)"
+    unset GRADLE_USER_HOME
+    cleanup
+done
+
+# A caller who already granted the access keeps their own spelling: the driver
+# must neither duplicate the argument nor claim a widening it did not make.
+sandbox
+export GRADLE_USER_HOME="${SANDBOX}/gradle-home"
+mkdir -p "$GRADLE_USER_HOME"
+export AGENT1_CMD="${SANDBOX}/bin/codex exec --sandbox workspace-write \
+--add-dir=${GRADLE_USER_HOME} -c=sandbox_workspace_write.network_access=true"
+export AGENT2_CMD="${SANDBOX}/bin/claude"
+run "$R" start 7
+: > "$STUB_AGENT_ARGS_RECORD"
+run "$R" step 7
+want "an already-granted implementer is not widened again" 0
+check "the caller's own grant is not announced as a widening" \
+    "$(printf '%s' "$OUT" | grep -q 'implementer sandbox widened' \
+        && echo 1 || echo 0)"
+check "the Gradle user home is not passed twice" \
+    "$([[ "$(grep -c -- "--add-dir" "$STUB_AGENT_ARGS_RECORD")" -eq 1 ]] \
+        && echo 0 || echo 1)"
+unset GRADLE_USER_HOME
+cleanup
+
 # The reviewer never builds, so the widening must not follow Codex into that
 # seat — this is what keeps the default configuration unchanged.
 sandbox

@@ -363,6 +363,11 @@ Keep all safety flags from the printed command. In particular:
   from `.claude/settings.json`.
 - Codex needs `--ignore-user-config` for reproducible settings and `--add-dir`
   to write the gitignored working document.
+- A Codex command in the implementer seat receives the build grant only when it
+  names the `workspace-write` sandbox itself. Every spelling Codex accepts
+  works — `-s` or `--sandbox`, with the value as the next word or joined by
+  `=`, and `-c sandbox_mode=` — but a command naming no sandbox is left as it
+  is rather than widened on its behalf.
 
 If a model or effort is rejected, read the relevant turn log under
 `.agents/work/issue-<number>/turns/`. The document records settings that the

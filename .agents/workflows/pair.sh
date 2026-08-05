@@ -270,6 +270,68 @@ agent_command_setting() {
     unquote_setting "$value"
 }
 
+# Reads the sandbox policy named by a directly configured Codex command.
+#
+# Codex spells one policy several ways: `-s` or `--sandbox` with the value as
+# the next word, joined by `=`, or attached to the short option, and
+# `-c sandbox_mode=…` selects it from configuration instead. Recognizing a
+# single literal spelling would leave grant_implementer_verification_access()
+# inert for the rest, and the only symptom would be an implementer that cannot
+# build — with nothing in the output pointing at the command that caused it.
+#
+# The command-line option wins over the configuration override, as it does in
+# Codex; within each, the last occurrence wins. Prints nothing when the command
+# names no policy, which leaves Codex on its own default.
+codex_sandbox_mode() {
+    local cmd="$1" token flag="" config=""
+    local -a words
+    local i
+    read -r -a words <<< "$cmd"
+    for (( i = 0; i < ${#words[@]}; i++ )); do
+        token="${words[$i]}"
+        case "$token" in
+            -s|--sandbox)
+                i=$(( i + 1 )); flag="${words[$i]:-}" ;;
+            -s=*|--sandbox=*)
+                flag="${token#*=}" ;;
+            -s?*)
+                flag="${token#-s}" ;;
+            -c|--config)
+                if [[ "${words[$(( i + 1 ))]:-}" == sandbox_mode=* ]]; then
+                    i=$(( i + 1 ))
+                    config="${words[$i]#*=}"
+                fi ;;
+            --config=sandbox_mode=*)
+                config="${token#--config=sandbox_mode=}" ;;
+        esac
+    done
+    unquote_setting "${flag:-$config}"
+}
+
+# Whether a command already passes `option value`, separated or joined by `=`.
+# Keeps the verification grant from appending an argument the caller supplied
+# themselves, and from announcing a widening that did not happen.
+command_passes_option() {
+    local cmd="$1" option="$2" value="$3" token
+    local -a words
+    local i
+    read -r -a words <<< "$cmd"
+    for (( i = 0; i < ${#words[@]}; i++ )); do
+        token="${words[$i]}"
+        case "$token" in
+            "$option")
+                if [[ "${words[$(( i + 1 ))]:-}" == "$value" ]]; then
+                    return 0
+                fi ;;
+            "$option"=*)
+                if [[ "${token#*=}" == "$value" ]]; then
+                    return 0
+                fi ;;
+        esac
+    done
+    return 1
+}
+
 # Replaces one engine's model and effort flags without disturbing its safety
 # flags. Codex rejects repeated --model arguments, so appending an override is
 # not sufficient there.
@@ -2660,7 +2722,7 @@ validate_agent_permissions() {
 gradle_user_home() { printf '%s' "${GRADLE_USER_HOME:-${HOME}/.gradle}"; }
 
 # Gives a sandboxed Codex implementer the two things the root build needs and
-# `--sandbox workspace-write` withholds. Both are outside the workspace:
+# the `workspace-write` sandbox withholds. Both are outside the workspace:
 #
 #   * The wrapper takes a lock inside the Gradle user home
 #     (wrapper/dists/…/gradle-<version>-bin.zip.lck) before it starts anything,
@@ -2678,12 +2740,14 @@ gradle_user_home() { printf '%s' "${GRADLE_USER_HOME:-${HOME}/.gradle}"; }
 #
 # Scoped to agent1 deliberately. Network access inside the sandbox is a real
 # widening, and the reviewer does not build, so it has no claim on it.
+#
+# Only a command that names `workspace-write` itself is widened, in any of the
+# spellings codex_sandbox_mode() understands. A command that names no policy is
+# left alone rather than assumed: extending a sandbox the caller never asked
+# for would be a worse failure than the one this repairs.
 grant_implementer_verification_access() {
     [[ "$(agent_command_engine "$AGENT1_CMD")" == codex ]] || return 0
-    case " $AGENT1_CMD " in
-        *" --sandbox workspace-write "*) ;;
-        *) return 0 ;;
-    esac
+    [[ "$(codex_sandbox_mode "$AGENT1_CMD")" == workspace-write ]] || return 0
 
     local home; home="$(gradle_user_home)"
     # Agent commands are whitespace-delimited when they are split for
@@ -2702,11 +2766,13 @@ grant_implementer_verification_access() {
     fi
 
     local granted=""
-    if [[ " $AGENT1_CMD " != *" --add-dir ${home} "* ]]; then
+    if ! command_passes_option "$AGENT1_CMD" --add-dir "$home"; then
         AGENT1_CMD+=" --add-dir ${home}"
         granted="the Gradle user home"
     fi
-    if [[ " $AGENT1_CMD " != *" -c ${CODEX_SANDBOX_NETWORK} "* ]]; then
+    if ! command_passes_option "$AGENT1_CMD" -c "$CODEX_SANDBOX_NETWORK" \
+        && ! command_passes_option "$AGENT1_CMD" --config "$CODEX_SANDBOX_NETWORK"
+    then
         AGENT1_CMD+=" -c ${CODEX_SANDBOX_NETWORK}"
         granted="${granted:+${granted} and }sandbox network access"
     fi
