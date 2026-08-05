@@ -159,7 +159,8 @@ private val LocalDialogContentHeightMode = staticCompositionLocalOf {
  * - The buttons section. The [Dialog] class has a built-in support for
  *   displaying the Submit and Cancel buttons, which should be opted in when
  *   needed (see the "Predefined dialog actions" and "Customizing dialog's
- *   buttons" sections below).
+ *   buttons" sections below). A dialog that has opted into neither of them has
+ *   no buttons section at all.
  *
  *   It's also possible to substitute the way how the entire buttons section is
  *   rendered (or remove this section altogether if needed) by overriding
@@ -622,11 +623,19 @@ public abstract class Dialog : Component() {
      * dialog's buttons, this method renders the container for those buttons,
      * and then invokes [buttons] to place the buttons in that container.
      *
+     * Nothing is rendered when the dialog has opted into neither the Submit,
+     * nor the Cancel button, since [buttons] renders nothing in that case, and
+     * a container that spaces its buttons reports a negative width when it has
+     * no buttons to space.
+     *
      * @see buttons
      * @see contentSection
      */
     @Composable
     protected open fun buttonsSection() {
+        if (!submitAvailable && !cancelAvailable) {
+            return
+        }
         Row(
             modifier = Modifier.fillMaxWidth()
                 .padding(look.buttonsPanelPadding),
