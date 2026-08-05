@@ -101,3 +101,6 @@ build
 
 # Pair-workflow scratch documents
 .agents/work/
+
+# Claude Code workstation-specific permission grants.
+.claude/settings.local.json

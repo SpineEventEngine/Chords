@@ -51,14 +51,23 @@ this procedure.
 1. **Confirm authorization.** Commit or push only when the current prompt
    explicitly asks for it, per "Commit and History Safety" above.
 2. **Choose the branch.**
-   - If the current branch is `master`, create a new branch; never commit
-     directly to `master`.
-   - If the current branch name does not match the task, ask whether to branch
-     from the current branch or from `master` before committing.
    - If the current branch name matches the task, keep using it.
+   - Otherwise create a new branch from the current `HEAD`, whatever branch
+     that is. Never commit directly to `master`, and never commit onto a
+     branch that belongs to a different task — a new branch cut from the
+     current `HEAD` keeps the work off both.
    - Name new branches after the task, in the repository's kebab-case style
      (for example, `dialog-form-dirty-state`); do not include `codex` or other
      agent-specific identifiers in branches you create.
+   - **Stacked work is normal.** Starting from a branch whose own pull request
+     is still under review is the common case, not a mistake: the work depends
+     on changes that have not merged yet. Branch from it as above and target
+     `master` anyway (see "Creating a Pull Request"). Until the parent branch
+     merges, the new pull request also shows that branch's commits; GitHub
+     stops showing them once it merges. Do not wait for the parent, do not
+     rebase onto `master` to hide the commits, and do not ask which branch to
+     cut from — branching from the current `HEAD` is the answer in both the
+     stacked and the plain case.
 3. **Check the version and reports.** Apply "Versioning and Reports" below:
    inspect the commits and local state, bump `chordsVersion` in
    `version.gradle.kts` if the changeset has not bumped it yet, and if the
@@ -83,7 +92,9 @@ step 6). Creating a PR does not authorize additional verification; follow the
 verification rule in that section.
 
 1. **Create it as a draft** (`gh pr create --draft`), targeting `master` as the
-   base branch unless the task specifies otherwise.
+   base branch unless the task specifies otherwise. This holds for stacked work
+   too: a branch cut from another unmerged branch still targets `master`, so
+   the pull request stays mergeable on its own once the parent merges.
 2. **Assign it to the authenticated GitHub user** (`--assignee @me`).
 3. **Omit a trailing period.** Do not end a pull request title with a period
    (`.`).
@@ -94,6 +105,12 @@ verification rule in that section.
    verification, testing, build, or check information anywhere in the PR
    description. Do not add any agent-attribution section such as
    `Created by <agent>`.
+   - For stacked work, `## Reviewer notes` is material rather than optional:
+     name the branch and exact commit the work was cut from, explain that the
+     starting point contains commits outside the target branch, and tell the
+     reviewer to review the task commits after that boundary. Do not claim the
+     parent pull request is open or unmerged unless that state was verified.
+     Without the note, the extra commits read as part of this change.
 5. **Link resolved issues.** For each issue the PR implements or fixes, add a
    GitHub closing keyword in the description (for example, `Fixes #123`) so the
    issue appears under "Successfully merging this pull request may close these
@@ -162,12 +179,11 @@ from the repository root, without running the full build:
 ```bash
 find . -path '*/build/reports/dependency-license' -type d -prune \
     -exec rm -rf {} +
-./gradlew generatePom mergeAllLicenseReports
+.agents/workflows/gradle-root.sh generatePom mergeAllLicenseReports
 ```
 
-On Apple Silicon workstations, prefix the Gradle command with
-`JAVA_HOME="$(jenv prefix)"`; see "Apple Silicon Workstations" under
-"Verification and Quality".
+The wrapper selects and verifies the required JDK. See "Apple Silicon
+Workstations" under "Verification and Quality".
 
 The `generatePom` task regenerates `pom.xml`, and `mergeAllLicenseReports`
 merges the per-module license reports into `dependencies.md`. Deleting the
@@ -178,8 +194,8 @@ and the workflow failing.
 
 Afterwards, confirm that the `# Dependencies of ...` headings in
 `dependencies.md` carry the new version, and include both regenerated reports
-in the changeset. A full `./gradlew build` regenerates the files as well, but
-is unnecessary solely for this purpose.
+in the changeset. A full `.agents/workflows/gradle-root.sh build` regenerates
+the files as well, but is unnecessary solely for this purpose.
 
 Source files carry a copyright header; when modifying a file, keep the header
 year current (files touched in a given year carry that year).
@@ -193,12 +209,13 @@ contracts are affected.
 Useful root commands (run from the repository root, JDK 11):
 
 ```bash
-./gradlew :<module>:test
-./gradlew :<module>:test --tests "io.spine.chords.proto.money.MoneyFieldSpec"
-./gradlew :<module>:check
-./gradlew detekt
-./gradlew clean build
-./gradlew publishToMavenLocal
+.agents/workflows/gradle-root.sh :<module>:test
+.agents/workflows/gradle-root.sh :<module>:test \
+    --tests "io.spine.chords.proto.money.MoneyFieldSpec"
+.agents/workflows/gradle-root.sh :<module>:check
+.agents/workflows/gradle-root.sh detekt
+.agents/workflows/gradle-root.sh clean build
+.agents/workflows/gradle-root.sh publishToMavenLocal
 ```
 
 ### Apple Silicon Workstations
@@ -222,6 +239,16 @@ as follows:
 ```bash
 jenv shell 11
 JAVA_HOME="$(jenv prefix)" ./gradlew :<module>:check
+```
+
+`.agents/workflows/gradle-root.sh` is that command behind one allowlistable
+path. It resolves a registered JDK 11, verifies the version, refuses a
+non-x86_64 JVM on macOS, and accepts only routine root verification,
+Maven-local publication, and report-generation tasks. Prefer it for unattended
+and ordinary root verification:
+
+```bash
+.agents/workflows/gradle-root.sh :<module>:check
 ```
 
 This architecture matters because some code generation paths in the pinned
@@ -257,9 +284,13 @@ If verification cannot be run, state the reason clearly in the final response.
 ## Development Conventions
 
 - Use JDK 11 for the root project and JDK 17 for `codegen/plugins`.
-- The supported environment is deliberately conservative: Kotlin 1.8.20,
-  Compose Multiplatform 1.5.12, Spine Event Engine 1.9.0, Gradle 6.9.4 for the
-  root project. Do not assume newer language or library features are available.
+- The supported environment is deliberately conservative. The root build uses
+  the Kotlin Gradle plugin at 1.8.22 and forces production Kotlin libraries to
+  1.9.23, while the supported consumer baseline remains Kotlin 1.8.20. Treat
+  Kotlin 1.8 as the language ceiling and do not introduce post-1.8.20 standard
+  library APIs without a deliberate compatibility decision. Compose
+  Multiplatform is 1.5.12, Spine Event Engine is 1.9.0, and root Gradle is
+  6.9.4.
 - Kotlin explicit API mode is enabled: public declarations require explicit
   `public` modifiers.
 - Every declaration in project-owned source, including declarations explicitly

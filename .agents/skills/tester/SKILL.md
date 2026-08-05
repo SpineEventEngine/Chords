@@ -40,29 +40,38 @@ description: >
 Run the smallest useful command while iterating (repository root, JDK 11):
 
 ```bash
-./gradlew :<module>:test
-./gradlew :<module>:test --tests "io.spine.chords.proto.money.MoneyFieldSpec"
-./gradlew :codegen-tests:test
-./gradlew clean build
+.agents/workflows/gradle-root.sh :<module>:test
+.agents/workflows/gradle-root.sh :<module>:test \
+    --tests "io.spine.chords.proto.money.MoneyFieldSpec"
+.agents/workflows/gradle-root.sh :codegen-tests:test
+.agents/workflows/gradle-root.sh clean build
 ```
 
 Module Gradle paths: `core`, `proto`, `proto-values`, `client`, `runtime`,
 `codegen-tests`. The `codegen/plugins` project verifies separately from
 `codegen/plugins/` with JDK 17 (`./gradlew build`).
 
-Read the task list, not only the final line. A build whose compile and test
-tasks all report `UP-TO-DATE` finished in seconds without compiling or running
-anything, and its `BUILD SUCCESSFUL` describes a previous build rather than the
-change in the worktree. When that happens, force the work with `--rerun-tasks`
-before reporting a result:
+Read the task list, not only the final line. Gradle's up-to-date check is
+content-based, so `UP-TO-DATE` normally means the task's inputs are unchanged
+and its previous result still holds. Do not force a rerun merely to make the
+task execute again.
+
+What `UP-TO-DATE` cannot prove is that the right build and tasks were selected.
+Suspect the result, and only then rerun, when tasks that should cover a changed
+input remain up to date. Check that root commands ran from the repository root,
+that `codegen/plugins` commands ran from that separate build, and that the task
+declares the input that changed. Fix the invocation before rerunning; a rerun of
+the wrong build is still the wrong build.
+
+Where a rerun is genuinely required, the root build's Gradle 6.9.4 supports the
+whole-graph flag:
 
 ```bash
-./gradlew :<module>:test --tests "…" --rerun-tasks
+.agents/workflows/gradle-root.sh :<module>:test --tests "…" --rerun-tasks
 ```
 
-Gradle's up-to-date check is content-based, so an `UP-TO-DATE` task is normally
-sound. It is misleading only when it stands in as evidence for a change that
-was never built. Report a verification result as green only when the tasks
-covering the change actually executed.
+Report a verification result as green only when the tasks covering the change
+were evaluated in this worktree and the correct build, then either executed or
+were legitimately up to date.
 
 Follow the git-history and safety policy in `AGENTS.md`.

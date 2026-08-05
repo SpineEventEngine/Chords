@@ -58,12 +58,15 @@ and GitHub Packages.
 - `codegen/plugins/`: **separate Gradle project** with ProtoData plugins that
   generate Kotlin extensions for Protobuf messages. Requires JDK 17,
   Gradle 9.4.x, and Kotlin 2.3.20, unlike the root project (JDK 11,
-  Gradle 6.9.4, Kotlin 1.8.20). Applied to consuming projects through the
+  Gradle 6.9.4, Kotlin Gradle plugin 1.8.22). It is applied to consuming
+  projects through the
   [Chords Gradle plugin](https://github.com/SpineEventEngine/Chords-Gradle-plugin).
 - `pom.xml`, `dependencies.md`: generated dependency/license reports; must be
   regenerated (not hand-edited) when the version or dependencies change.
 - `.github/workflows/`: CI for Ubuntu/Windows builds, license-report and
   version-increment guards, Gradle wrapper validation, and publishing.
+- `.agents/workflows/`: local agent workflow drivers and their regression
+  suites.
 
 Gradle group: `io.spine.chords`. Artifact prefix: `spine-chords-`. Preserve
 package roots such as `io.spine.chords` and `io.spine.money` where already
@@ -106,6 +109,8 @@ or Spine versions; such upgrades are dedicated tasks with wide impact.
 - `AGENTS.md`: repository operating policy for agents.
 - `.agents/project.md`: project map, architecture notes, documentation
   ownership, and CI notes.
+- `PAIR_AGENTS_RUN_GUIDE.md`: operator guide for the paired-agent issue
+  workflow.
 - `core/README.md`: application shell, component model, and core components.
 - `proto/README.md`: Protobuf-aware components and message forms.
 - `proto-values/README.md`: supplementary Protobuf messages and extensions.

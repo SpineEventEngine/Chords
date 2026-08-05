@@ -6,13 +6,23 @@ impl_round: 1
 max_rounds: 2
 dirty_at_start: no
 resume_status: none
+question_origin: none
 manual_testing: unknown
 agent1: AGENT1_NAME
 agent2: AGENT2_NAME
+claude_model: CLAUDE_MODEL
+claude_effort: CLAUDE_EFFORT
+codex_model: CODEX_MODEL
+codex_effort: CODEX_EFFORT
 issue: ISSUE_URL
 issue_number: ISSUE_NUMBER
 issue_title: ISSUE_TITLE
 base_commit: BASE_COMMIT
+base_branch: BASE_BRANCH
+start_commit: START_COMMIT
+pr_base_branch: PR_BASE_BRANCH
+changeset_digest: none
+reviewed_changeset_digest: none
 updated: CREATED_AT
 ---
 

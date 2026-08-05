@@ -2,9 +2,10 @@
 name: kotlin-engineer
 description: >
   Chords Kotlin implementation policy and the pitfalls that recur in review:
-  the pinned 1.8.20 language ceiling, null-safety and `!!`, `lateinit` in
-  `Props`, coroutine scoping and cancellation in `client`, and read-only
-  public types under explicit API mode. Use whenever writing, changing,
+  the root compiler/library version split and separate codegen-plugin
+  toolchain, null-safety and `!!`, `lateinit` in `Props`, coroutine scoping
+  and cancellation in `client`, and read-only public types under explicit API
+  mode. Use whenever writing, changing,
   refactoring, or reviewing Kotlin in any module: `.kt`/`.kts` edits,
   turning Java-style Kotlin idiomatic, anything touching coroutines,
   cancellation, or `Flow` (concentrated in `client`), and designing a public
@@ -42,19 +43,21 @@ Each of these owns its area; this skill stays out of them:
 ## Toolchain Ceiling
 
 **Two ceilings, and which one applies depends on the file you are editing.**
-The root build compiles with **Kotlin 1.8.20** — the version of the
-`kotlin("jvm")` plugin declared in `buildSrc/build.gradle.kts` — on JVM
-target 11. It covers every module in
+The root build compiles with the Kotlin Gradle plugin dependency declared as
+`kotlinVersion` in `buildSrc/build.gradle.kts` — currently **1.8.22** — on JVM
+target 11. The `kotlin("jvm")` declaration earlier in that file is the plugin
+used to compile `buildSrc` itself, not the version applied to root modules. The
+root toolchain covers every module in
 `settings.gradle.kts`: `core`, `proto`, `proto-values`, `client`, `runtime`
 (at `codegen/runtime`), and `codegen-tests` (at `codegen/tests`) — note that
 both `codegen/` subprojects belong to the *root* build. Only
 `codegen/plugins` is separate, using **Kotlin 2.3.20** on JDK 17 (its own
 `kotlinVersion` in `codegen/plugins/buildSrc/build.gradle.kts`).
 
-Everything below about the 1.8.20 ceiling applies to the root build; in
-`codegen/plugins` the 2.x language is available. Never carry a construct
-from one across to the other because it compiled where you first wrote it.
-Both builds enable explicit API mode.
+Everything below about the Kotlin 1.8 language ceiling applies to the root
+build; in `codegen/plugins` the 2.x language is available. Never carry a
+construct from one across to the other because it compiled where you first
+wrote it. Both builds enable explicit API mode.
 
 Within the root modules:
 
@@ -62,19 +65,30 @@ Within the root modules:
   `forceProductionDependencies()` in
   `buildSrc/src/main/kotlin/DependencyResolution.kt` pins `kotlin-stdlib` to
   the `Kotlin.version` coordinate — currently 1.9.23 — while the compiler
-  stays at 1.8.20. A 1.9 stdlib *function* can therefore resolve and compile,
+  stays at 1.8.22. A 1.9 stdlib *function* can therefore resolve and compile,
   even though a 1.9 *language feature* cannot. **"It compiles" is not
   evidence that a construct is within the baseline** — check when the API
-  was introduced, and prefer one that predates 1.8.20.
-- Not available at 1.8.20: `data object`, `enumEntries`, the stable `..<`
+  was introduced, and prefer one that predates Kotlin 1.8.20.
+- Not available under the root's 1.8 language ceiling: `data object`,
+  `enumEntries`, the stable `..<`
   operator (use `until`), and stable context receivers.
 - Available and preferred where they fit: sealed interfaces, `@JvmInline
   value class`, `buildList` / `buildMap`, and `kotlin.time.Duration`.
+- **Context receivers, not context parameters.** The root build passes
+  `-Xcontext-receivers` from `KotlinConfig.setFreeCompilerArgs()`. That enables
+  the experimental context-receiver syntax under Kotlin 1.8; it does not
+  enable the later context-parameter syntax. `codegen/plugins` enables
+  neither feature.
 - Coroutines are **1.7.3** (`KotlinX.Coroutines.version`), forced across
   every configuration by the `resolutionStrategy` block in the root
   `build.gradle.kts`. 1.7 APIs are available. Ignore the unused
   `Coroutines` object in the same dependency package — nothing imports it,
   and its version is not what resolves.
+- **`failOnVersionConflict()` is enabled.** Adding a dependency that brings a
+  different version of an already-forced library fails resolution rather than
+  silently choosing one. Adjust the coordinate in
+  `buildSrc/src/main/kotlin/io/spine/internal/dependency/` and the force list
+  when the conflict is real; do not work around it in a module build file.
 - **Explicit API mode is on in both builds** — each calls `explicitApi()`
   in its Kotlin block. The compiler enforces exactly two
   things: an explicit visibility modifier and an explicit return type on
@@ -124,9 +138,9 @@ Within the root modules:
 - **Confine `runBlocking` to a bridge** from a non-suspend API into suspend
   code. Inside a `suspend` function it is always a bug.
 - **Expose read-only types from public API** — `List` over `MutableList`,
-  `StateFlow` over `MutableStateFlow`, and never the mutable backing
-  property itself. Explicit API mode makes each of these a published
-  contract.
+  `StateFlow` over `MutableStateFlow`, `State` over `MutableState`, and never
+  the mutable backing property itself. Explicit API mode makes each of these a
+  published contract.
 - **Immutability first**: `val` over `var`, and `copy()` on a data class
   rather than mutation.
 - **Named arguments once a Kotlin call takes three or more parameters**,
@@ -164,10 +178,13 @@ Within the root modules:
 - **No platform-type leak in public API.** A value crossing from Java
   arrives as `String!`; give the public declaration an explicit nullable or
   non-null type rather than letting the platform type propagate.
-- **No language feature newer than 1.8.20**, and no stdlib API added after
-  it without a deliberate decision — see "Toolchain Ceiling".
+- **No language feature newer than Kotlin 1.8**, and no stdlib API added after
+  1.8.20 without a deliberate decision — see "Toolchain Ceiling".
 - **No new deprecated-API call** without that explicit instruction; use the
   replacement named in the `@Deprecated` or `ReplaceWith` message.
+- **No blanket Detekt suppression.** Suppress the narrowest rule at the
+  narrowest declaration, matching existing style, and only when that rule is
+  genuinely wrong about the site.
 
 ## Verification
 
@@ -175,9 +192,9 @@ Compile the narrowest module first; the full command set and the JDK
 constraints live in `AGENTS.md`, "Verification and Quality".
 
 ```bash
-./gradlew :<module>:compileKotlin
-./gradlew :<module>:test
-./gradlew detekt
+.agents/workflows/gradle-root.sh :<module>:compileKotlin
+.agents/workflows/gradle-root.sh :<module>:test
+.agents/workflows/gradle-root.sh detekt
 ```
 
 Detekt runs over these modules — do not introduce new violations, and keep

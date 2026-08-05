@@ -86,6 +86,8 @@ duplicate its steps.
   get wrong, including which toolchain ceiling governs the file and the
   sanctioned exceptions to otherwise-standard bans.
 - Missing or weak tests for changed logic, extensions, or codegen behavior.
+  For whether an added suite follows local conventions, apply
+  `.agents/skills/kotlin-jvm-tester/SKILL.md`.
 - Version-policy misses: `chordsVersion` not incremented, or `pom.xml` /
   `dependencies.md` not regenerated when required.
 - Module-ownership violations, leaked state, unjustified reflection, and
@@ -110,7 +112,9 @@ duplicate its steps.
   security-specific analysis.
 - Documentation and comment findings go to
   `.agents/skills/docs-reviewer/SKILL.md`.
-- Test design or coverage authoring goes to `.agents/skills/tester/SKILL.md`.
+- Test design or coverage authoring goes to `.agents/skills/tester/SKILL.md`;
+  test-suite conventions go to
+  `.agents/skills/kotlin-jvm-tester/SKILL.md`.
 
 ## Skip
 
