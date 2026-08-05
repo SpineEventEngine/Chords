@@ -129,6 +129,14 @@ that case is content, not history — bump `chordsVersion`, regenerate `pom.xml`
 and `dependencies.md`, and write `## Pull Request` — and the ref and index
 comparison still runs after your turn.
 
+The branch the run started from is not your concern either way. The driver
+creates or continues the task branch at the exact `start_commit` recorded at
+setup and targets the immutable `pr_base_branch` (`master` by default). When
+that commit carries history outside the target, `base_branch` provides its
+human-readable label and the driver adds a `## Reviewer notes` paragraph with
+the exact commit boundary. Do not write a second stacking note in
+`## Pull Request`.
+
 ## Working Document
 
 One file per task at `.agents/work/<slug>/plan.md`, created from
@@ -140,6 +148,13 @@ transcript, written by the driver. The document records what an agent chose to
 write down; the transcripts record what it actually did. Read them when a turn
 produces a surprising result — an agent's own account of its work is not
 evidence.
+
+`.agents/work/<slug>/rounds/` holds what each review round was handed. The
+driver writes `plan-<N>.md` (the plan text) and `impl-<N>.patch` (the whole
+changeset, untracked files included) at the handoff to `agent2`, because
+nothing else preserves them: the plan is revised in place and the
+implementation is never committed. A round after the first is told where the
+previous round's file is, and reviews the delta against it.
 
 ### Frontmatter
 
@@ -155,13 +170,23 @@ impl_round: 1
 max_rounds: 2
 dirty_at_start: no
 resume_status: none
+question_origin: none
 manual_testing: unknown
 agent1: claude
 agent2: codex
+claude_model: claude-opus-5
+claude_effort: high
+codex_model: gpt-5.6-sol
+codex_effort: high
 issue: https://github.com/SpineEventEngine/Chords/issues/123
 issue_number: 123
 issue_title: Add keyboard-accessible copy action
 base_commit: 825c14b
+base_branch: master
+start_commit: ebd7c8413f01c19e8dc12d48f150e79c50a94c78
+pr_base_branch: master
+changeset_digest: none
+reviewed_changeset_digest: none
 updated: 2026-07-31T14:20:00Z
 ```
 
@@ -177,16 +202,48 @@ updated: 2026-07-31T14:20:00Z
   "Termination".
 - `issue`, `issue_number`, `issue_title` — the GitHub issue snapshot this task
   came from. Written by the driver at `start`; neither agent changes them.
+- `agent1`, `agent2` — the selected command executables. Written by the driver
+  at `start` and immutable so a resumed task cannot silently change roles.
+- `claude_model`, `claude_effort`, `codex_model`, `codex_effort` — the
+  engine-specific settings selected at setup. Written by the driver and
+  immutable so a resumed task uses the same models regardless of role swaps.
+  `(default)` means a direct CLI command omitted that setting; `(custom)` means
+  an opaque wrapper may hide the engine from the driver; `(unconfigured)` means
+  both commands identify another engine directly, so this engine is not used.
 - `dirty_at_start` — whether the caller explicitly included existing worktree
   changes. Written by the driver and immutable; a dirty start cannot publish.
 - `resume_status` — where `agent1` continues after its questions are answered.
-  Set alongside `questions-pending`, and `none` at all other times.
+  Set alongside `questions-pending`, and `none` at all other times. It must be
+  the status the asking turn started from. The driver records that status in
+  its immutable `question_origin` field and requires the two to match when the
+  answers return, so editing `resume_status` cannot skip a phase.
+- `question_origin` — the asking status recorded by the driver. Agents never
+  edit it; the driver clears it after resuming.
 - `manual_testing` — `unknown` until `agent1`'s final turn, then `required` or
   `none`. The driver reads it to decide whether to print `## Manual Testing`
   when the run finishes.
-- `base_commit` — commit the work started from. The driver writes it at setup
-  and neither agent changes it. `agent2` scopes the implementation review to
-  `git diff <base_commit>...HEAD`.
+- `base_commit` — the prospective pull request baseline: the merge-base of
+  `HEAD` with the remote-tracking `pr_base_branch`. It is written by the driver
+  at setup and changed by neither agent. Commits between `base_commit` and
+  `start_commit` are inherited branch history, not this task's review scope.
+- `base_branch` — branch `HEAD` was on at setup, or the abbreviated commit if it
+  was detached. Written by the driver and immutable. It labels the starting
+  point in a stacked pull request even if that branch is later moved, renamed,
+  or deleted. Neither agent changes it.
+- `start_commit` — the exact `HEAD` at setup. Written by the driver and
+  immutable. Publication creates or continues the task branch at this commit,
+  uses it as `agent2`'s implementation-review baseline, separates the task's
+  version bump from an inherited one, and names it as the boundary between
+  earlier and task commits in a stacked pull request.
+- `pr_base_branch` — the pull request target selected at setup (`master` by
+  default). Written by the driver and immutable so resuming in another shell
+  cannot silently retarget the reviewed changeset.
+- `changeset_digest` — `none` until the run reaches `done`, then a digest of
+  the reviewed changeset, written by the driver. Publication compares it, so
+  edits made after the review cannot be swept into a pull request.
+- `reviewed_changeset_digest` — the content, type, and mode digest saved when
+  the implementation is handed to `agent2`. Agent 1 cannot finish if the
+  implementation differs from this digest after handling the review.
 - `updated` — UTC timestamp of the turn that just finished.
 
 Rewrite the whole frontmatter block on every turn. Update only the fields your
@@ -230,14 +287,20 @@ Sections are owned. Write only your own; never edit, reword, delete, or
 renumber another agent's text. Add sections for a new round rather than
 overwriting the previous round's.
 
+This is enforced, not merely asked for: the driver opens only the sections the
+current state needs and hashes every other section. That protects the other
+role's text and the active role's completed prior rounds. `## Log` is the
+single shared section; every turn appends exactly one line, and earlier entries
+remain verbatim.
+
 | Section                              | Owner    |
 |--------------------------------------|----------|
 | `## Issue`                           | driver — neither agent edits it |
 | `## Task`                            | `agent1` |
 | `## Questions`                       | `agent1` asks, the user answers |
 | `## Plan`                            | `agent1` |
-| `## Plan Review`                     | `agent2` |
-| `## Plan Dispositions`               | `agent1` |
+| `## Plan Review — Round N`           | `agent2` |
+| `## Plan Dispositions — Round N`     | `agent1` |
 | `## Implementation — Round N`        | `agent1` |
 | `## Implementation Review — Round N` | `agent2` |
 | `## Implementation Dispositions — Round N` | `agent1` |
@@ -335,7 +398,9 @@ still `blocked`; a default cannot substitute for a specification.
    `Disposition` is `Accepted`, `Rejected`, or `Deferred`. `Rejected` and
    `Deferred` require a reason in `Notes`; `Accepted` requires how the plan
    changed.
-2. Revise `## Plan` in place to reflect accepted findings.
+2. Revise `## Plan` in place to reflect accepted findings. The previous
+   version is not lost — the driver saved it as `rounds/plan-<N>.md` at the
+   handoff, which is what the next round compares against.
 3. Decide whether the plan needs another look, on the same rule the
    implementation phase uses:
    - Verdict `APPROVE` or `APPROVE WITH CHANGES`, or every Must-fix finding
@@ -364,9 +429,12 @@ still `blocked`; a default cannot substitute for a specification.
    completeness rule.
 2. Apply accepted findings and re-run the verification that covers them.
 3. Decide the next state:
-   - Verdict `APPROVE` or `APPROVE WITH CHANGES`, or all Must-fix findings
-     dispositioned `Accepted` and applied → write `## Outcome` and set
+   - Verdict `APPROVE` or `APPROVE WITH CHANGES`, no implementation change
+     after review, and all findings dispositioned → write `## Outcome` and set
      `status: done`, `turn: human`.
+   - Any accepted finding changes a source file, file type, or executable bit →
+     increment `impl_round`, set `status: implementation-review-requested`,
+     `turn: agent2`, and document the change in the new implementation round.
    - Verdict `REQUEST CHANGES` and `impl_round` < `max_rounds` → increment
      `impl_round`, set `status: implementation-review-requested`,
      `turn: agent2`.
@@ -414,6 +482,11 @@ Read `AGENTS.md` and the relevant area skill. Review is read-only with respect
 to the codebase: change no source file, run no verification unless the document
 asks for it, and write only your own sections of the working document.
 
+The driver fingerprints tracked and untracked file content around your turn and
+aborts the run if any of it moved. Fixing what you found is not your turn to
+take — a reviewer that edits the implementation has ended the independence the
+second opinion exists for. Write the finding; `agent1` applies it.
+
 Review independently. The plan's reasoning is one input, not a conclusion to
 ratify — you are in this loop because you are a different model.
 
@@ -427,8 +500,10 @@ reserve it for a plan that would build the wrong thing — not for one you would
 have written differently.
 
 On `plan_round` > 1, review the revision and the dispositions for the previous
-round. Do not re-raise a finding that was dispositioned `Rejected` unless you
-have new evidence, and say what it is.
+round. The plan as that round saw it is in `rounds/plan-<N-1>.md`, and the
+prompt names the file; diff against it rather than guessing what moved. Do not
+re-raise a finding that was dispositioned `Rejected` unless you have new
+evidence, and say what it is.
 
 Assess whether the plan solves the stated task, fixes the root cause rather
 than masking it, respects module ownership and the toolchain constraints, and
@@ -442,13 +517,20 @@ findings.
 
 ### From `implementation-review-requested`
 
-1. Scope the diff: `git diff <base_commit>...HEAD` plus uncommitted changes
-   (`git diff HEAD`, `git ls-files --others --exclude-standard`). The plan
-   document is context, not the review target.
+1. Scope the diff from `start_commit`: `git diff <start_commit>...HEAD` plus
+   uncommitted changes (`git diff HEAD`,
+   `git ls-files --others --exclude-standard`). Commits between `base_commit`
+   and `start_commit` belong to the branch this run inherited. Read them only
+   as context; do not raise findings on them or ask `agent1` to edit them. For
+   a legacy, non-publishing document without `start_commit`, use `HEAD` as the
+   baseline because agent work remains uncommitted. The plan document is
+   context, not the review target.
 2. On `impl_round` > 1, review only the delta since the previous round and the
-   dispositions for it. Do not re-raise a finding the previous round
-   dispositioned `Rejected` unless you have new evidence — say what the new
-   evidence is.
+   dispositions for it. The previous round's changeset is in
+   `rounds/impl-<N-1>.patch` and the prompt names it; the delta is the
+   difference between that patch and the diff above. Do not re-raise a finding
+   the previous round dispositioned `Rejected` unless you have new evidence —
+   say what the new evidence is.
 3. Apply `.agents/skills/code-reviewer/SKILL.md`: its Review Procedure, Review
    Focus, Skip list, and Output Format, ending with a verdict of `APPROVE`,
    `APPROVE WITH CHANGES`, or `REQUEST CHANGES`.
@@ -490,6 +572,17 @@ had enough. Guards:
   agent.
 - Each turn must change `status`. The driver aborts if a turn returns the
   document unchanged, which means the agent failed rather than advanced.
+- A review turn must leave a review: the round's exact section, non-empty, with
+  one of the three verdicts as its final non-blank line. A round cannot advance
+  on the previous round's findings or a verdict word mentioned in prose.
+- `agent1` cannot leave a phase with findings unanswered. Every finding ID in
+  the round's review needs exactly one row in that round's dispositions table,
+  using `Accepted`, `Rejected`, or `Deferred` with a non-empty note. A
+  `REQUEST CHANGES` verdict closes the forward move outright — from there the
+  only ways on are another round, `blocked`, or a question. A disposition
+  cannot overrule a verdict.
+- `done` needs a non-empty `## Outcome`. It is the claim that the task is
+  finished, and it is what the user reads first.
 - Set `blocked` rather than guessing whenever a decision is the user's:
   contradictory review findings, an ambiguous requirement, or a workaround
   that `AGENTS.md` requires confirmation for.
@@ -526,6 +619,12 @@ either:
   cannot build hands off an implementation it never compiled, and the reviewer
   spends its round saying so instead of reading the code.
 
-Swap roles or narrow what an agent may do by exporting `AGENT1_CMD` and
-`AGENT2_CMD`; `pair.sh` with no arguments prints both defaults. Keep the flags
-above when you do. The Git tripwire remains active in every mode.
+Pass `--swap-agents` or `--sa` to exchange `agent1` and `agent2`. Repeat the
+option when resuming the task; the driver checks the choice against the agent
+names recorded at start. Select engine settings with `--claude-model`,
+`--claude-effort`, `--codex-model`, and `--codex-effort`; the driver records
+them at setup, restores them on resume, and keeps them attached to their engine
+when roles are swapped. To change a complete command instead, export
+`AGENT1_CMD` or `AGENT2_CMD`; `pair.sh` with no arguments prints both defaults.
+Keep the flags above when you do. The Git tripwire remains active in every
+mode.

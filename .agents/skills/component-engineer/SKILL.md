@@ -46,8 +46,8 @@ build logic, use `.agents/skills/build-engineer/SKILL.md`.
   Compose APIs in use are experimental
   (`@OptIn(ExperimentalComposeUiApi::class)`); keep such opt-ins localized
   and documented.
-- For the Kotlin language itself — the 1.8.20 ceiling, explicit API mode,
-  null-safety, `lateinit` in `Props`, and coroutine scoping — follow
+- For the Kotlin language itself — the root compiler/library split, explicit
+  API mode, null-safety, `lateinit` in `Props`, and coroutine scoping — follow
   `.agents/skills/kotlin-engineer/SKILL.md`.
 - Match existing KDoc style: `@param` tags for type parameters and
   constructor-like parameters, backticked identifiers, and wrapped lines
@@ -74,9 +74,9 @@ build logic, use `.agents/skills/build-engineer/SKILL.md`.
 Run the narrowest relevant command first (repository root, JDK 11):
 
 ```bash
-./gradlew :<module>:test
-./gradlew :<module>:check
-./gradlew clean build
+.agents/workflows/gradle-root.sh :<module>:test
+.agents/workflows/gradle-root.sh :<module>:check
+.agents/workflows/gradle-root.sh clean build
 ```
 
 UI rendering and interaction cannot be covered by automated tests here. For

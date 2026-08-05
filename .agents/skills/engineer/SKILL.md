@@ -11,9 +11,10 @@ description: >
 # Engineering Router
 
 `.agents/skills/kotlin-engineer/SKILL.md` applies to *all* of the areas
-below — it owns the Kotlin language baseline (the pinned 1.8.20 ceiling,
-null-safety, coroutine scoping, public types under explicit API mode). Pair
-it with the area skill that owns the code being changed:
+below — it owns the Kotlin language baseline (the root compiler/library split,
+the separate codegen-plugin toolchain, null-safety, coroutine scoping, and
+public types under explicit API mode). Pair it with the area skill that owns
+the code being changed:
 
 - `.agents/skills/component-engineer/SKILL.md` for class-based Compose UI
   components in `core`, `proto`, and `client`: the component model,

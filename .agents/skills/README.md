@@ -5,9 +5,10 @@ routing source of truth.
 
 - `engineer`: routing skill for mixed or unclear implementation work, and
   the home of the shared design-restraint policy.
-- `kotlin-engineer`: the Kotlin language itself — the 1.8.20 ceiling,
-  null-safety, `lateinit`, coroutine scoping, and public-type rules. Pairs
-  with whichever area skill owns the code being changed.
+- `kotlin-engineer`: the Kotlin language itself — the root/compiler/library
+  version split, the separate codegen-plugin toolchain, null-safety,
+  `lateinit`, coroutine scoping, and public-type rules. Pairs with whichever
+  area skill owns the code being changed.
 - `component-engineer`: class-based Compose UI components across `core`,
   `proto`, and `client` — the component model, input components, message
   forms, and server-connected components.

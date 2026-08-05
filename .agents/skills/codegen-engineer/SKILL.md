@@ -29,10 +29,10 @@ For components that merely consume generated metadata, prefer
 
 ## Policy
 
-- `codegen/plugins` targets JDK 17, Gradle 9.4.x, and Kotlin 2.3.20; the rest
-  of the repository targets JDK 11, Gradle 6.9.4, and Kotlin 1.8.20. Never mix
-  the two toolchains in one command or assume APIs from one are available in
-  the other.
+- `codegen/plugins` targets JDK 17, Gradle 9.4.x, and Kotlin 2.3.20; the root
+  build targets JDK 11 and Gradle 6.9.4, with the Kotlin version split described
+  in `.agents/skills/kotlin-engineer/SKILL.md`. Never mix the two toolchains in
+  one command or assume APIs from one are available in the other.
 - The generated-code contract is consumed by `proto` and `client` and by
   external projects: changes to `MessageField`/`MessageOneof`/`MessageDef`
   shapes are public API changes on both the generator and runtime sides and
@@ -62,10 +62,10 @@ Codegen plugin changes (from `codegen/plugins/`, JDK 17):
 Runtime and end-to-end verification (from the repository root, JDK 11):
 
 ```bash
-./gradlew :runtime:test
-./gradlew :codegen-tests:test
-./gradlew :proto-values:test
-./gradlew clean build
+.agents/workflows/gradle-root.sh :runtime:test
+.agents/workflows/gradle-root.sh :codegen-tests:test
+.agents/workflows/gradle-root.sh :proto-values:test
+.agents/workflows/gradle-root.sh clean build
 ```
 
 The root build republishes codegen plugins to Maven local automatically before

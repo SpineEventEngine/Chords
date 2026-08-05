@@ -1,6 +1,6 @@
 # Pair Agents Run Guide
 
-Hand a GitHub issue to two AI agents. One plans and implements it, the other
+Hand a GitHub issue to two AI agents. One plans and implements it; the other
 reviews — the plan before any code is written, and the diff afterward. You get
 back an uncommitted worktree and a record of what they agreed and disagreed on.
 
@@ -14,48 +14,40 @@ two modules — anything where you want a review before you spend your own time
 reading a diff.
 
 **Poor fits:** an issue that is really a question or a discussion; anything
-touching publishing credentials, workflow secrets, or the `config` submodule;
-changes you would not let an agent make unattended, since that is what happens
-(see [Safety](#safety)).
+touching production deployment, infrastructure, credentials, or workflow
+secrets; changes you would not let an agent make unattended, since that is
+what happens (see [Safety](#safety)).
 
 ## Before You Start
 
-Claude Code open in this repository, and four things on your `PATH`: `claude`,
-`codex`, `gh` (run `gh auth status`), and `jq`. If one is missing, the run says
-so and stops before doing anything.
+### Required Tools
 
-Being on `PATH` is not the same as being signed in, and the driver only checks
-the former. `claude` and `codex` each hold their own credentials, so either can
-be authenticated while the other is not. An unauthenticated CLI produces a turn
-that dies immediately having written nothing — `Not logged in · Please run
-/login` is the whole transcript. Nothing is lost when that happens: fix the
-sign-in and run the same command again, and it resumes from the turn that
-failed.
+Run from the repository root with these tools installed and on `PATH`:
 
-And an issue that makes two things clear:
+- Git (`git`): install with `brew install git`; check with `git --version`.
+- Claude Code (`claude`): install with `brew install --cask claude-code`; check
+  with `claude auth status` and sign in with `claude auth login`.
+- Codex CLI (`codex`): install with `brew install --cask codex`; check with
+  `codex login status` and sign in with `codex login`.
+- GitHub CLI (`gh`): install with `brew install gh`; check repository access
+  with `gh auth status` and sign in with `gh auth login`.
+- `jq`: install with `brew install jq`; check with `jq --version`.
+
+If a check fails, install or sign in to that tool, then run the workflow command
+again. An existing run resumes from the failed turn.
+
+### Prepare the GitHub Issue
+
+The GitHub issue must make two things clear:
 
 - **What to do, or what is wrong** — the functionality to add, or the
   misbehavior, concrete enough to act on.
 - **Acceptance criteria** — checkable conditions that settle when it is done.
 
-Headings do not matter; nothing looks for particular section names. This is the
-one thing worth getting right, because the reviewer checks the work against
-these criteria. If they are missing, the run stops on the first turn and tells
-you what to add rather than inventing them.
+Headings do not matter. If either part is missing, the first turn stops and
+tells you what to add.
 
-A feature issue can be this short:
-
-```markdown
-Add a copy-to-clipboard button to the validation error panel, so a user can
-paste the full message into a bug report.
-
-Done when:
-- Each error entry has a copy control that copies that entry's full text.
-- The control is reachable by keyboard.
-- A test covers the copied text matching the displayed message.
-```
-
-## Run It
+## Run It with `/pair`
 
 In Claude Code, give it an issue number:
 
@@ -63,69 +55,101 @@ In Claude Code, give it an issue number:
 /pair 150
 ```
 
-That is the whole interface. Claude sets the run up, drives it through plan,
-review, implementation, and review, and stays between you and it: when the
-agents have a question it asks you here, writes your answer back for them, and
-carries on. When the run finishes it reports what happened. You never open the
-working file.
+An issue URL works too. Claude Code operates the workflow, relaying questions
+and the final result in the conversation.
 
-An issue URL works in place of the number.
+### Common Options
 
-What you will hear back, in one of four shapes:
+| Short form | Full form | Description |
+|------------|-----------|-------------|
+| `--ad` | `--accept-defaults` | Record and use planner defaults instead of asking questions. |
+| `--mr N` | `--max-rounds N` | Set the review limit per phase for a new task; default: `2`. |
+| `--cp` | `--create-pr` | Publish a finished run as a draft PR. |
+| `--sa` | `--swap-agents` | Swap the implementer and reviewer. |
+| — | `--claude-model MODEL` | Select the Claude Code model. |
+| — | `--claude-effort LEVEL` | Select the Claude Code effort level. |
+| — | `--codex-model MODEL` | Select the Codex model. |
+| — | `--codex-effort LEVEL` | Select the Codex reasoning effort. |
+
+Possible results:
 
 - **Done.** Automated tests cover every acceptance criterion. Read the diff,
   then commit.
 - **Done, but it needs manual testing.** Claude gives you the plan. Work through
   it, then commit.
-- **It has a question, or it is stuck.** Answer in the conversation, or decide.
+- **Question or blocked.** Answer a question in the conversation; a blocked
+  run needs manual direction.
 - **Something went wrong.** Claude reports the error and what to do.
 
 Nothing is ever committed for you unless you ask — see
 [Opening a Pull Request](#opening-a-pull-request).
 
-### Walking away
+### Walking Away
 
 ```
 /pair 150 --ad
 ```
 
-Stops the run pausing on questions: the planner takes the default it would have
-proposed and carries on, recording each assumption for the reviewer to check.
-Use it when nobody is watching. `--accept-defaults` is the same flag spelled
-out.
+The planner takes its proposed defaults instead of pausing for answers and
+records every assumption for review. `--accept-defaults` is the long form.
 
-### Without Claude Code
+### Swap the Agents
 
-The command is a wrapper. The workflow itself is a shell script you can run
-from any terminal, with the same arguments:
+The default assignments are:
 
-```bash
-.agents/workflows/pair.sh 150
+- `agent1`: Claude, the planner and implementer.
+- `agent2`: Codex, the reviewer.
+
+Reverse them with:
+
+```
+/pair 150 --sa
 ```
 
-You then read its output yourself, and **run the same command again** whenever
-something stops it — that is always the next step, and it resumes wherever it
-left off. Exit codes are in [Reference](#reference).
+Codex becomes the planner and implementer; Claude becomes the reviewer.
+`--swap-agents` is the long form.
+
+### Choose Models and Effort
+
+The defaults are Claude Opus 5 and GPT-5.6 Sol, both at high effort. Override
+one or both engines when starting a task:
+
+```
+/pair 150 \
+  --claude-model opus --claude-effort xhigh \
+  --codex-model gpt-5.6-sol --codex-effort high
+```
+
+The driver records all four settings with the task and restores them on
+resume. Start a new task to use different settings. `--swap-agents` changes
+the engines' roles, not which settings belong to Claude and Codex.
+
+#### Possible Values
+
+- `--claude-model`: `default`, `best`, `opus`, `sonnet`, `haiku`, `opusplan`,
+  a supported `[1m]` variant such as `opus[1m]`, or a full model or provider
+  name accepted by Claude Code. See
+  [Claude Code model configuration](https://code.claude.com/docs/en/model-config).
+- `--claude-effort`: `low`, `medium`, `high`, `xhigh`, or `max`. Support varies
+  by model; Claude Code may use the nearest supported level.
+- `--codex-model`: `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`, or another
+  model ID available to the installed Codex CLI and its provider. See
+  [Codex model selection](https://learn.chatgpt.com/docs/models).
+- `--codex-effort`: `minimal`, `low`, `medium`, `high`, or `xhigh`. The pair
+  driver configures Codex's `model_reasoning_effort`, whose accepted values do
+  not include the app's Max or Ultra modes.
+
+Model availability depends on the installed CLI, account, and provider. The
+driver rejects malformed names and unsupported effort values before setup; an
+unavailable model is reported by its CLI at the first turn.
 
 ## When It Needs You
 
-Two things can interrupt a run, and Claude brings both to you here.
-
-**Questions.** The planner hit something that changes what it builds and asked
-rather than guessed — for example, *"Should the observation retry on failure?"*
-Claude puts each question to you as a choice, with the agent's own proposal
-marked as the default. It asks one question per message, records that answer,
-then asks the next. Once all recorded questions have answers, the run continues
-on its own.
-
-**Blocked.** The task cannot proceed as written: the issue is unusable, the two
-agents did not converge within the review rounds, or a call is genuinely yours.
-Claude explains which and why. Usually you improve the issue and start again.
-
-Running the script directly, both look the same but land in your terminal: the
-questions print, and you write an `**A1.**` line under each one in the document
-it names, then run the command again. Answering *is* the whole action — leave
-one unanswered and it stops again and says which.
+- **Question:** Claude asks one question at a time and marks the agent's
+  proposed default. The run continues after all answers are recorded.
+- **Blocked:** the issue is unusable, the agents did not converge, or a human
+  decision is required. Claude explains the blocker; the workflow does not
+  resume automatically.
 
 ## Opening a Pull Request
 
@@ -136,200 +160,233 @@ and it publishes when it finishes:
 /pair 150 --cp
 ```
 
-Branch, commit, push, and a **draft** PR assigned to you, with `Fixes #150` in
-the description. Claude confirms with you before starting a run that will
-publish, and reports the PR URL at the end.
+After the reviews finish, the driver creates a branch, commits, pushes, and
+opens a **draft** PR assigned to you with `Fixes #150`. The agents never perform
+Git writes themselves. An interruption before publication creates no Git
+history; if publication fails partway through, the driver reports what
+succeeded and a rerun resumes from there.
 
-The agents still never touch Git — the driver does this afterwards, once the
-run has actually finished. A run that stopped for you or aborted publishes
-nothing.
+The task branch starts at the exact commit where the run began and targets
+`master` by default. If the run started on a branch with commits not yet in
+`master`, the driver reports that inherited history during setup, excludes it
+from the agents' implementation review, and adds a `## Reviewer notes` section
+for the human reviewer. Moving, renaming, or deleting the starting branch does
+not change the review boundary.
 
-Two conditions, both checked rather than assumed:
-
-- **Your worktree must be clean when the run starts.** Otherwise the commit
-  would sweep up whatever you had in progress — and the reviewer would judge
-  your unrelated edits against the issue. Any run refuses to start on a dirty
-  worktree; `--allow-dirty` overrides that, at the cost of both, and disables
-  publishing for the run.
-- **You must be on `master` or on the task's own branch.** On any other branch
-  it stops rather than committing somewhere you did not intend.
-
-`--create-pr` is the same flag spelled out. The PR is a draft on purpose: read
-the diff before marking it ready.
+`--create-pr` is the long form. Read the diff before marking the PR ready.
 
 ## When It Finishes
 
-Without `--cp`, nothing was committed — the agents are not allowed near Git, so
-what you have is an uncommitted worktree.
+Claude reports the final outcome in the conversation and explains what, if
+anything, still needs your attention. It also summarizes meaningful
+disagreements between the agents and how they were resolved, so normal `/pair`
+use does not require reading the workflow's internal documents.
 
-1. Read the summary of what shipped and what was rejected — Claude reports it,
-   and `## Outcome` in the document holds the same thing.
-2. Read the diff.
-3. If manual testing was called for, work through the plan. Each step names the
-   acceptance criterion it covers.
-4. Commit, following [`AGENTS.md`](AGENTS.md).
+Without `--cp`, the changes remain uncommitted for you to review. With `--cp`,
+Claude gives you the draft PR link instead.
 
-Worth a look when something seems off: `## Implementation Dispositions` records
-every review finding and whether the implementer accepted or rejected it, with
-reasons. That is where the two agents actually disagreed.
+1. Read Claude's outcome summary and inspect the diff.
+2. If manual testing is required, follow the steps Claude provides. Each step
+   identifies the acceptance criterion it covers.
+3. When you are satisfied with the result, commit the local changes or review
+   the draft PR before marking it ready.
 
 ## Safety
 
-The default commands retain their CLI safety boundaries. Claude runs in
-`acceptEdits` mode with project settings only, and Codex runs in its
-`workspace-write` sandbox without loading user configuration. A non-interactive
-turn stops if it needs an approval those modes cannot grant. Read the diff
-before you commit even in this mode.
+Claude runs in `acceptEdits` mode with project settings; Codex uses its
+`workspace-write` sandbox without user configuration. The agent instructions
+treat issue text as untrusted task data rather than as instructions. The driver
+checks that:
 
-If you supply an agent command that contains a known approval or sandbox bypass,
-the driver refuses it unless `--allow-unsafe-agents` is present. That override
-is only for an externally isolated, credential-free environment; the driver
-does not create that environment for you.
+- agents do not change Git refs or the index;
+- the reviewer does not change source files or saved review snapshots;
+- completed document sections and log history remain unchanged; and
+- every review has a verdict and every finding has one valid disposition.
 
-**The issue body is untrusted input.** Anyone who can file an issue can put
-text in it. The skill tells both agents to treat `## Issue` as task data rather
-than instructions, and to stop and ask if it contains directives. Keep the CLI
-boundaries enabled; if you explicitly remove them, run only somewhere
-disposable that holds no credentials.
+The Git check is a tripwire, not a sandbox: it detects changes after a turn and
+cannot identify who made them. Do not modify Git state in another window while
+a run is active.
 
-**They are told not to touch Git, and the run checks afterwards.** No branches,
-commits, pushes, or pull requests; every ref and the index are compared after
-each turn and the run aborts if anything moved. Be clear about what that is:
-a tripwire, not a barrier. It runs after the fact, a change that is undone
-again passes it, and effects outside this repository leave no local trace.
-It tells you when the rule was broken; it cannot stop the breaking.
+`--cp` changes only the driver's final publication step; it does not loosen
+agent permissions or review checks.
 
-It also cannot tell who did it. The check compares the repository before and
-after a turn, and switching branches or committing in another window while a
-run is live produces exactly the diff an offending agent would. So do neither
-during a run — and if the guard trips and the diff is your own doing, that is
-all it is: start the run again and it resumes from the turn that was cut off.
+## Advanced Mode: Direct Script Usage
 
-`--cp` does not loosen any of this. That flag lets the *driver* publish once
-the agents have finished.
+Most users can stop here. Use the workflow driver directly only when Claude
+Code is unavailable, you need one-step or status commands for automation, or
+you need to customize agent commands, models, or publication settings.
 
-## How to Change Models and Efforts for Agents
+Run advanced commands from the repository root.
 
-Both sides run a pinned model at high effort: **Claude Opus 5** plans and
-implements, **GPT-5.6 Sol** reviews. They are pinned rather than left to each
-CLI's default because the point of the workflow is that a particular second
-model checked the work — a default that shifts under you quietly changes what
-the review was worth.
+### Run Directly
 
-Each agent is a whole command line, held in an environment variable. To see the
-current ones:
+Start or resume the same workflow from a terminal:
+
+```bash
+.agents/workflows/pair.sh 150
+```
+
+If it stops, follow the message and run the command again. Keep saved options
+such as `--sa`, but omit `--mr` or `--max-rounds`: the review limit is recorded
+at setup, and those forms are accepted only when creating a task.
+
+When the script stops for questions, add an `**A<n>.**` line under each
+question in `.agents/work/issue-150/plan.md`, using the matching question
+number, then run the command again.
+
+### Script Commands
+
+- `.agents/workflows/pair.sh <issue>` or
+  `.agents/workflows/pair.sh run <issue>` — set up on the first call and resume
+  on later calls.
+- `.agents/workflows/pair.sh status <issue>` — report the current state; safe
+  during a run.
+- `.agents/workflows/pair.sh step <issue>` — attempt one workflow step, then
+  stop.
+- `.agents/workflows/pair.sh start <issue>` — set up without running.
+
+### Script Options
+
+- `--ad`, `--accept-defaults` (`run`, `step`) — take proposed defaults instead
+  of asking.
+- `--mr`, `--max-rounds N` (`run`, `start`) — allow up to `N` reviews each of
+  the plan and implementation. With the default `N=2`, each can be reviewed,
+  revised once, and reviewed again. Use it only when creating the task.
+- `--cp`, `--create-pr` (`run`) — branch, commit, push, and open a draft PR
+  after a finished run. It is off by default.
+- `--sa`, `--swap-agents` (`run`, `start`, `step`) — exchange the configured
+  planner/implementer and reviewer. Repeat it when resuming the task.
+- `--claude-model MODEL`, `--claude-effort LEVEL` (`run`, `start`, `step`) —
+  select Claude Code's saved model and effort.
+- `--codex-model MODEL`, `--codex-effort LEVEL` (`run`, `start`, `step`) —
+  select Codex's saved model and reasoning effort.
+- `--allow-dirty` (`run`, `start`) — include existing worktree changes when
+  creating the task. It cannot be combined with `--create-pr`.
+- `--allow-unsafe-agents` (`run`, `step`) — permit configured commands that
+  bypass approvals or sandboxing. External isolation is required.
+- `--max-turns N` (`run`) — override the derived loop guard. Normally leave it
+  unset.
+- `--slug <name>` (`start`) — use a working-directory name other than
+  `issue-<number>`. Resume it with the explicit form
+  `.agents/workflows/pair.sh run <name>`; the bare issue shortcut accepts
+  GitHub issues only.
+
+The driver rejects agent commands that bypass approvals or sandboxing unless
+you pass `--allow-unsafe-agents`. Use that option only in a disposable
+container or VM whose outer isolation replaces the CLI sandbox, with no host
+mounts or unrelated credentials. It is not a shortcut for suppressing
+approvals on a development workstation.
+
+### Exit Codes
+
+Exit codes for scripting `.agents/workflows/pair.sh run`:
+
+| Code | Meaning |
+|------|---------|
+| `0` | Done |
+| `1` | Aborted |
+| `2` | Done, but needs manual testing |
+| `3` | Stopped for you |
+
+The `step` command uses the same codes, except that `0` means the step
+completed without an error, not that the task is done. Check
+`.agents/workflows/pair.sh status <issue>` when scripting around `step`.
+
+### Publication Settings and Guards
+
+For a repository whose pull requests target another branch, set
+`PR_BASE_BRANCH` when creating the run. The driver records that value in the
+working document; omitting or changing the environment variable on a later
+invocation does not retarget the pull request.
+
+Before the first agent turn of a publishing run, the driver requires the
+remote-tracking PR target to exist and have a merge-base with `HEAD`. Before
+its first Git write, it also requires:
+
+- a clean worktree when the run starts (`--allow-dirty` cannot be combined
+  with `--create-pr`);
+- the changeset uncommitted, unless it is already on the task's own branch —
+  work committed onto some other branch is left for you to move;
+- an `origin/<recorded-target>` merge-base matching the recorded PR baseline;
+- `HEAD` still at the recorded starting commit on the first publication
+  attempt, or on the task branch for a retry;
+- content, file types, and executable bits identical to the reviewed state;
+- a `version.gradle.kts` increase made after the recorded starting commit,
+  regenerated `pom.xml` and `dependencies.md` reports, and complete `Summary`
+  and `Changes` sections; and
+- an actionable plan when manual testing is required.
+
+A target-branch update that changes the PR merge-base stops publication; the
+run must be repeated against the new scope.
+
+### Override Complete Agent Commands
+
+Use the `/pair` model and effort options for ordinary selection. Override a
+complete command only to change its executable or other CLI flags. Print both
+defaults with:
 
 ```bash
 .agents/workflows/pair.sh
 ```
 
-**Copy one of those and edit it — do not write a command from scratch.** The
-variable replaces the entire default, so anything you leave out is gone: drop
-`--ignore-user-config` and your personal Codex config silently comes back; drop
-`--permission-mode` and Claude's safety boundary changes; drop `--add-dir` and
-the reviewer can no longer write the document the whole workflow runs on. Keep
-every flag you are not deliberately changing.
+Copy the complete command and change only the intended settings. Without
+`--sa`, the variables map to these default roles:
+
+| Default role | Variable | Model and effort flags |
+|--------------|----------|------------------------|
+| Planner and implementer | `AGENT1_CMD` | `--model`, `--effort` |
+| Reviewer | `AGENT2_CMD` | `-m`, `-c model_reasoning_effort=` |
 
 Set it for one run:
 
 ```bash
-AGENT1_CMD="claude -p --permission-mode acceptEdits --setting-sources project --model sonnet --effort medium" \
+AGENT1_CMD='claude -p --permission-mode acceptEdits --setting-sources project '\
+'--model sonnet --effort medium' \
   .agents/workflows/pair.sh 150
 ```
 
-Export the same line from your shell profile to make it permanent. Through
-`/pair`, just say which model or effort you want in the message — a slash
-command cannot carry an environment prefix.
+Export the variable to use it for the current shell session and child
+processes. The slash command cannot set environment variables: export them
+before starting Claude Code, or run the driver directly with the assignment as
+shown above. To exchange the configured roles without rewriting the variables,
+pass `--sa` or `--swap-agents`.
 
-Swapping the two variables swaps the roles, so the reviewer becomes the planner.
+Keep all safety flags from the printed command. In particular:
 
-### Claude Code — the planner and implementer
+- Claude needs `--setting-sources project` to load the verification allowlist
+  from `.claude/settings.json`.
+- Codex needs `--ignore-user-config` for reproducible settings and `--add-dir`
+  to write the gitignored working document.
 
-Set with `AGENT1_CMD`, using `--model` and `--effort`.
+If a model or effort is rejected, read the relevant turn log under
+`.agents/work/issue-<number>/turns/`. The document records settings that the
+driver can read from direct Claude and Codex commands. An engine hidden by an
+opaque wrapper is recorded as `(custom)`; an engine absent because both
+commands directly identify the other engine is `(unconfigured)`. Note a
+wrapper's hidden settings separately when comparing runs. The `/pair` model
+options require a direct `claude` or `codex` command; configure a wrapper's
+model internally instead.
 
-- `--model` takes an alias for the current model in a family — `opus`,
-  `sonnet`, `haiku`, `fable` — or a full identifier such as `claude-opus-5`.
-  An alias follows the latest release; a full identifier stays put. Prefer the
-  full identifier when you want two runs months apart to be comparable.
-- `--effort` takes `low`, `medium`, `high`, `xhigh`, or `max`.
-
-Values are checked locally. A wrong effort prints a warning that lists the valid
-values and falls back to the default, so a typo costs you nothing.
-
-`--setting-sources project` is what lets the implementer verify its own work.
-It loads `.claude/settings.json` and nothing else — not your personal
-settings, and not `.claude/settings.local.json`. The Gradle and `java` commands
-[`AGENTS.md`](AGENTS.md) prescribes are allowed there for exactly this reason.
-A command missing from that file is refused before it starts, and the run
-continues to a review of code that was never compiled. If you add a
-verification command the workflow should be able to run, add it there rather
-than to your local settings.
-
-### Codex — the reviewer
-
-Set with `AGENT2_CMD`, using `-m` for the model and `-c key="value"` for the
-rest.
-
-- `-m` takes a model identifier, for example `gpt-5.6-sol`.
-- `-c model_reasoning_effort=` takes `minimal`, `low`, `medium`, or `high`.
-- `-c service_tier=` takes `default` for standard speed.
-
-These are passed as flags rather than read from `~/.codex/config.toml`, because
-the workflow runs Codex with `--ignore-user-config` so a review does not change
-with local configuration.
-
-`--add-dir` is not optional. Codex's sandbox refuses to write gitignored paths,
-and `.agents/work/` — where the working document lives — is gitignored on
-purpose, because the document is scratch and is never committed. Without that
-flag the reviewer reads the plan, forms its findings, and then cannot write
-them down; the run ends with `agent2 did not modify … plan.md`.
-
-**Codex does not check these values locally.** An unrecognised effort is
-accepted, echoed in the run header, and then rejected by the API — so a typo
-surfaces as a failed reviewer turn rather than as a configuration error. If a
-first reviewer turn dies for no obvious reason, check the `reasoning effort`
-line in `.agents/work/issue-<number>/turns/02-agent2.log`.
-
-### One thing to know
-
-The working document records only which CLI ran, not which model or effort. A
-run at `minimal` and a run at `high` leave artifacts that look identical
-afterwards, so note it yourself if you are comparing runs.
-
-## Reference
+### Working Files and Legacy Runs
 
 Everything for a task lives in `.agents/work/issue-150/` (gitignored):
-`plan.md` is the shared document, `turns/*.log` the transcript of each turn.
-The document is what an agent chose to write down; the transcripts are what it
-actually did.
+`plan.md` is the shared document, `turns/*.log` contains turn transcripts, and
+`rounds/` holds the plan or changeset saved for each review. The document is
+what an agent chose to write down; the transcripts are what it actually did.
+For a detailed record of disagreements, read `## Plan Dispositions` and
+`## Implementation Dispositions` in `plan.md`.
 
-- `/pair <issue>` — the normal entry point. Claude Code relays questions and
-  results in the conversation.
-- `pair.sh <issue>` — the same run from a terminal. It sets up on the first call
-  and resumes on later calls.
-- `pair.sh status <issue>` — report current state; safe during a run.
-- `pair.sh step <issue>` — take one turn, then stop.
-- `pair.sh start <issue>` — set up without running.
+For working documents created by an older driver, the missing PR target is
+backfilled as `master`, and missing question provenance is backfilled before
+another turn. If the document is already waiting on a question, the driver
+recovers the origin from its saved legacy resume status. A non-publishing run
+may continue without the older starting-branch or model fields. New model
+options cannot be added to such a run. Publication still requires the
+starting-branch fields; if they are missing, continue without `--create-pr` or
+start a replacement with
+`.agents/workflows/pair.sh start <issue> --slug <new-name>`.
 
-Exit codes, for scripting `pair.sh run`: `0` done · `1` aborted · `2` done but
-needs manual testing · `3` stopped for you. `step` uses the same codes, except
-that `0` there means "the turn was taken", which may or may not have finished
-the task — check `status` if you are scripting around it.
-
-- `--ad`, `--accept-defaults` (`run`, `step`) — take proposed defaults instead
-  of asking.
-- `--mr`, `--max-rounds N` (`run`, `start`) — allow `N` review rounds in each
-  phase, and therefore at most `N - 1` send-backs. The default is `2`.
-- `--cp`, `--create-pr` (`run`) — branch, commit, push, and open a draft PR
-  after a finished run. It is off by default.
-- `--allow-dirty` (`run`, `start`) — include existing worktree changes in the
-  review scope. Publication is refused.
-- `--allow-unsafe-agents` (`run`, `step`) — permit configured commands that
-  bypass approvals or sandboxing. External isolation is required.
-
-To change models or efforts, swap which agent does what, or narrow an agent's
-permissions, set `AGENT1_CMD` and `AGENT2_CMD` — see
-[How to Change Models and Efforts for Agents](#how-to-change-models-and-efforts-for-agents).
+### Protocol Reference
 
 The protocol the agents follow is
 [`.agents/skills/pair-workflow/SKILL.md`](.agents/skills/pair-workflow/SKILL.md).
