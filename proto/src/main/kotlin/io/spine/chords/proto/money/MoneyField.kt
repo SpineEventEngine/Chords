@@ -307,9 +307,12 @@ internal class MoneyFieldReviser(
         return sanitizeMoneyField(current, updatedCandidate)
     }
 
-    override fun filterKeyEvent(keyEvent: KeyEvent): Boolean {
-        return keyEvent matches (!Digit and !decimalSeparator.key and !'.'.key).typed
-    }
+    override fun filterKeyEvent(keyEvent: KeyEvent): Boolean =
+        if (currency.options.exponentDigits == 0) {
+            keyEvent matches (!Digit).typed
+        } else {
+            keyEvent matches (!Digit and !decimalSeparator.key and !'.'.key).typed
+        }
 
     /**
      * Updates user's input when entered text replaces the one selected by user.
