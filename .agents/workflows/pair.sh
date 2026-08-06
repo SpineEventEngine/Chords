@@ -1339,19 +1339,107 @@ cmd_status() {
     local slug; slug="$(resolve_slug "${1:-}")" || exit "$EXIT_ERROR"
     local doc; doc="$(doc_for "$slug")"
     require_doc "$doc"
-    local status_format
-    status_format='status: %s\nturn:   %s\nrounds: plan %s/%s, '
-    status_format+='implementation %s/%s\nbase:   %s\nmanual: %s\nupdated:%s\n'
-    printf "$status_format" \
-        "$(frontmatter "$doc" status)" \
-        "$(frontmatter "$doc" turn)" \
+    local status turn agent1 agent2 work manual
+    status="$(frontmatter "$doc" status)"
+    turn="$(frontmatter "$doc" turn)"
+    agent1="$(frontmatter "$doc" agent1)"
+    agent2="$(frontmatter "$doc" agent2)"
+    work="$(status_work "$doc" "$status" "$turn")"
+    manual="$(status_manual_testing "$(frontmatter "$doc" manual_testing)")"
+    printf 'status: %s\nagents: agent1=%s, agent2=%s\nwork: %s\n' \
+        "$status" \
+        "$(status_agent_name "$agent1")" \
+        "$(status_agent_name "$agent2")" \
+        "$work"
+    printf 'rounds: plan %s/%s, implementation %s/%s\n' \
         "$(frontmatter "$doc" plan_round)" \
         "$(frontmatter "$doc" max_rounds)" \
         "$(frontmatter "$doc" impl_round)" \
-        "$(frontmatter "$doc" max_rounds)" \
-        "$(frontmatter "$doc" base_commit)" \
-        "$(frontmatter "$doc" manual_testing)" \
-        "$(frontmatter "$doc" updated)"
+        "$(frontmatter "$doc" max_rounds)"
+    printf 'manual testing: %s\nupdated: %s\n' \
+        "$manual" \
+        "$(status_local_time "$(frontmatter "$doc" updated)")"
+}
+
+# Shortens a recorded executable path to the engine or wrapper name a person
+# recognizes in status output.
+status_agent_name() {
+    local executable="$1"
+    printf '%s' "${executable##*/}"
+}
+
+# Describes the work belonging to the current state instead of exposing only
+# the protocol's role token. A status snapshot cannot distinguish running work
+# from the next queued turn, so the wording remains valid in either case.
+status_work() {
+    local doc="$1" status="$2" turn="$3"
+    local description verdict
+
+    case "$status" in
+        plan-requested)
+            description="planning" ;;
+        plan-review-requested)
+            description="reviewing the plan" ;;
+        plan-reviewed)
+            verdict="$(review_verdict "$doc" \
+                "Plan Review — Round $(frontmatter "$doc" plan_round)")"
+            if [[ "$verdict" == "REQUEST CHANGES" ]]; then
+                description="revising the plan"
+            else
+                description="addressing plan review, then implementing"
+            fi
+            ;;
+        implementation-review-requested)
+            description="reviewing the implementation" ;;
+        implementation-reviewed)
+            verdict="$(review_verdict "$doc" \
+                "Implementation Review — Round $(frontmatter "$doc" impl_round)")"
+            if [[ "$verdict" == "REQUEST CHANGES" ]]; then
+                description="revising the implementation"
+            else
+                description="addressing implementation review, then finishing"
+            fi
+            ;;
+        questions-pending)
+            description="answering the implementer's questions" ;;
+        blocked)
+            description="resolving a blocker" ;;
+        done)
+            printf 'complete'
+            return
+            ;;
+        *)
+            description="waiting at ${status}" ;;
+    esac
+    printf '%s — %s' "$turn" "$description"
+}
+
+# Translates the protocol value into the decision a user needs from status.
+status_manual_testing() {
+    case "$1" in
+        unknown)  printf 'undecided until completion' ;;
+        none)     printf 'not required' ;;
+        required) printf 'required' ;;
+        *)        printf 'undecided (%s)' "${1:-not recorded}" ;;
+    esac
+}
+
+# Converts the driver's UTC timestamp to the workstation's local timezone.
+# GNU date and BSD date parse UTC differently, so use their native forms and
+# retain the recorded value only when neither implementation accepts it.
+status_local_time() {
+    local timestamp="$1" formatted epoch
+    if formatted="$(date -d "$timestamp" '+%b %d, %Y at %H:%M %Z' 2>/dev/null)"; then
+        printf '%s' "$formatted"
+        return
+    fi
+    if epoch="$(TZ=UTC date -j -f '%Y-%m-%dT%H:%M:%SZ' \
+        "$timestamp" '+%s' 2>/dev/null)" \
+        && formatted="$(date -r "$epoch" '+%b %d, %Y at %H:%M %Z' 2>/dev/null)"; then
+        printf '%s' "$formatted"
+        return
+    fi
+    printf '%s' "$timestamp"
 }
 
 # A finished task whose acceptance criteria cannot be settled by automated
