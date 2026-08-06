@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,12 @@
 
 package io.spine.chords.proto.money
 
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.text.TextRange
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.DisplayName
 import io.kotest.matchers.shouldBe
 import io.spine.chords.core.RawTextContent
+import io.spine.chords.proto.value.money.options
 import io.spine.money.Currency
 import io.spine.money.Currency.BIF
 import io.spine.money.Currency.IQD
@@ -39,15 +40,29 @@ import io.spine.money.Currency.PYG
 import io.spine.money.Currency.TZS
 import io.spine.money.Currency.UAH
 import io.spine.money.Currency.USD
+import io.spine.money.Currency.VND
 import io.spine.money.Currency.ZWL
+import java.awt.Panel
+import java.awt.event.KeyEvent.KEY_TYPED
+import java.awt.event.KeyEvent.VK_UNDEFINED
 import java.text.DecimalFormatSymbols
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
+/**
+ * The decimal separator used by the current JVM locale.
+ */
 private val decimalSeparator get() = DecimalFormatSymbols.getInstance().decimalSeparator
 
+/**
+ * Tests input revision and key filtering for [MoneyField].
+ */
 @DisplayName("`MoneyField` should")
 internal class MoneyFieldSpec {
 
+    /**
+     * Money text is normalized to the precision and character set of its currency.
+     */
     @Test
     fun `revise money field content`() {
         val sanitizingSamples = getSanitizingSamples()
@@ -70,6 +85,48 @@ internal class MoneyFieldSpec {
         }
     }
 
+    /**
+     * Fractional currencies must continue admitting a period for decimal input.
+     */
+    @Test
+    fun `admit period for currency with fractional digits`() {
+        USD.options.exponentDigits shouldBe 2
+        val reviser = MoneyFieldReviser(USD)
+
+        val consumed = reviser.filterKeyEvent(typedKeyEvent('.'))
+
+        consumed shouldBe false
+    }
+
+    /**
+     * Filtering a separator before text revision prevents zero-decimal amounts from truncating.
+     */
+    @Test
+    fun `preserve zero-decimal amount and caret when separator is typed`() {
+        VND.options.exponentDigits shouldBe 0
+        val reviser = MoneyFieldReviser(VND)
+        val amount = "1234567"
+        val separators = setOf('.', decimalSeparator)
+        val caretPositions = listOf(3, 0, amount.length)
+
+        separators.forEach { separator ->
+            caretPositions.forEach { position ->
+                withClue("Typing '$separator' at caret position $position") {
+                    val current = RawTextContent(amount, TextRange(position))
+
+                    val result = applyTypedCharacter(reviser, current, separator)
+
+                    result shouldBe current
+                }
+            }
+        }
+    }
+
+    /**
+     * Defines representative valid and invalid money strings for the sanitizer.
+     *
+     * @return Samples paired with their expected sanitized values.
+     */
     private fun getSanitizingSamples() = mapOf(
         // Valid dollar amounts.
         CurrencyAmount("0,00", USD) to "0,00",
@@ -147,4 +204,49 @@ internal class MoneyFieldSpec {
     )
 }
 
+/**
+ * A money string paired with the currency whose formatting rules apply to it.
+ *
+ * @property amount The raw money amount.
+ * @property currency The currency that defines the amount precision.
+ */
 private data class CurrencyAmount(val amount: String, val currency: Currency)
+
+/**
+ * Creates a Compose key event for typing [character] on a desktop keyboard.
+ *
+ * @param character The character emitted by the event.
+ * @return A Compose wrapper around a valid AWT `KEY_TYPED` event.
+ */
+private fun typedKeyEvent(character: Char): KeyEvent = KeyEvent(
+    java.awt.event.KeyEvent(
+        Panel(), KEY_TYPED, 0L, 0, VK_UNDEFINED, character
+    )
+)
+
+/**
+ * Models the preview-key filter followed by the text-change revision pipeline.
+ *
+ * @param reviser The reviser that filters and normalizes the typed character.
+ * @param current The amount text and collapsed caret before typing.
+ * @param character The character inserted at the current caret when admitted.
+ * @return The unchanged [current] content if the key is consumed, or the revised candidate.
+ */
+private fun applyTypedCharacter(
+    reviser: MoneyFieldReviser,
+    current: RawTextContent,
+    character: Char
+): RawTextContent {
+    if (reviser.filterKeyEvent(typedKeyEvent(character))) {
+        return current
+    }
+    require(current.selection.collapsed) {
+        "Typing is modelled only for a collapsed caret."
+    }
+    val caretPosition = current.selection.start
+    val candidateText = current.text.substring(0, caretPosition) +
+            character +
+            current.text.substring(caretPosition)
+    val candidate = RawTextContent(candidateText, TextRange(caretPosition + 1))
+    return reviser.reviseRawTextContent(current, candidate)
+}

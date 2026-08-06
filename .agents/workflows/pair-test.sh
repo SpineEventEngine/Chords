@@ -524,10 +524,46 @@ check() { # check <name> <0|1 condition-result>
 sandbox
 run "$R" 7;         want "full run reaches done" 0 "is done"
 run "$R" status 7;  want "status reports done"   0 "status: done"
+check "done status reports no current agent work" \
+    "$(printf '%s' "$OUT" | grep -qx 'work: complete' && echo 0 || echo 1)"
+check "done status explains manual testing" \
+    "$(printf '%s' "$OUT" | grep -qx 'manual testing: not required' && echo 0 || echo 1)"
 transcript_count="$(find "$R/.agents/work/issue-7/turns" -name '*.log' | wc -l)"
 check "five transcripts kept" "$([[ "$transcript_count" -eq 5 ]] && echo 0 || echo 1)"
 check "first turn writes the required Task" \
     "$(grep -q 'Implement the issue' "$R/.agents/work/issue-7/plan.md" && echo 0 || echo 1)"
+cleanup
+
+# --- user-facing status ---------------------------------------------------
+sandbox
+export AGENT1_CMD="${SANDBOX}/bin/claude"
+export AGENT2_CMD="${SANDBOX}/bin/codex"
+run "$R" start 7
+want "status fixture starts" 0
+run "$R" status 7
+want "status reports both agent engines" 0 "agents: agent1=claude, agent2=codex"
+check "status describes the planning work" \
+    "$(printf '%s' "$OUT" | grep -qx 'work: agent1 — planning' \
+        && echo 0 || echo 1)"
+check "status explains an undecided manual check" \
+    "$(printf '%s' "$OUT" | grep -qx \
+        'manual testing: undecided until completion' && echo 0 || echo 1)"
+check "status hides the internal base commit" \
+    "$(! printf '%s' "$OUT" | grep -q '^base:' && echo 0 || echo 1)"
+TZ=America/New_York run "$R" status 7
+check "status renders the update time in the client timezone" \
+    "$(printf '%s' "$OUT" | grep -Eq \
+        '^updated: [A-Z][a-z]{2} [0-9]{2}, [0-9]{4} at [0-9]{2}:[0-9]{2} E[DS]T$' \
+        && echo 0 || echo 1)"
+run "$R" step 7
+want "planner advances status fixture" 0
+run "$R" status 7
+want "status describes plan review" 0 "work: agent2 — reviewing the plan"
+run "$R" step 7
+want "reviewer advances status fixture" 0
+run "$R" status 7
+want "status describes implementation work" 0 \
+    "work: agent1 — addressing plan review, then implementing"
 cleanup
 
 # --- agent selection -----------------------------------------------------

@@ -595,9 +595,11 @@ had enough. Guards:
 
 That creates the working document from the issue if it does not exist yet, then
 drives turns to a terminal state. `start` creates without running, `step` takes
-one turn, and `status` reports. A run stopped on questions resumes by running
-the same command again, once the answers are in the document. The slug defaults
-to `issue-<number>`, and every command accepts either form.
+one turn, and `status` reports the assigned engines, current work, rounds, and
+manual-testing decision without exposing internal review baselines. A run
+stopped on questions resumes by running the same command again, once the
+answers are in the document. The slug defaults to `issue-<number>`, and every
+command accepts either form.
 
 By default the driver uses Claude's `acceptEdits` permission mode with project
 settings only and Codex's `workspace-write` sandbox with user configuration

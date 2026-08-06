@@ -246,7 +246,11 @@ number, then run the command again.
   `.agents/workflows/pair.sh run <issue>` — set up on the first call and resume
   on later calls.
 - `.agents/workflows/pair.sh status <issue>` — report the current state; safe
-  during a run.
+  during a run. The output names both assigned engines and describes the work
+  owned by the current turn. `manual testing` remains `undecided until
+  completion`, then becomes `not required` or `required`; when required, the
+  finished run prints the actionable manual test plan. The update time is
+  shown in the local timezone of the workstation running the command.
 - `.agents/workflows/pair.sh step <issue>` — attempt one workflow step, then
   stop.
 - `.agents/workflows/pair.sh start <issue>` — set up without running.
