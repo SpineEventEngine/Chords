@@ -127,6 +127,50 @@ readonly WORK_ROOT="${REPO_ROOT}/.agents/work"
 readonly SKILL="${REPO_ROOT}/.agents/skills/pair-workflow/SKILL.md"
 readonly TEMPLATE="${REPO_ROOT}/.agents/skills/pair-workflow/template.md"
 
+# Repository-redirection variables make `git -C` operate on something other
+# than this checkout.
+# Refuse them once, before any repository or GitHub state is read or written.
+validate_repository_environment() {
+    local name
+    for name in GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+        GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
+        GIT_CONFIG GIT_CONFIG_SYSTEM GIT_CONFIG_GLOBAL GIT_CONFIG_COUNT \
+        GIT_QUARANTINE_PATH GIT_PUSH_OPTION_COUNT; do
+        [[ -z "${!name+x}" ]] \
+            || die "${name} is set; unset repository-redirection variables "\
+"before running pair.sh"
+    done
+}
+
+# A strong, repository-native digest for canonical streams. Unlike POSIX
+# `cksum`, this is not a 32-bit tripwire an agent can deliberately collide.
+digest_stream() {
+    git -C "$REPO_ROOT" hash-object --stdin
+}
+
+# Strong digest of the effective local, included, global, and system Git config.
+git_config_digest() {
+    git -C "$REPO_ROOT" config -z --includes --list | digest_stream
+}
+
+# Paths below the driver-owned work root are never implementation input. Keep
+# them out even if the task itself edits the mutable .gitignore rule.
+declare -ar WORKTREE_PATHS=(-- . ':(exclude).agents/work' ':(exclude).agents/work/**')
+
+# Git writes performed by the driver must not execute workstation hooks or
+# inherit push.followTags. The latter can publish unrelated annotated tags even
+# with an explicit branch refspec.
+publication_git() {
+    git -c core.hooksPath=/dev/null -c push.followTags=false \
+        -c remote.origin.mirror=false \
+        -C "$REPO_ROOT" "$@"
+}
+
+# Ambient GH_REPO must not retarget issue reads or pull-request publication.
+github() {
+    env -u GH_REPO gh "$@"
+}
+
 # Models and effort are pinned rather than left to each CLI's default, so a
 # review is reproducible and the two sides stay the models this workflow was
 # tuned against. Codex's settings are passed explicitly because
@@ -206,7 +250,26 @@ ALLOW_UNSAFE_AGENTS=0
 # swapping the commands back to their defaults.
 AGENTS_SWAPPED=0
 
-die() { printf 'pair: %s\n' "$1" >&2; exit 1; }
+ACTIVE_TURN_DOC=""
+POISONING_ACTIVE_TURN=0
+poison_active_turn() {
+    # Once an agent has started, any guard or process failure makes its partial
+    # document unsafe to resume as a new baseline. Poison the persisted state so
+    # a later invocation cannot silently accept that failed turn.
+    if [[ -n "$ACTIVE_TURN_DOC" && -f "$ACTIVE_TURN_DOC" \
+          && "$POISONING_ACTIVE_TURN" -eq 0 ]]; then
+        POISONING_ACTIVE_TURN=1
+        set_frontmatter "$ACTIVE_TURN_DOC" \
+            "expected_git_state=invalid-after-failed-turn" \
+            "expected_worktree_state=invalid-after-failed-turn" 2>/dev/null || true
+    fi
+}
+
+die() {
+    poison_active_turn
+    printf 'pair: %s\n' "$1" >&2
+    exit 1
+}
 # Same message, but returns instead of exiting. Helpers that may be called from
 # inside a command substitution must use this: there, `die` ends only the
 # subshell, so validation would report a problem and let the run continue.
@@ -215,6 +278,22 @@ fail() { printf 'pair: %s\n' "$1" >&2; return 1; }
 info() { printf 'pair: %s\n' "$1" >&2; }
 
 doc_for() { printf '%s/%s/plan.md' "$WORK_ROOT" "$1"; }
+
+# Agents can write the ignored work root, so directory symlinks cannot be
+# trusted as destinations for plans, snapshots, transcripts, or Trace2 files.
+validate_task_directory() {
+    local slug="$1" dir="${WORK_ROOT}/${slug}"
+    [[ ! -L "$WORK_ROOT" ]] || die "${WORK_ROOT} must not be a symlink"
+    [[ ! -L "$dir" ]] || die "${dir} must not be a symlink"
+}
+
+ensure_task_directory() {
+    local slug="$1" dir="${WORK_ROOT}/${slug}"
+    validate_task_directory "$slug"
+    mkdir -p "$WORK_ROOT"
+    mkdir -p "$dir"
+    [[ -d "$dir" && ! -L "$dir" ]] || die "could not create a safe task directory at ${dir}"
+}
 
 # Returns the executable recorded in the working document for an agent command.
 agent_command_name() { printf '%s' "$1" | awk '{print $1}'; }
@@ -644,50 +723,184 @@ pr_base_ref() {
     printf '%s' "$ref"
 }
 
-# Snapshot of everything the workflow forbids an agent from touching: the
-# checked-out commit and branch, every local branch and tag, every
-# remote-tracking ref, and the staged index. Remote-tracking refs are in here
-# because `git push` moves them, which makes a push detectable locally — and a
-# PR is detectable in turn, since it needs a push first.
+# Exactly one URL must own each direction. Multiple push URLs make one push
+# publish to more repositories than the PR metadata can describe.
+remote_url() {
+    local direction="$1" flag="" urls count
+    [[ "$direction" == "push" ]] && flag="--push"
+    urls="$(git -C "$REPO_ROOT" remote get-url --all $flag origin 2>/dev/null)" \
+        || return 1
+    count="$(printf '%s\n' "$urls" | awk 'NF { count++ } END { print count + 0 }')"
+    [[ "$count" -eq 1 ]] || return 1
+    printf '%s' "$urls"
+}
+
+# Refreshes one named remote branch without fetching tags or running hooks.
+# The driver calls this before it records or publishes against a target, so an
+# IDE's fetch schedule cannot silently define the PR scope.
+refresh_remote_branch() {
+    local branch="$1"
+    publication_git fetch --no-tags -q origin \
+        "+refs/heads/${branch}:refs/remotes/origin/${branch}"
+}
+
+# Stable porcelain that cannot be weakened by status.showUntrackedFiles and
+# never treats pair-workflow scratch artifacts as implementation changes.
+worktree_porcelain() {
+    git -C "$REPO_ROOT" status --porcelain=v1 --untracked-files=all \
+        "${WORKTREE_PATHS[@]}"
+}
+
+# Snapshot of everything the workflow forbids an agent from touching and whose
+# every movement is local: the checked-out commit and branch, every local ref
+# except tags, and the staged index. Remote-tracking refs and tags can arrive
+# through a background fetch, so external_ref_state() snapshots them and the
+# per-turn Git trace identifies whether the agent process ran a command capable
+# of moving them.
 git_state() {
     git -C "$REPO_ROOT" rev-parse HEAD
     git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD
-    # Every ref, not selected namespaces: `refs/stash` belongs here too, or
-    # `git stash` could move the user's work out of the tree and pass.
-    git -C "$REPO_ROOT" for-each-ref --format='%(refname) %(objectname)'
+    # Every local ref, not selected namespaces: `refs/stash` belongs here too,
+    # or `git stash` could move the user's work out of the tree and pass. One
+    # exclusion is `refs/codex/turn-diffs/`, which the Codex CLI writes as its
+    # own bookkeeping — the process, not the agent obeying its prompt. It lands
+    # intermittently mid-turn and aborts runs the agents ran correctly. Nothing
+    # forbidden can hide there: a checkpoint ref neither commits nor pushes nor
+    # moves work out of the worktree, which is fingerprinted separately anyway.
+    # The others are `refs/remotes/` and `refs/tags/`, which
+    # external_ref_state() covers.
+    # `--exclude` is inert without a positive pattern and matches whole path
+    # components, so both `refs/` and the slash-free prefixes are load-bearing.
+    git -C "$REPO_ROOT" for-each-ref --exclude=refs/codex/turn-diffs \
+        --exclude=refs/remotes --exclude=refs/tags \
+        --format='%(refname) %(objectname)' refs/
     # Staged blob ids, modes, and index flags. `--stage` alone misses flags,
     # so `assume-unchanged` or `skip-worktree` could hide a file from status,
     # from review, and from later staging while passing this check.
     git -C "$REPO_ROOT" ls-files -v -s
+    # Git configuration and operation sentinels can redirect a later fetch or
+    # push, install filters, or leave the checkout mid-merge without moving a
+    # ref. They are part of the workflow's control state even though they live
+    # outside the ordinary worktree.
+    printf 'effective-config=%s\n' "$(git_config_digest)"
+    local name path
+    for name in MERGE_HEAD REBASE_HEAD CHERRY_PICK_HEAD REVERT_HEAD \
+        MERGE_MSG SQUASH_MSG; do
+        path="$(git -C "$REPO_ROOT" rev-parse --git-path "$name")"
+        [[ -f "$path" ]] \
+            && printf '%s=%s\n' "$name" \
+                "$(git -C "$REPO_ROOT" hash-object --no-filters "$path")"
+    done
+    return 0
 }
 
-# Content fingerprint of everything an agent could edit: tracked files as the
-# worktree holds them, plus every untracked file Git does not ignore. Compared
-# around `agent2`'s turns, which are read-only with respect to the codebase —
-# the Git snapshot above cannot see an unstaged edit, and an unstaged edit is
-# exactly what a reviewer that "just fixed it" would leave behind.
-#
-# `.agents/work/` is gitignored, so the working document, the transcripts, and
-# the round snapshots — all of which change during a turn by design — are
-# excluded by construction rather than by a list that could drift.
-worktree_state() {
-    git -C "$REPO_ROOT" diff HEAD --
-    (
-        cd "$REPO_ROOT" || exit 1
-        git ls-files --others --exclude-standard -z \
-            | while IFS= read -r -d '' file; do
-                  local mode object target
-                  if [[ -L "$file" ]]; then
-                      mode=120000
-                      target="$(readlink "$file")"
-                      object="$(printf '%s' "$target" | git hash-object --stdin)"
-                  else
-                      [[ -x "$file" ]] && mode=100755 || mode=100644
-                      object="$(git hash-object -- "$file")"
-                  fi
-                  printf '%s %s %s\n' "$mode" "$object" "$file"
-              done
-    )
+# Compact forms persisted between turns. A task that resumes in a worktree
+# changed by another pair run or another process must stop before treating that
+# unrelated state as its own baseline.
+git_state_digest() {
+    git_state | digest_stream
+}
+
+# Snapshot of refs whose movement may come from GitHub rather than the agent:
+# remote-tracking refs and tags. Include symbolic targets so changing
+# `origin/HEAD` is visible even when its object id stays the same.
+external_ref_state() {
+    git -C "$REPO_ROOT" for-each-ref \
+        --format='%(refname)%09%(objectname)%09%(symref)' \
+        refs/remotes/ refs/tags/
+}
+
+# Strong, NUL-safe fingerprint of tracked and untracked implementation state.
+worktree_state_digest() {
+    changeset_digest HEAD
+}
+
+# Whether the trace is intact and contains the marker written immediately
+# before the agent starts. Without it the turn has no trustworthy Git-command
+# provenance, so callers fail closed.
+git_trace_is_usable() {
+    local trace="$1" marker="$2"
+    [[ -s "$trace" ]] || return 1
+    jq -s -e --arg marker "pair.traceMarker=${marker}" '
+        . as $events |
+        any($events[];
+            .event == "start" and
+            ((.argv // []) | index($marker)) != null and
+            (.sid as $sid |
+                any($events[];
+                    .event == "cmd_name" and .sid == $sid and .name == "version"
+                )
+            )
+        )
+    ' "$trace" >/dev/null 2>&1
+}
+
+# Git commands in the agent process tree that can move a remote-tracking ref or
+# tag. This uses command provenance instead of guessing from commit
+# reachability. Commands with both read-only and writing forms are classified
+# by their arguments, with ambiguous forms taking the direction that stops.
+git_trace_ref_writes() {
+    local trace="$1"
+    jq -s -r '
+            . as $events |
+            def after($command):
+                .argv as $args |
+                ($args | index($command)) as $at |
+                if $at == null then [] else $args[($at + 1):] end;
+            def has($args; $option):
+                any($args[]; . == $option or startswith($option + "="));
+            def short_has($args; $letter):
+                any($args[];
+                    type == "string" and
+                    test("^-[^-]*" + $letter)
+                );
+
+            $events[] |
+            select(.event == "start" and (.argv | type == "array")) |
+            .sid as $sid |
+            ([ $events[] |
+                select(.event == "cmd_name" and .sid == $sid) | .name
+             ][0] // "") as $command |
+            (after($command)) as $args |
+            if ($command == "fetch" or $command == "pull" or
+                $command == "push" or $command == "receive-pack" or
+                $command == "send-pack") then $command
+            elif ($command == "branch" and
+                (short_has($args; "r") or has($args; "--remotes")) and
+                (short_has($args; "d") or short_has($args; "D") or
+                 has($args; "--delete"))) then "branch"
+            elif ($command == "remote" and (($args[0] // "") as $sub |
+                $sub == "add" or $sub == "prune" or $sub == "remove" or
+                $sub == "rename" or $sub == "rm" or
+                $sub == "set-branches" or $sub == "set-head" or
+                $sub == "set-url" or $sub == "update")) then "remote"
+            elif ($command == "symbolic-ref" and
+                (short_has($args; "d") or has($args; "--delete") or
+                 ([$args[] | select(startswith("-") | not)] | length) > 1))
+                then "symbolic-ref"
+            elif ($command == "tag" and (
+                short_has($args; "d") or has($args; "--delete") or
+                short_has($args; "f") or has($args; "--force") or
+                short_has($args; "a") or has($args; "--annotate") or
+                short_has($args; "s") or has($args; "--sign") or
+                short_has($args; "u") or has($args; "--local-user") or
+                short_has($args; "m") or has($args; "--message") or
+                short_has($args; "F") or has($args; "--file") or
+                (((short_has($args; "l") or short_has($args; "n") or
+                   short_has($args; "v") or has($args; "--list") or
+                   has($args; "--verify") or has($args; "--contains") or
+                   has($args; "--no-contains") or has($args; "--points-at") or
+                   has($args; "--merged") or has($args; "--no-merged") or
+                   has($args; "--format") or has($args; "--sort") or
+                   has($args; "--column")) | not) and
+                 any($args[]; startswith("-") | not))
+            )) then "tag"
+            elif ($command == "update-ref" and ($args | length) > 0 and
+                (has($args; "--stdin") or
+                 (any($args[]; startswith("refs/codex/turn-diffs/")) | not)))
+                then "update-ref"
+            else empty end
+        ' "$trace" | sort -u
 }
 
 # Every `## ` heading outside fenced code, in document order. Fenced headings
@@ -770,7 +983,7 @@ protected_sections() {
         if section_is_mutable "$status" "$plan_round" "$impl_round" "$name"; then
             continue
         fi
-        printf '%s=%s\n' "$name" "$(section_raw "$doc" "$name" | cksum)"
+        printf '%s=%s\n' "$name" "$(section_raw "$doc" "$name" | digest_stream)"
     done
 }
 
@@ -873,9 +1086,8 @@ backfill_question_origin() {
     info "backfilled question_origin: ${origin} in ${doc#"$REPO_ROOT"/}"
 }
 
-# Starting branch metadata matters only to publication. A legacy run may keep
-# taking agent turns without it, but --create-pr must fail before the next turn:
-# its original HEAD cannot be reconstructed safely after the fact.
+# Publication metadata must exist before --create-pr can take another turn; its
+# original remote and branch identity cannot be reconstructed safely later.
 validate_run_metadata() {
     local doc="$1"
     backfill_pr_base_branch "$doc"
@@ -883,7 +1095,8 @@ validate_run_metadata() {
     [[ "$CREATE_PR" -eq 1 ]] || return 0
 
     local key missing=""
-    for key in base_branch start_commit; do
+    for key in base_branch start_commit pr_base_tip task_branch github_repo \
+        origin_fetch_url origin_push_url git_config_state publication_head; do
         [[ -n "$(frontmatter "$doc" "$key")" ]] \
             || missing="${missing:+${missing}, }${key}"
     done
@@ -895,13 +1108,46 @@ validate_run_metadata() {
 "with '.agents/workflows/pair.sh start ${number:-<issue>} --slug <new-name>'"
 }
 
+# A slug owns the exact local Git and worktree state produced by its preceding
+# successful turn. This closes the gap between turns, where per-turn snapshots
+# alone would accept another task's edits as the next baseline.
+validate_continuation_state() {
+    local doc="$1" expected_git expected_worktree current_git current_worktree
+    expected_git="$(frontmatter "$doc" expected_git_state)"
+    expected_worktree="$(frontmatter "$doc" expected_worktree_state)"
+    [[ -n "$expected_git" && -n "$expected_worktree" ]] \
+        || die "${doc#"$REPO_ROOT"/} predates between-turn state ownership; start a new run"
+    current_git="$(git_state_digest)"
+    current_worktree="$(worktree_state_digest)"
+    [[ "$expected_git" == "$current_git" ]] \
+        || die "Git state changed between pair-workflow turns; inspect the repository and start a new run"
+    [[ "$expected_worktree" == "$current_worktree" ]] \
+        || die "worktree content changed between pair-workflow turns; another task or process may own it"
+}
+
+# Completion remains true only while the implementation is byte-for-byte the
+# reviewed one. Publication checks the same invariant, but ordinary status and
+# terminal observations must not keep reporting stale work as complete.
+validate_done_changeset() {
+    local doc="$1" reviewed start current
+    reviewed="$(frontmatter "$doc" changeset_digest)"
+    start="$(frontmatter "$doc" start_commit)"
+    [[ -n "$reviewed" && "$reviewed" != "none" && -n "$start" ]] \
+        || die "the finished task has no usable reviewed changeset metadata"
+    current="$(changeset_digest "$start")"
+    [[ "$reviewed" == "$current" ]] \
+        || die "the worktree changed after the task reached done (${reviewed} -> ${current}); re-run review"
+}
+
 # Frontmatter the driver owns. An agent that rewrote these could retarget the
 # issue, move the review's diff baseline, or clear `dirty_at_start` and make a
 # worktree that was already dirty publishable.
 readonly IMMUTABLE_KEYS="issue issue_number issue_title agent1 agent2 claude_model "\
 "claude_effort codex_model codex_effort base_commit base_branch start_commit "\
-"pr_base_branch dirty_at_start max_rounds changeset_digest "\
-"reviewed_changeset_digest question_origin"
+"pr_base_branch pr_base_tip task_branch github_repo origin_fetch_url "\
+"origin_push_url dirty_at_start max_rounds changeset_digest "\
+"reviewed_changeset_digest git_config_state publication_head expected_git_state "\
+"expected_worktree_state question_origin"
 
 # Prevents a resumed task from silently assigning its existing plan or review
 # to different agents. The selected executables are fixed when `start` creates
@@ -929,12 +1175,12 @@ immutable_snapshot() {
     # agent could rewrite it, it could rewrite the acceptance criteria and then
     # satisfy them — exactly the property the second opinion exists to prevent.
     printf 'issue-headings=%s\n' "$(section_heading_count "$doc" "Issue")"
-    printf 'issue-section=%s\n' "$(section_raw "$doc" "Issue" | cksum)"
+    printf 'issue-section=%s\n' "$(section_raw "$doc" "Issue" | digest_stream)"
     # ## Task is agent1's restatement, immutable after its first turn. Before
     # that turn it is still template scaffolding, so an empty digest is normal.
     printf 'task-headings=%s\n' "$(section_heading_count "$doc" "Task")"
     if [[ "$protect_task" -eq 1 ]]; then
-        printf 'task-section=%s\n' "$(section_raw "$doc" "Task" | cksum)"
+        printf 'task-section=%s\n' "$(section_raw "$doc" "Task" | digest_stream)"
     fi
 }
 
@@ -992,8 +1238,8 @@ set_frontmatter() {
     ' "$doc" > "$tmp" && mv "$tmp" "$doc" || { rm -f "$tmp"; die "could not update ${doc}"; }
 }
 
-# Two drivers on one slug would interleave turns and corrupt the document, and
-# the failure would look like an agent misbehaving rather than a collision.
+# Every task shares one index and worktree. Even different slugs must therefore
+# be serialized, or one task can review and commit another task's source edits.
 # `mkdir` is the atomic primitive here: it succeeds for exactly one caller.
 LOCK_DIR=""
 release_lock() {
@@ -1005,6 +1251,7 @@ release_lock() {
 # that signal instead of letting the driver resume without mutual exclusion.
 handle_signal() {
     local signal="$1"
+    poison_active_turn
     release_lock
     trap - "$signal"
     kill -s "$signal" "$$"
@@ -1012,12 +1259,13 @@ handle_signal() {
 
 acquire_lock() {
     [[ -z "$LOCK_DIR" ]] || return 0   # already held by an outer command
-    local slug="$1" lock dir
-    dir="$(dirname "$(doc_for "$slug")")"
-    mkdir -p "$dir"
-    lock="${dir}/.lock"
+    local slug="$1" lock
+    lock="$(git -C "$REPO_ROOT" rev-parse --git-path pair-workflow.lock)"
+    [[ "$lock" == /* ]] || lock="${REPO_ROOT}/${lock}"
+    mkdir -p "$(dirname "$lock")"
     mkdir "$lock" 2>/dev/null \
-        || die "another pair.sh is already running for '${slug}' (delete ${lock} if it is stale)"
+        || die "another pair.sh is already using this worktree while '${slug}' was requested; "\
+"delete ${lock} only if no pair.sh process is running"
     LOCK_DIR="$lock"
     trap release_lock EXIT
     trap 'handle_signal INT' INT
@@ -1039,8 +1287,8 @@ issue_number_from() {
             local path="${remainder#*/}"
             local want="${path%%/issues/*}"
             local here here_url here_remainder here_host
-            here="$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null || true)"
-            here_url="$(gh repo view --json url --jq .url 2>/dev/null || true)"
+            here="$(github repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null || true)"
+            here_url="$(github repo view --json url --jq .url 2>/dev/null || true)"
             [[ -n "$here" && "$here_url" == *://* ]] \
                 || { fail "cannot resolve the current GitHub repository; "\
 "pass an issue number or fix 'gh repo view'"; return 1; }
@@ -1151,6 +1399,7 @@ cmd_start() {
     [[ -n "$slug" ]] || slug="issue-${number}"
 
     acquire_lock "$slug"
+    ensure_task_directory "$slug"
 
     local doc; doc="$(doc_for "$slug")"
     [[ -e "$doc" ]] && die "${doc} already exists; pass --slug or delete it"
@@ -1158,8 +1407,19 @@ cmd_start() {
     # Fetch once, here, so the document is self-contained. Every later turn is
     # a cold start and must not depend on the issue still being reachable or
     # unchanged.
+    local github_repo github_repo_name github_repo_url github_host
+    github_repo_name="$(github repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)" \
+        || die "cannot resolve the GitHub repository owned by this checkout"
+    github_repo_url="$(github repo view --json url --jq .url 2>/dev/null)" \
+        || die "cannot resolve the GitHub host owned by this checkout"
+    github_host="${github_repo_url#*://}"
+    github_host="${github_host%%/*}"
+    [[ -n "$github_repo_name" && -n "$github_host" ]] \
+        || die "the checkout has no GitHub repository identity"
+    github_repo="${github_host}/${github_repo_name}"
     local issue_json
-    issue_json="$(gh issue view "$number" --json number,title,body,url,state 2>/dev/null)" \
+    issue_json="$(github issue view "$number" --repo "$github_repo" \
+        --json number,title,body,url,state 2>/dev/null)" \
         || die "cannot read issue #${number}; check the number, the repository, "\
 "and 'gh auth status'"
 
@@ -1168,6 +1428,8 @@ cmd_start() {
     url="$(printf '%s' "$issue_json" | jq -r '.url')"
     state="$(printf '%s' "$issue_json" | jq -r '.state')"
     body="$(printf '%s' "$issue_json" | jq -r '.body // ""')"
+    [[ -n "$(pr_title_from "$title")" ]] \
+        || die "issue #${number} has no usable pull-request title"
 
     [[ "$state" == "OPEN" ]] \
         || info "warning: issue #${number} is ${state}; continuing anyway"
@@ -1194,13 +1456,16 @@ cmd_start() {
     # Freeze a real remote PR target before spending an agent turn. Local
     # branches may lag, carry unpushed commits, or merely hide a typo in
     # PR_BASE_BRANCH; none describes what GitHub will compare the PR against.
-    local base_commit target_ref
+    refresh_remote_branch "$PR_BASE_BRANCH" \
+        || die "could not refresh origin/${PR_BASE_BRANCH} before setup"
+    local base_commit target_ref target_tip
     target_ref="$(pr_base_ref)" \
         || die "origin/${PR_BASE_BRANCH} is unavailable; fetch it or correct "\
 "PR_BASE_BRANCH before starting the workflow"
     base_commit="$(git -C "$REPO_ROOT" merge-base "$target_ref" HEAD)" \
         || die "cannot find a merge-base between HEAD and origin/${PR_BASE_BRANCH}"
-    base_commit="$(git -C "$REPO_ROOT" rev-parse --short "$base_commit")"
+    base_commit="$(git -C "$REPO_ROOT" rev-parse "$base_commit")"
+    target_tip="$(git -C "$REPO_ROOT" rev-parse "$target_ref")"
     # The branch the run is cut from. `base_commit` cannot stand in for it here:
     # it is deliberately the merge-base, so it says nothing about whether the
     # starting point carried unmerged work. Recorded now because `create_pr`
@@ -1224,7 +1489,7 @@ cmd_start() {
     # agent1 may edit it. Recorded either way, because once the run begins the
     # two are indistinguishable.
     local dirty=no
-    [[ -z "$(git -C "$REPO_ROOT" status --porcelain)" ]] || dirty=yes
+    [[ -z "$(worktree_porcelain)" ]] || dirty=yes
     if [[ "$dirty" == "yes" && "$ALLOW_DIRTY" -eq 0 ]]; then
         die "the worktree has uncommitted changes; commit or stash them first, "\
 "or pass --allow-dirty to review them alongside the agents' work"
@@ -1234,7 +1499,18 @@ cmd_start() {
 "review scope; publication is disabled for this task, so a later "\
 "run --create-pr will be refused"
 
-    mkdir -p "$(dirname "$doc")"
+    local task_branch origin_fetch_url origin_push_url config_state
+    local expected_git expected_worktree
+    task_branch="$(branch_name_from "$title" "$number")"
+    [[ -n "$task_branch" ]] || die "could not derive a safe branch name from issue #${number}"
+    origin_fetch_url="$(remote_url fetch)" \
+        || die "origin must have exactly one fetch URL"
+    origin_push_url="$(remote_url push)" \
+        || die "origin must have exactly one push URL"
+    config_state="$(git_config_digest)"
+    expected_git="$(git_state_digest)"
+    expected_worktree="$(worktree_state_digest)"
+
     # Record executables for role assignment and engine settings independently,
     # so swapping roles does not change what --claude-* or --codex-* means.
     local a1 a2 claude_model claude_effort codex_model codex_effort
@@ -1248,7 +1524,7 @@ cmd_start() {
     # The body goes in verbatim from a file rather than through a substitution:
     # issue text routinely contains backslashes and ampersands, which awk's
     # gsub would silently reinterpret.
-    local body_file; body_file="$(dirname "$doc")/.issue-body"
+    local body_file; body_file="$(mktemp "$(dirname "$doc")/.issue-body.XXXXXX")"
     printf '%s\n' "$body" > "$body_file"
 
     NUMBER="$number" TITLE="$title" ISSUE="$url" ROUNDS="$max_rounds" \
@@ -1256,7 +1532,11 @@ cmd_start() {
     CLAUDEMODEL="$claude_model" CLAUDEEFFORT="$claude_effort" \
     CODEXMODEL="$codex_model" CODEXEFFORT="$codex_effort" \
     BASEBRANCH="$base_branch" STARTCOMMIT="$start_commit" \
-    PRBASE="$PR_BASE_BRANCH" \
+    PRBASE="$PR_BASE_BRANCH" PRBASETIP="$target_tip" TASKBRANCH="$task_branch" \
+    GITHUBREPO="$github_repo" ORIGINFETCH="$origin_fetch_url" \
+    ORIGINPUSH="$origin_push_url" GITCONFIGSTATE="$config_state" \
+    EXPECTEDGIT="$expected_git" \
+    EXPECTEDWORKTREE="$expected_worktree" \
     awk -v bodyfile="$body_file" '
         /ISSUE_BODY/ {
             # Demote headings from the issue by one level so they nest under
@@ -1292,32 +1572,51 @@ cmd_start() {
             close(bodyfile)
             next
         }
-        # Literal replacement, never gsub: in a gsub replacement string `&`
-        # expands to the matched text and backslashes are escapes, so an issue
-        # titled "A & B" would render as "A ISSUE_TITLE B". Titles routinely
-        # contain both characters.
-        function put(line, ph, val,   at, out) {
-            while ((at = index(line, ph)) > 0) {
-                out = out substr(line, 1, at - 1) val
-                line = substr(line, at + length(ph))
+        # Replace placeholders from the original line in one pass. Inserted
+        # values are never scanned again, so a title that literally contains a
+        # different placeholder token remains literal.
+        function put(line,   at, best, ph, chosen, out) {
+            while (1) {
+                best = 0
+                chosen = ""
+                for (ph in value) {
+                    at = index(line, ph)
+                    if (at > 0 && (best == 0 || at < best)) {
+                        best = at
+                        chosen = ph
+                    }
+                }
+                if (best == 0) return out line
+                out = out substr(line, 1, best - 1) value[chosen]
+                line = substr(line, best + length(chosen))
             }
-            return out line
         }
-        { $0 = put($0, "ISSUE_NUMBER", ENVIRON["NUMBER"])
-          $0 = put($0, "ISSUE_TITLE",  ENVIRON["TITLE"])
-          $0 = put($0, "ISSUE_URL",    ENVIRON["ISSUE"])
-          $0 = put($0, "BASE_COMMIT",  ENVIRON["BASE"])
-          $0 = put($0, "PR_BASE_BRANCH", ENVIRON["PRBASE"])
-          $0 = put($0, "BASE_BRANCH",  ENVIRON["BASEBRANCH"])
-          $0 = put($0, "START_COMMIT", ENVIRON["STARTCOMMIT"])
-          $0 = put($0, "CREATED_AT",   ENVIRON["NOW"])
-          $0 = put($0, "TASK_SLUG",    ENVIRON["SLUG"])
-          $0 = put($0, "AGENT1_NAME",  ENVIRON["A1"])
-          $0 = put($0, "AGENT2_NAME",  ENVIRON["A2"])
-          $0 = put($0, "CLAUDE_MODEL", ENVIRON["CLAUDEMODEL"])
-          $0 = put($0, "CLAUDE_EFFORT", ENVIRON["CLAUDEEFFORT"])
-          $0 = put($0, "CODEX_MODEL", ENVIRON["CODEXMODEL"])
-          $0 = put($0, "CODEX_EFFORT", ENVIRON["CODEXEFFORT"])
+        BEGIN {
+            value["ISSUE_NUMBER"] = ENVIRON["NUMBER"]
+            value["ISSUE_TITLE"] = ENVIRON["TITLE"]
+            value["ISSUE_URL"] = ENVIRON["ISSUE"]
+            value["BASE_COMMIT"] = ENVIRON["BASE"]
+            value["PR_BASE_BRANCH"] = ENVIRON["PRBASE"]
+            value["PR_BASE_TIP"] = ENVIRON["PRBASETIP"]
+            value["TASK_BRANCH"] = ENVIRON["TASKBRANCH"]
+            value["GITHUB_REPO"] = ENVIRON["GITHUBREPO"]
+            value["ORIGIN_FETCH_URL"] = ENVIRON["ORIGINFETCH"]
+            value["ORIGIN_PUSH_URL"] = ENVIRON["ORIGINPUSH"]
+            value["GIT_CONFIG_STATE"] = ENVIRON["GITCONFIGSTATE"]
+            value["EXPECTED_GIT_STATE"] = ENVIRON["EXPECTEDGIT"]
+            value["EXPECTED_WORKTREE_STATE"] = ENVIRON["EXPECTEDWORKTREE"]
+            value["BASE_BRANCH"] = ENVIRON["BASEBRANCH"]
+            value["START_COMMIT"] = ENVIRON["STARTCOMMIT"]
+            value["CREATED_AT"] = ENVIRON["NOW"]
+            value["TASK_SLUG"] = ENVIRON["SLUG"]
+            value["AGENT1_NAME"] = ENVIRON["A1"]
+            value["AGENT2_NAME"] = ENVIRON["A2"]
+            value["CLAUDE_MODEL"] = ENVIRON["CLAUDEMODEL"]
+            value["CLAUDE_EFFORT"] = ENVIRON["CLAUDEEFFORT"]
+            value["CODEX_MODEL"] = ENVIRON["CODEXMODEL"]
+            value["CODEX_EFFORT"] = ENVIRON["CODEXEFFORT"]
+        }
+        { $0 = put($0)
           if ($0 ~ /^max_rounds: /)     $0 = "max_rounds: "     ENVIRON["ROUNDS"]
           if ($0 ~ /^dirty_at_start: /) $0 = "dirty_at_start: " ENVIRON["DIRTY"]
           print }
@@ -1337,6 +1636,7 @@ cmd_start() {
 
 cmd_status() {
     local slug; slug="$(resolve_slug "${1:-}")" || exit "$EXIT_ERROR"
+    validate_task_directory "$slug"
     local doc; doc="$(doc_for "$slug")"
     require_doc "$doc"
     local status turn agent1 agent2 work manual
@@ -1346,6 +1646,19 @@ cmd_status() {
     agent2="$(frontmatter "$doc" agent2)"
     work="$(status_work "$doc" "$status" "$turn")"
     manual="$(status_manual_testing "$(frontmatter "$doc" manual_testing)")"
+    if [[ "$status" == "done" ]]; then
+        local reviewed start current_digest
+        reviewed="$(frontmatter "$doc" changeset_digest)"
+        start="$(frontmatter "$doc" start_commit)"
+        current_digest=""
+        if [[ -n "$start" ]] && git -C "$REPO_ROOT" cat-file -e \
+            "${start}^{commit}" 2>/dev/null; then
+            current_digest="$(changeset_digest "$start")"
+        fi
+        [[ -n "$reviewed" && "$reviewed" != "none" \
+           && "$reviewed" == "$current_digest" ]] \
+            || work="completion invalidated — worktree differs from the reviewed state"
+    fi
     printf 'status: %s\nagents: agent1=%s, agent2=%s\nwork: %s\n' \
         "$status" \
         "$(status_agent_name "$agent1")" \
@@ -1727,16 +2040,58 @@ dependency_headings_match() {
     ' "$file"
 }
 
-# Lists the complete prospective PR changeset, including commits already made
-# by an earlier publication attempt and every current index/worktree change.
-changeset_files() {
+# Lists the complete prospective PR changeset. Comparing the base commit
+# directly with the working tree already includes committed, staged, and
+# unstaged tracked changes; untracked paths are the only separate set. NUL
+# delimiters preserve every valid Git path and avoid core.quotePath aliases.
+changeset_files_z() {
     local base="$1"
-    {
-        git -C "$REPO_ROOT" diff --name-only "$base" HEAD
-        git -C "$REPO_ROOT" diff --name-only
-        git -C "$REPO_ROOT" diff --cached --name-only
-        git -C "$REPO_ROOT" ls-files --others --exclude-standard
-    } | sort -u
+    LC_ALL=C git -C "$REPO_ROOT" diff --name-only -z "$base" \
+        "${WORKTREE_PATHS[@]}"
+    LC_ALL=C git -C "$REPO_ROOT" ls-files --others --exclude-standard -z \
+        "${WORKTREE_PATHS[@]}"
+}
+
+# Human-readable form used only for emptiness and exact ordinary-path checks.
+changeset_files() {
+    local base="$1" file
+    changeset_files_z "$base" | while IFS= read -r -d '' file; do
+        printf '%q\n' "$file"
+    done
+}
+
+# Emits one canonical manifest entry for the current working path.
+worktree_manifest_entry() {
+    local file="$1" path="${REPO_ROOT}/${file}" mode object target entry metadata
+    if [[ -L "$path" ]]; then
+        mode=120000
+        target="$(readlink "$path")"
+        object="$(printf '%s' "$target" | git -C "$REPO_ROOT" hash-object --stdin)"
+        printf '%s %s\0%s\0' "$mode" "$object" "$file"
+    elif [[ -f "$path" ]]; then
+        [[ -x "$path" ]] && mode=100755 || mode=100644
+        if [[ "$(git -C "$REPO_ROOT" config --bool core.filemode 2>/dev/null || true)" \
+              == "false" ]]; then
+            entry=""
+            IFS= read -r -d '' entry \
+                < <(git -C "$REPO_ROOT" ls-files -s -z -- "$file") || true
+            metadata="${entry%%$'\t'*}"
+            [[ "$metadata" != "$entry" ]] && mode="${metadata%% *}"
+        fi
+        object="$(git -C "$REPO_ROOT" hash-object --path="$file" -- "$file")"
+        printf '%s %s\0%s\0' "$mode" "$object" "$file"
+    else
+        printf 'deleted\0%s\0' "$file"
+    fi
+}
+
+# Turns NUL-delimited metadata/path pairs into an order-independent strong
+# digest. Per-entry hashes keep newlines and non-ASCII names opaque to sort.
+digest_manifest_entries() {
+    local metadata file
+    while IFS= read -r -d '' metadata && IFS= read -r -d '' file; do
+        { printf '%s\0' "$metadata"; printf '%s' "$file"; } | digest_stream
+    done | LC_ALL=C sort | digest_stream
 }
 
 # Content, type, and mode digest of the complete prospective changeset.
@@ -1744,22 +2099,54 @@ changeset_files() {
 # committing does not change it: the digest recorded when the review finished
 # must still match on a retry that has already committed part of the work.
 changeset_digest() {
-    local base="$1" file path mode object target
-    changeset_files "$base" | while IFS= read -r file; do
-        path="${REPO_ROOT}/${file}"
-        if [[ -L "$path" ]]; then
-            mode=120000
-            target="$(readlink "$path")"
-            object="$(printf '%s' "$target" | git -C "$REPO_ROOT" hash-object --stdin)"
-            printf '%s %s %s\n' "$mode" "$object" "$file"
-        elif [[ -f "$path" ]]; then
-            [[ -x "$path" ]] && mode=100755 || mode=100644
-            object="$(git -C "$REPO_ROOT" hash-object -- "$file")"
-            printf '%s %s %s\n' "$mode" "$object" "$file"
-        else
-            printf 'deleted %s\n' "$file"
-        fi
-    done | cksum | tr -s ' ' '-'
+    local base="$1" file
+    changeset_files_z "$base" | while IFS= read -r -d '' file; do
+        worktree_manifest_entry "$file"
+    done | digest_manifest_entries
+}
+
+# The same manifest after staging. Comparing it with changeset_digest catches
+# clean filters, hooks, and edits that land after review but before a commit.
+index_changeset_digest() {
+    local base="$1" file entry metadata mode object
+    git -C "$REPO_ROOT" diff --cached --name-only -z "$base" \
+        "${WORKTREE_PATHS[@]}" \
+        | while IFS= read -r -d '' file; do
+            entry=""
+            IFS= read -r -d '' entry \
+                < <(git -C "$REPO_ROOT" ls-files -s -z -- "$file") || true
+            if [[ -z "$entry" ]]; then
+                printf 'deleted\0%s\0' "$file"
+                continue
+            fi
+            metadata="${entry%%$'\t'*}"
+            mode="${metadata%% *}"
+            metadata="${metadata#* }"
+            object="${metadata%% *}"
+            printf '%s %s\0%s\0' "$mode" "$object" "$file"
+        done | digest_manifest_entries
+}
+
+# The reviewed manifest as committed, used immediately before any push.
+commit_changeset_digest() {
+    local base="$1" commit="$2" file entry metadata mode object
+    git -C "$REPO_ROOT" diff --name-only -z "$base" "$commit" \
+        "${WORKTREE_PATHS[@]}" \
+        | while IFS= read -r -d '' file; do
+            entry=""
+            IFS= read -r -d '' entry \
+                < <(git -C "$REPO_ROOT" ls-tree -z "$commit" -- "$file") || true
+            if [[ -z "$entry" ]]; then
+                printf 'deleted\0%s\0' "$file"
+                continue
+            fi
+            metadata="${entry%%$'\t'*}"
+            mode="${metadata%% *}"
+            metadata="${metadata#* }"
+            metadata="${metadata#* }"
+            object="${metadata%% *}"
+            printf '%s %s\0%s\0' "$mode" "$object" "$file"
+        done | digest_manifest_entries
 }
 
 # Fingerprint of driver-owned per-round snapshots. They live in the writable,
@@ -1773,7 +2160,22 @@ rounds_state() {
         if [[ -L "$file" ]]; then
             printf '%s=symlink:%s\n' "${file##*/}" "$(readlink "$file")"
         elif [[ -f "$file" ]]; then
-            printf '%s=file:%s\n' "${file##*/}" "$(cksum < "$file")"
+            printf '%s=file:%s\n' "${file##*/}" "$(digest_stream < "$file")"
+        fi
+    done
+}
+
+# Fingerprint of completed audit artifacts. The current log and trace are open
+# for this turn and therefore excluded; every earlier artifact is immutable.
+turns_state() {
+    local dir="$1" current_log="$2" current_trace="$3" file
+    [[ -d "$dir" && ! -L "$dir" ]] || return 0
+    for file in "$dir"/*; do
+        [[ "$file" == "$current_log" || "$file" == "$current_trace" ]] && continue
+        if [[ -L "$file" ]]; then
+            printf '%s=symlink:%s\n' "${file##*/}" "$(readlink "$file")"
+        elif [[ -f "$file" ]]; then
+            printf '%s=file:%s\n' "${file##*/}" "$(digest_stream < "$file")"
         fi
     done
 }
@@ -1788,10 +2190,10 @@ changeset_patch() {
     # snapshot is a reviewing aid, and failing the handoff over it would abort
     # a run that is otherwise fine.
     git -C "$REPO_ROOT" cat-file -e "${base}^{commit}" 2>/dev/null || base="HEAD"
-    git -C "$REPO_ROOT" diff "$base" --
+    git -C "$REPO_ROOT" diff "$base" "${WORKTREE_PATHS[@]}"
     (
         cd "$REPO_ROOT" || exit 1
-        git ls-files --others --exclude-standard -z \
+        git ls-files --others --exclude-standard -z "${WORKTREE_PATHS[@]}" \
             | while IFS= read -r -d '' file; do
                   git diff --no-index --binary -- /dev/null "$file" || true
               done
@@ -1801,11 +2203,21 @@ changeset_patch() {
 # Branch name from the issue title: kebab-case, no agent identifiers, per the
 # branch-naming rule in AGENTS.md.
 branch_name_from() {
-    printf '%s' "$1" \
+    local title="$1" number="${2:-}"
+    local branch
+    branch="$(printf '%s' "$title" \
         | tr '[:upper:]' '[:lower:]' \
         | sed -e 's/[^a-z0-9]\{1,\}/-/g' -e 's/^-//' -e 's/-$//' \
         | cut -c1-50 \
-        | sed -e 's/-$//'
+        | sed -e 's/-$//')"
+    [[ -n "$branch" ]] || branch="issue-${number}"
+    printf '%s' "$branch"
+}
+
+# GitHub policy forbids a trailing period; remove surrounding trailing space and
+# every terminal period once, both at setup validation and final publication.
+pr_title_from() {
+    printf '%s' "$1" | sed -e 's/[[:space:]]*$//' -e 's/[.]*$//'
 }
 
 # Branches, commits, pushes, and opens a draft PR. Runs only after the workflow
@@ -1813,7 +2225,7 @@ branch_name_from() {
 # user aborts instead of guessing.
 create_pr() {
     local doc="$1"
-    local number title branch body
+    local number title branch body github_repo origin_fetch origin_push
     command -v gh >/dev/null 2>&1 \
         || die "'gh' is not on PATH; it is required to open the pull request"
     number="$(frontmatter "$doc" issue_number)"
@@ -1821,7 +2233,8 @@ create_pr() {
     # would derive a different branch name and strand the branch already
     # created, and the protocol defines the issue copy as a fixed snapshot.
     title="$(frontmatter "$doc" issue_title)"
-    [[ -n "$title" ]] || die "issue_title is missing from the document; it is written at setup"
+    [[ -n "$title" ]] \
+        || die "issue_title is missing from the document; it is written at setup"
 
     # Publishing asserts the work is ready for review. An undecided manual
     # testing field, or `required` with no usable plan, means nobody can say
@@ -1848,8 +2261,18 @@ create_pr() {
         || die "the worktree was already dirty when this run started; "\
 "commit or stash your own changes and open the PR yourself"
 
-    branch="$(branch_name_from "$title")"
-    [[ -n "$branch" ]] || die "could not derive a branch name from the issue title"
+    branch="$(frontmatter "$doc" task_branch)"
+    [[ -n "$branch" ]] || die "task_branch is missing from the workflow metadata"
+    github_repo="$(frontmatter "$doc" github_repo)"
+    [[ -n "$github_repo" ]] || die "github_repo is missing from the workflow metadata"
+    origin_fetch="$(remote_url fetch)" || die "origin must have exactly one fetch URL"
+    origin_push="$(remote_url push)" || die "origin must have exactly one push URL"
+    [[ "$origin_fetch" == "$(frontmatter "$doc" origin_fetch_url)" ]] \
+        || die "origin's fetch URL changed during the run; nothing was published"
+    [[ "$origin_push" == "$(frontmatter "$doc" origin_push_url)" ]] \
+        || die "origin's push URL changed during the run; nothing was published"
+    [[ "$(git_config_digest)" == "$(frontmatter "$doc" git_config_state)" ]] \
+        || die "effective Git configuration changed during the run; nothing was published"
 
     local base start target_branch changes task_changes dirty
     base="$(frontmatter "$doc" base_commit)"
@@ -1859,39 +2282,104 @@ create_pr() {
     git -C "$REPO_ROOT" cat-file -e "${start}^{commit}" 2>/dev/null \
         || die "start_commit '${start}' is not available; cannot validate where the task began"
     target_branch="$(frontmatter "$doc" pr_base_branch)"
+    refresh_remote_branch "$target_branch" \
+        || die "could not refresh origin/${target_branch} before publication"
     local base_ref="refs/remotes/origin/${target_branch}"
     git -C "$REPO_ROOT" show-ref --verify --quiet "$base_ref" \
         || die "origin/${target_branch} is unavailable; fetch the pull request target and "\
 "start a new workflow run before publishing"
-    local target_base
+    local target_base recorded_target_tip current_target_tip
+    recorded_target_tip="$(frontmatter "$doc" pr_base_tip)"
+    current_target_tip="$(git -C "$REPO_ROOT" rev-parse "$base_ref")"
+    git -C "$REPO_ROOT" merge-base --is-ancestor \
+        "$recorded_target_tip" "$current_target_tip" \
+        || die "origin/${target_branch} was rewritten after setup; start a new workflow run"
     target_base="$(git -C "$REPO_ROOT" merge-base "$base_ref" HEAD)" \
         || die "cannot find a merge-base between HEAD and origin/${target_branch}"
-    [[ "$(git -C "$REPO_ROOT" rev-parse "$base")" == "$target_base" ]] \
-        || die "the recorded PR base ${base} is not the pull request's merge-base "\
-"${target_base}; start a new workflow run so the task and PR scopes are recalculated"
+    target_base="$(git -C "$REPO_ROOT" rev-parse "$target_base")"
+    if [[ "$(git -C "$REPO_ROOT" rev-parse "$base")" \
+          != "$(git -C "$REPO_ROOT" rev-parse "$target_base")" ]]; then
+        # The baseline is recomputed rather than enforced, because the ordinary
+        # reason it moves is not this run's doing: someone else's pull request
+        # merges into the target while this one works, and the merge-base
+        # advances to absorb commits the run was stacked on.
+        #
+        # Nothing the run produced depends on it. The task's own changeset is
+        # measured from `start_commit`, which is immutable and separately
+        # checked below, and the reviewed digest is taken from there too. What
+        # shrinks is only the earlier work riding along in the pull request,
+        # and the stacking note is derived from `${base_ref}` at this moment,
+        # so the body already states the smaller truth. Refusing here would
+        # discard a finished, approved run over a merge nobody in it made.
+        #
+        # A merge-base that moved forward but no farther than `start_commit` is
+        # what that looks like. Moving outside that closed interval means the
+        # target was rewritten or absorbed commits produced by this run. In
+        # either case, shrinking the PR baseline would silently remove reviewed
+        # task changes from the published changeset.
+        git -C "$REPO_ROOT" merge-base --is-ancestor "$base" "$target_base" \
+            || die "the recorded PR base ${base} is not an ancestor of the "\
+"current merge-base ${target_base} with origin/${target_branch}, so that "\
+"branch was rewritten rather than advanced during the run; start a new "\
+"workflow run so the task and PR scopes are recalculated"
+        git -C "$REPO_ROOT" merge-base --is-ancestor "$target_base" "$start" \
+            || die "the current merge-base ${target_base} with "\
+"origin/${target_branch} advanced beyond the recorded start_commit ${start} "\
+"and absorbed commits produced by this run; start a new workflow run so the "\
+"task and PR scopes are recalculated"
+        info "origin/${target_branch} advanced during the run; the pull "\
+"request baseline moves from ${base} to ${target_base}, which changes how "\
+"many earlier commits ride along and nothing this run produced"
+        base="$target_base"
+    fi
 
     # The first publication attempt must still stand exactly where the run
     # started. Once the driver has created the task branch, retries may be ahead
     # of that point only on that branch, because earlier publication steps may
     # already have committed the reviewed files.
-    local current current_head
+    local current current_head publication_head
     current="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD)"
     current_head="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+    publication_head="$(frontmatter "$doc" publication_head)"
     if [[ "$current" == "$branch" ]]; then
         git -C "$REPO_ROOT" merge-base --is-ancestor "$start" HEAD \
             || die "task branch '${branch}' no longer descends from the recorded "\
 "starting commit ${start}; nothing was published"
+        if [[ -n "$publication_head" && "$publication_head" != "none" ]]; then
+            [[ "$current_head" == "$publication_head" ]] \
+                || die "task branch '${branch}' moved beyond the driver's recorded publication head"
+        else
+            [[ "$current_head" == "$(git -C "$REPO_ROOT" rev-parse "$start")" ]] \
+                || die "task branch '${branch}' has commits the driver did not create"
+        fi
     else
+        [[ -z "$publication_head" || "$publication_head" == "none" ]] \
+            || die "return to task branch '${branch}' before retrying publication"
         [[ "$current_head" == "$(git -C "$REPO_ROOT" rev-parse "$start")" ]] \
             || die "HEAD moved from the recorded starting commit ${start} to "\
 "${current_head}; return to the starting point or start a new workflow run"
+    fi
+
+    # Fail a remote branch collision before creating local publication commits.
+    # An existing head is safe only when it is already in the immutable starting
+    # history and the eventual push can therefore be a fast-forward.
+    local initial_remote_head
+    initial_remote_head="$(publication_git ls-remote --heads origin \
+        "refs/heads/${branch}" | awk 'NR == 1 { print $1 }')" \
+        || die "could not inspect origin/${branch} before publication"
+    if [[ ( -z "$publication_head" || "$publication_head" == "none" ) \
+          && -n "$initial_remote_head" ]]; then
+        git -C "$REPO_ROOT" cat-file -e "${initial_remote_head}^{commit}" 2>/dev/null \
+            && git -C "$REPO_ROOT" merge-base --is-ancestor \
+                "$initial_remote_head" "$start" \
+            || die "origin/${branch} already contains history outside this task's starting point"
     fi
 
     changes="$(changeset_files "$base")" \
         || die "could not determine the complete changeset since ${base}"
     task_changes="$(changeset_files "$start")" \
         || die "could not determine the task changeset since ${start}"
-    dirty="$(git -C "$REPO_ROOT" status --porcelain)"
+    dirty="$(worktree_porcelain)"
     if [[ -z "$changes" ]]; then
         info "no changes since ${base}; skipping the pull request"
         return 0
@@ -2003,7 +2491,7 @@ create_pr() {
             || die "changes since ${base} are already committed on "\
 "'${current}'; move them to '${branch}' before publishing"
         local checkout_error
-        if ! checkout_error="$(git -C "$REPO_ROOT" checkout -b \
+        if ! checkout_error="$(publication_git checkout -b \
             "$branch" "$start" 2>&1)"; then
             die "could not create branch '${branch}': ${checkout_error}"
         fi
@@ -2028,37 +2516,92 @@ create_pr() {
         # this dedicated commit.
         if ! git -C "$REPO_ROOT" diff --quiet HEAD -- \
             version.gradle.kts pom.xml dependencies.md; then
-            git -C "$REPO_ROOT" commit -q --only \
+            publication_git commit -q --only \
                 -m "Bump version —> \`${new_v}\`." -- \
                 version.gradle.kts pom.xml dependencies.md \
                 || die "the version commit failed"
             info "committed the version bump and regenerated reports"
+            set_frontmatter "$doc" \
+                "publication_head=$(git -C "$REPO_ROOT" rev-parse HEAD)"
         else
             info "version bump and reports are already committed"
         fi
-        git -C "$REPO_ROOT" add -A || die "git add failed"
+        current_digest="$(changeset_digest "$start")"
+        [[ "$reviewed" == "$current_digest" ]] \
+            || die "the changeset moved during publication before staging; nothing was pushed"
+        # Let Git apply the repository's ignore rules during the broad add.
+        # Passing an explicit excluded pathspec for the ignored work root makes
+        # some Git versions reject the command as an attempt to add an ignored
+        # path. Resetting that exact driver-owned path afterwards also covers a
+        # reviewed change that deliberately removes its ignore rule.
+        publication_git add -A -- . || die "git add failed"
+        publication_git reset -q HEAD -- .agents/work \
+            || die "could not exclude pair-workflow scratch files from staging"
+        local staged_digest
+        staged_digest="$(index_changeset_digest "$start")"
+        [[ "$reviewed" == "$staged_digest" ]] \
+            || die "the staged tree differs from the reviewed changeset; nothing was pushed"
         if ! git -C "$REPO_ROOT" diff --cached --quiet; then
-            git -C "$REPO_ROOT" commit -q -m "${title}" \
+            publication_git commit -q -m "${title}" \
                 || die "the task commit failed"
+            set_frontmatter "$doc" \
+                "publication_head=$(git -C "$REPO_ROOT" rev-parse HEAD)"
             info "committed onto '${branch}'"
         fi
     else
         info "nothing left to commit; continuing with what is already committed"
     fi
 
-    if ! git -C "$REPO_ROOT" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1 \
-       || [[ -n "$(git -C "$REPO_ROOT" log '@{upstream}..HEAD' --oneline)" ]]; then
-        git -C "$REPO_ROOT" push -q -u origin "$branch" \
+    [[ -z "$(worktree_porcelain)" ]] \
+        || die "the worktree changed during publication; local commits were not pushed"
+    current_head="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+    publication_head="$(frontmatter "$doc" publication_head)"
+    [[ "$publication_head" == "$current_head" ]] \
+        || die "the current task-branch head was not created by this publication run"
+    local committed_digest
+    committed_digest="$(commit_changeset_digest "$start" "$current_head")"
+    [[ "$reviewed" == "$committed_digest" ]] \
+        || die "the committed tree differs from the reviewed changeset; nothing was pushed"
+    [[ "$(git_config_digest)" == "$(frontmatter "$doc" git_config_state)" ]] \
+        || die "Git configuration changed during publication; nothing was pushed"
+
+    local remote_head
+    remote_head="$(publication_git ls-remote --heads origin \
+        "refs/heads/${branch}" | awk 'NR == 1 { print $1 }')" \
+        || die "could not inspect origin/${branch}; nothing was pushed"
+    if [[ "$remote_head" != "$current_head" ]]; then
+        if [[ -n "$remote_head" ]]; then
+            publication_git fetch --no-tags -q origin \
+                "+refs/heads/${branch}:refs/remotes/origin/${branch}" \
+                || die "could not inspect the existing origin/${branch}"
+            git -C "$REPO_ROOT" merge-base --is-ancestor "$remote_head" "$current_head" \
+                || die "origin/${branch} contains commits outside this "\
+"reviewed run; refusing to overwrite it"
+        fi
+        publication_git push -q origin \
+            "refs/heads/${branch}:refs/heads/${branch}" \
             || die "git push failed; the commits are local and nothing was published"
         info "pushed '${branch}'"
     else
         info "'${branch}' is already pushed"
     fi
 
-    local existing
-    existing="$(gh pr view --json url --jq .url 2>/dev/null || true)"
+    remote_head="$(publication_git ls-remote --heads origin \
+        "refs/heads/${branch}" | awk 'NR == 1 { print $1 }')" \
+        || die "could not verify origin/${branch} after push"
+    [[ "$remote_head" == "$current_head" ]] \
+        || die "origin/${branch} does not match the reviewed local commit; no PR was opened"
+
+    local existing existing_url existing_base existing_head
+    existing="$(github pr view "$branch" --repo "$github_repo" \
+        --json url,state,baseRefName,headRefName \
+        --jq 'select(.state == "OPEN") | [.url, .baseRefName, .headRefName] | @tsv' \
+        2>/dev/null || true)"
     if [[ -n "$existing" ]]; then
-        info "pull request already open: ${existing}"
+        IFS=$'\t' read -r existing_url existing_base existing_head <<< "$existing"
+        [[ "$existing_base" == "$target_branch" && "$existing_head" == "$branch" ]] \
+            || die "an open PR already uses '${branch}' with a different head or base"
+        info "pull request already open: ${existing_url}"
         return 0
     fi
 
@@ -2080,9 +2623,11 @@ Review the task commits after \`${start_short}\`."
     # trailing period in the title, no verification detail and no agent
     # attribution in the body.
     body="${body}"$'\n\n'"Fixes #${number}"
-    local url
-    url="$(gh pr create --draft --assignee @me --base "$target_branch" \
-        --title "${title%.}" --body "$body" 2>&1)" \
+    local url pr_title
+    pr_title="$(pr_title_from "$title")"
+    url="$(github pr create --repo "$github_repo" --draft --assignee @me \
+        --base "$target_branch" --head "$branch" \
+        --title "$pr_title" --body "$body" 2>&1)" \
         || die "gh pr create failed (the branch is pushed; re-run to retry just this step): ${url}"
     info "draft pull request: ${url}"
 }
@@ -2290,9 +2835,9 @@ Do not change Git state. No branch creation or switching, no \`git add\`, no
 commit, no push, no tag, no rebase/merge/cherry-pick/reset/stash, and no pull
 request. Read-only Git (\`status\`, \`diff\`, \`log\`, \`show\`) is expected and
 fine. Leave your work as uncommitted changes in the worktree — that is the
-deliverable, and this prompt is not authorization to commit it. Refs and the
-index are compared before and after your turn, and the run aborts if they
-moved.
+deliverable, and this prompt is not authorization to commit it. Local refs and
+the index are compared before and after your turn, and ref-writing Git commands
+are traced. The run aborts on either violation.
 
 If you are agent1 and a question must be answered before you can plan honestly,
 ask it: write it under ## Questions, set \`resume_status\` to '${status}', set
@@ -2375,6 +2920,12 @@ take_turn() {
     status="$(frontmatter "$doc" status)"
     turn="$(frontmatter "$doc" turn)"
     rel_doc="${doc#"$REPO_ROOT"/}"
+
+    if [[ "$status" == "done" ]]; then
+        validate_done_changeset "$doc"
+    else
+        validate_continuation_state "$doc"
+    fi
 
     # Answering is the whole action: writing the answers into the document is
     # enough, and the next run picks them up. There is no separate command to
@@ -2493,15 +3044,20 @@ take_turn() {
     # a final agent1 turn may finish only while the worktree still matches it.
     local rounds_dir previous="" review_base
     rounds_dir="$(dirname "$doc")/rounds"
+    [[ ! -L "$rounds_dir" ]] || die "${rounds_dir} must not be a symlink"
     mkdir -p "$rounds_dir"
     review_base="$(frontmatter "$doc" start_commit)"
     [[ -n "$review_base" ]] || review_base=HEAD
     case "$status" in
         plan-review-requested)
+            [[ ! -L "${rounds_dir}/plan-${plan_round}.md" ]] \
+                || die "the plan snapshot destination is a symlink"
             section "$doc" "Plan" > "${rounds_dir}/plan-${plan_round}.md"
             [[ "$plan_round" -le 1 ]] \
                 || previous="${rounds_dir}/plan-$(( plan_round - 1 )).md" ;;
         implementation-review-requested)
+            [[ ! -L "${rounds_dir}/impl-${impl_round}.patch" ]] \
+                || die "the implementation snapshot destination is a symlink"
             changeset_patch "$review_base" \
                 > "${rounds_dir}/impl-${impl_round}.patch"
             set_frontmatter "$doc" \
@@ -2513,27 +3069,31 @@ take_turn() {
     previous="${previous#"$REPO_ROOT"/}"
 
     local before after git_before git_after immutable_before protect_task=1
+    local worktree_after_turn
+    local external_before external_after traced_writes
     # Task is established during plan-requested, including after a question
     # round-trip. Its heading remains unique then, but its contents become
     # immutable only after that planning turn advances.
     [[ "$status" == "plan-requested" ]] && protect_task=0
-    before="$(cksum < "$doc")"
+    before="$(digest_stream < "$doc")"
     git_before="$(git_state)"
+    external_before="$(external_ref_state)"
     immutable_before="$(immutable_snapshot "$doc" "$protect_task")"
     local sections_before log_before worktree_before="" rounds_before
     sections_before="$(protected_sections \
         "$doc" "$status" "$plan_round" "$impl_round")"
     log_before="$(log_entries "$doc")"
     rounds_before="$(rounds_state "$rounds_dir")"
-    [[ "$turn" != "agent2" ]] || worktree_before="$(worktree_state)"
+    [[ "$turn" != "agent2" ]] || worktree_before="$(worktree_state_digest)"
 
     # Keep a transcript per turn. An unattended run that goes wrong overnight
     # is otherwise unreconstructable: the document records what an agent chose
     # to write down, not what it actually did.
     local turns_dir="$(dirname "$doc")/turns"
+    [[ ! -L "$turns_dir" ]] || die "${turns_dir} must not be a symlink"
     mkdir -p "$turns_dir"
     local n=0 candidate base sequence
-    for candidate in "$turns_dir"/*.log; do
+    for candidate in "$turns_dir"/*.log "$turns_dir"/*.git-trace.json; do
         [[ -e "$candidate" ]] || continue
         base="${candidate##*/}"
         sequence="${base%%-*}"
@@ -2544,33 +3104,35 @@ take_turn() {
     done
     n=$(( n + 1 ))
     local log; log="$(printf '%s/%02d-%s.log' "$turns_dir" "$n" "$turn")"
+    local git_trace="${log%.log}.git-trace.json"
+    ( set -o noclobber; : > "$log"; : > "$git_trace" ) 2>/dev/null \
+        || die "turn ${n} transcript or Git trace already exists; refusing to overwrite it"
+    local trace_marker="${slug}-${n}-$$-$(date +%s)"
+    local turns_before; turns_before="$(turns_state "$turns_dir" "$log" "$git_trace")"
 
     # Agent commands carry their own whitespace-delimited flags. Split them
     # once into an array so model names such as `opus[1m]` stay literal instead
     # of undergoing pathname expansion. PIPESTATUS, not $?, reports the agent
     # rather than tee.
-    local rc
+    local rc tee_rc
     local -a command_parts
     read -r -a command_parts <<< "$cmd"
+    ACTIVE_TURN_DOC="$doc"
     set +e
-    (cd "$REPO_ROOT" && "${command_parts[@]}" \
-        "$(prompt_for "$turn" "$status" "$rel_doc" "$previous")") 2>&1 | tee "$log"
-    rc=${PIPESTATUS[0]}
+    (
+        cd "$REPO_ROOT"
+        export GIT_TRACE2_EVENT="$git_trace"
+        git -c "pair.traceMarker=${trace_marker}" version >/dev/null
+        "${command_parts[@]}" \
+            "$(prompt_for "$turn" "$status" "$rel_doc" "$previous")"
+    ) 2>&1 | tee "$log"
+    local -a pipeline_status=("${PIPESTATUS[@]}")
+    rc=${pipeline_status[0]}
+    tee_rc=${pipeline_status[1]}
     # Restore strict handling for every guard below. An intentional internal
     # non-zero result must disable it immediately before returning to the
     # caller, which maps that result to a public exit code.
     set -e
-    # The transcript is named because the CLI's own error is the diagnosis and
-    # it goes nowhere else. The two hints cover what actually fails first: a
-    # CLI that is on PATH but not signed in, and a model identifier that only
-    # the API rejects. Both surface as a turn that dies immediately having
-    # written nothing.
-    [[ "$rc" -eq 0 ]] \
-        || die "${turn} exited ${rc}; document left at status '${status}', "\
-"transcript in ${log#"$REPO_ROOT"/}. A turn that fails at once usually means "\
-"the CLI is not authenticated or its model identifier was rejected; the "\
-"transcript says which"
-
     # Checked before the document, because a Git write is the more serious
     # violation even on a turn that otherwise did its job.
     #
@@ -2580,6 +3142,7 @@ take_turn() {
     # change and leaves the attribution to whoever reads it. Naming the agent
     # here would accuse it of a violation the driver has no evidence for.
     git_after="$(git_state)"
+    worktree_after_turn="$(worktree_state_digest)"
     if [[ "$git_before" != "$git_after" ]]; then
         info "Git state changed during ${turn}'s turn (- before, + after):"
         diff <(printf '%s\n' "$git_before") <(printf '%s\n' "$git_after") >&2 || true
@@ -2589,19 +3152,42 @@ take_turn() {
 "the run can simply be started again"
     fi
 
+    # The Trace2 marker proves that the sidecar covers the agent process from
+    # immediately before invocation. Inspect every turn, not only turns whose
+    # final snapshots differ: a push of an existing tag, or a fetch with no new
+    # objects, is still forbidden even though it leaves no local movement.
+    git_trace_is_usable "$git_trace" "$trace_marker" \
+        || die "${turn}'s Git trace is missing or unreadable; inspect the "\
+"transcript and repository before continuing"
+    traced_writes="$(git_trace_ref_writes "$git_trace")" \
+        || die "could not inspect ${turn}'s Git trace"
+    if [[ -n "$traced_writes" ]]; then
+        info "${turn}'s process ran Git commands capable of changing refs:"
+        printf '%s\n' "$traced_writes" >&2
+        die "the agent process ran a ref-writing Git command, which this "\
+"workflow forbids; inspect the repository and remote before continuing"
+    fi
+
+    # No ref-writing command appeared in the agent process trace, so any
+    # remote-tracking ref or tag movement between these snapshots came from an
+    # editor, background Git process, or GitHub update outside that process.
+    external_after="$(external_ref_state)"
+    if [[ "$external_before" != "$external_after" ]]; then
+        info "remote-tracking refs or tags moved outside ${turn}'s process; "\
+"background Git or GitHub activity may continue without discarding the run:"
+        diff <(printf '%s\n' "$external_before") \
+             <(printf '%s\n' "$external_after") >&2 || true
+    fi
+
     # agent2 reviews the code; it never edits it. Checked only on its turns,
     # since changing the worktree is the whole point of agent1's. Like the Git
     # comparison above this detects rather than prevents, and it cannot say who
     # moved — but a reviewer that edits what it is reviewing has ended the
     # independence the second opinion is for, so the run stops either way.
     if [[ "$turn" == "agent2" ]]; then
-        local worktree_after; worktree_after="$(worktree_state)"
-        if [[ "$worktree_before" != "$worktree_after" ]]; then
-            info "worktree content changed during ${turn}'s turn (- before, + after):"
-            diff <(printf '%s\n' "$worktree_before") \
-                 <(printf '%s\n' "$worktree_after") 2>&1 | head -n 40 >&2 || true
-            die "${turn} changed the code it was reviewing, which this workflow "\
-"forbids; inspect the worktree before continuing"
+        if [[ "$worktree_before" != "$worktree_after_turn" ]]; then
+            die "worktree content changed during ${turn}'s review "\
+"(${worktree_before} -> ${worktree_after_turn}); inspect the worktree before continuing"
         fi
     fi
 
@@ -2613,7 +3199,22 @@ take_turn() {
         die "${turn} rewrote a driver-owned review snapshot; inspect ${rounds_dir}"
     fi
 
-    after="$(cksum < "$doc")"
+    [[ -f "$log" && ! -L "$log" && -f "$git_trace" && ! -L "$git_trace" ]] \
+        || die "the current transcript or Git trace was replaced during ${turn}'s turn"
+    local turns_after; turns_after="$(turns_state "$turns_dir" "$log" "$git_trace")"
+    [[ "$turns_before" == "$turns_after" ]] \
+        || die "${turn} rewrote an earlier transcript or Git trace; inspect ${turns_dir}"
+
+    # Safety checks run even when the agent or tee failed. Otherwise a reviewer
+    # could edit source or an agent could move Git state, exit nonzero, and have
+    # that state accepted as the baseline on the retry.
+    [[ "$tee_rc" -eq 0 ]] \
+        || die "could not write the complete transcript to ${log#"$REPO_ROOT"/}"
+    [[ "$rc" -eq 0 ]] \
+        || die "${turn} exited ${rc}; the failed turn was invalidated. Transcript: "\
+"${log#"$REPO_ROOT"/}"
+
+    after="$(digest_stream < "$doc")"
     [[ "$before" != "$after" ]] \
         || die "${turn} did not modify ${rel_doc}; aborting instead of looping"
 
@@ -2719,6 +3320,13 @@ questions-pending|human|0|0"
             "resume_status=none" "updated=${blocked_at}"
         printf '\n%s driver %s -> blocked: review ceiling %s reached; human decision required\n' \
             "$blocked_at" "$status" "$max_rounds" >> "$doc"
+        [[ "$git_after" == "$(git_state)" \
+           && "$worktree_after_turn" == "$(worktree_state_digest)" ]] \
+            || die "repository state changed while the driver applied the review ceiling"
+        set_frontmatter "$doc" \
+            "expected_git_state=$(git_state_digest)" \
+            "expected_worktree_state=$(worktree_state_digest)"
+        ACTIVE_TURN_DOC=""
         info "${turn} requested another review beyond max_rounds=${max_rounds}; "\
 "task is blocked for a human decision"
         set +e
@@ -2768,6 +3376,18 @@ questions-pending|human|0|0"
 "another implementation review instead of setting done"
         set_frontmatter "$doc" "changeset_digest=${reviewed_digest}"
     fi
+
+    [[ "$git_after" == "$(git_state)" ]] \
+        || die "Git state changed while the driver validated ${turn}'s completed turn"
+    [[ "$worktree_after_turn" == "$(worktree_state_digest)" ]] \
+        || die "worktree content changed while the driver validated ${turn}'s completed turn"
+
+    # Persist the state this successful turn owns before allowing another slug
+    # or process to become the next baseline.
+    set_frontmatter "$doc" \
+        "expected_git_state=$(git_state_digest)" \
+        "expected_worktree_state=$(worktree_state_digest)"
+    ACTIVE_TURN_DOC=""
 
     info "advanced: ${status} -> ${new_status}"
     return 0
@@ -2903,6 +3523,7 @@ cmd_step() {
 
     require_doc "$(doc_for "$slug")"
     acquire_lock "$slug"
+    ensure_task_directory "$slug"
     validate_run_metadata "$(doc_for "$slug")"
     validate_agent_selection "$(doc_for "$slug")"
     prepare_saved_engine_settings "$(doc_for "$slug")"
@@ -2979,6 +3600,7 @@ cmd_run() {
     # The lock comes before the existence check, not after: otherwise two runs
     # for one issue can both see no document and both create it.
     acquire_lock "$slug"
+    ensure_task_directory "$slug"
 
     local doc; doc="$(doc_for "$slug")"
     if [[ ! -f "$doc" ]]; then
@@ -3037,6 +3659,7 @@ cmd_run() {
 }
 
 main() {
+    validate_repository_environment
     [[ -f "$SKILL" && -f "$TEMPLATE" ]] || die "run this script from within the repository"
     case "${1:-}" in
         start)  shift; cmd_start  "$@" ;;
