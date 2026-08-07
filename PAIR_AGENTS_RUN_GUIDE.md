@@ -168,6 +168,12 @@ Git writes themselves. An interruption before publication creates no Git
 history; if publication fails partway through, the driver reports what
 succeeded and a rerun resumes from there.
 
+The driver pins the GitHub repository, the single fetch and push URLs, the task
+branch, and the current target tip at setup. It refreshes the target again
+before publication, disables local hooks and automatic tag following for its
+own Git writes, and verifies that the staged, committed, and remote branch tips
+all still represent the reviewed changeset before it opens the PR.
+
 The task branch starts at the exact commit where the run began and targets
 `master` by default. If the run started on a branch with commits not yet in
 `master`, the driver reports that inherited history during setup, excludes it
@@ -209,9 +215,25 @@ instructions. The driver checks that:
 - completed document sections and log history remain unchanged; and
 - every review has a verdict and every finding has one valid disposition.
 
-The Git check is a tripwire, not a sandbox: it detects changes after a turn and
-cannot identify who made them. Do not modify Git state in another window while
-a run is active.
+Only one pair driver may use a worktree at a time, even for different issue
+slugs. Each successful turn also records strong Git and worktree digests. A
+later turn refuses to start if another task, editor, or process changed that
+shared state between handoffs. A failed agent turn is invalidated after all
+safety checks run; rerunning cannot silently adopt its partial state.
+
+The Git check is a tripwire, not a sandbox: it detects changes after a turn.
+Local branches, `HEAD`, other local refs, and the index are compared strictly,
+so do not modify those in another window while a run is active.
+
+Remote-tracking refs and tags are handled separately because a background
+fetch or GitHub update may create, advance, or prune them. Each agent turn has
+a fresh, turn-specific Git Trace2 sidecar covering its process tree. The driver
+correlates each command name with its own process arguments and stops for a
+command capable of changing refs even when no final ref movement is visible. If refs
+move without such a command, it reports the external movement and continues.
+Missing or unreadable provenance stops the run rather than guessing. This
+distinguishes processes directly instead of inferring a push or fetch from
+commit reachability.
 
 `--cp` changes only the driver's final publication step; it does not loosen
 agent permissions or review checks.
@@ -309,25 +331,35 @@ For a repository whose pull requests target another branch, set
 working document; omitting or changing the environment variable on a later
 invocation does not retarget the pull request.
 
-Before the first agent turn of a publishing run, the driver requires the
-remote-tracking PR target to exist and have a merge-base with `HEAD`. Before
-its first Git write, it also requires:
+At setup, the driver fetches the exact PR target without tags, requires it to
+have a merge-base with `HEAD`, and records its tip and repository identity.
+Before its first publication write, it refreshes that target and also requires:
 
 - a clean worktree when the run starts (`--allow-dirty` cannot be combined
   with `--create-pr`);
 - the changeset uncommitted, unless it is already on the task's own branch —
   work committed onto some other branch is left for you to move;
-- an `origin/<recorded-target>` merge-base matching the recorded PR baseline;
+- an `origin/<recorded-target>` merge-base that still contains the recorded PR
+  baseline, whose tip descends from the setup tip, and that has not advanced
+  beyond the recorded task start;
 - `HEAD` still at the recorded starting commit on the first publication
   attempt, or on the task branch for a retry;
 - content, file types, and executable bits identical to the reviewed state;
+- the effective Git configuration and origin fetch/push URLs unchanged;
 - a `version.gradle.kts` increase made after the recorded starting commit,
   regenerated `pom.xml` and `dependencies.md` reports, and complete `Summary`
   and `Changes` sections; and
 - an actionable plan when manual testing is required.
 
-A target-branch update that changes the PR merge-base stops publication; the
-run must be repeated against the new scope.
+A target branch that advances during the run — another pull request merging
+into `master`, say — does not stop publication while its new merge-base remains
+between the recorded PR baseline and task start. The driver reports the move
+and opens the pull request; only inherited commits have left its changeset. A
+target rewrite that no longer contains the exact target tip recorded at setup
+stops publication, even when the rewritten history retains the same merge-base.
+So does a merge-base beyond the task start, because the target has absorbed
+commits produced by the run and advancing the baseline would omit reviewed task
+work. Either case requires a new run against the new target.
 
 ### Override Complete Agent Commands
 
@@ -385,20 +417,18 @@ model internally instead.
 ### Working Files and Legacy Runs
 
 Everything for a task lives in `.agents/work/issue-150/` (gitignored):
-`plan.md` is the shared document, `turns/*.log` contains turn transcripts, and
+`plan.md` is the shared document, `turns/*.log` contains turn transcripts,
+matching `turns/*.git-trace.json` files contain per-turn Git events, and
 `rounds/` holds the plan or changeset saved for each review. The document is
-what an agent chose to write down; the transcripts are what it actually did.
-For a detailed record of disagreements, read `## Plan Dispositions` and
-`## Implementation Dispositions` in `plan.md`.
+what an agent chose to write down; the transcripts and traces are what its
+process actually did. For a detailed record of disagreements, read
+`## Plan Dispositions` and `## Implementation Dispositions` in `plan.md`.
 
 For working documents created by an older driver, the missing PR target is
-backfilled as `master`, and missing question provenance is backfilled before
-another turn. If the document is already waiting on a question, the driver
-recovers the origin from its saved legacy resume status. A non-publishing run
-may continue without the older starting-branch or model fields. New model
-options cannot be added to such a run. Publication still requires the
-starting-branch fields; if they are missing, continue without `--create-pr` or
-start a replacement with
+backfilled as `master`, and recoverable question provenance is backfilled from
+the saved legacy resume status. Runs that predate between-turn worktree
+ownership or the pinned repository metadata cannot reconstruct those values
+safely. Start a replacement with
 `.agents/workflows/pair.sh start <issue> --slug <new-name>`.
 
 ### Protocol Reference

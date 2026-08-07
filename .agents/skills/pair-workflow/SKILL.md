@@ -102,21 +102,35 @@ driver talking, not the user. Also, the driver supports explicitly approved
 unsafe commands for externally isolated runs, where no CLI prompt would stop a
 stray `git commit` at the moment it happens.
 
-`pair.sh` checks this rather than only asking for it: it snapshots `HEAD`, the
-current branch, every ref, and the staged index before each turn, compares them
-afterward, and aborts the run on any difference.
+`pair.sh` checks this rather than only asking for it. It strictly compares
+`HEAD`, the current branch, local refs other than tags, the staged index, the
+effective Git configuration, and in-progress operation sentinels before and
+after every turn. Any movement aborts and invalidates the run.
+
+Remote-tracking refs and tags are judged separately because a background fetch
+can create, update, or prune them without either agent touching Git. The driver
+exports a fresh per-turn Git Trace2 event file to the agent process tree and
+writes a turn-unique marker immediately before the agent starts. It correlates
+each process's command name with that process's arguments, inspects the trace
+after every turn, and aborts for a Git command capable of moving a ref, even
+when the final snapshot did not move. If an external ref changed without such a command, the
+movement happened outside the agent process, so the driver reports it and
+continues. A missing or unreadable trace also aborts rather than guessing. This
+provenance check does not rely on commit reachability: a fetched commit may
+already have a local branch, and a push may publish an otherwise unreachable
+object.
 
 That check **detects, it does not prevent**. It runs after your turn has
 already finished, so it is a tripwire, not a boundary: a write followed by a
-restore passes it, an effect outside this repository — a `gh` API call, a PR
-opened from a branch that was already pushed — leaves no local trace at all,
-and a push it does catch has already reached the remote. It also cannot say
-**who** moved: two snapshots taken around a turn look the same whether an agent
-wrote to Git or the user switched branches in another window, so a tripped
-guard is a fact to investigate, not a verdict against the agent. Nothing here
-makes a Git write impossible; the rule above is what keeps it from happening,
-and the snapshot is only there to notice when the rule was broken. Do not treat
-the absence of an abort as permission.
+restore passes it, and an effect outside this repository — a `gh` API call, a
+PR opened from a branch that was already pushed — leaves no local ref trace at
+all. The agent process can also suppress or rewrite its inherited Trace2 file,
+just as it can restore a snapshot, and a push the driver catches has already
+reached the remote. For strictly compared local state, two snapshots still
+cannot say whether the agent or a person in another window moved it. Nothing
+here makes a Git write impossible; the rule above is what keeps it from
+happening, and the checks only notice evidence that the rule was broken. Do not
+treat the absence of an abort as permission.
 
 If a task genuinely cannot proceed without a Git operation, set
 `status: blocked` and `turn: human` and explain why. Never perform the
@@ -143,11 +157,18 @@ One file per task at `.agents/work/<slug>/plan.md`, created from
 `.agents/skills/pair-workflow/template.md`. The path is gitignored; the
 document is a scratch artifact and is never committed.
 
+All slugs share one repository worktree and therefore one driver lock. Each
+successful turn records strong Git and worktree digests; another task or
+process cannot change the checkout between handoffs and become the next turn's
+baseline. The driver excludes `.agents/work/` explicitly from review and
+staging even if a task changes the repository's ignore rule.
+
 Alongside it, `.agents/work/<slug>/turns/NN-<role>.log` holds each turn's
-transcript, written by the driver. The document records what an agent chose to
-write down; the transcripts record what it actually did. Read them when a turn
-produces a surprising result — an agent's own account of its work is not
-evidence.
+transcript, and the matching `NN-<role>.git-trace.json` holds Git Trace2 events
+from the agent process tree. Both are written by the driver. The document
+records what an agent chose to write down; the transcripts and traces record
+what its process actually did. Read them when a turn produces a surprising
+result — an agent's own account of its work is not evidence.
 
 `.agents/work/<slug>/rounds/` holds what each review round was handed. The
 driver writes `plan-<N>.md` (the plan text) and `impl-<N>.patch` (the whole
@@ -181,10 +202,19 @@ codex_effort: high
 issue: https://github.com/SpineEventEngine/Chords/issues/123
 issue_number: 123
 issue_title: Add keyboard-accessible copy action
-base_commit: 825c14b
+base_commit: 825c14b3d392c497d5daaf5f97f28aa11f32279f
 base_branch: master
 start_commit: ebd7c8413f01c19e8dc12d48f150e79c50a94c78
 pr_base_branch: master
+pr_base_tip: 72f2aeb684d2856bbddb773f69e31b7e5c99f645
+task_branch: add-keyboard-accessible-copy-action
+github_repo: github.com/SpineEventEngine/Chords
+origin_fetch_url: git@github.com:SpineEventEngine/Chords.git
+origin_push_url: git@github.com:SpineEventEngine/Chords.git
+git_config_state: 178a1a5428fa6a32bfbc8c4272ea8e4d7bb185cf
+publication_head: none
+expected_git_state: bdc49d34f6f6dcf13c76fbbf8d91c8032d012f23
+expected_worktree_state: 1c44c704e135308a2c30c2a636342f85094bb1e2
 changeset_digest: none
 reviewed_changeset_digest: none
 updated: 2026-07-31T14:20:00Z
@@ -200,6 +230,17 @@ updated: 2026-07-31T14:20:00Z
   would run until the turn guard cut it off instead of reaching you.
 - `max_rounds` — the ceiling both counters are measured against; see
   "Termination".
+- `pr_base_tip`, `github_repo`, and the two `origin_*_url` fields pin the remote
+  identity and target lineage used at setup. The driver refreshes the target
+  before setup and publication, refuses rewrites, and never lets ambient `gh`
+  or Git configuration silently retarget the result.
+- `task_branch` is derived at setup, including a safe issue-number fallback for
+  titles that have no ASCII branch characters. Publication validates any local
+  or remote branch collision before it pushes.
+- `git_config_state` pins the effective Git configuration used at setup and
+  publication. `expected_git_state` and `expected_worktree_state` bind each successful turn
+  to the exact shared checkout state it produced. Different slugs cannot use
+  one another's edits as their next baseline.
 - `issue`, `issue_number`, `issue_title` — the GitHub issue snapshot this task
   came from. Written by the driver at `start`; neither agent changes them.
 - `agent1`, `agent2` — the selected command executables. Written by the driver
@@ -225,7 +266,12 @@ updated: 2026-07-31T14:20:00Z
 - `base_commit` — the prospective pull request baseline: the merge-base of
   `HEAD` with the remote-tracking `pr_base_branch`. It is written by the driver
   at setup and changed by neither agent. Commits between `base_commit` and
-  `start_commit` are inherited branch history, not this task's review scope.
+  `start_commit` are inherited branch history, not this task's review scope. If
+  the target branch advances during the run, publication recomputes the
+  baseline only when the new merge-base remains between those two recorded
+  commits — the recorded value stays as the record of where the run began, and
+  only inherited history may shrink. A merge-base beyond `start_commit` has
+  absorbed task commits and stops publication.
 - `base_branch` — branch `HEAD` was on at setup, or the abbreviated commit if it
   was detached. Written by the driver and immutable. It labels the starting
   point in a stacked pull request even if that branch is later moved, renamed,
@@ -238,6 +284,20 @@ updated: 2026-07-31T14:20:00Z
 - `pr_base_branch` — the pull request target selected at setup (`master` by
   default). Written by the driver and immutable so resuming in another shell
   cannot silently retarget the reviewed changeset.
+- `pr_base_tip` — the exact remote target tip fetched at setup. Publication
+  fetches again and requires this commit to remain an ancestor, so a rewrite
+  with an unchanged merge-base still stops.
+- `task_branch`, `github_repo`, `origin_fetch_url`, `origin_push_url` — the
+  publication identity derived and checked at setup. The driver passes the
+  repository and head explicitly to `gh`, and refuses URL or branch collisions.
+- `git_config_state` — the effective local, global, and included Git
+  configuration at setup. Publication refuses a different configuration.
+- `publication_head` — `none` before publication, then the last task-branch
+  commit the driver created. A retry refuses empty or content-equivalent commits
+  added by another process instead of publishing unreviewed history.
+- `expected_git_state`, `expected_worktree_state` — strong driver-owned
+  digests updated after each successful turn. They prevent cross-task or
+  between-turn state from being silently adopted.
 - `changeset_digest` — `none` until the run reaches `done`, then a digest of
   the reviewed changeset, written by the driver. Publication compares it, so
   edits made after the review cannot be swept into a pull request.

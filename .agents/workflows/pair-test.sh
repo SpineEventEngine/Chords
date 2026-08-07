@@ -48,8 +48,13 @@ sandbox() {
     git -C "$repo" add -A
     git -C "$repo" commit -qm init
     git init -q --bare "${SANDBOX}/origin.git"
+    git -C "${SANDBOX}/origin.git" symbolic-ref HEAD refs/heads/master
     git -C "$repo" remote add origin "${SANDBOX}/origin.git"
     git -C "$repo" push -qu origin master
+    git clone -q "${SANDBOX}/origin.git" "${SANDBOX}/external"
+    git -C "${SANDBOX}/external" config user.email external@example.com
+    git -C "${SANDBOX}/external" config user.name External
+    export STUB_EXTERNAL_REPO="${SANDBOX}/external"
 
     # Stub gh: issue metadata from files, and a recorded no-op for pr create.
     cat > "${SANDBOX}/bin/gh" <<'GH'
@@ -75,7 +80,14 @@ case "$1 $2" in
       else
           printf 'o/r\n'
       fi ;;
-  "pr view")   [[ -n "${STUB_PR_EXISTS:-}" ]] && printf '%s\n' "$STUB_PR_EXISTS" || exit 1 ;;
+  "pr view")
+      [[ -n "${STUB_PR_EXISTS:-}" ]] || exit 1
+      if [[ "$*" == *'@tsv'* ]]; then
+          printf '%s\t%s\t%s\n' "$STUB_PR_EXISTS" \
+              "${STUB_PR_BASE:-master}" "${STUB_PR_HEAD:-a-test-issue}"
+      else
+          printf '%s\n' "$STUB_PR_EXISTS"
+      fi ;;
   "pr create") echo "${STUB_PR_CREATE_FAILS:+pr create refused}" >&2
                [[ -n "${STUB_PR_CREATE_FAILS:-}" ]] && exit 1
                # Record the invocation so tests can assert on the base branch
@@ -115,6 +127,19 @@ setfm() {
     ' "$doc" > "$doc.t" && mv "$doc.t" "$doc"
 }
 root() { git rev-parse --show-toplevel; }
+# Runs Git outside the agent's inherited Trace2 session, standing in for an
+# editor refresh, another checkout, or GitHub changing the remote mid-turn.
+outside_git() { env -u GIT_TRACE2_EVENT git "$@"; }
+# Advances origin/master in the independent checkout and fetches the result
+# into the repository under test, all outside the agent process trace.
+external_master_advance() {
+    local marker="${STUB_EXTERNAL_REPO}/external-$$.txt"
+    outside_git -C "$STUB_EXTERNAL_REPO" checkout -q master
+    printf 'external\n' > "$marker"
+    outside_git -C "$STUB_EXTERNAL_REPO" add "${marker##*/}"
+    outside_git -C "$STUB_EXTERNAL_REPO" commit -qm "External change"
+    outside_git -C "$STUB_EXTERNAL_REPO" push -q origin master
+}
 # Fills a section that the template already has, or adds one before ## Log,
 # which is how a real agent adds a later round's section.
 put_section() {
@@ -172,6 +197,100 @@ case "${STUB_MISBEHAVE:-}" in
   stash)        echo x >> version.gradle.kts; git stash -q
                 setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
   restage)      echo y >> README.md; git add README.md
+                setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
+  git-write-exit) git branch "stub-rogue-$$"; exit 19 ;;
+  review-edit-exit)
+                if [[ "$(fm status)" == plan-review-requested ]]; then
+                    printf 'reviewer edit\n' >> "$(root)/README.md"
+                    exit 19
+                fi ;;
+  rewrite-transcript)
+                if [[ "$(fm status)" == plan-review-requested ]]; then
+                    printf 'rewritten audit\n' \
+                        > "$(root)/.agents/work/${PAIR_SLUG}/turns/01-agent1.log"
+                fi ;;
+  config-write) git config pair.agentMutation true
+                setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
+  trace-read-only)
+                git tag --format '%(refname)' >/dev/null
+                git log --oneline -- remote set-url >/dev/null ;;
+  combined-drop)
+                git branch -dr origin/obsolete
+                setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
+  unignore-work)
+                if [[ "$(fm status)" == plan-reviewed ]]; then
+                    sed '/[.]agents\/work\//d' "$(root)/.gitignore" \
+                        > "$(root)/.gitignore.t"
+                    mv "$(root)/.gitignore.t" "$(root)/.gitignore"
+                fi ;;
+  nonascii-path)
+                if [[ "$(fm status)" == plan-reviewed ]]; then
+                    printf 'reviewed\n' > "$(root)/résumé.txt"
+                fi ;;
+  codex-ref)    # The Codex CLI's own turn bookkeeping, written by the process
+                # rather than the agent. Once, then this turn proceeds normally,
+                # so the assertion is that the whole run still finishes.
+                [[ "$(fm status)" != plan-requested ]] ||
+                    git update-ref "refs/codex/turn-diffs/checkpoints/stub-$$" HEAD ;;
+  fetch-lands)  # A fetch arriving from a background process. Once, then this
+                # turn proceeds normally so the whole run should finish.
+                if [[ "$(fm status)" == plan-requested ]]; then
+                    git branch --show-current >/dev/null
+                    git remote -v >/dev/null
+                    git tag --list >/dev/null
+                    external_master_advance
+                    outside_git -C "$(root)" fetch -q origin
+                fi ;;
+  fetch-known)  # The fetched commit already has a local branch, so
+                # reachability cannot identify its provenance.
+                if [[ "$(fm status)" == plan-requested ]]; then
+                    outside_git -C "$STUB_EXTERNAL_REPO" fetch -q origin \
+                        known:refs/remotes/origin/known
+                    outside_git -C "$STUB_EXTERNAL_REPO" push -q origin \
+                        refs/remotes/origin/known:master
+                    outside_git -C "$(root)" fetch -q origin
+                fi ;;
+  fetch-branch) # A newly fetched remote branch is unrelated activity too.
+                if [[ "$(fm status)" == plan-requested ]]; then
+                    outside_git -C "$STUB_EXTERNAL_REPO" checkout -qb external-branch
+                    printf 'branch\n' > "$STUB_EXTERNAL_REPO/branch.txt"
+                    outside_git -C "$STUB_EXTERNAL_REPO" add branch.txt
+                    outside_git -C "$STUB_EXTERNAL_REPO" commit -qm "External branch"
+                    outside_git -C "$STUB_EXTERNAL_REPO" push -q origin \
+                        HEAD:external-branch
+                    outside_git -C "$(root)" fetch -q origin
+                fi ;;
+  fetch-tag)    # Tags can arrive through the same background fetch.
+                if [[ "$(fm status)" == plan-requested ]]; then
+                    outside_git -C "$STUB_EXTERNAL_REPO" tag external-tag
+                    outside_git -C "$STUB_EXTERNAL_REPO" push -q origin external-tag
+                    outside_git -C "$(root)" fetch -q --tags origin
+                fi ;;
+  fetch-prune)  # A background prune explains a vanished tracking ref.
+                if [[ "$(fm status)" == plan-requested ]]; then
+                    outside_git -C "$STUB_EXTERNAL_REPO" push -q origin \
+                        --delete obsolete
+                    outside_git -C "$(root)" fetch -q --prune origin
+                fi ;;
+  agent-fetch)  # Even a legitimate remote advance is forbidden when the
+                # agent itself fetches it.
+                external_master_advance
+                git fetch -q origin
+                setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
+  remote-push)  git push -q origin "HEAD:refs/heads/stub-rogue-$$"
+                setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
+  dangling-push) oid="$(git commit-tree -p HEAD -m rogue 'HEAD^{tree}')"
+                git push -q origin "${oid}:refs/heads/stub-rogue-$$"
+                setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
+  push-tag)     git push -q origin existing-tag
+                setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
+  agent-tag)    git tag "stub-rogue-$$"
+                setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
+  drop-remote)  git update-ref -d refs/remotes/origin/master
+                setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
+  missing-trace) external_master_advance
+                outside_git -C "$(root)" fetch -q origin
+                : > "$GIT_TRACE2_EVENT"
                 setfm status plan-review-requested; setfm turn agent2; exit 0 ;;
   rewrite-meta) setfm dirty_at_start yes ;;
   rewrite-model) setfm claude_model tampered ;;
@@ -534,6 +653,14 @@ check "first turn writes the required Task" \
     "$(grep -q 'Implement the issue' "$R/.agents/work/issue-7/plan.md" && echo 0 || echo 1)"
 cleanup
 
+sandbox
+run "$R" 7 >/dev/null
+printf 'after done\n' >> "$R/README.md"
+run "$R" status 7
+want "status does not report changed completed work as intact" 0 \
+    "work: completion invalidated"
+cleanup
+
 # --- user-facing status ---------------------------------------------------
 sandbox
 export AGENT1_CMD="${SANDBOX}/bin/claude"
@@ -683,12 +810,94 @@ want "round jump refused" 1 "requires it to stay unchanged"
 cleanup
 
 # --- git guard (RF-02) ----------------------------------------------------
+sandbox
+printf 'private scratch\n' > "$R/preexisting.txt"
+git -C "$R" config status.showUntrackedFiles no
+run "$R" start 7
+want "dirty-start detection cannot hide untracked files through config" 1 \
+    "worktree has uncommitted changes"
+cleanup
+
+# Different slugs still share one worktree. A task that started from the clean
+# state must not adopt edits another task produced before its next turn.
+sandbox
+PAIR_SLUG=issue-7 run "$R" start 7 >/dev/null
+PAIR_SLUG=issue-8 run "$R" start 8 >/dev/null
+PAIR_SLUG=issue-7 run "$R" step 7 >/dev/null
+PAIR_SLUG=issue-7 run "$R" step 7 >/dev/null
+PAIR_SLUG=issue-7 run "$R" step 7 >/dev/null
+PAIR_SLUG=issue-8 run "$R" step 8
+want "one slug cannot adopt another slug's worktree edits" 1 \
+    "worktree content changed between pair-workflow turns"
+cleanup
+
 sandbox; STUB_MISBEHAVE=git-write run "$R" 7
 want "branch creation caught" 1 "Git state moved"; cleanup
 sandbox; STUB_MISBEHAVE=stash run "$R" 7
 want "git stash caught" 1 "Git state moved"; cleanup
 sandbox; STUB_MISBEHAVE=restage run "$R" 7
 want "restaged blob caught" 1 "Git state moved"; cleanup
+sandbox; STUB_MISBEHAVE=git-write-exit run "$R" 7
+want "a nonzero agent cannot bypass the Git guard" 1 "Git state moved"; cleanup
+sandbox; STUB_MISBEHAVE=review-edit-exit run "$R" 7
+want "a nonzero reviewer cannot bypass the worktree guard" 1 \
+    "worktree content changed"; cleanup
+sandbox; STUB_MISBEHAVE=rewrite-transcript run "$R" 7
+want "an agent cannot rewrite an earlier transcript" 1 \
+    "rewrote an earlier transcript"; cleanup
+sandbox; STUB_MISBEHAVE=config-write run "$R" 7
+want "repository configuration changes are Git-state changes" 1 "Git state moved"; cleanup
+sandbox; STUB_MISBEHAVE=trace-read-only run "$R" 7
+want "read-only commands containing ref-writing words stay allowed" 0; cleanup
+sandbox
+git -C "$R" push -qu origin HEAD:obsolete
+git -C "$R" fetch -q origin
+STUB_MISBEHAVE=combined-drop run "$R" 7
+want "combined branch flags cannot hide a tracking-ref deletion" 1 \
+    "ref-writing Git command"; cleanup
+sandbox; STUB_MISBEHAVE=codex-ref run "$R" 7
+want "Codex turn-diff ref does not trip the guard" 0; cleanup
+sandbox; STUB_MISBEHAVE=fetch-lands run "$R" 7
+want "a fetch landing mid-turn does not trip the guard" 0; cleanup
+sandbox; STUB_MISBEHAVE=fetch-lands run "$R" 7
+want "a landed fetch is still reported" 0 "outside agent1's process"; cleanup
+sandbox
+git -C "$R" checkout -qb known
+printf 'known\n' > "$R/known.txt"
+git -C "$R" add known.txt
+git -C "$R" commit -qm "Known locally"
+git -C "$R" push -qu origin known
+git -C "$R" checkout -q master
+STUB_MISBEHAVE=fetch-known run "$R" 7
+want "a fetch to an already reachable commit is allowed" 0; cleanup
+sandbox; STUB_MISBEHAVE=fetch-branch run "$R" 7
+want "a newly fetched remote branch is allowed" 0; cleanup
+sandbox; STUB_MISBEHAVE=fetch-tag run "$R" 7
+want "a newly fetched tag is allowed" 0; cleanup
+sandbox
+git -C "$R" push -qu origin HEAD:obsolete
+STUB_MISBEHAVE=fetch-prune run "$R" 7
+want "a background fetch prune is allowed" 0; cleanup
+sandbox; STUB_MISBEHAVE=agent-fetch run "$R" 7
+want "an agent fetch that moves a ref is caught" 1 "ref-writing Git command"; cleanup
+sandbox; STUB_MISBEHAVE=remote-push run "$R" 7
+want "a push to origin caught" 1 "ref-writing Git command"; cleanup
+sandbox; STUB_MISBEHAVE=dangling-push run "$R" 7
+want "a push of an unreachable commit is caught" 1 "ref-writing Git command"; cleanup
+sandbox
+git -C "$R" tag existing-tag
+git -C "$R" push -q origin existing-tag
+STUB_MISBEHAVE=push-tag run "$R" 7
+want "a push with no local ref movement is caught" 1 \
+    "ref-writing Git command"; cleanup
+sandbox; STUB_MISBEHAVE=agent-tag run "$R" 7
+want "tag creation caught" 1 "ref-writing Git command"; cleanup
+sandbox; STUB_MISBEHAVE=drop-remote run "$R" 7
+want "an agent deleting a remote-tracking ref is caught" 1 \
+    "ref-writing Git command"; cleanup
+sandbox; STUB_MISBEHAVE=missing-trace run "$R" 7
+want "an external-ref change without provenance is caught" 1 \
+    "Git trace is missing or unreadable"; cleanup
 
 # --- immutable metadata (RF-05) -------------------------------------------
 sandbox; STUB_MISBEHAVE=rewrite-meta run "$R" 7
@@ -782,7 +991,8 @@ cleanup
 
 # --- reviewer stays out of the worktree (RR3-01) --------------------------
 sandbox; STUB_MISBEHAVE=agent2-edits run "$R" 7
-want "agent2 editing a source file caught" 1 "changed the code it was reviewing"
+want "agent2 editing a source file caught" 1 \
+    "worktree content changed during agent2's review"
 cleanup
 
 sandbox
@@ -797,7 +1007,7 @@ printf 'same content\n' > "$R/link-target-b"
 ln -s link-target-a "$R/review-link"
 STUB_MISBEHAVE=agent2-retarget-link run "$R" 7 --allow-dirty
 want "agent2 retargeting an untracked symlink is caught" 1 \
-    "changed the code it was reviewing"
+    "worktree content changed during agent2's review"
 cleanup
 
 # --- section ownership (RR3-02) -------------------------------------------
@@ -941,7 +1151,7 @@ cleanup
 sandbox
 export PR_BASE_BRANCH=missing
 run "$R" 7 --cp
-want "missing PR target is refused during setup" 1 "origin/missing is unavailable"
+want "missing PR target is refused during setup" 1 "could not refresh origin/missing"
 check "missing PR target starts no agent turn" \
     "$([[ ! -d "$R/.agents/work/issue-7/turns" ]] && echo 0 || echo 1)"
 unset PR_BASE_BRANCH
@@ -977,6 +1187,19 @@ check "a transcript gap allocates after the highest sequence" \
 check "the surviving transcript is not overwritten" \
     "$(grep -q '^surviving transcript$' \
         "$R/.agents/work/issue-7/turns/02-agent1.log" && echo 0 || echo 1)"
+cleanup
+
+# A surviving Trace2 sidecar also owns its sequence number. Reusing it would
+# append stale commands and let an old marker stand in for the current turn.
+sandbox; run "$R" start 7
+mkdir -p "$R/.agents/work/issue-7/turns"
+printf '{"event":"cmd_name","name":"version"}\n' \
+    > "$R/.agents/work/issue-7/turns/04-agent1.git-trace.json"
+run "$R" step 7
+want "an orphan Git trace does not get reused" 0
+check "an orphan Git trace advances the shared sequence" \
+    "$([[ -f "$R/.agents/work/issue-7/turns/05-agent1.git-trace.json" ]] \
+        && echo 0 || echo 1)"
 cleanup
 
 # --- execution boundary (RR2-06) ------------------------------------------
@@ -1146,6 +1369,20 @@ check "title with & is written literally" \
     "$(grep -q 'Fix A & B' "$D" && echo 0 || echo 1)"
 cleanup
 
+sandbox
+STUB_ISSUE_TITLE='Keep ISSUE_URL literal' run "$R" start 7
+check "placeholder text inside an issue title stays literal" \
+    "$(grep -q 'issue_title: Keep ISSUE_URL literal' \
+        "$R/.agents/work/issue-7/plan.md" && echo 0 || echo 1)"
+cleanup
+
+sandbox
+STUB_ISSUE_TITLE='Поліпшити пошук' run "$R" start 7
+check "a non-ASCII issue title gets a safe branch fallback" \
+    "$(grep -qx 'task_branch: issue-7' \
+        "$R/.agents/work/issue-7/plan.md" && echo 0 || echo 1)"
+cleanup
+
 # --- publish path (RF-06, RF-07, RF-08) -----------------------------------
 # Fills the template's existing ## Pull Request section. Appending a second one
 # would not work: section() reads the first heading it finds.
@@ -1221,6 +1458,41 @@ manual_plan_variant() {
        } {print}' "$d" > "$d.t" && mv "$d.t" "$d"
 }
 
+# The scratch root is an explicit driver exclusion, not a mutable .gitignore
+# convention. A task may change that rule without reviewing or publishing its
+# own plans, transcripts, and traces.
+sandbox
+STUB_BUMP=2.0.0-SNAPSHOT.2 STUB_MISBEHAVE=unignore-work run "$R" 7 >/dev/null
+pr_section "$R"
+run "$R" 7 --cp
+want "removing the work-root ignore rule does not publish scratch artifacts" 0 \
+    "draft pull request"
+check "the published tree excludes pair-workflow scratch files" \
+    "$([[ -z "$(git -C "$R" ls-tree -r --name-only HEAD .agents/work)" ]] \
+        && echo 0 || echo 1)"
+cleanup
+
+sandbox
+STUB_ISSUE_TITLE='Fix the title...' STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null
+pr_section "$R"
+run "$R" 7 --cp
+want "all trailing periods are removed from a PR title" 0 "draft pull request"
+check "the recorded PR title has no trailing period" \
+    "$([[ "$(recorded_arg_after "$STUB_PR_RECORD" --title)" == 'Fix the title' ]] \
+        && echo 0 || echo 1)"
+cleanup
+
+sandbox
+git -C "$R" tag -a unrelated-release -m "Unrelated release"
+git -C "$R" config push.followTags true
+STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null
+pr_section "$R"
+run "$R" 7 --cp
+want "publication neutralizes automatic tag following" 0 "draft pull request"
+check "an unrelated annotated tag was not published" \
+    "$([[ -z "$(git -C "$R" ls-remote --tags origin)" ]] && echo 0 || echo 1)"
+cleanup
+
 sandbox; run "$R" 7 >/dev/null
 run "$R" 7 --cp; want "PR refused without Summary/Changes" 1 "requires exact"
 cleanup
@@ -1244,6 +1516,13 @@ check "nothing was committed on refusal" \
 cleanup
 
 sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
+git -C "$R" config pair.externalMutation true
+run "$R" 7 --cp
+want "publication refuses changed Git transport configuration" 1 \
+    "effective Git configuration changed"
+cleanup
+
+sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
 run "$R" 7 --cp; want "PR published from a compliant changeset" 0 "draft pull request"
 check "version commit uses the required message" \
     "$(git -C "$R" log --format=%s | grep -q '^Bump version' && echo 0 || echo 1)"
@@ -1253,11 +1532,56 @@ STUB_PR_EXISTS=https://github.com/o/r/pull/1 run "$R" 7 --cp
 want "re-run finds the existing PR" 0 "already open"
 cleanup
 
+sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
+STUB_PR_EXISTS=https://github.com/o/r/pull/1 STUB_PR_BASE=staging run "$R" 7 --cp
+want "an existing PR on the wrong base is not accepted as published" 1 \
+    "different head or base"
+cleanup
+
+sandbox
+git -C "$STUB_EXTERNAL_REPO" checkout -qb a-test-issue
+printf 'collision\n' > "$STUB_EXTERNAL_REPO/collision.txt"
+git -C "$STUB_EXTERNAL_REPO" add collision.txt
+git -C "$STUB_EXTERNAL_REPO" commit -qm "Colliding task branch"
+git -C "$STUB_EXTERNAL_REPO" push -q origin a-test-issue
+STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null
+pr_section "$R"
+run "$R" 7 --cp
+want "a remote task-branch collision fails before local publication commits" 1 \
+    "contains history outside this task's starting point"
+check "remote collision leaves the starting branch untouched" \
+    "$([[ "$(git -C "$R" rev-parse --abbrev-ref HEAD)" == master ]] \
+        && echo 0 || echo 1)"
+cleanup
+
 # A failed `gh pr create` must leave the push intact and stay retryable.
 sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
 STUB_PR_CREATE_FAILS=1 run "$R" 7 --cp
 want "failed PR create reports and stops" 1 "gh pr create failed"
 run "$R" 7 --cp; want "retry after a failed PR create" 0 "draft pull request"
+cleanup
+
+sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
+STUB_PR_CREATE_FAILS=1 run "$R" 7 --cp >/dev/null
+git -C "$R" commit -qm "Unreviewed empty commit" --allow-empty
+run "$R" 7 --cp
+want "a content-equivalent commit cannot enter a publication retry" 1 \
+    "moved beyond the driver's recorded publication head"
+cleanup
+
+# A retry trusts the exact server head, not a potentially stale or unrelated
+# local upstream. External commits on the task branch must never enter the PR.
+sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
+STUB_PR_CREATE_FAILS=1 run "$R" 7 --cp >/dev/null
+git -C "$STUB_EXTERNAL_REPO" fetch -q origin
+git -C "$STUB_EXTERNAL_REPO" checkout -qB a-test-issue origin/a-test-issue
+printf 'remote-only\n' > "$STUB_EXTERNAL_REPO/remote-only.txt"
+git -C "$STUB_EXTERNAL_REPO" add remote-only.txt
+git -C "$STUB_EXTERNAL_REPO" commit -qm "External task-branch commit"
+git -C "$STUB_EXTERNAL_REPO" push -q origin a-test-issue
+run "$R" 7 --cp
+want "an externally advanced task branch is not treated as already pushed" 1 \
+    "contains commits outside this reviewed run"
 cleanup
 
 # --- stacked work ---------------------------------------------------------
@@ -1271,6 +1595,16 @@ stack_on() { # stack_on <repo> <branch> [version] — creates one commit outside
     fi
     git -C "$1" add -A
     git -C "$1" commit -qm "Earlier work under review"
+}
+
+# Advances the PR target from another checkout, as an unrelated GitHub change
+# would, then refreshes the repository under test.
+advance_origin_master() { # advance_origin_master <repo>
+    printf 'unrelated\n' > "$STUB_EXTERNAL_REPO/unrelated.txt"
+    git -C "$STUB_EXTERNAL_REPO" add unrelated.txt
+    git -C "$STUB_EXTERNAL_REPO" commit -qm "Unrelated target change"
+    git -C "$STUB_EXTERNAL_REPO" push -q origin master
+    git -C "$1" fetch -q origin
 }
 
 sandbox; stack_on "$R" open-pr-branch
@@ -1416,17 +1750,73 @@ run "$R" 7 --cp; want "retry from the task branch still reports stacking" 0 \
     "stacked on 'open-pr-branch'"
 cleanup
 
-# A parent that merges mid-run moves the merge-base, so the reviewed scope is
-# no longer what the pull request would contain. The existing merge-base guard
-# refuses that, and stacking does not get to talk it round: the run is redone,
-# not published with a stacking note over a stale review.
+# An unrelated target advance shares only the recorded start with the task.
+# It changes GitHub state without changing the task or the PR changeset.
+sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
+advance_origin_master "$R"
+run "$R" 7 --cp; want "an unrelated target advance still publishes" 0 \
+    "draft pull request"
+cleanup
+
+# Publication refreshes the target itself; correctness cannot depend on an IDE
+# or the caller fetching between the external update and --create-pr.
+sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
+printf 'not fetched locally\n' > "$STUB_EXTERNAL_REPO/not-fetched.txt"
+git -C "$STUB_EXTERNAL_REPO" add not-fetched.txt
+git -C "$STUB_EXTERNAL_REPO" commit -qm "Unfetched target change"
+git -C "$STUB_EXTERNAL_REPO" push -q origin master
+run "$R" 7 --cp
+want "publication refreshes a stale local target ref" 0 "draft pull request"
+cleanup
+
+# A parent that merges mid-run moves the merge-base forward. That subtracts
+# from the pull request rather than adding to it: the carried commits are in
+# the target now, and the task's own reviewed changeset is measured from
+# `start_commit` either way. The baseline is recomputed and the run publishes,
+# because the merge was nobody-in-the-run's doing and the review still stands.
 sandbox; stack_on "$R" open-pr-branch
 STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
 git -C "$R" push -q origin open-pr-branch:master
 git -C "$R" fetch -q origin
-run "$R" 7 --cp; want "a parent merging mid-run is refused, not published" 1 \
-    "is not the pull request's merge-base"
-check "nothing was published when the parent merged" \
+run "$R" 7 --cp; want "a parent merging mid-run publishes from the new base" 0 \
+    "draft pull request"
+want "the moved baseline is reported" 0 "baseline moves from"
+check "the merged parent is no longer carried as stacking" \
+    "$(printf '%s' "$OUT" | grep -q 'stacked on' && echo 1 || echo 0)"
+cleanup
+
+# A publication retry may see the target absorb one of the task commits after
+# the failed push/create sequence. That is beyond the immutable task boundary,
+# so advancing the baseline would silently omit reviewed work from the PR.
+sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
+STUB_PR_CREATE_FAILS=1 run "$R" 7 --cp >/dev/null
+recorded_start="$(awk '/^start_commit: / {print $2}' \
+    "$R/.agents/work/issue-7/plan.md")"
+first_task_commit="$(git -C "$R" rev-list --reverse \
+    "${recorded_start}..HEAD" | head -n 1)"
+git -C "$R" push -q origin "${first_task_commit}:master"
+git -C "$R" fetch -q origin
+run "$R" 7 --cp
+want "a target that absorbed task commits is refused" 1 \
+    "absorbed commits produced by this run"
+check "no PR was created after task absorption" \
+    "$([[ -f "$STUB_PR_RECORD" ]] && echo 1 || echo 0)"
+cleanup
+
+# Advancing is not the same as being rewritten. A target force-pushed back
+# behind the recorded base leaves a scope the driver cannot reconstruct, and
+# that still refuses rather than guessing.
+sandbox
+printf 'later\n' > "$R/later.txt"
+git -C "$R" add -A
+git -C "$R" commit -qm "Later work on master"
+git -C "$R" push -q origin master
+rewound="$(git -C "$R" rev-parse --short 'HEAD^')"
+STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
+git -C "$R" push -qf origin "${rewound}:master"
+run "$R" 7 --cp; want "a rewritten target is refused, not published" 1 \
+    "was rewritten after setup"
+check "nothing was published when the target was rewritten" \
     "$([[ -f "$STUB_PR_RECORD" ]] && echo 1 || echo 0)"
 cleanup
 
@@ -1485,15 +1875,26 @@ cleanup
 # --- publication is bound to the reviewed changeset (RR3-06) --------------
 sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
 bump "$R" 2.0.0-SNAPSHOT.3
-run "$R" 7 --cp; want "post-review edits are not published" 1 "changed since the review"
+run "$R" 7 --cp; want "post-review edits are not published" 1 \
+    "worktree changed after the task reached done"
 check "nothing was committed on a digest mismatch" \
     "$([[ "$(git -C "$R" rev-parse --abbrev-ref HEAD)" == master ]] && echo 0 || echo 1)"
+cleanup
+
+sandbox
+STUB_BUMP=2.0.0-SNAPSHOT.2 STUB_MISBEHAVE=nonascii-path run "$R" 7 >/dev/null
+pr_section "$R"
+printf 'changed after review\n' > "$R/résumé.txt"
+run "$R" 7 --cp
+want "non-ASCII path content remains bound to the completed review" 1 \
+    "worktree changed after the task reached done"
 cleanup
 
 sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
 chmod +x "$R/src.txt"
 run "$R" 7 --cp
-want "post-review executable-bit changes are not published" 1 "changed since the review"
+want "post-review executable-bit changes are not published" 1 \
+    "worktree changed after the task reached done"
 cleanup
 
 # The prospective PR baseline is the merge-base with master, not whatever HEAD
@@ -1506,7 +1907,7 @@ printf 'earlier\n' > "$R/earlier.txt"
 git -C "$R" add -A && git -C "$R" commit -qm "Earlier commit."
 run "$R" start 7 >/dev/null
 recorded="$(awk '/^base_commit: / {print $2}' "$R/.agents/work/issue-7/plan.md")"
-expected="$(git -C "$R" rev-parse --short \
+expected="$(git -C "$R" rev-parse \
     "$(git -C "$R" merge-base refs/remotes/origin/master HEAD)")"
 check "baseline is the merge-base with origin/master" \
     "$([[ "$recorded" == "$expected" ]] && echo 0 || echo 1)"
@@ -1667,22 +2068,19 @@ for missing in long-bullet no-setup no-expected no-covers; do
     cleanup
 done
 
-# The first publication commit may succeed before the task commit fails. A
-# retry must recognize the committed version and reports and finish the
-# remaining steps.
+# Workstation hooks are outside the reviewed changeset and must not run inside
+# the driver's publication transaction.
 sandbox; STUB_BUMP=2.0.0-SNAPSHOT.2 run "$R" 7 >/dev/null; pr_section "$R"
 cat > "$R/.git/hooks/commit-msg" <<'HOOK'
 #!/usr/bin/env bash
-grep -q '^Bump version' "$1"
+touch "$(git rev-parse --show-toplevel)/hook-ran"
+exit 1
 HOOK
 chmod +x "$R/.git/hooks/commit-msg"
 run "$R" 7 --cp
-want "task commit failure stops after version commit" 1 "task commit failed"
-check "version commit survives task commit failure" \
-    "$(git -C "$R" log --format=%s | grep -q '^Bump version' && echo 0 || echo 1)"
-rm -f "$R/.git/hooks/commit-msg"
-run "$R" 7 --cp
-want "retry after task commit failure publishes" 0 "draft pull request"
+want "publication ignores workstation commit hooks" 0 "draft pull request"
+check "the workstation hook did not execute" \
+    "$([[ ! -e "$R/hook-ran" ]] && echo 0 || echo 1)"
 cleanup
 
 # --- agent execution environment (RF-11) ----------------------------------
