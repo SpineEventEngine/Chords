@@ -27,8 +27,10 @@ Each of these owns its area; this skill stays out of them:
 - `.agents/skills/component-engineer/SKILL.md` — the component model,
   `mutableStateOf`-backed state, `PascalCase` composables, module layering,
   KDoc style, and the Compose 1.5.12 ceiling.
-- `.agents/skills/codegen-engineer/SKILL.md` — generated contracts and
-  Protobuf declarations.
+- `.agents/skills/model-engineer/SKILL.md` — published model Protobuf
+  declarations and Kotlin model extensions under `proto-values`.
+- `.agents/skills/codegen-engineer/SKILL.md` — ProtoData plugins and generated
+  runtime contracts.
 - `.agents/skills/build-engineer/SKILL.md` — Gradle Kotlin DSL, `buildSrc`
   coordinates, and publishing.
 - `.agents/skills/kotlin-jvm-tester/SKILL.md` — how a test suite is

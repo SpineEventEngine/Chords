@@ -3,9 +3,9 @@ name: engineer
 description: >
   Routes Chords implementation work to the area-specific engineering skill and
   carries the design-restraint policy shared by all of them. Use for mixed
-  component/codegen/build changes or when the owning area is unclear; otherwise
-  prefer the narrowest specialist skill directly, and follow "Design Restraint"
-  below in either case.
+  component/model/codegen/build changes or when the owning area is unclear;
+  otherwise prefer the narrowest specialist skill directly, and follow
+  "Design Restraint" below in either case.
 ---
 
 # Engineering Router
@@ -20,11 +20,14 @@ the code being changed:
   components in `core`, `proto`, and `client`: the component model,
   application shell, input components, message forms, validation display, and
   server-connected components.
+- `.agents/skills/model-engineer/SKILL.md` for published model Protobuf
+  declarations and Kotlin model extensions under `proto-values`, including
+  schema evolution and package and file organization.
 - `.agents/skills/codegen-engineer/SKILL.md` for the `codegen/plugins`
   ProtoData project, the codegen runtime (`codegen/runtime`), codegen
-  correctness tests (`codegen/tests`), generated
-  `MessageField`/`MessageOneof`/`MessageDef` contracts, and Protobuf
-  declarations in `proto-values`.
+  correctness tests (`codegen/tests`), plugin-internal Protobuf declarations,
+  generated `MessageField`/`MessageOneof`/`MessageDef` contracts, and codegen
+  Gradle wiring.
 - `.agents/skills/build-engineer/SKILL.md` for root and `codegen/plugins`
   Gradle build logic, `buildSrc` dependency coordinates, publishing wiring,
   version policy, generated `pom.xml`/`dependencies.md` reports, and the

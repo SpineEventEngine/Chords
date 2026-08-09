@@ -23,9 +23,11 @@ Use this skill for UI component and component-infrastructure work:
 - Server-connected components in `client`: command posting, entity
   subscriptions, and entity-backed components such as `EntityChooser`.
 
-For generated `MessageField`/`MessageOneof`/`MessageDef` contracts or Protobuf
-declarations, prefer `.agents/skills/codegen-engineer/SKILL.md`. For Gradle
-build logic, use `.agents/skills/build-engineer/SKILL.md`.
+For published model Protobuf declarations and Kotlin model extensions under
+`proto-values`, prefer `.agents/skills/model-engineer/SKILL.md`. For generated
+`MessageField`/`MessageOneof`/`MessageDef` contracts, prefer
+`.agents/skills/codegen-engineer/SKILL.md`. For Gradle build logic, use
+`.agents/skills/build-engineer/SKILL.md`.
 
 ## Policy
 

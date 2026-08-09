@@ -3,27 +3,30 @@ name: codegen-engineer
 description: >
   Chords code generation policy. Use for the ProtoData codegen plugins project,
   the codegen runtime library, generated MessageField/MessageOneof/MessageDef
-  contracts, codegen correctness tests, and Protobuf declarations with Kotlin
-  extensions in proto-values.
+  contracts, plugin-internal Protobuf declarations, codegen correctness tests,
+  and codegen Gradle wiring.
 ---
 
 # Codegen Engineering
 
 ## When to Use
 
-Use this skill for code generation and Protobuf model work:
+Use this skill for code generation work:
 
 - ProtoData plugins under `codegen/plugins/` (a separate Gradle project).
+- Plugin-internal Protobuf declarations under
+  `codegen/plugins/codegen-plugins/src/main/proto/**`.
 - The codegen runtime under `codegen/runtime/` (Gradle path `:runtime`):
   `MessageField`, `MessageOneof`, `MessageDef`, and related runtime types.
 - Codegen correctness tests under `codegen/tests/` (Gradle path
   `:codegen-tests`).
-- Protobuf declarations and Kotlin extensions in `proto-values`.
 - The codegen wiring in the root build (`modulesWithChordsCodegen`,
   `publishCodegenPluginsToMavenLocal`, the `io.spine.chords` Gradle plugin
   configuration).
 
-For components that merely consume generated metadata, prefer
+For published model Protobuf declarations and Kotlin model extensions under
+`proto-values`, prefer `.agents/skills/model-engineer/SKILL.md`. For components
+that merely consume generated metadata, prefer
 `.agents/skills/component-engineer/SKILL.md`. For build-only concerns, use
 `.agents/skills/build-engineer/SKILL.md`.
 
@@ -37,10 +40,9 @@ For components that merely consume generated metadata, prefer
   external projects: changes to `MessageField`/`MessageOneof`/`MessageDef`
   shapes are public API changes on both the generator and runtime sides and
   must stay in sync.
-- For Protobuf schema changes in `proto-values`: never delete or renumber
-  existing fields, reserve retired field numbers and names, and keep package
-  names consistent with the existing `spine/chords/proto/value/**` structure
-  under `proto-values/src/main/proto/`.
+- Treat `.proto` files under `codegen/tests/src/test/proto/**` as generator
+  fixtures. Change them only to express a code-generation scenario; published
+  model declarations under `proto-values` belong to `model-engineer`.
 - Keep `codegen/plugins/src/main/resources/codegen-workspace` resources
   consistent with the build logic that copies `buildSrc` and wrapper files
   into them; that workspace is what the Chords Gradle plugin unpacks in

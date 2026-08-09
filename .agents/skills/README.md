@@ -12,9 +12,12 @@ routing source of truth.
 - `component-engineer`: class-based Compose UI components across `core`,
   `proto`, and `client` — the component model, input components, message
   forms, and server-connected components.
+- `model-engineer`: published model Protobuf declarations and Kotlin model
+  extensions in `proto-values`, including schema evolution and package and
+  file organization.
 - `codegen-engineer`: ProtoData codegen plugins, the codegen runtime,
-  generated `MessageField`/`MessageOneof`/`MessageDef` contracts, and
-  Protobuf declarations in `proto-values`.
+  generated `MessageField`/`MessageOneof`/`MessageDef` contracts,
+  plugin-internal Protobuf declarations, and codegen correctness tests.
 - `build-engineer`: root and `codegen/plugins` Gradle builds, `buildSrc`
   dependency coordinates, publishing wiring, version policy, and generated
   report regeneration.
@@ -23,8 +26,8 @@ routing source of truth.
   secret exposure review.
 - `ci-engineer`: GitHub Actions workflow authoring and review for build,
   guard, validation, and publishing pipelines.
-- `code-reviewer`: implementation review for component, codegen, and build
-  changes.
+- `code-reviewer`: implementation review for component, model, codegen, and
+  build changes.
 - `tester`: what to cover and how to verify it across all modules,
   including codegen correctness tests.
 - `kotlin-jvm-tester`: how a test suite is written — JUnit Jupiter
