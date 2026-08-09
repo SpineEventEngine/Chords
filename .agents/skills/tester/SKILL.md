@@ -28,8 +28,10 @@ description: >
 - Codegen behavior is verified end-to-end in `codegen/tests`
   (`:codegen-tests`), which runs generation against test Protobuf definitions
   and asserts on the generated API; add coverage there for generator changes.
-- Do not skip codegen-related Gradle tasks when generator behavior, Protobuf
-  schemas, or generated API contracts are part of the change: rebuild
+- For published model Protobuf declarations or Kotlin model extensions in
+  `proto-values`, run `:proto-values:test` or `:proto-values:check` so the
+  module generates and compiles accessors against the changed model.
+- When generator behavior or generated API contracts change, rebuild
   `codegen/plugins` and run `:codegen-tests:test` so assertions run against
   freshly generated code, not outputs left over from a previous build.
 - Avoid tests that depend on a real Spine server, network resources, or local

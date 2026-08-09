@@ -28,9 +28,9 @@ restating:
   body is Kotlin, so its null-safety, coroutine scoping, and language
   ceiling obey the same rules as production code.
 - `.agents/skills/engineer/SKILL.md` — the router to the area-specific
-  engineering skill (`component-engineer`, `codegen-engineer`,
-  `build-engineer`, …). Use it to find the skill owning the code under
-  test when you need its API constraints.
+  engineering skill (`component-engineer`, `model-engineer`,
+  `codegen-engineer`, `build-engineer`, …). Use it to find the skill owning
+  the code under test when you need its API constraints.
 
 `AGENTS.md` remains authoritative for Git history, versioning, and
 verification policy.

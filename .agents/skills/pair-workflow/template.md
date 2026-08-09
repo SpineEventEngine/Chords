@@ -21,6 +21,15 @@ base_commit: BASE_COMMIT
 base_branch: BASE_BRANCH
 start_commit: START_COMMIT
 pr_base_branch: PR_BASE_BRANCH
+pr_base_tip: PR_BASE_TIP
+task_branch: TASK_BRANCH
+github_repo: GITHUB_REPO
+origin_fetch_url: ORIGIN_FETCH_URL
+origin_push_url: ORIGIN_PUSH_URL
+git_config_state: GIT_CONFIG_STATE
+publication_head: none
+expected_git_state: EXPECTED_GIT_STATE
+expected_worktree_state: EXPECTED_WORKTREE_STATE
 changeset_digest: none
 reviewed_changeset_digest: none
 updated: CREATED_AT

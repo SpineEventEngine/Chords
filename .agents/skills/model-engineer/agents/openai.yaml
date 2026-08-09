@@ -1,0 +1,7 @@
+interface:
+  display_name: "Model Engineer"
+  short_description: "Evolve Chords Protobuf models and extensions"
+  default_prompt: >
+    Use $model-engineer after reading AGENTS.md, README.md,
+    .agents/project.md, and proto-values/README.md to make a scoped Chords
+    Protobuf model change.

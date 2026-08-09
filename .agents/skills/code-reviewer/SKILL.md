@@ -3,8 +3,8 @@ name: code-reviewer
 description: >
   Reviews Chords implementation changes for correctness, regressions, public
   API breaks, missing tests, and cross-module contract breaks. Use to review
-  component, codegen, or build diffs. Read-only unless explicitly asked to run
-  checks.
+  component, model, codegen, or build diffs. Read-only unless explicitly asked
+  to run checks.
 ---
 
 # Code Review
@@ -29,9 +29,10 @@ unless the task asks for it directly. To judge CI status, read existing results
    behavior, and contract impact require context beyond the diff hunk.
 3. **Trace the owning flow.** For component changes, follow the
    `Component`/`InputComponent` lifecycle (`beforeComposeContent`, `content`,
-   `Props` configuration) and the state properties involved. For codegen
-   changes, follow the generator, the runtime contract, and `codegen/tests`
-   together.
+   `Props` configuration) and the state properties involved. For model
+   changes, follow the Protobuf declarations, Kotlin extensions, generated
+   accessors, and consumers together. For codegen changes, follow the
+   generator, the runtime contract, and `codegen/tests` together.
 4. **Verify claims against source.** Confirm Gradle task names, module paths,
    generated API shapes, and toolchain constraints against the relevant build
    file, README, or workflow.
@@ -77,8 +78,20 @@ duplicate its steps.
   component subclasses consume them. Kotlin explicit API mode applies.
 - Cross-module contract breaks: `core`/`proto`/`client` layering, the
   generated `MessageField`/`MessageOneof`/`MessageDef` contract between
-  `codegen/plugins` and `codegen/runtime`, and Protobuf compatibility in
-  `proto-values`.
+  `codegen/plugins` and `codegen/runtime`, and both source API and Protobuf wire
+  compatibility in `proto-values`.
+- Protobuf model changes: apply `.agents/skills/model-engineer/SKILL.md` to
+  published model declarations and extensions under `proto-values`. Check
+  changed, deleted, or renumbered field tags and confirm retired numbers and
+  names are reserved. Inspect every field type, singular/repeated cardinality,
+  and `oneof` membership change even when its tag is unchanged. Do not treat
+  rebuilt consumers or passing tests as proof that old wire data remains
+  compatible. Inspect message renames and Protobuf package changes, including
+  package changes required by file relocation. Where `(type_url_prefix)` is
+  set, assess changed type URLs against existing `Any` values and Spine
+  type registry resolution. Confirm that every intentional incompatibility is
+  explicitly in scope and that the change reports its external-consumer and
+  data impact.
 - Kotlin-language and toolchain violations: apply
   `.agents/skills/kotlin-engineer/SKILL.md` to the changed Kotlin and report
   what its rules flag. Read it rather than reviewing from memory — several
