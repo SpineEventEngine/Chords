@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ package io.spine.chords.core.appshell
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
@@ -39,9 +40,12 @@ import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.CurrentScreen
+import io.spine.chords.core.styling.ChordsTheme
 
 /**
  * Represents a navigation bar that changes the current view
@@ -57,26 +61,51 @@ public fun NavigationDrawer(
     topPadding: Dp,
     modifier: Modifier = Modifier,
 ) {
+    val dividerColor = MaterialTheme.colorScheme.outlineVariant
     PermanentNavigationDrawer(
         modifier = Modifier.padding(top = topPadding),
         drawerContent = {
             PermanentDrawerSheet(
-                modifier = modifier.width(240.dp),
-                drawerContainerColor = MaterialTheme.colorScheme.background
+                modifier = modifier
+                    .width(ChordsTheme.dimensions.navigationWidth)
+                    .drawBehind {
+                        val thickness = 1.dp.toPx()
+                        val x = size.width - thickness / 2
+                        drawLine(
+                            color = dividerColor,
+                            start = Offset(x, 0f),
+                            end = Offset(x, size.height),
+                            strokeWidth = thickness
+                        )
+                    },
+                drawerContainerColor = MaterialTheme.colorScheme.surface
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(ChordsTheme.dimensions.spacingSmall))
                 appViews.forEach { view ->
                     NavigationDrawerItem(
                         icon = { Icon(view.icon, contentDescription = null) },
                         label = { Text(view.name) },
                         selected = app.ui.currentView == view,
                         onClick = { app.ui.select(view) },
-                        modifier = Modifier.padding(
-                            horizontal = 12.dp,
-                            vertical = 4.dp
-                        ),
+                        modifier = Modifier
+                            .padding(
+                                horizontal = ChordsTheme.dimensions.spacingSmall,
+                                vertical = ChordsTheme.dimensions.spacingXSmall
+                            )
+                            .heightIn(min = ChordsTheme.dimensions.navigationItemHeight),
+                        shape = MaterialTheme.shapes.small,
                         colors = NavigationDrawerItemDefaults.colors(
-                            unselectedContainerColor = MaterialTheme.colorScheme.background
+                            selectedContainerColor =
+                                MaterialTheme.colorScheme.primaryContainer,
+                            selectedIconColor =
+                                MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedTextColor =
+                                MaterialTheme.colorScheme.onPrimaryContainer,
+                            unselectedContainerColor = MaterialTheme.colorScheme.surface,
+                            unselectedIconColor =
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor =
+                                MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.ValidationErrorText
+import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.proto.form.CustomMessageForm
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.OneofRadioButton
@@ -71,27 +72,36 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
      *   the controls within the component.
      */
     public data class Look(
-        public var interFieldPadding: Dp = 40.dp,
+        public var interFieldPadding: Dp = 24.dp,
         public var selectorsOffset: Dp = 8.dp,
         public var optionalCheckboxOffset: Dp = 16.dp
     )
 
     @Composable
     override fun FormPartScope<PaymentMethod>.customContent() {
+        val currentLook = if (look == Look()) {
+            Look(
+                interFieldPadding = ChordsTheme.dimensions.spacingXLarge,
+                selectorsOffset = ChordsTheme.dimensions.spacingSmall,
+                optionalCheckboxOffset = ChordsTheme.dimensions.spacingLarge
+            )
+        } else {
+            look
+        }
         Column {
             if (!required) {
                 Row {
                     OptionalMessageCheckbox("Specify payment method")
                 }
-                Row(modifier = Modifier.height(look.optionalCheckboxOffset)) {}
+                Row(modifier = Modifier.height(currentLook.optionalCheckboxOffset)) {}
             }
             OneOfFields(method) {
-                Row(horizontalArrangement = spacedBy(look.interFieldPadding)) {
-                    Column(verticalArrangement = spacedBy(look.selectorsOffset)) {
+                Row(horizontalArrangement = spacedBy(currentLook.interFieldPadding)) {
+                    Column(verticalArrangement = spacedBy(currentLook.selectorsOffset)) {
                         OneofRadioButton(paymentCard, "Payment card")
                         PaymentCardNumberField(paymentCard)
                     }
-                    Column(verticalArrangement = spacedBy(look.selectorsOffset)) {
+                    Column(verticalArrangement = spacedBy(currentLook.selectorsOffset)) {
                         OneofRadioButton(bankAccount, "Bank Account")
                         BankAccountField(bankAccount)
                     }

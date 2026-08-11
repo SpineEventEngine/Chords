@@ -37,7 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import io.spine.chords.core.styling.ChordsTheme
 
 /**
  * Represents a single page within the wizard.
@@ -94,10 +94,10 @@ public abstract class AbstractWizardPage(
 @Composable
 public fun SubheaderText(text: String) {
     Row(
-        modifier = Modifier.padding(bottom = 16.dp),
+        modifier = Modifier.padding(bottom = ChordsTheme.dimensions.spacingLarge),
         horizontalArrangement = Start
     ) {
-        Text(text, style = MaterialTheme.typography.titleMedium)
+        Text(text, style = MaterialTheme.typography.titleSmall)
     }
 }
 
@@ -117,7 +117,7 @@ public fun InputColumn(
 ) {
     Column(
         modifier = modifier.padding(padding),
-        verticalArrangement = spacedBy(16.dp)
+        verticalArrangement = spacedBy(ChordsTheme.dimensions.spacingMedium)
     ) {
         content()
     }
@@ -136,7 +136,7 @@ public fun InputRow(
 ) {
     InputRow(
         modifier = Modifier,
-        horizontalArrangement = spacedBy(40.dp),
+        horizontalArrangement = spacedBy(ChordsTheme.dimensions.spacingLarge),
         padding = padding,
         content = content
     )

@@ -30,18 +30,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons.Filled
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldColors
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
@@ -56,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Enter
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Exit
@@ -75,6 +77,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.primitive.moveFocusOnTab
 import io.spine.chords.core.primitive.preventWidthAutogrowing
+import io.spine.chords.core.styling.ChordsTheme
 import java.util.*
 
 /**
@@ -129,9 +132,26 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
 
     /**
      * A [TextFieldColors] instance, which defines the color scheme for
-     * the selector's field.
+     * the selector's field. If it is not assigned, colors are resolved from
+     * the current theme on every composition.
      */
-    public lateinit var fieldColors: TextFieldColors
+    public var fieldColors: TextFieldColors
+        get() = customFieldColors ?: checkNotNull(currentThemeFieldColors) {
+            "The dropdown selector has not been composed and has no custom colors."
+        }
+        set(value) {
+            customFieldColors = value
+        }
+
+    /**
+     * A text style for the selector field, or `null` to use the theme default.
+     */
+    public var textStyle: TextStyle? by mutableStateOf(null)
+
+    /**
+     * The selector field's shape, or `null` to use the current Material small shape.
+     */
+    public var shape: Shape? by mutableStateOf(null)
 
     /**
      * Indicates whether the drop-down menu is expanded or not.
@@ -158,18 +178,21 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     private var dirty = false
 
     /**
+     * A component-specific colors override, or `null` while theme colors apply.
+     */
+    private var customFieldColors: TextFieldColors? by mutableStateOf(null)
+
+    /**
+     * The most recently composed theme colors, retained for property reads.
+     */
+    private var currentThemeFieldColors: TextFieldColors? = null
+
+    /**
      * The field's text style based on whether a drop-down item
      * is selected or not.
      */
     private val fieldTextStyle: TextStyle @Composable get() {
-        val currentTextStyle = LocalTextStyle.current
-        return if (selectedItem != null) {
-            currentTextStyle
-        } else {
-            currentTextStyle.copy(
-                currentTextStyle.color.copy(0.5f)
-            )
-        }
+        return textStyle ?: MaterialTheme.typography.bodyMedium
     }
 
     /**
@@ -191,7 +214,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     @Composable
     protected open fun itemContent(item: I, itemText: String): Unit = recompositionWorkaround {
         Text(
-            modifier = Modifier.padding(horizontal = 12.dp),
+            modifier = Modifier.padding(horizontal = ChordsTheme.dimensions.spacingMedium),
             text = itemText.annotateSubstring(
                 searchString,
                 SpanStyle(fontWeight = Bold)
@@ -201,9 +224,8 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
 
     @Composable
     override fun content(): Unit = recompositionWorkaround {
-        if (!::fieldColors.isInitialized) {
-            fieldColors = TextFieldDefaults.colors()
-        }
+        currentThemeFieldColors = OutlinedTextFieldDefaults.colors()
+        val selectorColors = customFieldColors ?: checkNotNull(currentThemeFieldColors)
         val fieldText = getFieldText(searchString)
 
         SideEffect {
@@ -222,7 +244,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
                 val itemText = itemText(it)
                 itemContent(it, itemText)
             }
-            invoker = { SelectorField() }
+            invoker = { SelectorField(selectorColors) }
         }
     }
 
@@ -231,16 +253,21 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
      */
     @Composable
     @OptIn(ExperimentalComposeUiApi::class)
-    private fun DropdownListBoxScope.SelectorField() {
+    private fun DropdownListBoxScope.SelectorField(selectorColors: TextFieldColors) {
         val validationErrorText = externalValidationMessage?.value
-        TextField(
+        if (validationErrorText == null) {
+            SideEffect {
+                adjustPositionBasedOnSupportingTextHeight(0)
+            }
+        }
+        OutlinedTextField(
             value = TextFieldValue(getFieldText(searchString), selection),
             singleLine = true,
             onValueChange = { handleDropdownInputChange(it) },
             enabled = enabled,
             label = { Text(text = label) },
             isError = validationErrorText != null,
-            supportingText = (validationErrorText ?: "").let {
+            supportingText = validationErrorText?.let {
                 {
                     Text(
                         text = it,
@@ -250,13 +277,15 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
                 }
             },
             textStyle = fieldTextStyle,
-            colors = fieldColors,
+            colors = selectorColors,
+            shape = shape ?: MaterialTheme.shapes.small,
             modifier = modifier
+                .heightIn(min = ChordsTheme.dimensions.controlHeight)
                 .focusRequester(this@DropdownSelector.focusRequester)
                 .moveFocusOnTab()
 
                 // This approach with using `Modifier.onPointerEvent` is needed,
-                // because `Modifier.clickable` won't work when `TextField`
+                // because `Modifier.clickable` won't work when `OutlinedTextField`
                 // is enabled.
                 // See: https://github.com/JetBrains/compose-multiplatform/issues/220
                 .onPointerEvent(Press) { handleClick() }
@@ -440,7 +469,7 @@ private fun DropdownListBoxScope.TrailingIcons(
     enabled: Boolean
 ) {
     Row(
-        horizontalArrangement = spacedBy(10.dp),
+        horizontalArrangement = spacedBy(ChordsTheme.dimensions.spacingSmall),
         verticalAlignment = CenterVertically
     ) {
         if (!valueRequired && enabled) {
@@ -472,7 +501,9 @@ private fun DropdownListBoxScope.ClearValueIcon(containsValue: Boolean) {
             .onPointerEvent(Exit) { isClearIconHovered = false }
             .background(
                 if (isClearIconHovered) {
-                    colorScheme.primary.copy(alpha = 0.1f)
+                    colorScheme.primary.copy(
+                        alpha = ChordsTheme.interaction.hoveredStateAlpha
+                    )
                 } else {
                     Transparent
                 }
@@ -496,12 +527,14 @@ private fun DropdownExpansionIcon(expanded: Boolean, enabled: Boolean) {
     Box(
         modifier = Modifier
             .pointerHoverIcon(if (enabled) Hand else Text)
-            .padding(end = 10.dp)
+            .padding(end = ChordsTheme.dimensions.spacingSmall)
             .onPointerEvent(Enter) { isTrailingIconHovered = true }
             .onPointerEvent(Exit) { isTrailingIconHovered = false }
             .background(
                 if (isTrailingIconHovered && enabled) {
-                    colorScheme.primary.copy(alpha = 0.1f)
+                    colorScheme.primary.copy(
+                        alpha = ChordsTheme.interaction.hoveredStateAlpha
+                    )
                 } else {
                     Transparent
                 }

@@ -34,7 +34,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -68,6 +68,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily.Companion.Monospace
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
@@ -88,6 +89,8 @@ import io.spine.chords.core.InputReviser.Companion.maxLength
 import io.spine.chords.core.RawTextContent
 import io.spine.chords.core.ParseException
 import io.spine.chords.core.layout.WithTooltip
+import io.spine.chords.core.styling.ChordsInteraction
+import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.time.WallClock
 import io.spine.chords.proto.value.time.DefaultDatePattern
 import java.time.Instant
@@ -105,16 +108,6 @@ private const val DefaultDateTimeFormat = "$DefaultDatePattern HH:mm"
  * [DateTimeField]'s default "now" button.
  */
 private const val NowButtonDescription = "Set to the current date and time"
-
-/**
- * The opacity of the "now" button's state layer while it is hovered.
- */
-private const val HoveredStateLayerAlpha = 0.08f
-
-/**
- * The opacity of the "now" button's state layer while it is pressed.
- */
-private const val PressedStateLayerAlpha = 0.12f
 
 /**
  * The overall size of the "now" button (its round state layer).
@@ -204,7 +197,6 @@ public class DateTimeField : InputField<Timestamp>() {
     override fun beforeComposeContent() {
         super.beforeComposeContent()
         inputReviser = DateTimeFieldReviser(dateTimePattern)
-        textStyle = LocalTextStyle.current.copy(fontFamily = Monospace)
         val secondaryColor = colorScheme.secondary
         visualTransformation = VisualTransformation {
             complementWithPattern(
@@ -224,6 +216,15 @@ public class DateTimeField : InputField<Timestamp>() {
             null
         }
     }
+
+    /**
+     * Uses a monospaced font for aligned date and time input by default.
+     */
+    @Composable
+    @ReadOnlyComposable
+    override fun defaultTextStyle(): TextStyle = MaterialTheme.typography.bodyMedium.copy(
+        fontFamily = Monospace
+    )
 
     override fun handleKeyEvent(keyEvent: KeyEvent): Boolean {
         if (nowOptionEnabled && enabled && keyEvent matches Ctrl(Key.N.key).down) {
@@ -285,7 +286,11 @@ private fun NowButton(enabled: Boolean, onClick: () -> Unit) {
     var pressed by remember { mutableStateOf(false) }
     var focused by remember { mutableStateOf(false) }
     val stateLayerColor = nowButtonStateLayerColor(
-        enabled, pressed, hovered || focused, colorScheme.onSurface
+        enabled = enabled,
+        pressed = pressed,
+        active = hovered || focused,
+        baseColor = colorScheme.onSurface,
+        interaction = ChordsTheme.interaction
     )
     WithTooltip(tooltip = NowButtonDescription) {
         Box(
@@ -323,11 +328,12 @@ private fun nowButtonStateLayerColor(
     enabled: Boolean,
     pressed: Boolean,
     active: Boolean,
-    baseColor: Color
+    baseColor: Color,
+    interaction: ChordsInteraction
 ): Color = when {
     !enabled -> Color.Transparent
-    pressed -> baseColor.copy(alpha = PressedStateLayerAlpha)
-    active -> baseColor.copy(alpha = HoveredStateLayerAlpha)
+    pressed -> baseColor.copy(alpha = interaction.pressedStateAlpha)
+    active -> baseColor.copy(alpha = interaction.hoveredStateAlpha)
     else -> Color.Transparent
 }
 

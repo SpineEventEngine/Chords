@@ -34,6 +34,8 @@ import androidx.compose.foundation.layout.Arrangement.Center
 import androidx.compose.foundation.layout.Arrangement.End
 import androidx.compose.foundation.layout.Arrangement.Horizontal
 import androidx.compose.foundation.layout.Arrangement.SpaceBetween
+import androidx.compose.foundation.layout.Arrangement.Start
+import androidx.compose.foundation.layout.Arrangement.Top
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -44,15 +46,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollbarAdapter
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
@@ -61,11 +61,17 @@ import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -83,8 +89,10 @@ import androidx.compose.ui.input.pointer.PointerEventType.Companion.Exit
 import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
+import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.table.TableSortingDirection.ASCENDING
 import io.spine.chords.core.table.TableSortingDirection.DESCENDING
 
@@ -215,14 +223,39 @@ public abstract class Table<E> : Component() {
     /**
      * The padding applied to the entire content of the table.
      */
-    protected var contentPadding: PaddingValues by mutableStateOf(PaddingValues(16.dp))
+    public var contentPadding: PaddingValues by mutableStateOf(PaddingValues(16.dp))
 
     /**
      * The color of the selected row.
      *
-     * The default value is `MaterialTheme.colorScheme.surfaceVariant`.
+     * The default value is `MaterialTheme.colorScheme.primaryContainer`.
      */
-    protected var selectedRowColor: Color? by mutableStateOf(null)
+    public var selectedRowColor: Color? by mutableStateOf(null)
+
+    /**
+     * The color of a row under the pointer, or `null` to use the theme default.
+     */
+    public var hoveredRowColor: Color? by mutableStateOf(null)
+
+    /**
+     * The table header background, or `null` to use the theme default.
+     */
+    public var headerColor: Color? by mutableStateOf(null)
+
+    /**
+     * The table background, or `null` to use the theme surface color.
+     */
+    public var containerColor: Color? by mutableStateOf(null)
+
+    /**
+     * The header height, or `null` to use the current Chords theme value.
+     */
+    public var headerHeight: Dp? by mutableStateOf(null)
+
+    /**
+     * The minimum data-row height, or `null` to use the current Chords theme value.
+     */
+    public var rowHeight: Dp? by mutableStateOf(null)
 
     /**
      * Specifies the content to be displayed when the table has no entities.
@@ -264,19 +297,43 @@ public abstract class Table<E> : Component() {
             tableColumns.add(rowActionsColumn(rowActions!!, ::changeSelectedEntity))
         }
         Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(contentPadding),
-            verticalArrangement = Center,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(containerColor ?: colorScheme.surface)
+                .padding(resolvedContentPadding()),
+            verticalArrangement = Top,
         ) {
             HeaderTableRow(
                 columns = tableColumns,
-                sortingState = sortingState
+                sortingState = sortingState,
+                height = headerHeight ?: ChordsTheme.dimensions.tableHeaderHeight,
+                backgroundColor = headerColor ?: colorScheme.surfaceVariant
             )
-            if (entities.isNotEmpty()) {
-                ContentList(sortedEntities, tableColumns)
-            } else {
-                EmptyContentList()
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1F)
+            ) {
+                if (entities.isNotEmpty()) {
+                    ContentList(sortedEntities, tableColumns)
+                } else {
+                    EmptyContentList()
+                }
             }
+        }
+    }
+
+    /**
+     * Resolves unchanged default table padding against the active theme.
+     *
+     * @return The padding to apply to the table content.
+     */
+    @Composable
+    private fun resolvedContentPadding(): PaddingValues {
+        return if (contentPadding == PaddingValues(16.dp)) {
+            PaddingValues(ChordsTheme.dimensions.spacingLarge)
+        } else {
+            contentPadding
         }
     }
 
@@ -302,22 +359,26 @@ public abstract class Table<E> : Component() {
         columns: List<TableColumn<E>>
     ) {
         val listState = rememberLazyListState()
-        if (selectedRowColor == null) {
-            selectedRowColor = colorScheme.surfaceVariant
-        }
         Box(
-            modifier = Modifier.fillMaxHeight(),
+            modifier = Modifier.fillMaxSize(),
         ) {
             LazyColumn(
-                modifier = Modifier.fillMaxHeight(),
+                modifier = Modifier.fillMaxSize(),
                 state = listState
             ) {
                 entities.forEach { value ->
                     item {
+                        val selected = isSelected(value)
                         ContentTableRow(
                             entity = value,
                             columns = columns,
-                            modifier = contentTableRowModifier(value)
+                            modifier = contentTableRowModifier(value, selected),
+                            selected = selected,
+                            height = rowHeight ?: ChordsTheme.dimensions.tableRowHeight,
+                            selectedColor = selectedRowColor ?: colorScheme.primaryContainer,
+                            hoveredColor = hoveredRowColor ?: colorScheme.primary.copy(
+                                alpha = ChordsTheme.interaction.hoveredStateAlpha
+                            )
                         ) {
                             changeSelectedEntity(value)
                         }
@@ -328,21 +389,30 @@ public abstract class Table<E> : Component() {
         }
     }
 
-    private fun contentTableRowModifier(entity: E): Modifier {
-        val selectedEntityValue = selectedEntity.value
-        return if (selectedEntityValue != null &&
-            extractEntityId(selectedEntityValue) == extractEntityId(entity)
-        ) {
+    private fun contentTableRowModifier(entity: E, selected: Boolean): Modifier {
+        return if (selected) {
+            val selectedEntityValue = checkNotNull(selectedEntity.value)
             if (entity != selectedEntityValue) {
                 // Make sure that selected entity value is always up to date
                 // with the `entities` list if it contains an updated
                 // entity value.
                 changeSelectedEntity(entity)
             }
-            rowModifier(entity).background(selectedRowColor!!)
+            rowModifier(entity)
         } else {
             rowModifier(entity)
         }
+    }
+
+    /**
+     * Checks whether the given entity represents the currently selected row.
+     *
+     * @param entity The entity whose selection state should be checked.
+     * @return `true` if the entity represents the selected row.
+     */
+    private fun isSelected(entity: E): Boolean {
+        val selectedEntityValue = selectedEntity.value ?: return false
+        return extractEntityId(selectedEntityValue) == extractEntityId(entity)
     }
 
     /**
@@ -365,12 +435,12 @@ public abstract class Table<E> : Component() {
  *
  * @param name The name of the column to be displayed in a header.
  * @param horizontalArrangement The horizontal arrangement of the column's content.
- *   The default value is `Arrangement.Center`.
+ *   The default value is `Arrangement.Start`.
  * @param weight The proportional width to allocate to this column
  *   relative to other columns. Must be positive. The default value is `1F`
  *   meaning that if all columns have this `weight` value, their width is equal.
  * @param padding The padding values of each cell's content in this column.
- *   By default, no padding is applied.
+ *   By default, compact horizontal padding is applied.
  * @param columnKey A stable identifier of the column used to keep track of the sorting state.
  *   By default, the column [name] is used.
  * @param sorting Optional sorting configuration for this column.
@@ -383,9 +453,9 @@ public abstract class Table<E> : Component() {
  */
 public data class TableColumn<E>(
     val name: String,
-    val horizontalArrangement: Horizontal = Center,
+    val horizontalArrangement: Horizontal = Start,
     val weight: Float = 1F,
-    val padding: PaddingValues = PaddingValues(),
+    val padding: PaddingValues = PaddingValues(horizontal = 12.dp),
     val columnKey: Any = name,
     val sorting: TableColumnSorting<E>? = null,
     val value: ((E) -> Comparable<*>?)?,
@@ -399,9 +469,9 @@ public data class TableColumn<E>(
      */
     public constructor(
         name: String,
-        horizontalArrangement: Horizontal = Center,
+        horizontalArrangement: Horizontal = Start,
         weight: Float = 1F,
-        padding: PaddingValues = PaddingValues(),
+        padding: PaddingValues = PaddingValues(horizontal = 12.dp),
         columnKey: Any = name,
         sorting: TableColumnSorting<E>? = null,
         cellContent: @Composable (E) -> Unit
@@ -431,9 +501,9 @@ public data class TableColumn<E>(
     public constructor(
         name: String,
         value: (E) -> Comparable<*>?,
-        horizontalArrangement: Horizontal = Center,
+        horizontalArrangement: Horizontal = Start,
         weight: Float = 1F,
-        padding: PaddingValues = PaddingValues(),
+        padding: PaddingValues = PaddingValues(horizontal = 12.dp),
         columnKey: Any = name,
         sorting: TableColumnSorting<E>? = null
     ) : this(
@@ -601,7 +671,8 @@ public class TableSortingState<E>(
         private set
 
     /**
-     * Applies sorting for the given column or toggles the direction if the column is already sorted.
+     * Applies sorting for the given column or toggles the direction if the
+     * column is already sorted.
      *
      * If the column is not sortable, the state remains unchanged.
      */
@@ -714,7 +785,7 @@ private fun VerticalScrollBar(
     VerticalScrollbar(
         modifier = Modifier
             .fillMaxHeight()
-            .padding(vertical = 5.dp)
+            .padding(vertical = ChordsTheme.dimensions.spacingXSmall)
             .modifierExtender(),
         adapter = rememberScrollbarAdapter(
             scrollState = listState
@@ -731,15 +802,21 @@ private fun VerticalScrollBar(
  * @param columns A list of column configuration objects
  *   with information about headers.
  * @param sortingState The current interactive sorting state of the table.
+ * @param height The header row height.
+ * @param backgroundColor The header row background.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun <E> HeaderTableRow(
     columns: List<TableColumn<E>>,
     sortingState: TableSortingState<E>,
+    height: Dp,
+    backgroundColor: Color
 ) {
     TableRow(
         columns = columns,
+        height = height,
+        backgroundColor = backgroundColor,
         cellModifier = { column ->
             if (column.sortable) {
                 Modifier
@@ -789,7 +866,8 @@ private fun <E> HeaderCell(
     ) {
         Text(
             text = column.name,
-            style = typography.titleMedium
+            style = typography.labelMedium,
+            color = colorScheme.onSurfaceVariant
         )
         val direction = if (isSortable) {
             sortingState.directionFor(column)
@@ -805,7 +883,7 @@ private fun <E> HeaderCell(
                 },
                 contentDescription = null,
                 modifier = Modifier
-                    .padding(start = 4.dp)
+                    .padding(start = ChordsTheme.dimensions.spacingXSmall)
                     .size(18.dp)
                     .alpha(if (direction != null || isHovered) 1f else 0f),
                 tint = colorScheme.onSurfaceVariant
@@ -820,23 +898,40 @@ private fun <E> HeaderCell(
  * @param columns A list of columns from which the row consists.
  * @param entity The entity to represent in a row.
  * @param modifier The [Modifier] to be applied to this row.
+ * @param selected Whether this row is selected.
+ * @param height The minimum row height.
+ * @param selectedColor The selected row background.
+ * @param hoveredColor The hovered row background.
  * @param onClick A callback that is triggered when a user clicks on a row.
  */
 @Composable
+@OptIn(ExperimentalComposeUiApi::class)
+@Suppress("LongParameterList") // Row interaction states are supplied by the table look.
 private fun <E> ContentTableRow(
     entity: E,
     columns: List<TableColumn<E>>,
     modifier: Modifier,
+    selected: Boolean,
+    height: Dp,
+    selectedColor: Color,
+    hoveredColor: Color,
     onClick: () -> Unit
 ) {
+    var hovered by remember { mutableStateOf(false) }
+    val backgroundColor = when {
+        selected -> selectedColor
+        hovered -> hoveredColor
+        else -> Color.Transparent
+    }
     TableRow(
         columns = columns,
+        height = height,
+        backgroundColor = backgroundColor,
         modifier = Modifier
             .then(modifier)
-            .clickable(
-                interactionSource = MutableInteractionSource(),
-                indication = null,
-            ) { onClick() },
+            .onPointerEvent(Enter) { hovered = true }
+            .onPointerEvent(Exit) { hovered = false }
+            .clickable(onClick = onClick),
     ) { column -> column.cellContent(entity) }
 }
 
@@ -845,24 +940,30 @@ private fun <E> ContentTableRow(
  *
  * @param columns A list of columns from which the row consists.
  * @param modifier The [Modifier] to be applied to this row.
+ * @param height The minimum height of the row.
+ * @param backgroundColor The row background.
  * @param cellModifier A callback that provides an additional [Modifier]
  *   for each individual cell.
  * @param cellContent A callback that specifies what element to display
  *   inside each cell of this column.
  */
 @Composable
+@Suppress("LongParameterList") // Keeps the shared header and content row layout consistent.
 private fun <E> TableRow(
     columns: List<TableColumn<E>>,
     modifier: Modifier = Modifier,
+    height: Dp,
+    backgroundColor: Color = Color.Transparent,
     cellModifier: (TableColumn<E>) -> Modifier = { Modifier },
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .requiredHeightIn(70.dp, 100.dp)
+            .heightIn(min = height)
             .height(Min)
-            .then(modifier),
+            .then(modifier)
+            .background(backgroundColor),
         horizontalArrangement = SpaceBetween,
         verticalAlignment = CenterVertically
     ) {
@@ -875,7 +976,13 @@ private fun <E> TableRow(
                     .padding(column.padding),
                 horizontalArrangement = column.horizontalArrangement,
                 verticalAlignment = CenterVertically
-            ) { cellContent(column) }
+            ) {
+                CompositionLocalProvider(LocalContentColor provides colorScheme.onSurface) {
+                    ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
+                        cellContent(column)
+                    }
+                }
+            }
         }
     }
     Divider(
@@ -902,6 +1009,7 @@ private fun <E> rowActionsColumn(
     return TableColumn(
         name = "",
         horizontalArrangement = End,
+        weight = 0.2F,
         padding = rowActionsConfig.buttonPadding
     ) { entity ->
         val rowActionsVisible = remember { mutableStateOf(false) }
@@ -940,7 +1048,7 @@ private fun <E> RowActionsButton(
     onRowActionsClicked: (E) -> Unit,
 ) {
     IconButton(
-        modifier = Modifier.size(48.dp),
+        modifier = Modifier.size(ChordsTheme.dimensions.iconButtonSize),
         onClick = {
             onRowActionsClicked(entity)
             visibility.value = true
@@ -991,7 +1099,9 @@ private fun <E> RowActionsDropdown(
                     it.onClick(value)
                 },
                 enabled = it.enabled(value),
-                modifier = look.modifier,
+                modifier = look.modifier.heightIn(
+                    min = ChordsTheme.dimensions.dropdownItemHeight
+                ),
                 colors = MenuDefaults.itemColors(
                     textColor = look.textColor
                 ),

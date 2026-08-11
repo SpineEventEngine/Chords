@@ -34,12 +34,14 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -61,6 +63,7 @@ import io.spine.chords.core.appshell.app
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.layout.WindowType.DesktopWindow
+import io.spine.chords.core.styling.ChordsTheme
 
 /**
  * A shortcut (key combination), which invokes dialog submission.
@@ -319,6 +322,33 @@ public abstract class Dialog : Component() {
         public var buttonsPanelPadding: PaddingValues = PaddingValues(top = 24.dp),
         public var buttonsSpacing: Dp = 12.dp
     )
+
+    /**
+     * Resolves the dialog look against the active theme.
+     *
+     * An unchanged default [Look] follows the global Chords spacing scale. A
+     * customized look retains its component-specific values and takes
+     * precedence over the theme.
+     *
+     * @return The appearance values to use for the current composition.
+     */
+    @Composable
+    internal fun resolvedLook(): Look {
+        return if (look == Look()) {
+            Look(
+                padding = PaddingValues(ChordsTheme.dimensions.spacingXLarge),
+                titlePadding = PaddingValues(
+                    bottom = ChordsTheme.dimensions.spacingLarge
+                ),
+                buttonsPanelPadding = PaddingValues(
+                    top = ChordsTheme.dimensions.spacingXLarge
+                ),
+                buttonsSpacing = ChordsTheme.dimensions.spacingMedium
+            )
+        } else {
+            look
+        }
+    }
 
     /**
      * Specifies the way that the dialog window is displayed.
@@ -636,15 +666,16 @@ public abstract class Dialog : Component() {
         if (!submitAvailable && !cancelAvailable) {
             return
         }
+        val currentLook = resolvedLook()
         Row(
             modifier = Modifier.fillMaxWidth()
-                .padding(look.buttonsPanelPadding),
+                .padding(currentLook.buttonsPanelPadding),
             horizontalArrangement = End,
             verticalAlignment = Bottom
         ) {
             Row(
                 modifier = Modifier.width(IntrinsicSize.Max),
-                horizontalArrangement = spacedBy(look.buttonsSpacing)
+                horizontalArrangement = spacedBy(currentLook.buttonsSpacing)
             ) {
                 buttons()
             }
@@ -671,12 +702,16 @@ public abstract class Dialog : Component() {
     @Composable
     protected fun buttons() {
         if (cancelAvailable) {
-            DialogButton(cancelButtonText) {
+            DialogButton(cancelButtonText, primary = false) {
                 cancel()
             }
         }
         if (submitAvailable) {
-            DialogButton(submitButtonText, !submitting) {
+            DialogButton(
+                label = submitButtonText,
+                enabled = !submitting,
+                primary = true
+            ) {
                 submit()
             }
         }
@@ -788,15 +823,17 @@ public open class DialogSetup<D: Dialog>(
  * @param label The label of the button.
  * @param enabled Specifies whether the button should appear and behave as
  *   an enabled one.
+ * @param primary Whether this is the dialog's emphasized action.
  * @param onClick The callback triggered on the button click.
  */
 @Composable
 private fun DialogButton(
     label: String,
     enabled: Boolean = true,
+    primary: Boolean,
     onClick: () -> Unit
 ) {
-    Button(onClick = onClick, enabled = enabled) {
+    val content: @Composable () -> Unit = {
         Row(
             verticalAlignment = CenterVertically
         ) {
@@ -807,5 +844,21 @@ private fun DialogButton(
                 overflow = TextOverflow.Ellipsis
             )
         }
+    }
+    val modifier = Modifier.heightIn(min = ChordsTheme.dimensions.compactControlHeight)
+    if (primary) {
+        Button(
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            content = { content() }
+        )
+    } else {
+        TextButton(
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            content = { content() }
+        )
     }
 }

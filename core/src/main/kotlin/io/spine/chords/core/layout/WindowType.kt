@@ -26,6 +26,7 @@
 
 package io.spine.chords.core.layout
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -43,6 +44,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,9 +55,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.Gray
+import androidx.compose.ui.graphics.Color.Companion.Unspecified
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.IntrinsicMeasurable
@@ -82,6 +84,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import io.spine.chords.core.keyboard.matches
+import io.spine.chords.core.styling.ChordsTheme
 import kotlin.math.ceil
 
 /**
@@ -104,10 +107,20 @@ public sealed class WindowType {
      * as a separate desktop window.
      *
      * @param resizable Specifies whether the window can be resized by the user.
+     * @param containerColor The content background, or [Unspecified] to use the
+     *   current Material surface color.
      */
     public open class DesktopWindow(
-        public val resizable: Boolean = false
+        public val resizable: Boolean = false,
+        public val containerColor: Color = Unspecified
     ) : WindowType() {
+
+        /**
+         * Creates a desktop dialog window with the theme surface color.
+         *
+         * @param resizable Specifies whether the window can be resized.
+         */
+        public constructor(resizable: Boolean) : this(resizable, Unspecified)
 
         @Composable
         override fun dialogWindow(dialog: Dialog) {
@@ -172,7 +185,13 @@ public sealed class WindowType {
                 }
                 Column(
                     modifier = sizeModifier
-                        .background(colorScheme.background),
+                        .background(
+                            if (containerColor == Unspecified) {
+                                colorScheme.surface
+                            } else {
+                                containerColor
+                            }
+                        ),
                 ) {
                     val heightMode =
                         if (dialog.height.isSpecified || contentFittedSize != null) {
@@ -186,7 +205,7 @@ public sealed class WindowType {
                         Modifier.fillMaxWidth()
                     }
                     Column(
-                        modifier = contentModifier.padding(dialog.look.padding),
+                        modifier = contentModifier.padding(dialog.resolvedLook().padding),
                     ) {
                         dialog.windowContentInternal(heightMode)
                         dialog.nestedDialog?.Content()
@@ -218,7 +237,8 @@ public sealed class WindowType {
          * ```
          */
         public companion object : DesktopWindow(
-            resizable = false
+            resizable = false,
+            containerColor = Unspecified
         )
     }
 
@@ -228,11 +248,37 @@ public sealed class WindowType {
      *
      * @param backdropColor The color of the surface that covers the entire
      *   content of the current desktop window behind the dialog's modal popup
-     *   displayed in this window.
+     *   displayed in this window, or [Unspecified] to use the theme scrim.
+     * @param containerColor The dialog surface, or [Unspecified] to use the
+     *   current Material surface color.
+     * @param shape The dialog shape, or `null` to use the current Material
+     *   large shape.
+     * @param shadowElevation The dialog shadow elevation.
+     * @param borderColor The dialog border, or [Unspecified] to use the
+     *   current Material outline variant.
      */
+    @Suppress("LongParameterList") // These are independent visual override points.
     public open class LightweightWindow(
-        public val backdropColor: Color = Gray.copy(alpha = 0.5f)
+        public val backdropColor: Color = Unspecified,
+        public val containerColor: Color = Unspecified,
+        public val shape: Shape? = null,
+        public val shadowElevation: Dp = 16.dp,
+        public val borderColor: Color = Unspecified
     ) : WindowType() {
+
+        /**
+         * Creates a lightweight dialog with a custom backdrop and theme-based
+         * frame appearance.
+         *
+         * @param backdropColor The modal backdrop color.
+         */
+        public constructor(backdropColor: Color) : this(
+            backdropColor = backdropColor,
+            containerColor = Unspecified,
+            shape = null,
+            shadowElevation = 16.dp,
+            borderColor = Unspecified
+        )
 
         @Composable
         override fun dialogWindow(dialog: Dialog) {
@@ -249,7 +295,15 @@ public sealed class WindowType {
                 BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(backdropColor),
+                        .background(
+                            if (backdropColor == Unspecified) {
+                                colorScheme.scrim.copy(
+                                    alpha = ChordsTheme.interaction.scrimAlpha
+                                )
+                            } else {
+                                backdropColor
+                            }
+                        ),
                     contentAlignment = Center
                 ) {
                     val availableWidth = maxWidth
@@ -274,17 +328,30 @@ public sealed class WindowType {
             maxWidth: Dp,
             maxHeight: Dp
         ) {
-            Column(
+            Surface(
                 modifier = Modifier
-                    .clip(shapes.large)
                     .dialogSize(
                         dialog.width,
                         dialog.height,
                         maxWidth,
                         maxHeight,
                         fillSpecifiedDimensions = false
-                    )
-                    .background(colorScheme.background),
+                    ),
+                shape = shape ?: shapes.large,
+                color = if (containerColor == Unspecified) {
+                    colorScheme.surface
+                } else {
+                    containerColor
+                },
+                shadowElevation = shadowElevation,
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = if (borderColor == Unspecified) {
+                        colorScheme.outlineVariant
+                    } else {
+                        borderColor
+                    }
+                )
             ) {
                 val heightMode = if (dialog.height.isSpecified) {
                     DialogContentHeightMode.Exact
@@ -296,12 +363,13 @@ public sealed class WindowType {
                 } else {
                     Modifier.fillMaxWidth()
                 }
+                val currentLook = dialog.resolvedLook()
                 Column(
-                    modifier = contentModifier.padding(dialog.look.padding),
+                    modifier = contentModifier.padding(currentLook.padding)
                 ) {
-                    DialogTitle(dialog.title, dialog.look.titlePadding)
+                    DialogTitle(dialog.title, currentLook.titlePadding)
                     dialog.windowContentInternal(heightMode)
-                    dialog.nestedDialog ?.Content()
+                    dialog.nestedDialog?.Content()
                 }
             }
         }
@@ -500,6 +568,7 @@ private fun DialogTitle(
             .padding(padding)
             .preferUnwrappedWidth(),
         text = text,
-        style = typography.headlineLarge
+        style = typography.titleLarge,
+        color = colorScheme.onSurface
     )
 }

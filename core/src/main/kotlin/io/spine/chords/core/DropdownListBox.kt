@@ -26,6 +26,7 @@
 
 package io.spine.chords.core
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,10 +47,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.ShapeDefaults.ExtraSmall
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -78,6 +79,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Offset.Companion.Zero
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.key.Key.Companion.DirectionDown
 import androidx.compose.ui.input.key.Key.Companion.DirectionUp
 import androidx.compose.ui.input.key.Key.Companion.Escape
@@ -113,6 +115,7 @@ import io.spine.chords.core.keyboard.KeyRange
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.primitive.VerticalScrollbar
+import io.spine.chords.core.styling.ChordsTheme
 import java.awt.event.KeyEvent.CHAR_UNDEFINED
 import java.lang.Character.UnicodeBlock
 import java.lang.Character.UnicodeBlock.SPECIALS
@@ -289,6 +292,41 @@ public class DropdownListBox<I> : Component() {
     public var unfocusInvoker: (() -> Unit)? = null
 
     /**
+     * Minimum item height, or `null` to use the current Chords theme value.
+     */
+    public var itemMinHeight: Dp? by mutableStateOf(null)
+
+    /**
+     * Vertical content padding, or `null` to use the current Chords theme value.
+     */
+    public var listContentPadding: Dp? by mutableStateOf(null)
+
+    /**
+     * The popup shape, or `null` to use the current Material small shape.
+     */
+    public var listShape: Shape? by mutableStateOf(null)
+
+    /**
+     * The popup's tonal elevation.
+     */
+    public var listTonalElevation: Dp by mutableStateOf(0.dp)
+
+    /**
+     * The popup's shadow elevation.
+     */
+    public var listShadowElevation: Dp by mutableStateOf(8.dp)
+
+    /**
+     * Selected item background, or `null` to use the theme selection color.
+     */
+    public var selectedItemColor: Color? by mutableStateOf(null)
+
+    /**
+     * Keyboard-preselected item background, or `null` to use the theme hover color.
+     */
+    public var preselectedItemColor: Color? by mutableStateOf(null)
+
+    /**
      * A density of the screen, it is used when calculating which part
      * of drop-down list should be visible to user.
      */
@@ -383,11 +421,6 @@ public class DropdownListBox<I> : Component() {
      * drop-down list items.
      */
     private var totalItemsHeight by mutableStateOf(0.dp)
-
-    /**
-     * Vertical padding of drop-down list content.
-     */
-    private val listVerticalPadding = 8.dp
 
     /**
      *  Heights of none item in drop-down list.
@@ -867,6 +900,7 @@ public class DropdownListBox<I> : Component() {
      *   to be used.
      */
     @Composable
+    @Suppress("LongMethod") // Keeps selection ordering and item rendering in one list pass.
     private fun BoxScope.DropdownListContent() {
         Column(
             modifier = Modifier
@@ -883,10 +917,13 @@ public class DropdownListBox<I> : Component() {
                     DropdownListNoneItem(
                         text = noneItemText,
                         color = if (preselectedItemIndex == -1) {
-                            colorScheme.primary.copy(alpha = 0.1f)
+                            preselectedItemColor ?: colorScheme.primary.copy(
+                                alpha = ChordsTheme.interaction.hoveredStateAlpha
+                            )
                         } else {
                             null
                         },
+                        itemMinHeight = itemMinHeight ?: ChordsTheme.dimensions.dropdownItemHeight,
                         onMeasureHeight = { measuredHeight ->
                             noneItemHeight = measuredHeight
                         },
@@ -898,11 +935,13 @@ public class DropdownListBox<I> : Component() {
                 items.forEachIndexed { index, item ->
                     val color = when (index) {
                         selectedItemIndex -> {
-                            colorScheme.primary.copy(alpha = 0.2f)
+                            selectedItemColor ?: colorScheme.primaryContainer
                         }
 
                         preselectedItemIndex -> {
-                            colorScheme.primary.copy(alpha = 0.1f)
+                            preselectedItemColor ?: colorScheme.primary.copy(
+                                alpha = ChordsTheme.interaction.hoveredStateAlpha
+                            )
                         }
 
                         else -> {
@@ -915,13 +954,17 @@ public class DropdownListBox<I> : Component() {
                         onMeasureHeight = { measuredHeight ->
                             itemHeights[index] = measuredHeight
                         },
-                        color = color
+                        color = color,
+                        itemMinHeight = itemMinHeight ?: ChordsTheme.dimensions.dropdownItemHeight
                     ) {
                         itemContent(item)
                     }
                 }
             } else {
-                DropdownListNoItems(content = noItemsContent)
+                DropdownListNoItems(
+                    itemMinHeight = itemMinHeight ?: ChordsTheme.dimensions.dropdownItemHeight,
+                    content = noItemsContent
+                )
             }
         }
         VerticalScrollbar(scrollState) {
@@ -961,13 +1004,20 @@ public class DropdownListBox<I> : Component() {
             properties = PopupProperties(focusable = searchSelectionEnabled),
             onPreviewKeyEvent = { handleKeyEventWhenDropdownExpanded(it) }
         ) {
-            Surface(shape = ExtraSmall, tonalElevation = 3.0.dp, shadowElevation = 3.0.dp) {
+            val contentPadding = listContentPadding ?: ChordsTheme.dimensions.spacingXSmall
+            Surface(
+                shape = listShape ?: MaterialTheme.shapes.small,
+                color = colorScheme.surface,
+                tonalElevation = listTonalElevation,
+                shadowElevation = listShadowElevation,
+                border = BorderStroke(1.dp, colorScheme.outlineVariant)
+            ) {
                 visibleListHeight = min(
-                    totalItemsHeight, listAvailableHeight - listVerticalPadding * 2
+                    totalItemsHeight, listAvailableHeight - contentPadding * 2
                 )
                 Box(
                     modifier = Modifier
-                        .padding(vertical = listVerticalPadding)
+                        .padding(vertical = contentPadding)
                         .height(visibleListHeight)
                 ) {
                     if (scrollPositionRequested != null) {
@@ -1160,6 +1210,8 @@ private class DropdownListBoxScopeImpl(
  *         callback that is invoked when item is positioned.
  * @param color
  *         the background color of drop-down list item.
+ * @param itemMinHeight
+ *         the minimum height of the item.
  * @param content
  *         content to be displayed inside drop-down list item.
  */
@@ -1168,6 +1220,7 @@ private fun DropdownListItem(
     onClick: () -> Unit,
     onMeasureHeight: (Int) -> Unit,
     color: Color?,
+    itemMinHeight: Dp,
     content: @Composable () -> Unit
 ) {
     val itemHeight = remember { mutableStateOf(0) }
@@ -1179,7 +1232,7 @@ private fun DropdownListItem(
                 onClick = onClick
             )
             .fillMaxWidth()
-            .heightIn(48.dp)
+            .heightIn(itemMinHeight)
             .onGloballyPositioned {
                 val height = it.size.height
                 if (height != itemHeight.value) {
@@ -1197,22 +1250,29 @@ private fun DropdownListItem(
 /**
  * The drop-down list without items.
  *
+ * @param itemMinHeight
+ *         the minimum height of the item.
  * @param content
  *         the content to be shown when drop-down list doesn't have any items.
  */
 @Composable
-private fun DropdownListNoItems(content: @Composable (() -> Unit)) {
+private fun DropdownListNoItems(
+    itemMinHeight: Dp,
+    content: @Composable (() -> Unit)
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(48.dp)
-            .padding(horizontal = 12.dp)
+            .heightIn(itemMinHeight)
+            .padding(horizontal = ChordsTheme.dimensions.spacingMedium)
             .background(Transparent),
         verticalAlignment = CenterVertically,
         horizontalArrangement = Center
     ) {
         StyledContent(
-            contentColor = colorScheme.secondary.copy(alpha = 0.5f),
+            contentColor = colorScheme.onSurfaceVariant.copy(
+                alpha = ChordsTheme.interaction.disabledContentAlpha
+            ),
             textStyle = typography.titleSmall,
             content = content
         )
@@ -1226,6 +1286,8 @@ private fun DropdownListNoItems(content: @Composable (() -> Unit)) {
  *         the text to be displayed for drop-down list none item.
  * @param color
  *         the background color of drop-down list none item.
+ * @param itemMinHeight
+ *         the minimum height of the item.
  * @param onMeasureHeight
  *         callback that is invoked when item is positioned.
  * @param onClick
@@ -1235,6 +1297,7 @@ private fun DropdownListNoItems(content: @Composable (() -> Unit)) {
 private fun DropdownListNoneItem(
     text: String = "<None>",
     color: Color? = null,
+    itemMinHeight: Dp,
     onMeasureHeight: (Int) -> Unit,
     onClick: () -> Unit
 ) {
@@ -1254,16 +1317,20 @@ private fun DropdownListNoneItem(
                 }
             }
             .fillMaxWidth()
-            .heightIn(48.dp)
+            .heightIn(itemMinHeight)
             .background(color ?: Transparent),
         verticalAlignment = CenterVertically
     ) {
         StyledContent(
-            contentColor = colorScheme.secondary.copy(alpha = 0.5f),
+            contentColor = colorScheme.onSurfaceVariant.copy(
+                alpha = ChordsTheme.interaction.disabledContentAlpha
+            ),
             content = {
                 Text(
                     text = text,
-                    modifier = Modifier.padding(horizontal = 12.dp)
+                    modifier = Modifier.padding(
+                        horizontal = ChordsTheme.dimensions.spacingMedium
+                    )
                 )
             }
         )
