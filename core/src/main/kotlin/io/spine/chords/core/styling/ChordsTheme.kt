@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.sp
  * @property dropdownItemHeight The minimum height of a dropdown item.
  * @property tableHeaderHeight The height of a table header.
  * @property tableRowHeight The height of an ordinary table row.
+ * @property tableRowMaxHeight The maximum height of a table row.
  * @property supportingPaneWidth The default width of a supporting details pane.
  */
 @Immutable
@@ -88,6 +89,7 @@ public data class ChordsDimensions(
     public val dropdownItemHeight: Dp = 40.dp,
     public val tableHeaderHeight: Dp = 40.dp,
     public val tableRowHeight: Dp = 40.dp,
+    public val tableRowMaxHeight: Dp = 100.dp,
     public val supportingPaneWidth: Dp = 360.dp
 )
 
@@ -110,52 +112,52 @@ public data class ChordsInteraction(
 )
 
 /**
- * The default Chords Material 3 theme and its desktop-specific tokens.
+ * Applies the default Chords look and feel to [content].
+ *
+ * @param darkTheme Whether the dark color scheme should be used.
+ * @param colorScheme The Material color scheme applied to all components.
+ * @param typography The Material typography applied to all components.
+ * @param shapes The Material shape scale applied to all components.
+ * @param dimensions Desktop layout dimensions shared by Chords components.
+ * @param interaction Common interaction-state opacity values.
+ * @param content The content to which the theme is applied.
+ */
+@Composable
+@Suppress("LongParameterList") // Mirrors MaterialTheme and keeps all theme inputs explicit.
+public fun ChordsTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    colorScheme: ColorScheme = if (darkTheme) {
+        defaultDarkColorScheme
+    } else {
+        defaultLightColorScheme
+    },
+    typography: Typography = defaultTypography,
+    shapes: Shapes = defaultShapes,
+    dimensions: ChordsDimensions = defaultDimensions,
+    interaction: ChordsInteraction = defaultInteraction,
+    content: @Composable () -> Unit
+) {
+    CompositionLocalProvider(
+        LocalChordsDimensions provides dimensions,
+        LocalChordsInteraction provides interaction
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = typography,
+            shapes = shapes,
+            content = content
+        )
+    }
+}
+
+/**
+ * Provides the desktop-specific tokens installed by [ChordsTheme].
  *
  * Standard Material values remain available through [MaterialTheme]. Chords
  * adds only the layout and interaction values that Material does not expose as
  * theme properties for desktop applications.
  */
 public object ChordsTheme {
-
-    /**
-     * Applies the default Chords look and feel to [content].
-     *
-     * @param darkTheme Whether the dark color scheme should be used.
-     * @param colorScheme The Material color scheme applied to all components.
-     * @param typography The Material typography applied to all components.
-     * @param shapes The Material shape scale applied to all components.
-     * @param dimensions Desktop layout dimensions shared by Chords components.
-     * @param interaction Common interaction-state opacity values.
-     * @param content The content to which the theme is applied.
-     */
-    @Composable
-    @Suppress("LongParameterList") // Mirrors MaterialTheme and keeps all theme inputs explicit.
-    public operator fun invoke(
-        darkTheme: Boolean = isSystemInDarkTheme(),
-        colorScheme: ColorScheme = if (darkTheme) {
-            chordsDarkColorScheme()
-        } else {
-            chordsLightColorScheme()
-        },
-        typography: Typography = chordsTypography(),
-        shapes: Shapes = chordsShapes(),
-        dimensions: ChordsDimensions = ChordsDimensions(),
-        interaction: ChordsInteraction = ChordsInteraction(),
-        content: @Composable () -> Unit
-    ) {
-        CompositionLocalProvider(
-            LocalChordsDimensions provides dimensions,
-            LocalChordsInteraction provides interaction
-        ) {
-            MaterialTheme(
-                colorScheme = colorScheme,
-                typography = typography,
-                shapes = shapes,
-                content = content
-            )
-        }
-    }
 
     /**
      * The desktop layout dimensions active in the current composition.
@@ -347,11 +349,41 @@ public fun chordsShapes(): Shapes = Shapes(
 )
 
 /**
+ * The light color scheme reused by the default theme.
+ */
+private val defaultLightColorScheme: ColorScheme = chordsLightColorScheme()
+
+/**
+ * The dark color scheme reused by the default theme.
+ */
+private val defaultDarkColorScheme: ColorScheme = chordsDarkColorScheme()
+
+/**
+ * The typography reused by the default theme.
+ */
+private val defaultTypography: Typography = chordsTypography()
+
+/**
+ * The shape scale reused by the default theme.
+ */
+private val defaultShapes: Shapes = chordsShapes()
+
+/**
+ * The desktop dimensions reused by the default theme and non-composable core defaults.
+ */
+internal val defaultDimensions: ChordsDimensions = ChordsDimensions()
+
+/**
+ * The interaction values reused by the default theme.
+ */
+private val defaultInteraction: ChordsInteraction = ChordsInteraction()
+
+/**
  * Supplies default desktop dimensions when no Chords theme is installed.
  */
-private val LocalChordsDimensions = staticCompositionLocalOf { ChordsDimensions() }
+private val LocalChordsDimensions = staticCompositionLocalOf { defaultDimensions }
 
 /**
  * Supplies default interaction values when no Chords theme is installed.
  */
-private val LocalChordsInteraction = staticCompositionLocalOf { ChordsInteraction() }
+private val LocalChordsInteraction = staticCompositionLocalOf { defaultInteraction }

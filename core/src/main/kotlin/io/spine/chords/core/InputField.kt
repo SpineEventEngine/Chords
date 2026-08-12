@@ -29,6 +29,7 @@ package io.spine.chords.core
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -318,32 +319,20 @@ public open class InputField<V> : InputComponent<V>() {
 
     /**
      * A [TextFieldColors] instance, which defines the color scheme for
-     * this field. If it is not assigned, colors are resolved from the current
-     * theme on every composition.
+     * this field.
+     *
+     * When left unassigned, colors are resolved from the current theme during
+     * composition without initializing this property. Therefore, reading it is
+     * only valid after assigning a custom value; use `::colors.isInitialized`
+     * to distinguish that case.
      */
-    public var colors: TextFieldColors
-        get() = customColors ?: checkNotNull(currentThemeColors) {
-            "The input field has not been composed and has no custom colors."
-        }
-        set(value) {
-            customColors = value
-        }
+    public lateinit var colors: TextFieldColors
 
     /**
      * An [InputReviser] that can be specified to modify the user's input before
      * it is applied to the input field.
      */
     protected open var inputReviser: InputReviser? by mutableStateOf(null)
-
-    /**
-     * A component-specific colors override, or `null` while theme colors apply.
-     */
-    private var customColors: TextFieldColors? by mutableStateOf(null)
-
-    /**
-     * The most recently composed theme colors, retained for property reads.
-     */
-    private var currentThemeColors: TextFieldColors? = null
 
     /**
      * Transforms the raw text typed in by the user to form a text displayed in
@@ -476,8 +465,11 @@ public open class InputField<V> : InputComponent<V>() {
 
     @Composable
     override fun content(): Unit = recompositionWorkaround {
-        currentThemeColors = OutlinedTextFieldDefaults.colors()
-        val fieldColors = customColors ?: checkNotNull(currentThemeColors)
+        val fieldColors = if (::colors.isInitialized) {
+            colors
+        } else {
+            OutlinedTextFieldDefaults.colors()
+        }
         val textStyle = textStyle ?: defaultTextStyle()
         val rawTextContent = getRawTextContent()
 
@@ -490,7 +482,7 @@ public open class InputField<V> : InputComponent<V>() {
             value = rawTextContent,
             label = label?.let { { Text(text = it) } },
             isError = validationErrorText != null,
-            supportingText = validationErrorText?.let {
+            supportingText = (validationErrorText ?: "").let {
                 {
                     supportingText(it)
                 }
@@ -533,7 +525,7 @@ public open class InputField<V> : InputComponent<V>() {
      */
     @Composable
     @ReadOnlyComposable
-    protected open fun defaultTextStyle(): TextStyle = MaterialTheme.typography.bodyMedium
+    protected open fun defaultTextStyle(): TextStyle = LocalTextStyle.current
 
     override fun clear() {
         super.clear()

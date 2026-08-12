@@ -33,9 +33,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.ValidationErrorText
+import io.spine.chords.core.styling.ChordsDimensions
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.proto.form.CustomMessageForm
 import io.spine.chords.proto.form.FormPartScope
@@ -48,6 +48,11 @@ import io.spine.chords.proto.value.money.PaymentMethodDef.method
 import io.spine.chords.proto.value.money.PaymentMethodDef.paymentCard
 
 /**
+ * The default dimensions used by non-composable [PaymentMethodEditor.Look] defaults.
+ */
+private val defaultLookDimensions = ChordsDimensions()
+
+/**
  * A component that edits a [PaymentMethod].
  */
 public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
@@ -57,6 +62,9 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
 
     /**
      * Identifies the component's appearance parameters.
+     *
+     * Values left at their [Look] defaults follow the corresponding Chords
+     * theme tokens. Customized values take precedence independently.
      */
     public var look: Look = Look()
 
@@ -72,22 +80,33 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
      *   the controls within the component.
      */
     public data class Look(
-        public var interFieldPadding: Dp = 24.dp,
-        public var selectorsOffset: Dp = 8.dp,
-        public var optionalCheckboxOffset: Dp = 16.dp
+        public var interFieldPadding: Dp = defaultLookDimensions.spacingXLarge,
+        public var selectorsOffset: Dp = defaultLookDimensions.spacingSmall,
+        public var optionalCheckboxOffset: Dp = defaultLookDimensions.spacingLarge
     )
 
     @Composable
     override fun FormPartScope<PaymentMethod>.customContent() {
-        val currentLook = if (look == Look()) {
-            Look(
-                interFieldPadding = ChordsTheme.dimensions.spacingXLarge,
-                selectorsOffset = ChordsTheme.dimensions.spacingSmall,
-                optionalCheckboxOffset = ChordsTheme.dimensions.spacingLarge
-            )
-        } else {
-            look
-        }
+        val defaultLook = Look()
+        val currentLook = look.copy(
+            interFieldPadding = if (look.interFieldPadding == defaultLook.interFieldPadding) {
+                ChordsTheme.dimensions.spacingXLarge
+            } else {
+                look.interFieldPadding
+            },
+            selectorsOffset = if (look.selectorsOffset == defaultLook.selectorsOffset) {
+                ChordsTheme.dimensions.spacingSmall
+            } else {
+                look.selectorsOffset
+            },
+            optionalCheckboxOffset = if (
+                look.optionalCheckboxOffset == defaultLook.optionalCheckboxOffset
+            ) {
+                ChordsTheme.dimensions.spacingLarge
+            } else {
+                look.optionalCheckboxOffset
+            }
+        )
         Column {
             if (!required) {
                 Row {

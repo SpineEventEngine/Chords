@@ -32,7 +32,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -137,7 +137,7 @@ public class MoneyField : InputField<Money>() {
      */
     @Composable
     @ReadOnlyComposable
-    override fun defaultTextStyle(): TextStyle = MaterialTheme.typography.bodyMedium.copy(
+    override fun defaultTextStyle(): TextStyle = LocalTextStyle.current.copy(
         fontFamily = Monospace
     )
 

@@ -49,8 +49,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material.icons.Icons
@@ -70,6 +72,7 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
@@ -89,12 +92,19 @@ import androidx.compose.ui.input.pointer.PointerEventType.Companion.Exit
 import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
 import io.spine.chords.core.styling.ChordsTheme
+import io.spine.chords.core.styling.defaultDimensions
 import io.spine.chords.core.table.TableSortingDirection.ASCENDING
 import io.spine.chords.core.table.TableSortingDirection.DESCENDING
+
+/**
+ * The table padding used when no composable theme value is available.
+ */
+private val defaultTableContentPadding = PaddingValues(defaultDimensions.spacingLarge)
 
 /**
  * A list of entities in a tabular format.
@@ -222,8 +232,23 @@ public abstract class Table<E> : Component() {
 
     /**
      * The padding applied to the entire content of the table.
+     *
+     * When it is not assigned, the current Chords theme's large spacing is
+     * used. Assigning a value, including the default `16.dp`, pins that value.
+     * Reading an unassigned property returns the default theme's baseline
+     * padding. Rendering resolves the effective value from the active theme,
+     * so a custom theme can produce a different on-screen value.
      */
-    public var contentPadding: PaddingValues by mutableStateOf(PaddingValues(16.dp))
+    public var contentPadding: PaddingValues
+        get() = customContentPadding ?: defaultTableContentPadding
+        set(value) {
+            customContentPadding = value
+        }
+
+    /**
+     * A component-specific content-padding override.
+     */
+    private var customContentPadding: PaddingValues? by mutableStateOf(null)
 
     /**
      * The color of the selected row.
@@ -272,7 +297,9 @@ public abstract class Table<E> : Component() {
      *
      * The ID's equality is determined using structural equality operator (`==`).
      * Therefore, the returned identifier should be a type that supports
-     * meaningful structural equality.
+     * meaningful structural equality. It must also be unique among all entities
+     * displayed at the same time because it is used as the stable key of each
+     * lazily composed row.
      *
      * @param entity An entity from which to extract the identifier.
      * @return The ID of an entity.
@@ -293,9 +320,19 @@ public abstract class Table<E> : Component() {
     override fun content() {
         val sortedEntities = sortedEntities()
         val tableColumns = columns.toMutableList()
-        if (rowActions != null) {
-            tableColumns.add(rowActionsColumn(rowActions!!, ::changeSelectedEntity))
+        var lastColumnWidth: Dp? = null
+        rowActions?.let { config ->
+            val layoutDirection = LocalLayoutDirection.current
+            val horizontalPadding =
+                config.buttonPadding.calculateLeftPadding(layoutDirection) +
+                    config.buttonPadding.calculateRightPadding(layoutDirection)
+            lastColumnWidth = ChordsTheme.dimensions.iconButtonSize + horizontalPadding
+            tableColumns.add(
+                rowActionsColumn(config, ::changeSelectedEntity)
+            )
         }
+        // The actions column is appended last, so its fixed width belongs to the final column.
+        val columnsLayout = TableColumnsLayout(tableColumns, lastColumnWidth)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -304,7 +341,7 @@ public abstract class Table<E> : Component() {
             verticalArrangement = Top,
         ) {
             HeaderTableRow(
-                columns = tableColumns,
+                columnsLayout = columnsLayout,
                 sortingState = sortingState,
                 height = headerHeight ?: ChordsTheme.dimensions.tableHeaderHeight,
                 backgroundColor = headerColor ?: colorScheme.surfaceVariant
@@ -315,7 +352,7 @@ public abstract class Table<E> : Component() {
                     .weight(1F)
             ) {
                 if (entities.isNotEmpty()) {
-                    ContentList(sortedEntities, tableColumns)
+                    ContentList(sortedEntities, columnsLayout)
                 } else {
                     EmptyContentList()
                 }
@@ -330,11 +367,8 @@ public abstract class Table<E> : Component() {
      */
     @Composable
     private fun resolvedContentPadding(): PaddingValues {
-        return if (contentPadding == PaddingValues(16.dp)) {
-            PaddingValues(ChordsTheme.dimensions.spacingLarge)
-        } else {
-            contentPadding
-        }
+        return customContentPadding
+            ?: PaddingValues(ChordsTheme.dimensions.spacingLarge)
     }
 
     /**
@@ -351,12 +385,12 @@ public abstract class Table<E> : Component() {
      *
      * @param entities The list of entities with data that
      *   should be displayed in table rows.
-     * @param columns A list of columns to be displayed in the table.
+     * @param columnsLayout The columns and any fixed width used by the final column.
      */
     @Composable
     private fun ContentList(
         entities: List<E>,
-        columns: List<TableColumn<E>>
+        columnsLayout: TableColumnsLayout<E>
     ) {
         val listState = rememberLazyListState()
         Box(
@@ -366,22 +400,24 @@ public abstract class Table<E> : Component() {
                 modifier = Modifier.fillMaxSize(),
                 state = listState
             ) {
-                entities.forEach { value ->
-                    item {
-                        val selected = isSelected(value)
-                        ContentTableRow(
-                            entity = value,
-                            columns = columns,
-                            modifier = contentTableRowModifier(value, selected),
-                            selected = selected,
-                            height = rowHeight ?: ChordsTheme.dimensions.tableRowHeight,
-                            selectedColor = selectedRowColor ?: colorScheme.primaryContainer,
-                            hoveredColor = hoveredRowColor ?: colorScheme.primary.copy(
-                                alpha = ChordsTheme.interaction.hoveredStateAlpha
-                            )
-                        ) {
-                            changeSelectedEntity(value)
-                        }
+                items(
+                    items = entities,
+                    key = { extractEntityId(it) }
+                ) { value ->
+                    val selected = isSelected(value)
+                    ContentTableRow(
+                        entity = value,
+                        columnsLayout = columnsLayout,
+                        modifier = contentTableRowModifier(value, selected),
+                        selected = selected,
+                        height = rowHeight ?: ChordsTheme.dimensions.tableRowHeight,
+                        maxHeight = ChordsTheme.dimensions.tableRowMaxHeight,
+                        selectedColor = selectedRowColor ?: colorScheme.primaryContainer,
+                        hoveredColor = hoveredRowColor ?: colorScheme.primary.copy(
+                            alpha = ChordsTheme.interaction.hoveredStateAlpha
+                        )
+                    ) {
+                        changeSelectedEntity(value)
                     }
                 }
             }
@@ -440,7 +476,8 @@ public abstract class Table<E> : Component() {
  *   relative to other columns. Must be positive. The default value is `1F`
  *   meaning that if all columns have this `weight` value, their width is equal.
  * @param padding The padding values of each cell's content in this column.
- *   By default, compact horizontal padding is applied.
+ *   By default, compact `12.dp` horizontal padding is applied, matching the
+ *   default Chords medium spacing token.
  * @param columnKey A stable identifier of the column used to keep track of the sorting state.
  *   By default, the column [name] is used.
  * @param sorting Optional sorting configuration for this column.
@@ -794,13 +831,26 @@ private fun VerticalScrollBar(
 }
 
 /**
+ * Describes the columns in a table row and an optional fixed width for the final column.
+ *
+ * The fixed width is layout metadata rather than part of a public [TableColumn] value.
+ *
+ * @param E The type of entity represented by the columns.
+ * @param columns The columns to lay out.
+ * @param lastColumnWidth A fixed width for the final column, or `null` to use its weight.
+ */
+private data class TableColumnsLayout<E>(
+    val columns: List<TableColumn<E>>,
+    val lastColumnWidth: Dp?
+)
+
+/**
  * Table row with headers.
  *
  * NOTE: the Pointer Hover API used in this method is experimental
  * in the current version of Compose (1.5.12).
  *
- * @param columns A list of column configuration objects
- *   with information about headers.
+ * @param columnsLayout The columns and any fixed width used by the final column.
  * @param sortingState The current interactive sorting state of the table.
  * @param height The header row height.
  * @param backgroundColor The header row background.
@@ -808,13 +858,13 @@ private fun VerticalScrollBar(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun <E> HeaderTableRow(
-    columns: List<TableColumn<E>>,
+    columnsLayout: TableColumnsLayout<E>,
     sortingState: TableSortingState<E>,
     height: Dp,
     backgroundColor: Color
 ) {
     TableRow(
-        columns = columns,
+        columnsLayout = columnsLayout,
         height = height,
         backgroundColor = backgroundColor,
         cellModifier = { column ->
@@ -895,11 +945,12 @@ private fun <E> HeaderCell(
 /**
  * Table row component that supports a click action.
  *
- * @param columns A list of columns from which the row consists.
+ * @param columnsLayout The columns and any fixed width used by the final column.
  * @param entity The entity to represent in a row.
  * @param modifier The [Modifier] to be applied to this row.
  * @param selected Whether this row is selected.
  * @param height The minimum row height.
+ * @param maxHeight The maximum row height.
  * @param selectedColor The selected row background.
  * @param hoveredColor The hovered row background.
  * @param onClick A callback that is triggered when a user clicks on a row.
@@ -909,38 +960,46 @@ private fun <E> HeaderCell(
 @Suppress("LongParameterList") // Row interaction states are supplied by the table look.
 private fun <E> ContentTableRow(
     entity: E,
-    columns: List<TableColumn<E>>,
+    columnsLayout: TableColumnsLayout<E>,
     modifier: Modifier,
     selected: Boolean,
     height: Dp,
+    maxHeight: Dp,
     selectedColor: Color,
     hoveredColor: Color,
     onClick: () -> Unit
 ) {
     var hovered by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
     val backgroundColor = when {
         selected -> selectedColor
         hovered -> hoveredColor
         else -> Color.Transparent
     }
     TableRow(
-        columns = columns,
+        columnsLayout = columnsLayout,
         height = height,
         backgroundColor = backgroundColor,
         modifier = Modifier
             .then(modifier)
             .onPointerEvent(Enter) { hovered = true }
             .onPointerEvent(Exit) { hovered = false }
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
+        maxHeight = maxHeight,
     ) { column -> column.cellContent(entity) }
 }
 
 /**
  * Table row component.
  *
- * @param columns A list of columns from which the row consists.
+ * @param columnsLayout The columns and any fixed width used by the final column.
  * @param modifier The [Modifier] to be applied to this row.
  * @param height The minimum height of the row.
+ * @param maxHeight The maximum height of the row, or `null` for no maximum.
  * @param backgroundColor The row background.
  * @param cellModifier A callback that provides an additional [Modifier]
  *   for each individual cell.
@@ -950,34 +1009,49 @@ private fun <E> ContentTableRow(
 @Composable
 @Suppress("LongParameterList") // Keeps the shared header and content row layout consistent.
 private fun <E> TableRow(
-    columns: List<TableColumn<E>>,
+    columnsLayout: TableColumnsLayout<E>,
     modifier: Modifier = Modifier,
     height: Dp,
+    maxHeight: Dp? = null,
     backgroundColor: Color = Color.Transparent,
     cellModifier: (TableColumn<E>) -> Modifier = { Modifier },
     cellContent: @Composable (TableColumn<E>) -> Unit
 ) {
+    val rowHeightModifier = if (maxHeight == null) {
+        Modifier.heightIn(min = height)
+    } else {
+        Modifier.heightIn(min = height, max = maxHeight)
+    }
+    val rowContentColor = contentColorFor(backgroundColor).let {
+        if (it == Color.Unspecified) colorScheme.onSurface else it
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = height)
+            .then(rowHeightModifier)
             .height(Min)
             .then(modifier)
             .background(backgroundColor),
         horizontalArrangement = SpaceBetween,
         verticalAlignment = CenterVertically
     ) {
-        columns.forEach { column ->
+        columnsLayout.columns.forEachIndexed { index, column ->
+            val fixedWidth = if (index == columnsLayout.columns.lastIndex) {
+                columnsLayout.lastColumnWidth
+            } else {
+                null
+            }
+            val widthModifier = fixedWidth?.let { Modifier.width(it) }
+                ?: Modifier.weight(column.weight)
             Row(
-                modifier = Modifier
-                    .weight(column.weight)
+                modifier = widthModifier
                     .fillMaxHeight()
                     .then(cellModifier(column))
                     .padding(column.padding),
                 horizontalArrangement = column.horizontalArrangement,
                 verticalAlignment = CenterVertically
             ) {
-                CompositionLocalProvider(LocalContentColor provides colorScheme.onSurface) {
+                CompositionLocalProvider(LocalContentColor provides rowContentColor) {
                     ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
                         cellContent(column)
                     }
@@ -1006,10 +1080,9 @@ private fun <E> rowActionsColumn(
     rowActionsConfig: RowActionsConfig<E>,
     onRowActionsClicked: (E) -> Unit
 ): TableColumn<E> {
-    return TableColumn(
+    return TableColumn<E>(
         name = "",
         horizontalArrangement = End,
-        weight = 0.2F,
         padding = rowActionsConfig.buttonPadding
     ) { entity ->
         val rowActionsVisible = remember { mutableStateOf(false) }

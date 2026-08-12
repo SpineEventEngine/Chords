@@ -84,6 +84,7 @@ internal class ChordsThemeSpec {
         dimensions.controlHeight shouldBe 44.dp
         dimensions.dropdownItemHeight shouldBe 40.dp
         dimensions.tableRowHeight shouldBe 40.dp
+        dimensions.tableRowMaxHeight shouldBe 100.dp
         dimensions.navigationItemHeight shouldBe 40.dp
     }
 

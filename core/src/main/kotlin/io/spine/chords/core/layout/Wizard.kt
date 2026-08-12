@@ -69,6 +69,7 @@ import io.spine.chords.core.keyboard.on
 import io.spine.chords.core.primitive.HorizontalScrollbar
 import io.spine.chords.core.primitive.VerticalScrollbar
 import io.spine.chords.core.styling.ChordsTheme
+import io.spine.chords.core.styling.defaultDimensions
 
 /**
  * The base class for creating a multi-step form component known as a wizard.
@@ -108,24 +109,33 @@ public abstract class Wizard : Component() {
     /**
      * Appearance and size values unique to a wizard.
      *
-     * @property width The width of the wizard content pane.
-     * @property minHeight The minimum height of the wizard content pane.
-     * @property maxHeight The maximum height of the wizard content pane.
-     * @property padding The inset around wizard content.
+     * The spacing constructor defaults use the default Chords scale. When a
+     * [Look] is assigned to [Wizard.look], each unchanged spacing value follows
+     * the corresponding token from the active theme.
+     *
+     * @property width The width of the wizard content pane. Defaults to `720.dp`.
+     * @property minHeight The minimum content-pane height. Defaults to `420.dp`.
+     * @property maxHeight The maximum content-pane height. Defaults to `760.dp`.
+     * @property padding The inset around wizard content. Defaults to `32.dp`.
      * @property sectionSpacing The gap between the title, page, and actions.
+     *   Defaults to `16.dp`.
      * @property buttonSpacing The gap between adjacent navigation buttons.
+     *   Defaults to `8.dp`.
      */
     public data class Look(
         public val width: Dp = 720.dp,
         public val minHeight: Dp = 420.dp,
         public val maxHeight: Dp = 760.dp,
-        public val padding: Dp = 32.dp,
-        public val sectionSpacing: Dp = 16.dp,
-        public val buttonSpacing: Dp = 8.dp
+        public val padding: Dp = defaultDimensions.spacingXXLarge,
+        public val sectionSpacing: Dp = defaultDimensions.spacingLarge,
+        public val buttonSpacing: Dp = defaultDimensions.spacingSmall
     )
 
     /**
      * Specifies appearance-related values that are unique to this wizard.
+     *
+     * Spacing values left at their [Look] defaults follow the corresponding
+     * Chords theme tokens. Customized values take precedence independently.
      */
     public var look: Look = Look()
 
@@ -340,21 +350,30 @@ public abstract class Wizard : Component() {
     }
 
     /**
-     * Resolves an unchanged default look against the active theme spacing.
+     * Resolves default-valued spacing against the active theme.
      *
      * @return The appearance values to use for the current composition.
      */
     @Composable
     private fun resolvedLook(): Look {
-        return if (look == Look()) {
-            look.copy(
-                padding = ChordsTheme.dimensions.spacingXXLarge,
-                sectionSpacing = ChordsTheme.dimensions.spacingLarge,
-                buttonSpacing = ChordsTheme.dimensions.spacingSmall
-            )
-        } else {
-            look
-        }
+        val defaultLook = Look()
+        return look.copy(
+            padding = if (look.padding == defaultLook.padding) {
+                ChordsTheme.dimensions.spacingXXLarge
+            } else {
+                look.padding
+            },
+            sectionSpacing = if (look.sectionSpacing == defaultLook.sectionSpacing) {
+                ChordsTheme.dimensions.spacingLarge
+            } else {
+                look.sectionSpacing
+            },
+            buttonSpacing = if (look.buttonSpacing == defaultLook.buttonSpacing) {
+                ChordsTheme.dimensions.spacingSmall
+            } else {
+                look.buttonSpacing
+            }
+        )
     }
 
     /**

@@ -34,7 +34,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -222,7 +222,7 @@ public class DateTimeField : InputField<Timestamp>() {
      */
     @Composable
     @ReadOnlyComposable
-    override fun defaultTextStyle(): TextStyle = MaterialTheme.typography.bodyMedium.copy(
+    override fun defaultTextStyle(): TextStyle = LocalTextStyle.current.copy(
         fontFamily = Monospace
     )
 

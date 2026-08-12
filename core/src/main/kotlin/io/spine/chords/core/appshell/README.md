@@ -22,7 +22,9 @@ See the details in the [Application](Application.kt) and
 `Application` installs the compact Chords Material 3 theme around all window
 and dialog content. Override `ApplicationTheme` to replace its color scheme,
 typography, shapes, desktop dimensions, or interaction values. The default
-theme follows the operating system's light or dark appearance.
+theme selects its initial light or dark palette from the operating system
+appearance. It does not observe later system appearance changes; override
+`ApplicationTheme` when the application needs a live theme switch.
 
 ### Standard application view layout
 

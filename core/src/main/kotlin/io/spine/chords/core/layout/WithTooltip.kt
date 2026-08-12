@@ -72,6 +72,10 @@ public fun WithTooltip(
 /**
  * Displays the given `content` with assigning a tooltip for it.
  *
+ * This overload adds a text-color override while the original five-parameter
+ * function remains available for source and binary compatibility. The required
+ * [tooltipContentColor] keeps calls to the two overloads unambiguous.
+ *
  * @param tooltip
  *         the text shown when the mouse hovers over the content.
  * @param modifier

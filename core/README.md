@@ -9,7 +9,10 @@ Chords applications use a compact Material 3 desktop theme by default. It
 provides neutral work surfaces, semantic light and dark color schemes,
 restrained corner radii, compact typography, and shared dimensions for common
 controls, navigation, tables, dialogs, and supporting panes. The dark scheme is
-selected automatically when the operating system uses dark appearance.
+selected from the operating system appearance observed at application startup.
+Changes to the system appearance while the application is running are not
+observed automatically; override `ApplicationTheme` when the application needs
+a live theme switch.
 
 The standard Material values are available through `MaterialTheme`. Desktop
 values that Material does not define are available through

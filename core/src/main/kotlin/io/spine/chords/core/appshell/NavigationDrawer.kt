@@ -26,7 +26,11 @@
 
 package io.spine.chords.core.appshell
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -40,8 +44,6 @@ import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.CurrentScreen
@@ -61,54 +63,54 @@ public fun NavigationDrawer(
     topPadding: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val dividerColor = MaterialTheme.colorScheme.outlineVariant
     PermanentNavigationDrawer(
         modifier = Modifier.padding(top = topPadding),
         drawerContent = {
-            PermanentDrawerSheet(
-                modifier = modifier
-                    .width(ChordsTheme.dimensions.navigationWidth)
-                    .drawBehind {
-                        val thickness = 1.dp.toPx()
-                        val x = size.width - thickness / 2
-                        drawLine(
-                            color = dividerColor,
-                            start = Offset(x, 0f),
-                            end = Offset(x, size.height),
-                            strokeWidth = thickness
-                        )
-                    },
-                drawerContainerColor = MaterialTheme.colorScheme.surface
+            Row(
+                modifier = modifier.width(ChordsTheme.dimensions.navigationWidth)
             ) {
-                Spacer(modifier = Modifier.height(ChordsTheme.dimensions.spacingSmall))
-                appViews.forEach { view ->
-                    NavigationDrawerItem(
-                        icon = { Icon(view.icon, contentDescription = null) },
-                        label = { Text(view.name) },
-                        selected = app.ui.currentView == view,
-                        onClick = { app.ui.select(view) },
-                        modifier = Modifier
-                            .padding(
-                                horizontal = ChordsTheme.dimensions.spacingSmall,
-                                vertical = ChordsTheme.dimensions.spacingXSmall
+                PermanentDrawerSheet(
+                    modifier = Modifier
+                        .weight(1F)
+                        .fillMaxHeight(),
+                    drawerContainerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    Spacer(modifier = Modifier.height(ChordsTheme.dimensions.spacingSmall))
+                    appViews.forEach { view ->
+                        NavigationDrawerItem(
+                            icon = { Icon(view.icon, contentDescription = null) },
+                            label = { Text(view.name) },
+                            selected = app.ui.currentView == view,
+                            onClick = { app.ui.select(view) },
+                            modifier = Modifier
+                                .padding(
+                                    horizontal = ChordsTheme.dimensions.spacingSmall,
+                                    vertical = ChordsTheme.dimensions.spacingXSmall
+                                )
+                                .heightIn(min = ChordsTheme.dimensions.navigationItemHeight),
+                            shape = MaterialTheme.shapes.small,
+                            colors = NavigationDrawerItemDefaults.colors(
+                                selectedContainerColor =
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                selectedIconColor =
+                                    MaterialTheme.colorScheme.onPrimaryContainer,
+                                selectedTextColor =
+                                    MaterialTheme.colorScheme.onPrimaryContainer,
+                                unselectedContainerColor = MaterialTheme.colorScheme.surface,
+                                unselectedIconColor =
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor =
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            .heightIn(min = ChordsTheme.dimensions.navigationItemHeight),
-                        shape = MaterialTheme.shapes.small,
-                        colors = NavigationDrawerItemDefaults.colors(
-                            selectedContainerColor =
-                                MaterialTheme.colorScheme.primaryContainer,
-                            selectedIconColor =
-                                MaterialTheme.colorScheme.onPrimaryContainer,
-                            selectedTextColor =
-                                MaterialTheme.colorScheme.onPrimaryContainer,
-                            unselectedContainerColor = MaterialTheme.colorScheme.surface,
-                            unselectedIconColor =
-                                MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor =
-                                MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    )
+                    }
                 }
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(1.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
             }
         },
         content = { CurrentScreen() }

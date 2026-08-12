@@ -64,6 +64,7 @@ import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.layout.WindowType.DesktopWindow
 import io.spine.chords.core.styling.ChordsTheme
+import io.spine.chords.core.styling.defaultDimensions
 
 /**
  * A shortcut (key combination), which invokes dialog submission.
@@ -285,6 +286,10 @@ public abstract class Dialog : Component() {
 
     /**
      * Specifies appearance-related parameters.
+     *
+     * Each value left at its [Look] default follows the corresponding Chords
+     * theme token. Customized values take precedence independently, so changing
+     * one value does not detach the other values from the active theme.
      */
     public var look: Look = Look()
 
@@ -310,44 +315,65 @@ public abstract class Dialog : Component() {
     /**
      * An object allowing adjustments of visual appearance parameters.
      *
-     * @param padding The padding applied to the entire content of the dialog.
-     * @param titlePadding The padding applied to the title of the dialog.
-     * @param buttonsPanelPadding The padding applied to the buttons panel of
-     *   the dialog.
-     * @param buttonsSpacing The space between the buttons of the dialog.
+     * These constructor defaults use the default Chords spacing scale. When a
+     * [Look] is assigned to [Dialog.look], each unchanged value follows the
+     * corresponding token from the active theme.
+     *
+     * @property padding The padding applied to the entire content of the dialog.
+     *   Defaults to `24.dp` on every side.
+     * @property titlePadding The padding applied to the title of the dialog.
+     *   Defaults to `16.dp` at the bottom and zero on the other sides.
+     * @property buttonsPanelPadding The padding applied to the buttons panel of
+     *   the dialog. Defaults to `24.dp` at the top and zero on the other sides.
+     * @property buttonsSpacing The space between the buttons of the dialog.
+     *   Defaults to `12.dp`.
      */
     public data class Look(
-        public var padding: PaddingValues = PaddingValues(24.dp),
-        public var titlePadding: PaddingValues = PaddingValues(bottom = 16.dp),
-        public var buttonsPanelPadding: PaddingValues = PaddingValues(top = 24.dp),
-        public var buttonsSpacing: Dp = 12.dp
+        public var padding: PaddingValues = PaddingValues(defaultDimensions.spacingXLarge),
+        public var titlePadding: PaddingValues = PaddingValues(
+            bottom = defaultDimensions.spacingLarge
+        ),
+        public var buttonsPanelPadding: PaddingValues = PaddingValues(
+            top = defaultDimensions.spacingXLarge
+        ),
+        public var buttonsSpacing: Dp = defaultDimensions.spacingMedium
     )
 
     /**
      * Resolves the dialog look against the active theme.
      *
-     * An unchanged default [Look] follows the global Chords spacing scale. A
-     * customized look retains its component-specific values and takes
-     * precedence over the theme.
+     * Values left at their [Look] defaults follow the global Chords spacing
+     * scale, while customized values take precedence independently.
      *
      * @return The appearance values to use for the current composition.
      */
     @Composable
     internal fun resolvedLook(): Look {
-        return if (look == Look()) {
-            Look(
-                padding = PaddingValues(ChordsTheme.dimensions.spacingXLarge),
-                titlePadding = PaddingValues(
-                    bottom = ChordsTheme.dimensions.spacingLarge
-                ),
-                buttonsPanelPadding = PaddingValues(
-                    top = ChordsTheme.dimensions.spacingXLarge
-                ),
-                buttonsSpacing = ChordsTheme.dimensions.spacingMedium
-            )
-        } else {
-            look
-        }
+        val defaultLook = Look()
+        return look.copy(
+            padding = if (look.padding == defaultLook.padding) {
+                PaddingValues(ChordsTheme.dimensions.spacingXLarge)
+            } else {
+                look.padding
+            },
+            titlePadding = if (look.titlePadding == defaultLook.titlePadding) {
+                PaddingValues(bottom = ChordsTheme.dimensions.spacingLarge)
+            } else {
+                look.titlePadding
+            },
+            buttonsPanelPadding = if (
+                look.buttonsPanelPadding == defaultLook.buttonsPanelPadding
+            ) {
+                PaddingValues(top = ChordsTheme.dimensions.spacingXLarge)
+            } else {
+                look.buttonsPanelPadding
+            },
+            buttonsSpacing = if (look.buttonsSpacing == defaultLook.buttonsSpacing) {
+                ChordsTheme.dimensions.spacingMedium
+            } else {
+                look.buttonsSpacing
+            }
+        )
     }
 
     /**

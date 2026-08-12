@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
@@ -132,16 +133,14 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
 
     /**
      * A [TextFieldColors] instance, which defines the color scheme for
-     * the selector's field. If it is not assigned, colors are resolved from
-     * the current theme on every composition.
+     * the selector's field.
+     *
+     * When left unassigned, colors are resolved from the current theme during
+     * composition without initializing this property. Therefore, reading it is
+     * only valid after assigning a custom value; use
+     * `::fieldColors.isInitialized` to distinguish that case.
      */
-    public var fieldColors: TextFieldColors
-        get() = customFieldColors ?: checkNotNull(currentThemeFieldColors) {
-            "The dropdown selector has not been composed and has no custom colors."
-        }
-        set(value) {
-            customFieldColors = value
-        }
+    public lateinit var fieldColors: TextFieldColors
 
     /**
      * A text style for the selector field, or `null` to use the theme default.
@@ -178,21 +177,11 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     private var dirty = false
 
     /**
-     * A component-specific colors override, or `null` while theme colors apply.
-     */
-    private var customFieldColors: TextFieldColors? by mutableStateOf(null)
-
-    /**
-     * The most recently composed theme colors, retained for property reads.
-     */
-    private var currentThemeFieldColors: TextFieldColors? = null
-
-    /**
      * The field's text style based on whether a drop-down item
      * is selected or not.
      */
     private val fieldTextStyle: TextStyle @Composable get() {
-        return textStyle ?: MaterialTheme.typography.bodyMedium
+        return textStyle ?: LocalTextStyle.current
     }
 
     /**
@@ -224,8 +213,11 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
 
     @Composable
     override fun content(): Unit = recompositionWorkaround {
-        currentThemeFieldColors = OutlinedTextFieldDefaults.colors()
-        val selectorColors = customFieldColors ?: checkNotNull(currentThemeFieldColors)
+        val selectorColors = if (::fieldColors.isInitialized) {
+            fieldColors
+        } else {
+            OutlinedTextFieldDefaults.colors()
+        }
         val fieldText = getFieldText(searchString)
 
         SideEffect {
@@ -255,11 +247,6 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     @OptIn(ExperimentalComposeUiApi::class)
     private fun DropdownListBoxScope.SelectorField(selectorColors: TextFieldColors) {
         val validationErrorText = externalValidationMessage?.value
-        if (validationErrorText == null) {
-            SideEffect {
-                adjustPositionBasedOnSupportingTextHeight(0)
-            }
-        }
         OutlinedTextField(
             value = TextFieldValue(getFieldText(searchString), selection),
             singleLine = true,
@@ -267,7 +254,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
             enabled = enabled,
             label = { Text(text = label) },
             isError = validationErrorText != null,
-            supportingText = validationErrorText?.let {
+            supportingText = (validationErrorText ?: "").let {
                 {
                     Text(
                         text = it,

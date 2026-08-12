@@ -88,6 +88,9 @@ public fun CheckboxWithText(
 /**
  * A styled overload of [CheckboxWithText] with layout and text overrides.
  *
+ * The original overload remains unchanged for source and binary compatibility.
+ * The required [modifier] keeps calls to the two overloads unambiguous.
+ *
  * @param checked Indicates whether the checkbox is checked.
  * @param onChange Invoked when the user tries to change the checked state.
  * @param text A text displayed to the right of the checkbox.
@@ -196,6 +199,9 @@ public fun CheckboxWithText(
 
 /**
  * A state-backed styled overload of [CheckboxWithText].
+ *
+ * The original state-backed overload remains unchanged for source and binary
+ * compatibility. The required [modifier] keeps overload resolution unambiguous.
  *
  * @param checked The state that stores the checked value.
  * @param onChange Invoked after the checked value changes.

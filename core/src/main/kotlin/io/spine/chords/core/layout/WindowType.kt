@@ -107,20 +107,34 @@ public sealed class WindowType {
      * as a separate desktop window.
      *
      * @param resizable Specifies whether the window can be resized by the user.
-     * @param containerColor The content background, or [Unspecified] to use the
-     *   current Material surface color.
      */
-    public open class DesktopWindow(
-        public val resizable: Boolean = false,
-        public val containerColor: Color = Unspecified
-    ) : WindowType() {
+    public open class DesktopWindow(public val resizable: Boolean = false) : WindowType() {
 
         /**
-         * Creates a desktop dialog window with the theme surface color.
+         * The content background, or [Unspecified] to use the current Material
+         * surface color.
+         */
+        public val containerColor: Color
+            get() = customContainerColor
+
+        /**
+         * Stores the content background supplied to the extended constructor.
+         */
+        private var customContainerColor: Color = Unspecified
+
+        /**
+         * Creates a desktop window with a configurable content background.
          *
          * @param resizable Specifies whether the window can be resized.
+         * @param containerColor The content background, or [Unspecified] to use
+         *   the current Material surface color.
          */
-        public constructor(resizable: Boolean) : this(resizable, Unspecified)
+        public constructor(
+            resizable: Boolean,
+            containerColor: Color
+        ) : this(resizable) {
+            customContainerColor = containerColor
+        }
 
         @Composable
         override fun dialogWindow(dialog: Dialog) {
@@ -249,36 +263,82 @@ public sealed class WindowType {
      * @param backdropColor The color of the surface that covers the entire
      *   content of the current desktop window behind the dialog's modal popup
      *   displayed in this window, or [Unspecified] to use the theme scrim.
-     * @param containerColor The dialog surface, or [Unspecified] to use the
-     *   current Material surface color.
-     * @param shape The dialog shape, or `null` to use the current Material
-     *   large shape.
-     * @param shadowElevation The dialog shadow elevation.
-     * @param borderColor The dialog border, or [Unspecified] to use the
-     *   current Material outline variant.
      */
-    @Suppress("LongParameterList") // These are independent visual override points.
     public open class LightweightWindow(
-        public val backdropColor: Color = Unspecified,
-        public val containerColor: Color = Unspecified,
-        public val shape: Shape? = null,
-        public val shadowElevation: Dp = 16.dp,
-        public val borderColor: Color = Unspecified
+        public val backdropColor: Color = Unspecified
     ) : WindowType() {
 
         /**
-         * Creates a lightweight dialog with a custom backdrop and theme-based
-         * frame appearance.
+         * The dialog surface, or [Unspecified] to use the current Material
+         * surface color.
+         */
+        public val containerColor: Color
+            get() = customContainerColor
+
+        /**
+         * The dialog shape, or `null` to use the current Material large shape.
+         */
+        public val shape: Shape?
+            get() = customShape
+
+        /**
+         * The dialog shadow elevation.
+         */
+        public val shadowElevation: Dp
+            get() = customShadowElevation
+
+        /**
+         * The dialog border, or [Unspecified] to use the current Material
+         * outline variant.
+         */
+        public val borderColor: Color
+            get() = customBorderColor
+
+        /**
+         * Stores the dialog surface supplied to the extended constructor.
+         */
+        private var customContainerColor: Color = Unspecified
+
+        /**
+         * Stores the dialog shape supplied to the extended constructor.
+         */
+        private var customShape: Shape? = null
+
+        /**
+         * Stores the shadow elevation supplied to the extended constructor.
+         */
+        private var customShadowElevation: Dp = 16.dp
+
+        /**
+         * Stores the border color supplied to the extended constructor.
+         */
+        private var customBorderColor: Color = Unspecified
+
+        /**
+         * Creates a lightweight dialog with configurable frame appearance.
          *
          * @param backdropColor The modal backdrop color.
+         * @param containerColor The dialog surface, or [Unspecified] to use the
+         *   current Material surface color.
+         * @param shape The dialog shape, or `null` to use the current Material
+         *   large shape.
+         * @param shadowElevation The dialog shadow elevation.
+         * @param borderColor The dialog border, or [Unspecified] to use the
+         *   current Material outline variant.
          */
-        public constructor(backdropColor: Color) : this(
-            backdropColor = backdropColor,
-            containerColor = Unspecified,
-            shape = null,
-            shadowElevation = 16.dp,
-            borderColor = Unspecified
-        )
+        @Suppress("LongParameterList") // These are independent visual override points.
+        public constructor(
+            backdropColor: Color,
+            containerColor: Color,
+            shape: Shape?,
+            shadowElevation: Dp,
+            borderColor: Color
+        ) : this(backdropColor) {
+            customContainerColor = containerColor
+            customShape = shape
+            customShadowElevation = shadowElevation
+            customBorderColor = borderColor
+        }
 
         @Composable
         override fun dialogWindow(dialog: Dialog) {

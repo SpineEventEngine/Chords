@@ -902,6 +902,8 @@ public class DropdownListBox<I> : Component() {
     @Composable
     @Suppress("LongMethod") // Keeps selection ordering and item rendering in one list pass.
     private fun BoxScope.DropdownListContent() {
+        val resolvedItemMinHeight =
+            itemMinHeight ?: ChordsTheme.dimensions.dropdownItemHeight
         Column(
             modifier = Modifier
                 .width(MinWidth)
@@ -923,7 +925,7 @@ public class DropdownListBox<I> : Component() {
                         } else {
                             null
                         },
-                        itemMinHeight = itemMinHeight ?: ChordsTheme.dimensions.dropdownItemHeight,
+                        itemMinHeight = resolvedItemMinHeight,
                         onMeasureHeight = { measuredHeight ->
                             noneItemHeight = measuredHeight
                         },
@@ -955,14 +957,14 @@ public class DropdownListBox<I> : Component() {
                             itemHeights[index] = measuredHeight
                         },
                         color = color,
-                        itemMinHeight = itemMinHeight ?: ChordsTheme.dimensions.dropdownItemHeight
+                        itemMinHeight = resolvedItemMinHeight
                     ) {
                         itemContent(item)
                     }
                 }
             } else {
                 DropdownListNoItems(
-                    itemMinHeight = itemMinHeight ?: ChordsTheme.dimensions.dropdownItemHeight,
+                    itemMinHeight = resolvedItemMinHeight,
                     content = noItemsContent
                 )
             }
