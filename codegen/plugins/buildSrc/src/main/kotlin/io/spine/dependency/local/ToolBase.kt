@@ -36,6 +36,7 @@ object ToolBase {
     const val group = Spine.toolsGroup
     const val version = "2.0.0-SNAPSHOT.376"
     const val dogfoodingVersion = "2.0.0-SNAPSHOT.376"
+    const val intellijPlatformVersion = "2.0.0-SNAPSHOT.333"
 
     const val lib = "$group:tool-base:$version"
     const val oldLib = "$group:spine-tool-base:2.0.0-SNAPSHOT.332"
@@ -43,8 +44,8 @@ object ToolBase {
     const val pluginBase = "$group:plugin-base:$version"
     const val pluginTestlib = "$group:plugin-testlib:$version"
 
-    const val intellijPlatform = "$group:intellij-platform:$version"
-    const val intellijPlatformJava = "$group:intellij-platform-java:$version"
+    const val intellijPlatform = "$group:intellij-platform:$intellijPlatformVersion"
+    const val intellijPlatformJava = "$group:intellij-platform-java:$intellijPlatformVersion"
 
     const val psi = "$group:psi:$version"
     const val psiJavaArtifactName = "psi-java"

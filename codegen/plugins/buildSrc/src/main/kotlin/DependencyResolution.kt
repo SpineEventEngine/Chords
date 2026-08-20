@@ -83,6 +83,8 @@ fun doForceVersions(configurations: ConfigurationContainer) {
                     base.lib,
                     base.annotations,
                     toolBase.lib,
+                    toolBase.intellijPlatform,
+                    toolBase.intellijPlatformJava,
                     coreJvm.server,
                     protoData.pluginLib,
                     logging.lib,
