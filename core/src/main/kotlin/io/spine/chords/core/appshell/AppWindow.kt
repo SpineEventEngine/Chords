@@ -114,6 +114,12 @@ public class AppWindow(
     private var bottomDialog by mutableStateOf<Dialog?>(null)
 
     /**
+     * The bottom dialog in the current stack, or `null` when the stack is empty.
+     */
+    internal val currentBottomDialog: Dialog?
+        get() = bottomDialog
+
+    /**
      * An instance of the screen [Navigator] that will be initialized during
      * the rendering of the main window.
      */
@@ -174,22 +180,42 @@ public class AppWindow(
     internal val currentView: AppView get() = mainScreen.currentView
 
     /**
-     * Displays a modal dialog.
+     * Requests displaying a modal dialog and returns the effective instance.
      *
      * When the modal dialog is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
+     * If another instance of the same concrete runtime class is already in the
+     * dialog stack, this request is suppressed and that displayed instance is
+     * returned. Requesting an object that is already in the stack fails.
+     *
      * @param dialog An instance of the dialog that should be displayed.
+     * @return The requested instance if it was added, or the already displayed
+     *   instance of the same concrete runtime class.
+     * @throws IllegalStateException If [dialog] is already in the stack.
      */
-    internal fun openDialog(dialog: Dialog) {
-        check(bottomDialog != dialog) { "This dialog is already open." }
-
+    internal fun openDialog(dialog: Dialog): Dialog {
+        var current = bottomDialog
+        var deepestDialog: Dialog? = null
+        var sameClassDialog: Dialog? = null
+        while (current != null) {
+            check(current !== dialog) { "This dialog is already open." }
+            if (sameClassDialog == null && current.javaClass == dialog.javaClass) {
+                sameClassDialog = current
+            }
+            deepestDialog = current
+            current = current.nestedDialog
+        }
+        if (sameClassDialog != null) {
+            return sameClassDialog
+        }
         dialog.isBottomDialog = bottomDialog == null
         if (dialog.isBottomDialog) {
             bottomDialog = dialog
         } else {
-            bottomDialog!!.openNestedDialog(dialog)
+            checkNotNull(deepestDialog).nestedDialog = dialog
         }
+        return dialog
     }
 
     /**
@@ -197,25 +223,28 @@ public class AppWindow(
      *
      * This is a part of an internal dialog management API.
      *
+     * A request to close an object that is not in the current stack is a no-op.
+     * Dialogs in the stack are matched by reference identity.
+     *
      * @param dialog The dialog that needs to be closed.
      * @throws IllegalStateException If the dialog cannot be closed due to a
      *   nested modal dialog that is currently open.
      */
     internal fun closeDialog(dialog: Dialog) {
-        checkNotNull(bottomDialog) { "No dialogs are displayed currently." }
-        if (dialog == bottomDialog) {
-            val nestedDialog = bottomDialog!!.nestedDialog
+        val bottom = bottomDialog ?: return
+        if (dialog === bottom) {
+            val nestedDialog = bottom.nestedDialog
             if (nestedDialog != null) {
                 if (nestedDialog.dismissibleWithParent) {
                     nestedDialog.close()
                 } else {
                     error("Cannot close a dialog ${dialog.javaClass.simpleName} while it has a " +
-                            "nested dialog open: ${dialog.nestedDialog!!.javaClass.simpleName}.")
+                            "nested dialog open: ${nestedDialog.javaClass.simpleName}.")
                 }
             }
             bottomDialog = null
         } else {
-            bottomDialog!!.closeNestedDialog(dialog)
+            bottom.closeNestedDialog(dialog)
         }
     }
 }

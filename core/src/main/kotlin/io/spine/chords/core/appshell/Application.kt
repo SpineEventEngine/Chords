@@ -210,7 +210,7 @@ public open class Application(
                     mainWindowVisible = false
                     exitApplication()
                 })
-                _ui = ApplicationUI(appWindow)
+                initializeUi(appWindow)
                 appWindow.mainScreen.topBar.actions = { topBarActions() }
                 appWindow
             }
@@ -218,6 +218,16 @@ public open class Application(
                 appWindowContent(appWindow)
             }
         }
+    }
+
+    /**
+     * Initializes this application's UI API for the given window.
+     *
+     * @param appWindow The window managed through the initialized API.
+     */
+    internal fun initializeUi(appWindow: AppWindow) {
+        check(_ui == null) { "The application UI has already been initialized." }
+        _ui = ApplicationUI(appWindow)
     }
 
     /**
@@ -341,10 +351,19 @@ internal constructor(private val appWindow: AppWindow) {
     public val currentView: AppView get() = appWindow.currentView
 
     /**
-     * Displays the given [Dialog] instance.
+     * The bottom dialog in the current stack, or `null` when none is displayed.
+     */
+    internal val currentBottomDialog: Dialog?
+        get() = appWindow.currentBottomDialog
+
+    /**
+     * Requests displaying the given [Dialog] and returns the effective instance.
      *
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
+     * A request for another instance of a concrete dialog class already in the
+     * stack is suppressed and yields the displayed instance. Requesting an
+     * object that is already displayed fails.
      *
      * It is designed to be used only as an internal low-level API, for dialog
      * implementation to be able to display themselves. In regular application
@@ -370,21 +389,21 @@ internal constructor(private val appWindow: AppWindow) {
      * ```
      *
      * @param dialog The [Dialog] instance, which needs to be displayed.
+     * @return The requested dialog if it was added, or the already displayed
+     *   instance of the same concrete runtime class.
+     * @throws IllegalStateException If [dialog] is already displayed.
      *
      * @see Dialog
      * @see DialogSetup
      * @see closeDialog
      */
-    internal fun openDialog(dialog: Dialog) {
-        appWindow.openDialog(dialog)
-    }
+    internal fun openDialog(dialog: Dialog): Dialog = appWindow.openDialog(dialog)
 
     /**
-     * Closes the specified dialog if it doesn't have any nested
-     * dialogs displayed.
+     * Closes the specified displayed dialog if it has no blocking nested dialog.
      *
      * Note that this method ignores any data that might have been entered
-     * in it.
+     * in it. A dialog that is not in the current stack is ignored.
      *
      * On a par with [openDialog], this is a part of an internal API for
      * [Dialog]s to be able to control their display lifecycle.

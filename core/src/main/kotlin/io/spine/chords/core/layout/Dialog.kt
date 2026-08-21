@@ -142,6 +142,12 @@ private val LocalDialogContentHeightMode = staticCompositionLocalOf {
  *     }
  * ```
  *
+ * Only one instance of the same concrete dialog class can be displayed in the
+ * dialog stack at a time. Repeating the request while one is displayed leaves
+ * its original configuration unchanged. A companion [DialogSetup.open] call
+ * returns that displayed instance and discards the new request's properties.
+ * Distinct concrete dialog classes may still be nested without a depth limit.
+ *
  * The dialog will be closed automatically, when the "Cancel" button is pressed,
  * or when the "OK" button is pressed (and [submitContent] returns `true`).
  *
@@ -458,7 +464,7 @@ public abstract class Dialog : Component() {
         set(value) { cancelAvailable = value }
 
     /**
-     * Displays the modal dialog.
+     * Requests displaying the modal dialog.
      *
      * NOTE: this method is mainly useful only in cases when you need to
      * instantiate a dialog's instance separately from displaying it for
@@ -470,14 +476,36 @@ public abstract class Dialog : Component() {
      * ```
      *     MyDialog.open()
      * ```
+     *
+     * If a different instance of this dialog's concrete runtime class is
+     * already displayed, this request is suppressed. Use [DialogSetup.open]
+     * when the caller needs the effective displayed instance.
+     *
+     * Requesting this same object again while it is displayed fails fast.
+     *
+     * @throws IllegalStateException If this object is already displayed.
      */
     public fun open() {
-        app.ui.openDialog(this)
+        openAndGetDisplayed()
+    }
+
+    /**
+     * Requests displaying this dialog and returns the effective instance.
+     *
+     * @return This object if it was added, or the already displayed instance
+     *   of the same concrete runtime class when this request was suppressed.
+     */
+    internal fun openAndGetDisplayed(): Dialog {
+        return app.ui.openDialog(this)
     }
 
     /**
      * Closes the dialog while ignoring any data that might have been
      * possibly entered in the dialog currently.
+     *
+     * Calling this method on a dialog outside the displayed stack is a no-op.
+     * This includes an instance whose display request was suppressed in favor
+     * of another object of the same concrete class.
      *
      * @throws IllegalStateException If the dialog cannot be closed due to a
      *   nested modal dialog that is currently open.
@@ -683,47 +711,26 @@ public abstract class Dialog : Component() {
     }
 
     /**
-     * A part of internal application's machinery for displaying nested dialogs.
+     * Closes the given dialog when it is nested anywhere inside this one.
      *
-     * Technically, displays an inner dialog inside of this one. Should not be
-     * invoked directly as it's invoked automatically by
-     * [AppWindow.openDialog][io.spine.chords.core.appshell.AppWindow.openDialog],
-     * which in turn is invoked by the [open] method.
-     *
-     * @see closeNestedDialog
-     * @see open
-     */
-    internal fun openNestedDialog(dialog: Dialog) {
-        check(nestedDialog != dialog) { "This dialog is already open." }
-        if (nestedDialog == null) {
-            nestedDialog = dialog
-        } else {
-            nestedDialog!!.openNestedDialog(dialog)
-        }
-    }
-
-    /**
-     * A part of internal application's machinery for displaying nested dialogs.
-     *
-     * This method complements [openNestedDialog] for this purpose. See its
-     * description for details.
-     *
-     * @see openNestedDialog
+     * A dialog absent from this nested chain is ignored. Stack membership is
+     * determined by reference identity.
      */
     internal fun closeNestedDialog(dialog: Dialog) {
-        checkNotNull(nestedDialog) { "This dialog is not displayed currently." }
-        if (dialog == nestedDialog) {
-            if (dialog.nestedDialog != null) {
-                if (dialog.nestedDialog!!.dismissibleWithParent) {
-                    dialog.nestedDialog!!.close()
+        val currentNestedDialog = nestedDialog ?: return
+        if (dialog === currentNestedDialog) {
+            val childDialog = dialog.nestedDialog
+            if (childDialog != null) {
+                if (childDialog.dismissibleWithParent) {
+                    childDialog.close()
                 } else {
                     error("Cannot close a dialog ${dialog.javaClass.simpleName} while it has a " +
-                          "nested dialog open: ${dialog.nestedDialog!!.javaClass.simpleName}.")
+                          "nested dialog open: ${childDialog.javaClass.simpleName}.")
                 }
             }
             nestedDialog = null
         } else {
-            nestedDialog!!.closeNestedDialog(dialog)
+            currentNestedDialog.closeNestedDialog(dialog)
         }
     }
 }
@@ -740,10 +747,10 @@ public abstract class Dialog : Component() {
  *     MyDialog.open()
  * ```
  *
- * Under the hood, such an expression technically means creating an instance of
- * dialog [D] (`MyDialog` in this case), and then invoking the
- * [open][Dialog.open] method on that instance (note that it's a separate method
- * from this one).
+ * Under the hood, such an expression creates a candidate instance of dialog
+ * [D] (`MyDialog` in this case) and requests displaying it. If another object
+ * of the same concrete runtime class is already displayed, that object is
+ * returned instead and the candidate's properties are discarded.
  *
  * See the [Dialog]'s documentation for a usage example in context of
  * a dialog implementation.
@@ -774,11 +781,16 @@ public open class DialogSetup<D: Dialog>(
      *
      * @param props A lambda, which configures (assigns)
      *   the dialog's properties.
+     * @return The newly displayed dialog, or the existing displayed instance
+     *   of the same concrete runtime class when the request was suppressed.
      */
     public fun open(props: Props<D>? = null): D {
         val dialog = create(config = props)
-        dialog.open()
-        return dialog
+        // Suppression substitutes only the candidate's exact runtime class,
+        // which is necessarily an instance of the companion's type `D`.
+        @Suppress("UNCHECKED_CAST")
+        val effectiveDialog = dialog.openAndGetDisplayed() as D
+        return effectiveDialog
     }
 }
 

@@ -66,6 +66,10 @@ public class MessageDialog : Dialog() {
          * ```
          *     showMessage("An error has occurred: ...")
          * ```
+         *
+         * If another message dialog is already displayed, this call returns
+         * immediately. The displayed dialog keeps its original message and
+         * properties; the new message and properties are discarded.
          */
         public suspend fun showMessage(
             message: String,
@@ -96,18 +100,30 @@ public class MessageDialog : Dialog() {
         cancelAvailable = false
     }
 
+    /**
+     * Displays this message dialog and waits until the user dismisses it.
+     *
+     * If another [MessageDialog] is already displayed, this call returns
+     * immediately and does not replace that dialog's message or properties.
+     */
     public suspend fun showMessage() {
+        val displayedDialog = openAndGetDisplayed()
+        if (displayedDialog !== this) {
+            return
+        }
+
         val dialogClosure = CompletableDeferred<Unit>()
         onBeforeSubmit = {
             dialogClosure.complete(Unit)
             true
         }
-
-        open()
         dialogClosure.await()
     }
 
-    override suspend fun submitContent() {
+    /**
+     * Closes the dialog because displaying the message needs no other action.
+     */
+    protected override suspend fun submitContent() {
         close()
     }
 
