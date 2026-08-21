@@ -53,33 +53,33 @@ internal class ConfirmationDialogSpec {
     fun `return false immediately for a suppressed confirmation`() {
         runBlocking {
             withTimeout(5_000) {
-                val firstResult = async {
+                val firstRequest = async {
                     ConfirmationDialog.showConfirmation()
                 }
                 yield()
                 val displayedDialog = TestApplication.currentBottomDialog
                     .shouldBeInstanceOf<ConfirmationDialog>()
 
-                val repeatedResult = ConfirmationDialog.showConfirmation()
+                val suppressedResult = ConfirmationDialog.showConfirmation()
 
-                repeatedResult shouldBe false
+                suppressedResult shouldBe false
                 displayedDialog.onBeforeSubmit() shouldBe true
                 displayedDialog.close()
-                firstResult.await() shouldBe true
+                firstRequest.await() shouldBe true
             }
         }
     }
 
     /**
-     * A failed request for the displayed object must leave the callbacks of
-     * its first request connected to the result that caller is awaiting.
+     * A failed request for the displayed instance must leave the callbacks of
+     * its first request connected to the result that the caller is awaiting.
      */
     @Test
-    fun `preserve the first request after the same instance fails to reopen`() {
+    fun `keep the first request intact when the same instance is requested again`() {
         runBlocking {
             withTimeout(5_000) {
                 val dialog = ConfirmationDialog()
-                val firstResult = async {
+                val firstRequest = async {
                     dialog.showConfirmation()
                 }
                 yield()
@@ -92,7 +92,7 @@ internal class ConfirmationDialogSpec {
                 dialog.onBeforeSubmit() shouldBe true
                 dialog.close()
 
-                firstResult.await() shouldBe true
+                firstRequest.await() shouldBe true
             }
         }
     }

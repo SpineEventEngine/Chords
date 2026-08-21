@@ -90,8 +90,9 @@ public class ConfirmationDialog : Dialog() {
          * @return `true`, if the user makes a positive decision (presses the
          *   Submit button), and `false`, if the user makes a negative decision
          *   (presses the Cancel button). Also returns `false` immediately when
-         *   another confirmation is already displayed; that dialog keeps its
-         *   original properties and eventual decision belongs to its caller.
+         *   another confirmation is already displayed. The displayed dialog
+         *   keeps its original properties, and only its caller receives the
+         *   eventual decision.
          */
         public suspend fun showConfirmation(
             props: Props<ConfirmationDialog>? = null
@@ -192,7 +193,7 @@ public class ConfirmationDialog : Dialog() {
      * displayed, without sharing that dialog's eventual decision.
      */
     public suspend fun showConfirmation(): Boolean {
-        val displayedDialog = openAndGetDisplayed()
+        val displayedDialog = openOrGetDisplayed()
         if (displayedDialog !== this) {
             return false
         }

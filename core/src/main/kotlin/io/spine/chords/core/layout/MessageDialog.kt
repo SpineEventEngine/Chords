@@ -54,8 +54,8 @@ public class MessageDialog : Dialog() {
     public companion object : AbstractComponentSetup({ MessageDialog() }) {
 
         /**
-         * Displays the text message dialog, and waits until the user
-         * dismisses it.
+         * Requests that the text message dialog be displayed and waits until the
+         * effective dialog closes.
          *
          * Here's a usage example:
          * ```
@@ -67,9 +67,9 @@ public class MessageDialog : Dialog() {
          *     showMessage("An error has occurred: ...")
          * ```
          *
-         * If another message dialog is already displayed, this call returns
-         * immediately. The displayed dialog keeps its original message and
-         * properties; the new message and properties are discarded.
+         * If another message dialog is already displayed, this call waits
+         * until that dialog closes. The displayed dialog keeps its original
+         * message and properties; the new message and properties are discarded.
          */
         public suspend fun showMessage(
             message: String,
@@ -96,28 +96,42 @@ public class MessageDialog : Dialog() {
      */
     public var message: String = ""
 
+    /**
+     * Completes when this dialog closes during the current display cycle.
+     *
+     * Calls suppressed in favor of this instance await the same completion.
+     */
+    private var closeCompletion: CompletableDeferred<Unit>? = null
+
     init {
         cancelAvailable = false
     }
 
     /**
-     * Displays this message dialog and waits until the user dismisses it.
+     * Requests that this message dialog be displayed and waits until the effective
+     * dialog closes.
      *
-     * If another [MessageDialog] is already displayed, this call returns
-     * immediately and does not replace that dialog's message or properties.
+     * If another [MessageDialog] is already displayed, this instance's message
+     * and properties are discarded, and this call waits for that dialog to
+     * close.
      */
     public suspend fun showMessage() {
-        val displayedDialog = openAndGetDisplayed()
-        if (displayedDialog !== this) {
-            return
-        }
+        val displayedDialog = openOrGetDisplayed() as MessageDialog
+        val completion = displayedDialog.closeCompletion
+            ?: CompletableDeferred<Unit>().also {
+                displayedDialog.closeCompletion = it
+            }
+        completion.await()
+    }
 
-        val dialogClosure = CompletableDeferred<Unit>()
-        onBeforeSubmit = {
-            dialogClosure.complete(Unit)
-            true
-        }
-        dialogClosure.await()
+    /**
+     * Closes this dialog and resumes callers waiting for it to close.
+     */
+    public override fun close() {
+        super.close()
+        val completion = closeCompletion
+        closeCompletion = null
+        completion?.complete(Unit)
     }
 
     /**

@@ -108,8 +108,8 @@ public class InputTextDialog : Dialog() {
          * @return An entered text value, if the user closes the dialog by
          *   pressing the submit button, or `null`, if the user cancels
          *   the input. Also returns `null` immediately when another input text
-         *   dialog is displayed; that dialog keeps its original properties
-         *   and eventual input belongs to its caller.
+         *   dialog is displayed. The displayed dialog keeps its original
+         *   properties, and only its caller receives the eventual input.
          */
         public suspend fun inputText(
             props: Props<InputTextDialog>? = null
@@ -254,7 +254,7 @@ public class InputTextDialog : Dialog() {
             dialogClosure.complete(Unit)
             true
         }
-        val displayedDialog = openAndGetDisplayed()
+        val displayedDialog = openOrGetDisplayed()
         if (displayedDialog !== this) {
             return null
         }

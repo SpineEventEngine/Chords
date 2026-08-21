@@ -52,11 +52,11 @@ internal class AppWindowSpec {
         val window = createWindow()
         val firstDialog = FirstDialog()
 
-        val firstResult = window.openDialog(firstDialog)
-        val repeatedResult = window.openDialog(FirstDialog())
+        val firstOpenResult = window.openDialog(firstDialog)
+        val repeatedOpenResult = window.openDialog(FirstDialog())
 
-        firstResult shouldBeSameInstanceAs firstDialog
-        repeatedResult shouldBeSameInstanceAs firstDialog
+        firstOpenResult shouldBeSameInstanceAs firstDialog
+        repeatedOpenResult shouldBeSameInstanceAs firstDialog
         window.currentBottomDialog shouldBeSameInstanceAs firstDialog
         firstDialog.nestedDialog shouldBe null
     }
@@ -104,11 +104,11 @@ internal class AppWindowSpec {
     }
 
     /**
-     * Suppression of another object must not weaken the fail-fast contract for
-     * the exact bottom object.
+     * Suppression of another instance must not weaken the fail-fast contract
+     * for the exact bottom instance.
      */
     @Test
-    fun `fail when the requested bottom object is already displayed`() {
+    fun `fail when the requested bottom instance is already displayed`() {
         val window = createWindow()
         val firstDialog = FirstDialog()
         window.openDialog(firstDialog)
@@ -119,10 +119,10 @@ internal class AppWindowSpec {
     }
 
     /**
-     * The fail-fast identity check must apply to an object at any stack depth.
+     * The fail-fast identity check must apply to an instance at any stack depth.
      */
     @Test
-    fun `fail when the requested nested object is already displayed`() {
+    fun `fail when the requested nested instance is already displayed`() {
         val window = createWindow()
         val firstDialog = FirstDialog()
         val secondDialog = SecondDialog()
@@ -135,8 +135,8 @@ internal class AppWindowSpec {
     }
 
     /**
-     * A custom equality implementation must not let a separate object remove
-     * the displayed instance.
+     * Custom equality must not let a separate instance remove the displayed
+     * dialog.
      */
     @Test
     fun `close dialogs by reference identity`() {
@@ -150,7 +150,7 @@ internal class AppWindowSpec {
     }
 
     /**
-     * Nested-dialog closing must use identity even when another object is
+     * Nested-dialog closing must use identity even when another instance is
      * equal according to the displayed instance's custom implementation.
      */
     @Test

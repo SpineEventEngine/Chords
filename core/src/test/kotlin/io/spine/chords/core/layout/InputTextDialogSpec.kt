@@ -53,20 +53,20 @@ internal class InputTextDialogSpec {
     fun `return null immediately for a suppressed input request`() {
         runBlocking {
             withTimeout(5_000) {
-                val firstResult = async {
+                val firstRequest = async {
                     InputTextDialog.inputText()
                 }
                 yield()
                 val displayedDialog = TestApplication.currentBottomDialog
                     .shouldBeInstanceOf<InputTextDialog>()
 
-                val repeatedResult = InputTextDialog.inputText()
+                val suppressedResult = InputTextDialog.inputText()
 
-                repeatedResult shouldBe null
+                suppressedResult shouldBe null
                 TestApplication.currentBottomDialog shouldBeSameInstanceAs displayedDialog
                 displayedDialog.onBeforeSubmit() shouldBe true
                 displayedDialog.close()
-                firstResult.await() shouldBe ""
+                firstRequest.await() shouldBe ""
             }
         }
     }

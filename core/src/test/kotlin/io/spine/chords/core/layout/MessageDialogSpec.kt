@@ -46,40 +46,44 @@ import org.junit.jupiter.api.Test
 internal class MessageDialogSpec {
 
     /**
-     * A repeated message returns before the displayed message closes and
-     * cannot replace the text configured by the first request.
+     * A repeated request must await the displayed dialog without replacing
+     * the message configured by the first request.
      */
     @Test
-    fun `discard a suppressed message and return immediately`() {
+    fun `await the displayed dialog after discarding a repeated message`() {
         runBlocking {
             withTimeout(5_000) {
-                val firstResult = async {
+                val firstRequest = async {
                     MessageDialog.showMessage("first")
                 }
                 yield()
                 val displayedDialog = TestApplication.currentBottomDialog
                     .shouldBeInstanceOf<MessageDialog>()
 
-                MessageDialog.showMessage("second")
+                val suppressedRequest = async {
+                    MessageDialog.showMessage("second")
+                }
+                yield()
 
                 displayedDialog.message shouldBe "first"
-                displayedDialog.onBeforeSubmit() shouldBe true
+                suppressedRequest.isCompleted shouldBe false
                 displayedDialog.close()
-                firstResult.await()
+                firstRequest.await()
+                suppressedRequest.await()
             }
         }
     }
 
     /**
-     * Failing to display the same object twice must not disconnect the first
-     * caller from the dismissal that it is already awaiting.
+     * Failing to display the same instance twice must leave the first caller
+     * waiting for the displayed dialog to close.
      */
     @Test
-    fun `preserve the first request after the same instance fails to reopen`() {
+    fun `keep the first request waiting when the same instance is requested again`() {
         runBlocking {
             withTimeout(5_000) {
                 val dialog = MessageDialog()
-                val firstResult = async {
+                val firstRequest = async {
                     dialog.showMessage()
                 }
                 yield()
@@ -89,10 +93,37 @@ internal class MessageDialogSpec {
                         dialog.showMessage()
                     }
                 }
-                dialog.onBeforeSubmit() shouldBe true
+                firstRequest.isCompleted shouldBe false
                 dialog.close()
 
-                firstResult.await()
+                firstRequest.await()
+            }
+        }
+    }
+
+    /**
+     * Reopening the same instance must wait for the new display cycle to close.
+     */
+    @Test
+    fun `await the same instance again after it closes`() {
+        runBlocking {
+            withTimeout(5_000) {
+                val dialog = MessageDialog()
+                val firstRequest = async {
+                    dialog.showMessage()
+                }
+                yield()
+                dialog.close()
+                firstRequest.await()
+
+                val secondRequest = async {
+                    dialog.showMessage()
+                }
+                yield()
+
+                secondRequest.isCompleted shouldBe false
+                dialog.close()
+                secondRequest.await()
             }
         }
     }

@@ -464,14 +464,13 @@ public abstract class Dialog : Component() {
         set(value) { cancelAvailable = value }
 
     /**
-     * Requests displaying the modal dialog.
+     * Requests that the modal dialog be displayed.
      *
      * NOTE: this method is mainly useful only in cases when you need to
-     * instantiate a dialog's instance separately from displaying it for
-     * some reason.
+     * create a dialog instance separately from displaying it.
      *
-     * In most cases the most convenient way to open a dialog would be using its
-     * companion object's [open][DialogSetup.open] method instead, like this:
+     * In most cases, the most convenient way to open a dialog is to use its
+     * companion object's [open][DialogSetup.open] method:
      *
      * ```
      *     MyDialog.open()
@@ -481,31 +480,30 @@ public abstract class Dialog : Component() {
      * already displayed, this request is suppressed. Use [DialogSetup.open]
      * when the caller needs the effective displayed instance.
      *
-     * Requesting this same object again while it is displayed fails fast.
+     * Requesting this dialog instance again while it is displayed fails fast.
      *
-     * @throws IllegalStateException If this object is already displayed.
+     * @throws IllegalStateException If this dialog instance is already displayed.
      */
     public fun open() {
-        openAndGetDisplayed()
+        openOrGetDisplayed()
     }
 
     /**
-     * Requests displaying this dialog and returns the effective instance.
+     * Requests that this dialog be displayed and returns the effective instance.
      *
-     * @return This object if it was added, or the already displayed instance
-     *   of the same concrete runtime class when this request was suppressed.
+     * @return This dialog instance if it was added, or the already displayed
+     *   instance of the same concrete runtime class when this request was suppressed.
      */
-    internal fun openAndGetDisplayed(): Dialog {
+    internal fun openOrGetDisplayed(): Dialog {
         return app.ui.openDialog(this)
     }
 
     /**
-     * Closes the dialog while ignoring any data that might have been
-     * possibly entered in the dialog currently.
+     * Closes the dialog without using any data currently entered in it.
      *
      * Calling this method on a dialog outside the displayed stack is a no-op.
      * This includes an instance whose display request was suppressed in favor
-     * of another object of the same concrete class.
+     * of another dialog instance of the same concrete class.
      *
      * @throws IllegalStateException If the dialog cannot be closed due to a
      *   nested modal dialog that is currently open.
@@ -748,8 +746,8 @@ public abstract class Dialog : Component() {
  * ```
  *
  * Under the hood, such an expression creates a candidate instance of dialog
- * [D] (`MyDialog` in this case) and requests displaying it. If another object
- * of the same concrete runtime class is already displayed, that object is
+ * [D] (`MyDialog` in this case) and requests its display. If a dialog of the
+ * same concrete runtime class is already displayed, the displayed instance is
  * returned instead and the candidate's properties are discarded.
  *
  * See the [Dialog]'s documentation for a usage example in context of
@@ -765,7 +763,7 @@ public open class DialogSetup<D: Dialog>(
 ) : AbstractComponentSetup(createInstance) {
 
     /**
-     * Displays the modal dialog [D].
+     * Requests that the modal dialog [D] be displayed and returns the effective instance.
      *
      * Here's an example:
      * ```
@@ -789,7 +787,7 @@ public open class DialogSetup<D: Dialog>(
         // Suppression substitutes only the candidate's exact runtime class,
         // which is necessarily an instance of the companion's type `D`.
         @Suppress("UNCHECKED_CAST")
-        val effectiveDialog = dialog.openAndGetDisplayed() as D
+        val effectiveDialog = dialog.openOrGetDisplayed() as D
         return effectiveDialog
     }
 }

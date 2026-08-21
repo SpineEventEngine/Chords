@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Test
 internal class DialogSetupSpec {
 
     /**
-     * Repeated requests return the displayed object and leave the properties
+     * Repeated requests return the displayed instance and leave the properties
      * supplied by its first request intact.
      */
     @Test
@@ -52,19 +52,19 @@ internal class DialogSetupSpec {
             label = "first"
         }
 
-        val repeatedResult = ConfiguredDialog.open {
+        val repeatedOpenResult = ConfiguredDialog.open {
             label = "second"
         }
         firstDialog.applyConfiguredProps()
 
-        repeatedResult shouldBeSameInstanceAs firstDialog
+        repeatedOpenResult shouldBeSameInstanceAs firstDialog
         firstDialog.label shouldBe "first"
         firstDialog.nestedDialog shouldBe null
     }
 
     /**
      * Closing removes the class match so the next request can install and
-     * return a fresh object.
+     * return a fresh instance.
      */
     @Test
     fun `return a fresh instance after the displayed dialog closes`() {

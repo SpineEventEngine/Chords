@@ -98,18 +98,13 @@ public class AppWindow(
      * The bottom-most dialog in the current dialog display stack, or `null` if
      * no dialogs are displayed currently.
      *
-     * Dialogs are modal windows, which means that there can be at most once
-     * dialog that the user can interact with at a time. It's possible to
-     * display nested dialogs though. That is, when some dialog is already
-     * displayed, another dialog can be open (see
-     * [DialogSetup][io.spine.chords.core.layout.DialogSetup.open]), which means
-     * that the first dialog still remains opened, but cannot be interacted with
-     * until the second one (which is displayed on top of it) is closed.
+     * Dialogs are modal windows, so only the top dialog in the stack can receive
+     * user interaction. Displaying another dialog while one is open nests it on
+     * top of the first dialog (see
+     * [DialogSetup][io.spine.chords.core.layout.DialogSetup.open]).
      *
-     * This means that at any given moment in time there is essentially a stack
-     * of dialogs (zero or more nested dialogs). This property refers to the
-     * very first dialog that was displayed among all these dialogs (the bottom
-     * of the dialogs stack).
+     * This property holds the first dialog displayed, at the bottom of the
+     * dialog stack.
      */
     private var bottomDialog by mutableStateOf<Dialog?>(null)
 
@@ -180,14 +175,15 @@ public class AppWindow(
     internal val currentView: AppView get() = mainScreen.currentView
 
     /**
-     * Requests displaying a modal dialog and returns the effective instance.
+     * Requests that a modal dialog be displayed and returns the effective instance.
      *
      * When the modal dialog is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      *
      * If another instance of the same concrete runtime class is already in the
      * dialog stack, this request is suppressed and that displayed instance is
-     * returned. Requesting an object that is already in the stack fails.
+     * returned. Requesting the same dialog instance again while it is in the
+     * stack fails.
      *
      * @param dialog An instance of the dialog that should be displayed.
      * @return The requested instance if it was added, or the already displayed
@@ -195,16 +191,16 @@ public class AppWindow(
      * @throws IllegalStateException If [dialog] is already in the stack.
      */
     internal fun openDialog(dialog: Dialog): Dialog {
-        var current = bottomDialog
+        var currentDialog = bottomDialog
         var deepestDialog: Dialog? = null
         var sameClassDialog: Dialog? = null
-        while (current != null) {
-            check(current !== dialog) { "This dialog is already open." }
-            if (sameClassDialog == null && current.javaClass == dialog.javaClass) {
-                sameClassDialog = current
+        while (currentDialog != null) {
+            check(currentDialog !== dialog) { "This dialog is already open." }
+            if (sameClassDialog == null && currentDialog.javaClass == dialog.javaClass) {
+                sameClassDialog = currentDialog
             }
-            deepestDialog = current
-            current = current.nestedDialog
+            deepestDialog = currentDialog
+            currentDialog = currentDialog.nestedDialog
         }
         if (sameClassDialog != null) {
             return sameClassDialog
@@ -223,8 +219,8 @@ public class AppWindow(
      *
      * This is a part of an internal dialog management API.
      *
-     * A request to close an object that is not in the current stack is a no-op.
-     * Dialogs in the stack are matched by reference identity.
+     * A request to close a dialog instance that is not in the current stack is
+     * a no-op. Dialogs in the stack are matched by reference identity.
      *
      * @param dialog The dialog that needs to be closed.
      * @throws IllegalStateException If the dialog cannot be closed due to a

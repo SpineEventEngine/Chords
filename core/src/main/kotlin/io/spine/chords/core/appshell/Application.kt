@@ -357,13 +357,13 @@ internal constructor(private val appWindow: AppWindow) {
         get() = appWindow.currentBottomDialog
 
     /**
-     * Requests displaying the given [Dialog] and returns the effective instance.
+     * Requests that the given [Dialog] be displayed and returns the effective instance.
      *
      * When the modal window is shown, no other components from other screens
      * will be interactable, focusing user interaction on the modal content.
      * A request for another instance of a concrete dialog class already in the
-     * stack is suppressed and yields the displayed instance. Requesting an
-     * object that is already displayed fails.
+     * stack is suppressed and yields the displayed instance. Requesting the
+     * same dialog instance again while it is displayed fails.
      *
      * It is designed to be used only as an internal low-level API, for dialog
      * implementation to be able to display themselves. In regular application
@@ -400,7 +400,7 @@ internal constructor(private val appWindow: AppWindow) {
     internal fun openDialog(dialog: Dialog): Dialog = appWindow.openDialog(dialog)
 
     /**
-     * Closes the specified displayed dialog if it has no blocking nested dialog.
+     * Closes the specified displayed dialog unless a nested dialog prevents it.
      *
      * Note that this method ignores any data that might have been entered
      * in it. A dialog that is not in the current stack is ignored.
