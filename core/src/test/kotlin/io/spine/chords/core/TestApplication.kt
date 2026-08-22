@@ -26,8 +26,10 @@
 
 package io.spine.chords.core
 
+import io.spine.chords.core.appshell.AppWindow
 import io.spine.chords.core.appshell.Application
 import io.spine.chords.core.appshell.app
+import io.spine.chords.core.layout.Dialog
 import java.awt.Dimension
 
 /**
@@ -43,8 +45,8 @@ import java.awt.Dimension
  * To prevent this, this object assigns [app] a real, but deliberately minimal
  * [Application] instance rather than a mock. The instance serves no purpose
  * other than satisfying the dependency described above: it declares no views,
- * and its window is never created or shown, as [run][Application.run] is
- * never invoked on it. It also customizes no
+ * and its minimal [AppWindow] is constructed but never rendered or shown. It
+ * also customizes no
  * [shared defaults][Application.sharedDefaults], so the components under test
  * keep the default property values declared by their own implementations.
  */
@@ -54,6 +56,12 @@ internal object TestApplication {
      * Tells whether [install] has already assigned the [app] property.
      */
     private var installed: Boolean = false
+
+    /**
+     * The bottom dialog in the test application's stack, or `null` if empty.
+     */
+    val currentBottomDialog: Dialog?
+        get() = app.ui.currentBottomDialog
 
     /**
      * Assigns the [app] property, doing nothing if a previous call has
@@ -72,12 +80,53 @@ internal object TestApplication {
     @Synchronized
     fun install() {
         if (!installed) {
-            app = Application(
+            val testApplication = Application(
                 name = "Chords core tests",
                 views = emptyList(),
                 minWindowSize = Dimension(1, 1)
             )
+            app = testApplication
+            testApplication.initializeUi(
+                AppWindow(
+                    signInScreenContent = {},
+                    views = emptyList(),
+                    initialView = null,
+                    onCloseRequest = {},
+                    minWindowSize = Dimension(1, 1)
+                )
+            )
             installed = true
         }
+    }
+
+    /**
+     * Closes all dialogs from the deepest one upward.
+     *
+     * Request-level tests share one JVM-wide application, so each case uses
+     * this method to keep its dialog stack isolated from later cases.
+     */
+    fun closeDialogs() {
+        var dialogs = displayedDialogs()
+        while (dialogs.isNotEmpty()) {
+            dialogs.last().close()
+            val remainingDialogs = displayedDialogs()
+            check(remainingDialogs.size < dialogs.size) {
+                "Closing the top dialog did not shrink the displayed stack."
+            }
+            dialogs = remainingDialogs
+        }
+    }
+
+    /**
+     * Lists the displayed dialogs from the bottom of the stack to the top.
+     */
+    private fun displayedDialogs(): List<Dialog> {
+        val dialogs = mutableListOf<Dialog>()
+        var currentDialog = currentBottomDialog
+        while (currentDialog != null) {
+            dialogs.add(currentDialog)
+            currentDialog = currentDialog.nestedDialog
+        }
+        return dialogs
     }
 }
