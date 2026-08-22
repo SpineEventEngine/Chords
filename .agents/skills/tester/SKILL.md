@@ -12,9 +12,8 @@ description: >
 ## Core Policy
 
 - How a suite is written — naming, JUnit Jupiter structure, Kotest
-  assertions, fixtures, stubs, and `testlib` bases — is owned by
-  `.agents/skills/kotlin-jvm-tester/SKILL.md`. Follow it once the cases are
-  known.
+  assertions, fixtures, stubs, and `testlib` bases — follows
+  `.agents/skills/kotlin-jvm-tester/SKILL.md` once cases are known.
 - Put focused regression tests in the module that owns the behavior, under
   `src/test/kotlin` mirroring the production package.
 - Prefer public APIs, generated messages, and observable component state over
@@ -23,8 +22,7 @@ description: >
   extensions, and codegen output shape.
 - UI rendering and interaction are not covered by automated tests in this
   repository. Do not force UI snapshot tooling in; verify what is testable
-  (logic, extensions, codegen) and report the manual-verification remainder
-  explicitly.
+  (logic, extensions, codegen) and report manual verification explicitly.
 - Codegen behavior is verified end-to-end in `codegen/tests`
   (`:codegen-tests`), which runs generation against test Protobuf definitions
   and asserts on the generated API; add coverage there for generator changes.
@@ -39,7 +37,8 @@ description: >
 
 ## Verification
 
-Run the smallest useful command while iterating (repository root, JDK 11):
+Apply `.agents/guidelines/root-build.md`, then run the smallest useful command
+while iterating, from the repository root:
 
 ```bash
 .agents/workflows/gradle-root.sh :<module>:test
@@ -50,8 +49,8 @@ Run the smallest useful command while iterating (repository root, JDK 11):
 ```
 
 Module Gradle paths: `core`, `proto`, `proto-values`, `client`, `runtime`,
-`codegen-tests`. The `codegen/plugins` project verifies separately from
-`codegen/plugins/` with JDK 17 (`./gradlew build`).
+`codegen-tests`. The separate `codegen/plugins` project verifies with
+`.agents/workflows/gradle-codegen.sh build`, which selects JDK 17.
 
 Read the task list, not only the final line. Gradle's up-to-date check is
 content-based, so `UP-TO-DATE` normally means the task's inputs are unchanged
@@ -60,10 +59,9 @@ task execute again.
 
 What `UP-TO-DATE` cannot prove is that the right build and tasks were selected.
 Suspect the result, and only then rerun, when tasks that should cover a changed
-input remain up to date. Check that root commands ran from the repository root,
-that `codegen/plugins` commands ran from that separate build, and that the task
-declares the input that changed. Fix the invocation before rerunning; a rerun of
-the wrong build is still the wrong build.
+input remain up to date. Check that the command used the wrapper for the owning
+build and that the task declares the changed input. Fix the invocation before
+rerunning; a rerun of the wrong build is still the wrong build.
 
 Where a rerun is genuinely required, the root build's Gradle 6.9.4 supports the
 whole-graph flag:

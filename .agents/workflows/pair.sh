@@ -3122,6 +3122,10 @@ take_turn() {
     (
         cd "$REPO_ROOT"
         export GIT_TRACE2_EVENT="$git_trace"
+        # Do not leave daemons carrying this turn's sandbox into later builds.
+        export CHORDS_NO_GRADLE_DAEMON=1
+        export GRADLE_OPTS="${GRADLE_OPTS:-} -Dorg.gradle.daemon=false"
+        GRADLE_OPTS+=" -Dorg.gradle.project.kotlin.compiler.execution.strategy=in-process"
         git -c "pair.traceMarker=${trace_marker}" version >/dev/null
         "${command_parts[@]}" \
             "$(prompt_for "$turn" "$status" "$rel_doc" "$previous")"

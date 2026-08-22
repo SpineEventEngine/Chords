@@ -1,6 +1,8 @@
 name: Build under Windows
 
-on: pull_request
+on:
+  push:
+    branches: [master]
 
 jobs:
   build:

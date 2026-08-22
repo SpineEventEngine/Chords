@@ -14,8 +14,7 @@ Event Engine framework. The libraries are currently at an experimental stage.
 
 The main concerns are:
 
-- A class-based UI component model and application shell on top of Compose
-  (`core`).
+- A class-based UI component model and application shell built over Compose (`core`).
 - Input components, message forms, and validation for Protobuf-based domain
   models (`proto`).
 - Supplementary Protobuf messages and Kotlin extensions (`proto-values`).
@@ -65,12 +64,15 @@ and GitHub Packages.
   regenerated (not hand-edited) when the version or dependencies change.
 - `.github/workflows/`: CI for Ubuntu/Windows builds, license-report and
   version-increment guards, Gradle wrapper validation, and publishing.
-- `.agents/workflows/`: local agent workflow drivers and their regression
-  suites.
+- `.github/copilot-instructions.md`: always-on review rules for GitHub Copilot,
+  derived from `AGENTS.md`.
+- `.agents/guidelines/`: policy shared across skills — design restraint,
+  English style, project-owned file boundaries, and the root build environment.
+- `.agents/skills/`: task-specific agent policy; see `.agents/skills/README.md`.
+- `.agents/workflows/`: local agent workflow drivers and regression suites.
 
 Gradle group: `io.spine.chords`. Artifact prefix: `spine-chords-`. Preserve
-package roots such as `io.spine.chords` and `io.spine.money` where already
-present.
+existing package roots, including `io.spine.chords` and `io.spine.money`.
 
 ## Architecture Notes
 
@@ -104,21 +106,21 @@ or Spine versions; such upgrades are dedicated tasks with wide impact.
 
 ## Documentation Ownership
 
-- `README.md`: project entry point — library list, supported environment,
-  consumption instructions, and development setup.
-- `AGENTS.md`: repository operating policy for agents.
-- `.agents/project.md`: project map, architecture notes, documentation
-  ownership, and CI notes.
-- `PAIR_AGENTS_RUN_GUIDE.md`: operator guide for the paired-agent issue
-  workflow.
-- `core/README.md`: application shell, component model, and core components.
-- `proto/README.md`: Protobuf-aware components and message forms.
-- `proto-values/README.md`: supplementary Protobuf messages and extensions.
-- `client/README.md`: server connectivity facilities.
-- `codegen/runtime/README.md`: codegen runtime ownership.
-- `codegen/plugins/README.md`: ProtoData plugin project — requirements,
-  workspace resources, and module layout.
-- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`: standard contribution policy.
+| Location | Content |
+|---|---|
+| `README.md` | Library list, supported environment, consumption, and development setup |
+| `AGENTS.md` | Global agent operation, authorization, safety, Git, and quality policy |
+| `CLAUDE.md`, `.github/copilot-instructions.md` | Entry points routing each agent to `AGENTS.md` |
+| `.agents/skills/`, `.agents/guidelines/` | Task and shared agent policy |
+| `.agents/project.md` | Project map, architecture notes, ownership, and CI |
+| `PAIR_AGENTS_RUN_GUIDE.md` | Pair-workflow operator instructions |
+| `core/README.md` | Application shell, component model, and core components |
+| `proto/README.md` | Protobuf-aware components and message forms |
+| `proto-values/README.md` | Supplementary Protobuf messages and extensions |
+| `client/README.md` | Server connectivity facilities |
+| `codegen/runtime/README.md` | Codegen runtime ownership |
+| `codegen/plugins/README.md` | ProtoData plugin project, requirements, and layout |
+| `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` | Contribution policy, distributed by `config/pull` |
 
 Keep usage instructions in the nearest library README. Keep architecture,
 module ownership, and CI notes in this file. Keep agent policy in `AGENTS.md`.
@@ -126,21 +128,13 @@ API-level documentation belongs in KDoc on the public declarations.
 
 ## CI
 
-This repository is configured with these GitHub workflows:
-
-- `Build under Ubuntu` (`.github/workflows/build-on-ubuntu.yml`): runs on every
-  push, sets up JDK 11, and runs `./gradlew build --stacktrace`.
-- `Build under Windows` (`.github/workflows/build-on-windows.yml`): runs on
-  pull requests and builds with `gradlew.bat build --stacktrace --no-daemon`.
-- `Ensure license reports updated` (`.github/workflows/ensure-reports-updated.yml`):
-  runs on pull requests and fails when `dependencies.md` / `pom.xml` (or
-  `version.gradle.kts`) were not updated in the changeset.
-- `Check version increment` (`.github/workflows/increment-guard.yml`): runs
-  `./gradlew checkVersionIncrement` to enforce that `chordsVersion` grows.
-- `Validate Gradle Wrapper` (`.github/workflows/gradle-wrapper-validation.yml`):
-  validates wrapper JAR integrity.
-- `Publish` (`.github/workflows/publish.yml`): runs on pushes to `master`,
-  decrypts publishing credentials from `.github/keys/*.gpg`, and publishes
-  artifacts to the configured Maven repositories.
+| Workflow | Trigger and outcome |
+|---|---|
+| `build-on-ubuntu.yml` | Every push: JDK 11, `./gradlew build --stacktrace` |
+| `build-on-windows.yml` | `master` pushes: `gradlew.bat build --stacktrace --no-daemon` |
+| `ensure-reports-updated.yml` | Pull requests: requires `pom.xml` and a dependency report change |
+| `increment-guard.yml` | Runs `checkVersionIncrement` so `chordsVersion` grows |
+| `gradle-wrapper-validation.yml` | Validates wrapper JAR integrity |
+| `publish.yml` | `master` pushes: decrypts `.github/keys/*.gpg` and publishes artifacts |
 
 Publishing credentials and their rotation are human-owned.

@@ -16,14 +16,52 @@ For substantive implementation, review, or documentation work, start by reading:
   - `core/README.md` for the application shell, class-based components, and
     basic UI components.
   - `proto/README.md` for Protobuf-aware UI components and message forms.
-  - `proto-values/README.md` for supplementary Protobuf messages and Kotlin
-    extensions.
+  - `proto-values/README.md` for supplementary Protobuf messages and Kotlin extensions.
   - `client/README.md` for server connectivity via Spine Event Engine.
   - `codegen/runtime/README.md` and `codegen/plugins/README.md` for the code
     generation runtime and ProtoData plugins.
 
-Local task-specific skills live under `.agents/skills/`. Use them when their
-frontmatter matches the task.
+Route task policy through the [skill index](.agents/skills/README.md); each
+skill's frontmatter is the routing source of truth. Shared guidelines under
+`.agents/guidelines/` cut across skills: read
+[Design Restraint](.agents/guidelines/design-restraint.md) before any
+implementation, and [Root Build Environment](.agents/guidelines/root-build.md)
+before any root Gradle command.
+
+## Prose
+
+Write minimum complete prose: keep distinct requirements, decisions,
+constraints, outcomes, and actions; remove repetition, exhaustive inventories,
+heading restatements, and narration. Preserve details needed for safety,
+authorization, compatibility, acceptance criteria, reviewer action, unresolved
+decisions, and known risks.
+
+Commit messages, issue and PR descriptions, and code-documentation summaries
+must identify the subject or change and its purpose, user need, or outcome.
+Omit mechanics and execution order unless they define a caller-visible contract
+or a preserved detail above.
+
+## Working Tree Safety
+
+Treat pre-existing worktree and index changes as human-authored unless their
+provenance is known. Modify or revert one only when the current prompt explicitly
+requests that exact change; general implementation authorization is insufficient.
+If it conflicts with policy or appears wrong, explain the conflict and proposed
+resolution, await confirmation, and continue only with independent work.
+
+## Protobuf Authorization
+
+Before editing a published `.proto` declaration under `proto-values/`, state
+the exact change and obtain explicit confirmation; external projects consume
+these schemas as a source API and wire contract. Inspection and proposals need no
+confirmation. Follow
+[`model-engineer`](.agents/skills/model-engineer/SKILL.md) for schema evolution
+and verification.
+
+The gate covers only `proto-values/src/main/proto/`. Plugin declarations under
+`codegen/plugins/codegen-plugins/src/main/proto/` and fixtures under
+`codegen/tests/src/test/proto/` carry no external contract; they follow the
+[`codegen-engineer`](.agents/skills/codegen-engineer/SKILL.md) skill.
 
 ## Commit and History Safety
 
@@ -117,6 +155,21 @@ verification rule in that section.
    issues" on GitHub.
 6. **Report the PR URL** in the final response.
 
+Do not hard-wrap pull request prose. Break lines only for intentional Markdown
+structure, including in a local draft. The 100-character limit under
+"Development Conventions" governs repository files, not GitHub prose fields.
+
+## GitHub Issues
+
+Use one short problem-or-outcome paragraph followed only by the acceptance
+criteria needed to establish completion. Add reproduction, background,
+proposal, or affected areas only when they define scope or a decision. Avoid
+repetition and file or call-site inventories. Issue prose follows the same
+no-hard-wrap rule as pull request prose, including in local drafts.
+
+Issues opened here are public; the confidentiality rule under "Safety Rules"
+applies to their titles, bodies, and comments.
+
 ## Safety Rules
 
 - This is a public open-source repository (Apache 2.0). Do not add secrets,
@@ -146,17 +199,14 @@ verification rule in that section.
   deliberately in a few places, such as resolving component type parameters).
 - Preserve existing package structure, module boundaries, naming conventions,
   and Gradle patterns.
-- Do not overengineer. Use the simplest construct that satisfies the current
-  requirement, and introduce a base class or interface only once at least two
-  concrete implementors exist. A type parameter is judged instead by whether
-  it preserves a type relationship the signature would otherwise lose.
-  Deliberate public extension points, such as
-  `io.spine.chords.core.Component`, are the exception. See "Design Restraint"
-  in `.agents/skills/engineer/SKILL.md`.
+- Do not overengineer. Apply
+  [Design Restraint](.agents/guidelines/design-restraint.md) to every
+  implementation: abstract only over implementors that exist, judge a type
+  parameter by the relationship it preserves, and treat deliberate public
+  extension points such as `io.spine.chords.core.Component` as the exception.
 - Do not manually edit generated sources or build outputs: `generated/`
   folders, codegen workspace outputs (`_out/`), Gradle wrapper files, or the
-  generated `pom.xml` / `dependencies.md` reports (regenerate them with Gradle
-  instead).
+  generated `pom.xml` / `dependencies.md` reports; regenerate them with Gradle.
 - Public API changes require care: all libraries are consumed by external
   projects, and Kotlin explicit API mode is enabled. Avoid breaking existing
   public signatures; prefer additive changes.
@@ -182,8 +232,8 @@ find . -path '*/build/reports/dependency-license' -type d -prune \
 .agents/workflows/gradle-root.sh generatePom mergeAllLicenseReports
 ```
 
-The wrapper selects and verifies the required JDK. See "Apple Silicon
-Workstations" under "Verification and Quality".
+The wrapper selects and verifies the required JDK; see
+[Root Build Environment](.agents/guidelines/root-build.md).
 
 The `generatePom` task regenerates `pom.xml`, and `mergeAllLicenseReports`
 merges the per-module license reports into `dependencies.md`. Deleting the
@@ -218,56 +268,23 @@ Useful root commands (run from the repository root, JDK 11):
 .agents/workflows/gradle-root.sh publishToMavenLocal
 ```
 
-### Apple Silicon Workstations
+### Toolchain
 
-On Apple Silicon, run the root build with an x86_64 distribution of JDK 11.
-The exact JDK 11 patch version may differ between workstations. Verify the
-active JVM before running Gradle:
-
-```bash
-java -version
-java -XshowSettings:properties -version 2>&1 |
-    rg 'java.home|java.version|os.arch'
-```
-
-Expect Java 11 and `os.arch = x86_64`. Do not set `JAVA_HOME` using
-`/usr/libexec/java_home -v 11` on an affected workstation: when macOS cannot find a
-registered JDK 11, that command may silently select a newer ARM JDK instead.
-If the shell bypasses jEnv, select an installed JDK 11 with jEnv and run Gradle
-as follows:
-
-```bash
-jenv shell 11
-JAVA_HOME="$(jenv prefix)" ./gradlew :<module>:check
-```
-
-`.agents/workflows/gradle-root.sh` is that command behind one allowlistable
-path. It resolves a registered JDK 11, verifies the version, refuses a
-non-x86_64 JVM on macOS, and accepts only routine root verification,
-Maven-local publication, and report-generation tasks. Prefer it for unattended
-and ordinary root verification:
-
-```bash
-.agents/workflows/gradle-root.sh :<module>:check
-```
-
-This architecture matters because some code generation paths in the pinned
-Spine toolchain resolve `io.grpc:protoc-gen-grpc-java:1.28.1`. That artifact
-provides a macOS x86_64 executable but no `osx-aarch_64` executable. Using an
-ARM JVM makes Protobuf generation fail during dependency resolution.
+The root build needs JDK 11 and an x86_64 JVM on Apple Silicon. Read
+[Root Build Environment](.agents/guidelines/root-build.md) before invoking it;
+the guideline defines JDK selection, allowed tasks, and diagnosis.
 
 ### Module-Specific Verification
 
-Module names for Gradle paths: `core`, `proto`, `proto-values`, `client`,
-`runtime` (located at `codegen/runtime`), and `codegen-tests` (located at
-`codegen/tests`).
+Gradle modules are `core`, `proto`, `proto-values`, `client`, `runtime` at
+`codegen/runtime`, and `codegen-tests` at `codegen/tests`.
 
 The `codegen/plugins` directory is a **separate Gradle project** requiring
-JDK 17 and Gradle 9.4.x; run its commands from `codegen/plugins/`:
+JDK 17 and Gradle 9.4.x. Invoke its verified wrapper from the repository root:
 
 ```bash
-./gradlew build
-./gradlew publishToMavenLocal
+.agents/workflows/gradle-codegen.sh build
+.agents/workflows/gradle-codegen.sh publishToMavenLocal
 ```
 
 Modules that use Chords code generation (`proto-values`, `codegen-tests`)
@@ -289,8 +306,7 @@ If verification cannot be run, state the reason clearly in the final response.
   1.9.23, while the supported consumer baseline remains Kotlin 1.8.20. Treat
   Kotlin 1.8 as the language ceiling and do not introduce post-1.8.20 standard
   library APIs without a deliberate compatibility decision. Compose
-  Multiplatform is 1.5.12, Spine Event Engine is 1.9.0, and root Gradle is
-  6.9.4.
+  Multiplatform is 1.5.12, Spine Event Engine is 1.9.0, and root Gradle is 6.9.4.
 - Kotlin explicit API mode is enabled: public declarations require explicit
   `public` modifiers.
 - Every declaration in project-owned source, including declarations explicitly
@@ -314,6 +330,9 @@ If verification cannot be run, state the reason clearly in the final response.
   it before adding or restructuring a suite.
 - Dependency coordinates live in `buildSrc/src/main/kotlin/io/spine/internal/dependency/`;
   add or change them there, following the existing object-per-library pattern.
+- After the final source edit, remove unused imports and sort the rest in local
+  order, including after a move or rename. Never add a wildcard import. Add a
+  Kotlin alias only with explicit human direction; qualify collisions instead.
 - Get the `config` submodule content with
   `git submodule update --init --recursive` before building.
 

@@ -10,4 +10,4 @@ model: sonnet
 ---
 
 Follow the [proofread skill](../../.agents/skills/proofread/SKILL.md) exactly,
-passing `$ARGUMENTS` as its argument.
+passing `$ARGUMENTS` as its argument; empty input selects branch-diff mode.

@@ -13,8 +13,7 @@ description: >
 
 ## Scope
 
-- Own published model Protobuf declarations under
-  `proto-values/src/main/proto/**`.
+- Own published model Protobuf declarations under `proto-values/src/main/proto/**`.
 - Own Kotlin extensions for project-owned and external Protobuf types under
   `proto-values/src/main/kotlin/**`.
 - Keep schema declarations, Kotlin extensions, and schema-driven generated
@@ -25,12 +24,14 @@ description: >
   behavior, codegen-runtime contracts, and test Protobuf files that exist only
   as generator fixtures under `codegen/tests/src/test/proto/**`.
 - Use `.agents/skills/component-engineer/SKILL.md` for UI components that
-  consume model types, and `.agents/skills/build-engineer/SKILL.md` for Gradle
-  wiring.
+  consume model types, and `.agents/skills/build-engineer/SKILL.md` for Gradle wiring.
 - Apply `.agents/skills/kotlin-engineer/SKILL.md` to every Kotlin extension.
 
 ## Policy
 
+- Apply the `AGENTS.md` Protobuf gate first: state the exact schema change and
+  obtain confirmation before editing a published `.proto` declaration under
+  `proto-values/`. Inspection and proposals need none.
 - Treat `AGENTS.md` as authoritative. Prefer additive changes for published
   APIs. Rely on Chords' experimental status only under the breaking-change
   authorization below, and report the compatibility impact.
@@ -76,7 +77,8 @@ description: >
 
 ## Verification
 
-Run the narrowest relevant root command first with JDK 11:
+Apply `.agents/guidelines/root-build.md`, then run the narrowest relevant root
+command first:
 
 ```bash
 .agents/workflows/gradle-root.sh :proto-values:test

@@ -27,8 +27,20 @@ the project map. API-level documentation belongs in KDoc on the public
 declarations, not in READMEs.
 
 Do not link temporary artifacts, such as audit reports or task plans, from
-durable documentation like `.agents/project.md` unless they become maintained
-documents.
+durable documentation like `.agents/project.md` unless they become maintained documents.
+
+## Write Minimum Complete Prose
+
+Apply the `AGENTS.md` "Prose", pull request, and issue rules. State what the
+subject or change is and why it matters. Keep each fact once and only when it
+helps the reader act, decide, or form a correct expectation. Remove narration
+and restated identifiers, signatures, code, or execution order.
+
+## Keep AI Policy Abstract
+
+Write reusable roles, invariants, effects, and decisions rather than
+refactor-sensitive names or messages. Keep a necessary identifier in a labeled
+example; framework, toolchain, and test-infrastructure names may remain.
 
 ## Verify Against Project Flows
 
@@ -37,15 +49,18 @@ claims against the nearest README, build file, workflow, or source file.
 
 ## Follow Local Documentation Conventions
 
-- Use fenced code blocks for commands, Kotlin, Protobuf, YAML, and shell
-  examples.
+- Follow `.agents/guidelines/english-style.md` for English grammar,
+  punctuation, and spelling.
+- Write every KDoc and Javadoc in multiline form: `/**` and ` */` on their own
+  lines, each content line prefixed with ` *`. Do not use the single-line
+  `/** ... */` form.
+- Fence examples of commands, Kotlin, Protobuf, YAML, and shell.
 - Render file paths, package paths, Gradle tasks, module names, class and
   function names, and command names as code.
 - Keep headings hierarchical: one top-level `#`, then ordered levels.
 - Use local relative links for repository files.
-- Keep examples small enough to verify and copy; component examples follow
-  the class-based pattern shown in existing KDoc (e.g., the `Table` and
-  `EntityChooser` class docs).
+- Keep examples small enough to verify and copy; follow class-based KDoc,
+  including the `Table` and `EntityChooser` examples.
 - Use consistent terminology: Chords, Compose Multiplatform, Spine Event
   Engine, Protobuf, ProtoData, codegen plugins, codegen runtime, application
   shell, class-based components.
@@ -57,24 +72,22 @@ claims against the nearest README, build file, workflow, or source file.
 
 ## Comment Guidance
 
-- Document public APIs: explicit API mode makes every public declaration a
-  contract, and KDoc is expected on public classes, functions, and properties.
-- Follow the local KDoc idiom: a one-sentence summary paragraph, detail
-  paragraphs, `@param` tags for type and value parameters, and backticked
-  identifiers.
-- Use comments to explain why a constraint exists, not what the next line
-  does.
+- Lead with purpose, not construction, storage, delegation, or lifecycle
+  mechanics, unless they define a caller-visible contract.
+- Document every declaration, including private ones, as `AGENTS.md` requires.
+- Follow local KDoc: a one-sentence summary, detail paragraphs, `@param` tags
+  for type and value parameters, and backticked identifiers.
+- Use comments to explain why a constraint exists, not what the next statement does.
 - Mention important effects: recomposition triggers, server calls,
-  generated-code dependencies, experimental Compose API usage, and returned
-  errors.
+  generated-code dependencies, experimental Compose APIs, and returned errors.
 - Do not add comments that restate names, parameters, or obvious operations.
 
 ## Make Docs Actionable
 
 - Prefer executable steps, expected outcomes, and concrete examples.
-- Include easy-to-miss prerequisites: working directory (root vs
-  `codegen/plugins`), JDK version (11 vs 17), the `config` submodule
-  initialization, and Maven-local publication of codegen plugins.
+- Include easy-to-miss prerequisites: the owning Gradle wrapper and JDK
+  (root/11 vs codegen/17), `config` submodule initialization, and Maven-local
+  publication of codegen plugins.
 - When documenting failure behavior, include the concrete reason and where the
   user should look.
 - When documenting architecture, describe ownership boundaries and the normal

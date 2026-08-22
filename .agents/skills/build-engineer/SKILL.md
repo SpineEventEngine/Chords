@@ -13,8 +13,7 @@ description: >
 
 Use this skill for build, dependency, and release-plumbing work:
 
-- Root `build.gradle.kts`, `settings.gradle.kts`, `version.gradle.kts`, and
-  `gradle.properties`.
+- Root `build.gradle.kts`, `settings.gradle.kts`, `version.gradle.kts`, and `gradle.properties`.
 - `buildSrc/` dependency coordinates, repository helpers, and convention
   plugins (`jvm-module`, publishing, reports).
 - The `codegen/plugins` Gradle project's own build logic and its
@@ -24,8 +23,7 @@ Use this skill for build, dependency, and release-plumbing work:
 - Version policy and the generated `pom.xml` / `dependencies.md` reports.
 - Detekt configuration under `quality/`.
 
-For workflow YAML under `.github/workflows`, use
-`.agents/skills/ci-engineer/SKILL.md`.
+For `.github/workflows` YAML, use `.agents/skills/ci-engineer/SKILL.md`.
 
 ## Policy
 
@@ -49,8 +47,7 @@ For workflow YAML under `.github/workflows`, use
   its contents here. If shared build logic must change, describe the upstream
   change instead.
 - Do not run `publish` or `publishCodegenPlugins` against remote repositories;
-  publishing is CI-owned (pushes to `master`). Local verification uses
-  `publishToMavenLocal`.
+  publishing is CI-owned on `master`. Verify locally with `publishToMavenLocal`.
 - Preserve the codegen wiring contract: `modulesWithChordsCodegen` lists the
   modules that get the `io.spine.chords` Gradle plugin, and
   `createCodegenWorkspace` depends on `publishCodegenPluginsToMavenLocal`.
@@ -59,7 +56,7 @@ For workflow YAML under `.github/workflows`, use
 
 ## Verification
 
-Root build (repository root, JDK 11):
+From the repository root, follow `.agents/guidelines/root-build.md`:
 
 ```bash
 .agents/workflows/gradle-root.sh clean build
@@ -67,11 +64,11 @@ Root build (repository root, JDK 11):
 .agents/workflows/gradle-root.sh checkVersionIncrement
 ```
 
-Codegen plugins build (from `codegen/plugins/`, JDK 17):
+Codegen plugins build, using the verified JDK 17 wrapper from the repository root:
 
 ```bash
-./gradlew build
-./gradlew publishToMavenLocal
+.agents/workflows/gradle-codegen.sh build
+.agents/workflows/gradle-codegen.sh publishToMavenLocal
 ```
 
 Run the `publishToMavenLocal` variant when plugin publication is part of the

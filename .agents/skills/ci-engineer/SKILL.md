@@ -17,10 +17,11 @@ skill authors and reviews workflow definitions, it does not trigger them.
 ## Scope
 
 - `.github/workflows/build-on-ubuntu.yml`: JDK 11 build on every push.
-- `.github/workflows/build-on-windows.yml`: Windows build on pull requests.
-- `.github/workflows/ensure-reports-updated.yml`: guard that `dependencies.md`
-  / `pom.xml` (or `version.gradle.kts`) changed in the PR, via
-  `config/scripts/ensure-reports-updated.sh`.
+- `.github/workflows/build-on-windows.yml`: Windows build on `master` pushes.
+- `.github/workflows/ensure-reports-updated.yml`: via
+  `config/scripts/ensure-reports-updated.sh`, requires `pom.xml` plus either
+  `dependencies.md` or `license-report.md` in the PR. It does not inspect
+  `version.gradle.kts`; `increment-guard.yml` owns the version.
 - `.github/workflows/increment-guard.yml`: the `checkVersionIncrement` guard.
 - `.github/workflows/gradle-wrapper-validation.yml`: wrapper JAR integrity.
 - `.github/workflows/publish.yml`: publishing from `master`, including GPG
@@ -45,8 +46,8 @@ workflows invoke, use `.agents/skills/build-engineer/SKILL.md`.
 - Do not add steps that publish artifacts or rotate credentials as routine
   changes. Describe the required human action instead.
 - Keep in mind the two-toolchain layout: root builds need JDK 11; any step
-  building `codegen/plugins` directly needs JDK 17 and runs from
-  `codegen/plugins/`.
+  building `codegen/plugins` needs JDK 17 and invokes
+  `.agents/workflows/gradle-codegen.sh` from the repository root.
 
 ## Verification
 
