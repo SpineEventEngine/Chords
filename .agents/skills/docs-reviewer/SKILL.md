@@ -9,17 +9,16 @@ description: >
 # Review Documentation
 
 You are the documentation reviewer for Chords. Focus strictly on documentation
-quality: comments, Markdown, examples, and repository guidance. Do not
-duplicate `docs-writer` for authoring strategy, the engineering skills for
-implementation correctness, or `tester` for test design.
+quality: comments, Markdown, examples, change descriptions, and guidance. Apply
+`.agents/guidelines/english-style.md` only to its defined errors. Leave
+authoring strategy, implementation correctness, and test design to their skills.
 
 ## Review Procedure
 
 1. **Scope the diff.** Review changed documentation files and changed comments
    inside source files. Do not review the full repository unless asked.
 2. **Read each affected file fully.** Prose quality, heading hierarchy,
-   command accuracy, and identifier references require context beyond the diff
-   hunk.
+   command accuracy, and identifier references require context beyond a diff hunk.
 3. **Verify claims against source.** When documentation mentions Gradle tasks,
    module names, versions, toolchain requirements, or runtime behavior,
    confirm it against the relevant code, build file, README, or workflow.
@@ -31,9 +30,13 @@ implementation correctness, or `tester` for test design.
 
 ### A. Source Comments
 
+- **Summaries lead with purpose.** Flag construction, storage, delegation, or
+  lifecycle narration unless it states a caller-visible contract.
 - **KDoc covers the public contract.** Explicit API mode makes public
   declarations contracts; missing or stale KDoc on changed public API is a
-  finding.
+  finding. `AGENTS.md` extends documentation to private declarations.
+- **KDoc is multiline.** Put `/**` and ` */` on separate lines and prefix
+  content with ` *`.
 - **Comments describe behavior or rationale.** Avoid prose that only restates
   parameters, return values, or obvious assignments.
 - **Mention important effects.** Document recomposition triggers, server
@@ -45,8 +48,11 @@ implementation correctness, or `tester` for test design.
   module names, class/function names, and identifiers as code, matching the
   local backtick idiom.
 
-### B. Markdown Docs
+### B. Markdown Docs and Change Descriptions
 
+- **Prose is minimum and complete.** Require the subject or change and its
+  purpose or outcome. Flag mechanics, repetition, purposeless headings, and
+  inventories. Apply the `AGENTS.md` PR and issue rules, including no hard wrap.
 - **Heading hierarchy is valid.** Use one top-level `#`; do not skip levels.
 - **Commands are fenced.** Use fenced code blocks for shell commands and file
   examples. Avoid indented command blocks.
@@ -59,8 +65,7 @@ implementation correctness, or `tester` for test design.
   change set: Chords, Compose Multiplatform, Spine Event Engine, Protobuf,
   ProtoData, codegen plugins, codegen runtime, application shell.
 - **No orphans.** A paragraph, list item, or table cell must not end with a
-  final line containing only one word. Flag it and propose a reflow or
-  rewrite.
+  final line containing only one word. Require reflow or a rewrite.
 - **Project docs keep their ownership.** `README.md` is the project entry
   point, library READMEs own usage instructions, `.agents/project.md` owns the
   project map and CI notes, skills own task-specific policy, and `AGENTS.md`
@@ -71,13 +76,15 @@ implementation correctness, or `tester` for test design.
 - **Skill frontmatter is compact and trigger-focused.** `name` is hyphen-case
   and matches the directory. `description` explains when to use the skill.
 - **Skill body follows the pattern.** Prefer role intro, use cases, fast path
-  or workflow, checks/policy sections, repo notes, verification, and output
-  format.
+  or workflow, policy checks, repository notes, verification, and output format.
+- **Policy stays abstract.** Prefer roles, invariants, and decisions to
+  refactor-sensitive names or messages; keep identifiers in labeled examples.
+- **Shared guidelines stay shared.** Skills reference `.agents/guidelines/`
+  instead of restating design, English, ownership, or root-build policy.
 - **Avoid duplicated policy.** Keep implementation policy in area-specific
   engineering skills, test policy in `tester`, documentation authoring policy
   in `docs-writer`, documentation review policy in `docs-reviewer`, project
-  description in `.agents/project.md`, and global operating policy in
-  `AGENTS.md`.
+  description in `.agents/project.md`, and global policy in `AGENTS.md`.
 - **`openai.yaml` stays UI metadata.** `display_name`, `short_description`,
   and `default_prompt` describe the skill for the interface and must not carry
   durable policy; their routing hints should match the skill's frontmatter and

@@ -26,8 +26,8 @@ Use this skill for UI component and component-infrastructure work:
 For published model Protobuf declarations and Kotlin model extensions under
 `proto-values`, prefer `.agents/skills/model-engineer/SKILL.md`. For generated
 `MessageField`/`MessageOneof`/`MessageDef` contracts, prefer
-`.agents/skills/codegen-engineer/SKILL.md`. For Gradle build logic, use
-`.agents/skills/build-engineer/SKILL.md`.
+`.agents/skills/codegen-engineer/SKILL.md`. For Gradle logic, see the
+`.agents/skills/build-engineer/SKILL.md` guidance.
 
 ## Policy
 
@@ -41,16 +41,15 @@ For published model Protobuf declarations and Kotlin model extensions under
   `proto` must not depend on `client`. Put behavior in the lowest module that
   owns it.
 - Avoid breaking public API: signatures, property names, and visibility of
-  published declarations are contracts for external consumers. Prefer additive
-  changes; when a member is `protected`, it is part of the API for component
-  subclasses.
+  published declarations are external contracts. Prefer additive changes;
+  `protected` members are API for component subclasses.
 - Target Compose Multiplatform 1.5.12; do not use newer Compose APIs. Some
   Compose APIs in use are experimental
   (`@OptIn(ExperimentalComposeUiApi::class)`); keep such opt-ins localized
   and documented.
 - For the Kotlin language itself — the root compiler/library split, explicit
-  API mode, null-safety, `lateinit` in `Props`, and coroutine scoping — follow
-  `.agents/skills/kotlin-engineer/SKILL.md`.
+  API mode, null-safety, `lateinit` in `Props`, and coroutine scoping — use the
+  `.agents/skills/kotlin-engineer/SKILL.md` rules.
 - Match existing KDoc style: `@param` tags for type parameters and
   constructor-like parameters, backticked identifiers, and wrapped lines
   within 100 characters.
@@ -65,15 +64,14 @@ For published model Protobuf declarations and Kotlin model extensions under
   component's `beforeComposeContent`/`content` overrides together when
   changing state or recomposition behavior.
 - Message forms: trace `MessageForm`, field/oneof registration, validation
-  state, and the codegen runtime metadata (`MessageField`, `MessageOneof`)
-  together.
+  state, and codegen metadata (`MessageField`, `MessageOneof`) as one flow.
 - Entity components: trace `app.client` read/observe calls, entity-to-ID
-  mapping, and selection state together (e.g., `EntityChooser`,
-  `DropdownSelector`).
+  mapping, and selection state, including `EntityChooser` and `DropdownSelector`.
 
 ## Verification
 
-Run the narrowest relevant command first (repository root, JDK 11):
+Apply `.agents/guidelines/root-build.md`, then run the narrowest relevant
+command first, from the repository root:
 
 ```bash
 .agents/workflows/gradle-root.sh :<module>:test

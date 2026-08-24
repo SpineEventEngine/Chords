@@ -35,9 +35,9 @@ Each of these owns its area; this skill stays out of them:
   coordinates, and publishing.
 - `.agents/skills/kotlin-jvm-tester/SKILL.md` — how a test suite is
   written. This skill is the baseline for the Kotlin *inside* a test body.
-- `.agents/skills/engineer/SKILL.md`, "Design Restraint" — *whether* to
-  introduce a sealed hierarchy, base class, or type parameter at all. This
-  skill covers how to write one once that decision is made.
+- `.agents/guidelines/design-restraint.md` — *whether* to introduce a sealed
+  hierarchy, base class, or type parameter at all. This skill covers how to
+  write one once that decision is made.
 - `.agents/skills/code-reviewer/SKILL.md` — review output format and
   verdict. Report Kotlin findings through it; do not invent a second format.
 - `AGENTS.md` — verification commands, versioning, and safety policy.
@@ -152,6 +152,12 @@ Within the root modules:
   which includes the generated Protobuf builders used throughout `proto` and
   `proto-values`. There, keep the call readable by other means: one setter
   per line in a builder chain, or a local variable per value.
+- **Kotlin property syntax for Java getters** — `isDeleted`, not `isDeleted()`;
+  `message.value`, not `message.getValue()`. Keep calls for operations or
+  methods that expose no Kotlin property.
+- **One declaration per import.** Never add wildcards or an alias without
+  explicit human direction. Import clear members directly; qualify collisions
+  and generic factories like `of`, `from`, `get`, `create`, `valueOf`, or `newBuilder`.
 - **`data class` for pure value types only** — not for components,
   services, or anything with a lifecycle.
 - **Deprecated API only on explicit instruction.** When directed to use one,
@@ -162,8 +168,7 @@ Within the root modules:
 ## Must Not Do
 
 - **No `catch (e: Throwable)`** — it captures `OutOfMemoryError`,
-  `StackOverflowError`, and cancellation. Catch `Exception` and rethrow
-  cancellation.
+  `StackOverflowError`, and cancellation. Catch `Exception` and rethrow cancellation.
 - **No `.first()` on a flow with no guaranteed emission, without a
   timeout.** The risk is the absence of a value to take, not heat:
   `StateFlow.first()` returns the current value immediately and is safe,
@@ -190,8 +195,9 @@ Within the root modules:
 
 ## Verification
 
-Compile the narrowest module first; the full command set and the JDK
-constraints live in `AGENTS.md`, "Verification and Quality".
+Compile the narrowest module first. The JDK, architecture, and invocation
+constraints live in `.agents/guidelines/root-build.md`; the full command set is
+in `AGENTS.md`, "Verification and Quality".
 
 ```bash
 .agents/workflows/gradle-root.sh :<module>:compileKotlin

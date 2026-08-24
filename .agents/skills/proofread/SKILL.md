@@ -39,7 +39,8 @@ leave the text unchanged and report it.
 
    - Any other argument: use scoped-sweep mode. Treat the argument as a file or
      directory path and enumerate tracked candidates with
-     `git ls-files -- <path>`.
+     `git ls-files -- <path>`. If the path matches no tracked file, report that
+     instead of falling back to a wider scope.
 
 2. Identify target files.
 
@@ -57,9 +58,8 @@ leave the text unchanged and report it.
    codegen `_out/` workspaces, and the generated root `pom.xml` and
    `dependencies.md` reports.
 
-   Match those as output directories, not as any path segment with the same
-   name. A source package directory named `build` is ordinary project-owned
-   code, as in
+   Match output directories, not every same-named path segment. A source package
+   named `build` remains project-owned, for example
    `codegen/plugins/buildSrc/src/main/kotlin/io/spine/dependency/build/`.
 
    Apply `.agents/guidelines/project-owned-files.md` in every mode. In
@@ -95,8 +95,13 @@ leave the text unchanged and report it.
    the wrong occurrence. Include enough context to make each match unique, and
    replace every occurrence at once only when they all need the same fix.
 
-   If an occurrence is ambiguous, leave it unchanged and add it to `Skipped[]`
-   with its catalog topic and the reason `ambiguous`.
+   Leave a catalog-directed non-fix unchanged and record it in `Skipped[]` with
+   its catalog topic and one reason:
+
+   - `ambiguous`: the intended meaning does not determine the correction;
+   - `mixed-dialect`: neither spelling dialect dominates the file; or
+   - `disputed`: the construction's grammaticality is contested, as with
+     "provides the possibility to".
 
 4. Review the diff.
 
@@ -124,4 +129,5 @@ Return:
 - `Skipped[]`, with file, line, catalog topic, and reason.
 
 If no file qualifies, report zero counts. If the base ref was unavailable,
-state that branch-diff mode covered only the working tree.
+state that branch-diff mode covered only the working tree. If a scoped sweep
+matched no tracked file, say so rather than reporting a clean result.

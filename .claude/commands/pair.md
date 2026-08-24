@@ -24,17 +24,21 @@ Your one exception is writing the user's answers into `## Questions`.
 
 ## Start
 
-1. Read the issue number or URL from `$ARGUMENTS`. Without one, ask for it and
-   stop.
+1. Read the issue number or URL from `$ARGUMENTS`. Without one, ask for it and stop.
 2. If `--cp` or `--create-pr` is present, say what it will do when the run
    finishes — new branch, commit, push, draft PR against `master` — and get a
    yes before starting. The flag is their instruction, but publishing is worth
    one confirmation while they are still at the keyboard.
-3. If `--allow-unsafe-agents` is present, explain that an agent command removes
+3. If `--sa` or `--swap-agents` is present, recommend the default seating —
+   Claude implements, Codex reviews — then confirm the swap. A Codex
+   implementer gains shared Gradle-home writes and sandbox network access;
+   prompt injection could alter dependencies or exfiltrate readable data.
+   Git and review guards do not isolate it.
+4. If `--allow-unsafe-agents` is present, explain that an agent command removes
    its CLI approval or sandbox boundary. Confirm that the run is inside an
    externally isolated environment with no host mounts or unrelated
    credentials; otherwise stop.
-4. Start the run in the background, passing `$ARGUMENTS` through unchanged:
+5. Start the run in the background, passing `$ARGUMENTS` through unchanged:
 
    ```bash
    .agents/workflows/pair.sh $ARGUMENTS
@@ -48,7 +52,7 @@ Your one exception is writing the user's answers into `## Questions`.
 ## When It Stops
 
 The exit code says what happened. The working document is
-`.agents/work/issue-<number>/plan.md`.
+`.agents/work/issue-<number>/plan.md` for that task.
 
 **`0` — done, automated tests cover it.** Report `## Outcome` in your own
 words, list the changed files (`git status --short`), and state plainly that

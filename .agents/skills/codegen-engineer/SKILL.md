@@ -14,21 +14,18 @@ description: >
 Use this skill for code generation work:
 
 - ProtoData plugins under `codegen/plugins/` (a separate Gradle project).
-- Plugin-internal Protobuf declarations under
-  `codegen/plugins/codegen-plugins/src/main/proto/**`.
+- Plugin-internal schemas: `codegen/plugins/codegen-plugins/src/main/proto/**`.
 - The codegen runtime under `codegen/runtime/` (Gradle path `:runtime`):
   `MessageField`, `MessageOneof`, `MessageDef`, and related runtime types.
-- Codegen correctness tests under `codegen/tests/` (Gradle path
-  `:codegen-tests`).
-- The codegen wiring in the root build (`modulesWithChordsCodegen`,
-  `publishCodegenPluginsToMavenLocal`, the `io.spine.chords` Gradle plugin
-  configuration).
+- Codegen correctness tests under `codegen/tests/` (Gradle path `:codegen-tests`).
+- Root codegen wiring: `modulesWithChordsCodegen`,
+  `publishCodegenPluginsToMavenLocal`, and the `io.spine.chords` plugin.
 
 For published model Protobuf declarations and Kotlin model extensions under
 `proto-values`, prefer `.agents/skills/model-engineer/SKILL.md`. For components
 that merely consume generated metadata, prefer
-`.agents/skills/component-engineer/SKILL.md`. For build-only concerns, use
-`.agents/skills/build-engineer/SKILL.md`.
+`.agents/skills/component-engineer/SKILL.md`. For build-only concerns, use the
+`.agents/skills/build-engineer/SKILL.md` guidance.
 
 ## Policy
 
@@ -54,14 +51,15 @@ that merely consume generated metadata, prefer
 
 ## Verification
 
-Codegen plugin changes (from `codegen/plugins/`, JDK 17):
+Codegen plugin changes, from the repository root:
 
 ```bash
-./gradlew build
-./gradlew publishToMavenLocal
+.agents/workflows/gradle-codegen.sh build
+.agents/workflows/gradle-codegen.sh publishToMavenLocal
 ```
 
-Runtime and end-to-end verification (from the repository root, JDK 11):
+Runtime and end-to-end verification, following
+`.agents/guidelines/root-build.md`, from the repository root:
 
 ```bash
 .agents/workflows/gradle-root.sh :runtime:test
