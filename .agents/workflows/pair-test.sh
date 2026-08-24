@@ -108,6 +108,10 @@ if [[ -n "${STUB_AGENT_ARGS_RECORD:-}" ]]; then
     printf ' <%s>' "$@" >> "$STUB_AGENT_ARGS_RECORD"
     printf '\n' >> "$STUB_AGENT_ARGS_RECORD"
 fi
+if [[ -n "${STUB_AGENT_ENV_RECORD:-}" ]]; then
+    printf 'CHORDS_NO_GRADLE_DAEMON=%s\nGRADLE_OPTS=%s\n' \
+        "${CHORDS_NO_GRADLE_DAEMON:-}" "${GRADLE_OPTS:-}" > "$STUB_AGENT_ENV_RECORD"
+fi
 doc="$(git rev-parse --show-toplevel)/.agents/work/${PAIR_SLUG}/plan.md"
 fm() {
     awk -v k="$1" '
@@ -579,6 +583,7 @@ AGENT
     export STUB_PR_RECORD="${SANDBOX}/pr-create.args"
     export STUB_REVIEW_PROMPT_RECORD="${SANDBOX}/implementation-review.prompt"
     export STUB_AGENT_ARGS_RECORD="${SANDBOX}/agent-args.log"
+    export STUB_AGENT_ENV_RECORD="${SANDBOX}/agent-env.log"
     R="$repo"
 }
 
@@ -1215,6 +1220,21 @@ sandbox
 AGENT2_CMD="${SANDBOX}/bin/stub-agent2 --sandbox danger-full-access" \
     run "$R" 7 --sa
 want "swapped unsafe agent command is still refused" 1 "allow-unsafe-agents"
+cleanup
+
+# Every agent turn disables reusable Gradle and Kotlin daemons. The Kotlin
+# strategy is a Gradle project property, so GRADLE_OPTS needs its
+# `org.gradle.project.` system-property form.
+sandbox; run "$R" start 7; run "$R" step 7
+want "an agent turn advances with daemon isolation" 0
+check "an agent turn disables reusable Gradle daemons" \
+    "$(grep -q '^CHORDS_NO_GRADLE_DAEMON=1$' "$STUB_AGENT_ENV_RECORD" \
+        && grep -q -- '-Dorg.gradle.daemon=false' "$STUB_AGENT_ENV_RECORD" \
+        && echo 0 || echo 1)"
+check "an agent turn selects in-process Kotlin compilation" \
+    "$(grep -q -- \
+        '-Dorg.gradle.project.kotlin.compiler.execution.strategy=in-process' \
+        "$STUB_AGENT_ENV_RECORD" && echo 0 || echo 1)"
 cleanup
 
 # --- sandboxed implementer verification access ----------------------------
@@ -2124,12 +2144,12 @@ check "lock signal traps terminate the driver after releasing the lock" \
 # the process starts, and the run reviews code that was never compiled.
 check "project settings exist for agent1 to load" \
     "$([[ -f "${REPO}/.claude/settings.json" ]] && echo 0 || echo 1)"
-for command in '.agents/workflows/gradle-root.sh' \
-    './gradlew detekt' './gradlew generatePom mergeAllLicenseReports'; do
-    check "project settings allow ${command}" \
-        "$(grep -qF -- "${command}" "${REPO}/.claude/settings.json" \
-            2>/dev/null && echo 0 || echo 1)"
-done
+check "project settings do not bypass the root Gradle wrapper" \
+    "$(grep -qF -- 'Bash(./gradlew' "${REPO}/.claude/settings.json" \
+        2>/dev/null && echo 1 || echo 0)"
+check "project settings allow the codegen Gradle wrapper" \
+    "$(grep -qF -- 'Bash(.agents/workflows/gradle-codegen.sh:*)' \
+        "${REPO}/.claude/settings.json" 2>/dev/null && echo 0 || echo 1)"
 for command in 'Bash(git status:*)' 'Bash(git diff:*)' \
     'Bash(git log:*)' 'Bash(git show:*)'; do
     check "project settings allow ${command}" \
@@ -2141,6 +2161,15 @@ for skill in build-engineer codegen-engineer component-engineer tester kotlin-en
     check "${skill} routes root Gradle through the wrapper" \
         "$(grep -qF -- '.agents/workflows/gradle-root.sh' \
             "${REPO}/.agents/skills/${skill}/SKILL.md" && echo 0 || echo 1)"
+done
+for file in AGENTS.md \
+    .agents/skills/build-engineer/SKILL.md \
+    .agents/skills/ci-engineer/SKILL.md \
+    .agents/skills/codegen-engineer/SKILL.md \
+    .agents/skills/tester/SKILL.md; do
+    check "${file} routes codegen Gradle through the wrapper" \
+        "$(grep -qF -- '.agents/workflows/gradle-codegen.sh' \
+            "${REPO}/${file}" && echo 0 || echo 1)"
 done
 
 # The root project's JDK 11 selection cannot be expressed as a permission rule:
@@ -2163,6 +2192,88 @@ wrapper_output="$($wrapper --init-script /tmp/untrusted.gradle test 2>&1)"; wrap
 check "the root wrapper refuses arbitrary init scripts" \
     "$([[ "$wrapper_rc" -eq 1 && "$wrapper_output" == *"not permitted"* ]] \
         && echo 0 || echo 1)"
+
+# The codegen wrapper gives the separate build the same allowlistable JDK
+# selection boundary as the root wrapper.
+codegen_wrapper="${SUITE_DIR}/gradle-codegen.sh"
+check "the codegen Gradle wrapper script is executable" \
+    "$([[ -x "$codegen_wrapper" ]] && echo 0 || echo 1)"
+wrapper_output="$($codegen_wrapper publish 2>&1)"; wrapper_rc=$?
+check "the codegen wrapper refuses external publication" \
+    "$([[ "$wrapper_rc" -eq 1 && "$wrapper_output" == *"not permitted"* ]] \
+        && echo 0 || echo 1)"
+wrapper_output="$($codegen_wrapper --init-script /tmp/untrusted.gradle build 2>&1)"
+wrapper_rc=$?
+check "the codegen wrapper refuses arbitrary init scripts" \
+    "$([[ "$wrapper_rc" -eq 1 && "$wrapper_output" == *"not permitted"* ]] \
+        && echo 0 || echo 1)"
+
+fake_root="$(mktemp -d)"
+mkdir -p "${fake_root}/.agents/workflows" "${fake_root}/codegen/plugins" \
+    "${fake_root}/jdk/bin"
+cp "$codegen_wrapper" "${fake_root}/.agents/workflows/gradle-codegen.sh"
+cat > "${fake_root}/jdk/bin/java" <<'JAVA'
+#!/usr/bin/env bash
+printf '    java.specification.version = 17\n'
+JAVA
+cat > "${fake_root}/codegen/plugins/gradlew" <<'GRADLE'
+#!/usr/bin/env bash
+pwd > "$GRADLE_PWD_RECORD"
+printf '<%s>\n' "$@" > "$GRADLE_ARGS_RECORD"
+GRADLE
+chmod +x "${fake_root}/jdk/bin/java" "${fake_root}/codegen/plugins/gradlew"
+GRADLE_PWD_RECORD="${fake_root}/gradle.pwd" \
+    GRADLE_ARGS_RECORD="${fake_root}/gradle.args" \
+    CHORDS_JDK17_HOME="${fake_root}/jdk" \
+    "${fake_root}/.agents/workflows/gradle-codegen.sh" build >/dev/null 2>&1
+wrapper_rc=$?
+check "the codegen wrapper accepts JDK 17" "$wrapper_rc"
+check "the codegen wrapper enters the plugin build" \
+    "$(grep -Fqx "${fake_root}/codegen/plugins" "${fake_root}/gradle.pwd" \
+        && echo 0 || echo 1)"
+check "the codegen wrapper isolates Gradle and Kotlin daemons" \
+    "$(grep -qx '<--no-daemon>' "${fake_root}/gradle.args" \
+        && grep -qx '<-Pkotlin.compiler.execution.strategy=in-process>' \
+            "${fake_root}/gradle.args" \
+        && grep -qx '<build>' "${fake_root}/gradle.args" \
+        && echo 0 || echo 1)"
+cat > "${fake_root}/jdk/bin/java" <<'JAVA'
+#!/usr/bin/env bash
+printf '    java.specification.version = 11\n'
+JAVA
+wrapper_output="$(CHORDS_JDK17_HOME="${fake_root}/jdk" \
+    "${fake_root}/.agents/workflows/gradle-codegen.sh" build 2>&1)"
+wrapper_rc=$?
+check "the codegen wrapper refuses the wrong JDK" \
+    "$([[ "$wrapper_rc" -eq 1 && "$wrapper_output" == *"need JDK 17"* ]] \
+        && echo 0 || echo 1)"
+rm -rf "$fake_root"
+
+# A forced daemonless run must pass both controls to Gradle.
+fake_root="$(mktemp -d)"
+mkdir -p "${fake_root}/.agents/workflows" "${fake_root}/jdk/bin"
+cp "$wrapper" "${fake_root}/.agents/workflows/gradle-root.sh"
+cat > "${fake_root}/jdk/bin/java" <<'JAVA'
+#!/usr/bin/env bash
+printf '    java.specification.version = 11\n'
+printf '    os.arch = x86_64\n'
+JAVA
+cat > "${fake_root}/gradlew" <<'GRADLE'
+#!/usr/bin/env bash
+printf '<%s>\n' "$@" > "$GRADLE_ARGS_RECORD"
+GRADLE
+chmod +x "${fake_root}/jdk/bin/java" "${fake_root}/gradlew"
+GRADLE_ARGS_RECORD="${fake_root}/gradle.args" \
+    CHORDS_JDK11_HOME="${fake_root}/jdk" CHORDS_NO_GRADLE_DAEMON=1 \
+    "${fake_root}/.agents/workflows/gradle-root.sh" :core:test >/dev/null 2>&1
+wrapper_rc=$?
+check "the root wrapper accepts forced daemon isolation" "$wrapper_rc"
+check "the root wrapper passes both daemon controls" \
+    "$(grep -qx '<--no-daemon>' "${fake_root}/gradle.args" \
+        && grep -qx '<-Pkotlin.compiler.execution.strategy=in-process>' \
+            "${fake_root}/gradle.args" \
+        && echo 0 || echo 1)"
+rm -rf "$fake_root"
 
 # A fake Java 11 proves that the architecture guard fires before the real
 # Gradle wrapper starts. The fake uname confines the macOS branch to this test.

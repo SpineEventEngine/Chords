@@ -80,8 +80,10 @@ duplicate its steps.
   generated `MessageField`/`MessageOneof`/`MessageDef` contract between
   `codegen/plugins` and `codegen/runtime`, and both source API and Protobuf wire
   compatibility in `proto-values`.
-- Protobuf model changes: apply `.agents/skills/model-engineer/SKILL.md` to
-  published model declarations and extensions under `proto-values`. Check
+- Protobuf model changes: confirm the `AGENTS.md` "Protobuf Authorization"
+  gate was satisfied for published `.proto` declarations under `proto-values/`.
+  Then apply `.agents/skills/model-engineer/SKILL.md` to those declarations and
+  their extensions. Check
   changed, deleted, or renumbered field tags and confirm retired numbers and
   names are reserved. Inspect every field type, singular/repeated cardinality,
   and `oneof` membership change even when its tag is unchanged. Do not treat
@@ -98,16 +100,18 @@ duplicate its steps.
   of its rules turn on repository specifics a general Kotlin reading would
   get wrong, including which toolchain ceiling governs the file and the
   sanctioned exceptions to otherwise-standard bans.
+- Final import hygiene required by `AGENTS.md` and `kotlin-engineer`: unused
+  imports left behind after a move or rename, wildcard imports, and Kotlin
+  import aliases added without explicit human direction.
 - Missing or weak tests for changed logic, extensions, or codegen behavior.
-  For whether an added suite follows local conventions, apply
-  `.agents/skills/kotlin-jvm-tester/SKILL.md`.
+  Added-suite structure follows `.agents/skills/kotlin-jvm-tester/SKILL.md`.
 - Version-policy misses: `chordsVersion` not incremented, or `pom.xml` /
   `dependencies.md` not regenerated when required.
 - Module-ownership violations, leaked state, unjustified reflection, and
   hidden background work.
 - Workarounds that mask a root cause instead of fixing it.
-- Overengineering, per "Design Restraint" in
-  `.agents/skills/engineer/SKILL.md`: an abstraction with a single
+- Overengineering, per `.agents/guidelines/design-restraint.md`: an
+  abstraction with a single
   implementor, an option nothing sets, or an indirection layer that only
   forwards. A type parameter is a finding only when it preserves no type
   relationship *and* every use instantiates it identically — a single call
@@ -123,11 +127,11 @@ duplicate its steps.
   security findings in the review output. Also use
   `.agents/skills/security-reviewer/SKILL.md` when the task needs deeper
   security-specific analysis.
-- Documentation and comment findings go to
-  `.agents/skills/docs-reviewer/SKILL.md`.
+- Documentation, comment, and change-description findings go to
+  `.agents/skills/docs-reviewer/SKILL.md`, including commit, issue, or pull
+  request prose that omits its subject or purpose.
 - Test design or coverage authoring goes to `.agents/skills/tester/SKILL.md`;
-  test-suite conventions go to
-  `.agents/skills/kotlin-jvm-tester/SKILL.md`.
+  `.agents/skills/kotlin-jvm-tester/SKILL.md` owns suite conventions.
 
 ## Skip
 
@@ -149,8 +153,7 @@ Return three sections, in this order:
 - **Must fix** - correctness bugs, contract breaks, or regressions that cause
   incorrect behavior, a test failure, or a broken build.
 - **Should fix** - missing tests, public API risks, module-ownership
-  violations, or changes that are technically correct but likely to mislead or
-  regress.
+  violations, or technically correct changes likely to mislead or regress.
 - **Nits** - style, naming, minor structure, or handoff notes for another skill.
 
 For each finding, cite the file and line, quote the relevant text, explain the

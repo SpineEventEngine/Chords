@@ -1,23 +1,17 @@
 #!/usr/bin/env bash
 #
-# Runs a root Gradle command under the JDK the root build requires.
-#
-# AGENTS.md prescribes `JAVA_HOME="$(jenv prefix)" ./gradlew …` for the root
-# project on Apple Silicon. No permission rule can express that command: the
-# leading environment assignment and the command substitution mean an allow
-# entry for `./gradlew …` never matches it, and `jenv shell 11` does not
-# survive into the next tool call. An unattended agent therefore reaches review
-# having compiled nothing. This wrapper is the prescribed command behind a
-# single allowlistable path.
+# Runs permitted root Gradle tasks under a verified JDK 11.
 #
 #   .agents/workflows/gradle-root.sh :core:check
 #   .agents/workflows/gradle-root.sh :proto:test --tests "…"
 #
-# Codegen plugin commands are not this script's business: `codegen/plugins` is
-# a separate build on JDK 17 and runs its own `./gradlew` directly.
+# `codegen/plugins` uses `.agents/workflows/gradle-codegen.sh` on JDK 17.
 #
 # Environment:
 #   CHORDS_JDK11_HOME   use this JDK instead of asking jEnv for one
+#   CHORDS_NO_GRADLE_DAEMON
+#                       force the daemonless build described below, whatever
+#                       the sandbox probe concludes
 
 set -euo pipefail
 
@@ -99,7 +93,7 @@ property() { printf '%s\n' "$settings" | awk -F'= ' -v k="$1" '$0 ~ k { print $2
 version="$(property 'java\.specification\.version')"
 [[ "$version" == "11" ]] \
     || die "'${java_home}' reports Java ${version:-unknown}; the root build needs "\
-"JDK 11 (see the Apple Silicon section of AGENTS.md)"
+"JDK 11 (see .agents/guidelines/root-build.md)"
 
 arch="$(property 'os\.arch')"
 if [[ "$(uname -s)" == "Darwin" && "$arch" != "x86_64" ]]; then
@@ -110,5 +104,32 @@ elif [[ "$arch" != "x86_64" && "$arch" != "amd64" ]]; then
 "platform-specific Protobuf and gRPC tooling that may have no macOS ARM build"
 fi
 
+# A daemon inherits its launcher's sandbox and may poison later terminal builds.
+# Disable reusable Gradle and Kotlin daemons when the Kotlin daemon directory is
+# unwritable or the caller requests it. See `.agents/guidelines/root-build.md`.
+probe_writable() {
+    local dir="$1" probe
+    mkdir -p "$dir" 2>/dev/null || return 1
+    probe="${dir}/.chords-write-probe.$$"
+    : > "$probe" 2>/dev/null || return 1
+    rm -f "$probe" 2>/dev/null
+}
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    kotlin_daemon_dir="${HOME}/Library/Application Support/kotlin/daemon"
+else
+    kotlin_daemon_dir="${HOME}/.kotlin/daemon"
+fi
+
+daemon_options=()
+if [[ -n "${CHORDS_NO_GRADLE_DAEMON:-}" ]] || ! probe_writable "$kotlin_daemon_dir"; then
+    # `--no-daemon` leaves no Gradle daemon to inherit; the in-process strategy
+    # leaves no Kotlin daemon either. Both persist across builds otherwise.
+    daemon_options=(--no-daemon -Pkotlin.compiler.execution.strategy=in-process)
+    info "building without a reusable Gradle or Kotlin daemon"
+fi
+
 cd "$REPO_ROOT"
-exec env JAVA_HOME="$java_home" ./gradlew "$@"
+# Bash 3.2 treats an empty array as unset under `set -u`, so expand it guarded.
+exec env JAVA_HOME="$java_home" ./gradlew \
+    ${daemon_options[@]+"${daemon_options[@]}"} "$@"

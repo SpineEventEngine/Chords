@@ -1,8 +1,5 @@
 # CLAUDE.md
 
-See [`AGENTS.md`](AGENTS.md) for the full repository operating policy: safety
-rules, Git history policy, verification commands, development conventions, and
-code review guidance.
-
-See [`.agents/skills/README.md`](.agents/skills/README.md) for the local skill
-index and routing overview.
+Read [`AGENTS.md`](AGENTS.md) for the repository operating policy, then route
+task policy through the [`.agents/skills/` index](.agents/skills/README.md) and
+the shared guidelines under [`.agents/guidelines/`](.agents/guidelines/).

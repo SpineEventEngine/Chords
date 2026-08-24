@@ -6,75 +6,91 @@ for an ordinary suite of flat `@Test` methods.
 
 ## Nested case groups
 
-Keep `@Nested` (with any visibility and `inner class`) on **one line** and
-put the name on the **next** line, for backticked and plain names alike. The
-backtick rule is the same as for a test method: backtick a multi-word
-sentence or a Kotlin hard keyword, and write a single legal identifier
-plainly. A `@Nested` class is a declaration, so it carries KDoc like any
-other.
+Keep `@Nested inner class` on one line and put the name on the next. Backtick
+multi-word names and Kotlin keywords, but not a legal single identifier. A
+`@Nested` class carries KDoc like any other declaration.
+
+The outer `@DisplayName` supplies the subject and the `should` lead-in. Make
+the nested display name and its test names continue that sentence.
 
 ```kotlin
-// Correct — multi-word name, so backticked and wrapped to the next line
 /**
- * Groups the cases covering the extension-based factories.
+ * Tests how a projection preserves its state.
  */
-@Nested inner class
-`create instances by extension which` {
-    // ...
-}
+@DisplayName("`Projection` should")
+internal class ProjectionSpec {
 
-// Correct — single valid identifier, no backticks, still on its own line
-/**
- * Groups the constructor-argument validation cases.
- */
-@Nested inner class
-Construction {
-    // ...
+    /**
+     * Groups state-integrity cases.
+     */
+    @DisplayName("preserve state")
+    @Nested inner class
+    StateIntegrity {
+
+        /**
+         * Covers repeated delivery of the same message.
+         */
+        @Test
+        fun `after repeated delivery`() {
+            // ...
+        }
+    }
 }
 ```
 
-```kotlin
-// Avoid — name on the same line as the declaration
-@Nested
-internal inner class `check that a value is positive` {
-}
-```
-
-No suite uses `@Nested` today; the rule applies to the first one that does.
+A legacy suite may keep its full display-name stem until materially reworked.
 
 ## Parameterized tests
 
-Use `@ParameterizedTest` with `@MethodSource`. Chords supplies the data from
-a **private instance method** on a suite annotated
-`@TestInstance(TestInstance.Lifecycle.PER_CLASS)`, rather than from a
-`companion object` with `@JvmStatic` — `CodegenPluginsSpec` in
-`codegen/tests` is the reference. Follow the neighboring file.
+Use `@ParameterizedTest` with `@MethodSource`. The local pattern in
+`CodegenPluginsSpec` is `@TestInstance(PER_CLASS)` with a private instance
+factory returning `Stream<Arguments>`; do not replace it with `@JvmStatic`.
 
-Prefer a parameterized test over a loop when the cases are a fixed,
-enumerable set: a failure then names the case instead of failing the whole
-method. When a loop is the better fit, wrap each iteration in `withClue` so
-the failure still identifies the offending input.
+```kotlin
+/**
+ * Verifies classification for supplied values.
+ */
+@TestInstance(PER_CLASS)
+internal class ClassificationSpec {
+
+    /**
+     * Classifies each supplied value.
+     */
+    @ParameterizedTest
+    @MethodSource("classificationCases")
+    fun `classify each supplied value`(value: String, expected: Boolean) {
+        classify(value) shouldBe expected
+    }
+
+    /**
+     * Returns values paired with their expected classification.
+     */
+    @Suppress("unused")
+    private fun classificationCases(): Stream<Arguments> = Stream.of(
+        of("accepted", true),
+        of("rejected", false),
+    )
+}
+```
+
+Prefer this to a loop for fixed cases so failures name the case. Otherwise use
+`withClue` around each iteration.
 
 ## Test-environment helpers
 
-A helper that sets up the test *environment* is a separate concern from a
-stub of a collaborator, and it gets its own file.
+A JVM-wide environment installer is separate from a collaborator stub and
+gets its own role-named file rather than a suite-specific `SpecEnv`.
 
-`TestApplication.kt` in `client/src/test` is the example. It installs the
-JVM-wide `app` property with a minimal **real** `Application` — not a mock —
-because types under test read application-wide defaults on construction, and
-reading an unassigned `app` throws.
+`TestApplication.kt` in `core/src/test` and `client/src/test` provide the local
+pattern: they install a minimal real `Application` because targets read the
+JVM-wide `app` property and an unassigned value throws.
 
-The part worth copying is its `install()`: idempotent and synchronized,
-because all test classes share one JVM and their execution order is not
-fixed. Every suite that needs the environment calls `install()` itself
-rather than assuming another suite already ran. Follow that shape for any
-future environment helper.
+Make `install()` idempotent and synchronized. Every dependent suite calls it;
+none assumes another suite already ran.
 
 ## What each `testlib` base contributes
 
-The three bases contribute *different* tests. Know which ones you inherit,
-so you neither duplicate them nor assume coverage you did not get.
+Know each base's inherited tests to avoid duplication or missing coverage.
 
 - **`ClassTest<T>`** adds exactly **one** test: `NullPointerTester` over the
   subject's static methods (public by default; pass a `Visibility` to the
@@ -91,8 +107,5 @@ so you neither duplicate them nor assume coverage you did not get.
   constructor exists and at least one private one does. Its constructor takes
   the accessor as a `Supplier<T>` alongside the subject class.
 
-So `ClassTest` is the narrow choice: pick it for a class whose static methods
-you want null-checked, and add the final/private-constructor assertions
-yourself if they matter. Where the target is a genuine utility class,
-`UtilityClassTest` is the right base — choosing `ClassTest` there silently
-drops two checks.
+Use `ClassTest` for static null checks and `UtilityClassTest` for the complete
+utility-class contract; choosing the former for a utility class drops two checks.
