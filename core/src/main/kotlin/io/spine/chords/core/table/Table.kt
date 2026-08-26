@@ -338,7 +338,10 @@ public abstract class Table<E> : Component() {
             modifier = Modifier
                 .fillMaxSize()
                 .background(containerColor ?: colorScheme.surface)
-                .padding(resolvedContentPadding()),
+                .padding(
+                    customContentPadding
+                        ?: PaddingValues(ChordsTheme.dimensions.spacingLarge)
+                ),
             verticalArrangement = Top,
         ) {
             HeaderTableRow(
@@ -359,17 +362,6 @@ public abstract class Table<E> : Component() {
                 }
             }
         }
-    }
-
-    /**
-     * Resolves unchanged default table padding against the active theme.
-     *
-     * @return The padding to apply to the table content.
-     */
-    @Composable
-    private fun resolvedContentPadding(): PaddingValues {
-        return customContentPadding
-            ?: PaddingValues(ChordsTheme.dimensions.spacingLarge)
     }
 
     /**
