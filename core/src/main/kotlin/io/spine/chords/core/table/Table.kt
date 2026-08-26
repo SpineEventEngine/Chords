@@ -66,6 +66,7 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -302,6 +303,7 @@ public abstract class Table<E> : Component() {
         columns: List<TableColumn<E>>
     ) {
         val listState = rememberLazyListState()
+        SelectedEntityVisibilityEffect(entities, listState)
         if (selectedRowColor == null) {
             selectedRowColor = colorScheme.surfaceVariant
         }
@@ -313,7 +315,7 @@ public abstract class Table<E> : Component() {
                 state = listState
             ) {
                 entities.forEach { value ->
-                    item {
+                    item(key = extractEntityId(value)) {
                         ContentTableRow(
                             entity = value,
                             columns = columns,
@@ -325,6 +327,32 @@ public abstract class Table<E> : Component() {
                 }
             }
             VerticalScrollBar(listState) { Modifier.align(CenterEnd) }
+        }
+    }
+
+    /**
+     * Restores visibility when sorting moves the selected entity outside the viewport.
+     *
+     * User scrolling does not restart this effect while the selected entity keeps the same index.
+     */
+    @Composable
+    private fun SelectedEntityVisibilityEffect(
+        entities: List<E>,
+        listState: LazyListState
+    ) {
+        val selectedEntityId = selectedEntity.value?.let(::extractEntityId)
+        val selectedEntityIndex = selectedEntityId?.let { entityId ->
+            entities.indexOfFirst { entity ->
+                extractEntityId(entity) == entityId
+            }.takeIf { index -> index >= 0 }
+        }
+        LaunchedEffect(selectedEntityId, selectedEntityIndex) {
+            val isVisible = listState.layoutInfo.visibleItemsInfo.any { item ->
+                item.index == selectedEntityIndex
+            }
+            if (selectedEntityIndex != null && !isVisible) {
+                listState.animateScrollToItem(selectedEntityIndex)
+            }
         }
     }
 
