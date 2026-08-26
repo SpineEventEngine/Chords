@@ -30,9 +30,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import io.spine.chords.core.appshell.Props
 import kotlin.reflect.javaType
 import kotlin.reflect.full.allSupertypes
@@ -612,7 +614,7 @@ public abstract class Component : DefaultPropsOwnerBase() {
      * [ComponentSetup.invoke] or an analogous component
      * declaration function.
      */
-    internal var props: Props<Component>? = null
+    internal var props: Props<Component>? by mutableStateOf(null)
 
     /**
      * A state variable that specifies whether the component's [initialize]
