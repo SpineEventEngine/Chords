@@ -167,6 +167,8 @@ internal class CodegenPluginsSpec {
             of(TestCommandOneOfTypeDef, oneOfTypeBuilder(), 3, 1),
             of(TestCommandPrimitivesDef, primitivesBuilder(), 7, 0),
             of(ExternalTypeDef, externalTypeBuilder(), 1, 0),
+            of(ExternalTypeHolderDef, externalTypeHolderBuilder(), 0, 0),
+            of(ExternalTypeHolderNestedDef, externalTypeHolderNestedBuilder(), 1, 0),
             of(NoFieldsMessageDef, noFieldsMessageBuilder(), 0, 0),
         )
     }
