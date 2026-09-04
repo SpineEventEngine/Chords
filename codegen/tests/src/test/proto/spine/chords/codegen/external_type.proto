@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,33 @@ option java_multiple_files = true;
 // The code should be generated for messages defined not only in `commands.proto`.
 message ExternalType {
     string id = 1 [(required) = true];
+
+    // Enumerates states belonging to a message used as another field type.
+    enum State {
+        // The default state.
+        TYPE_STATE_UNSPECIFIED = 0;
+
+        // The ready state.
+        TYPE_STATE_READY = 1;
+    }
+}
+
+// Declares nested types consumed from another Java package.
+message ExternalTypeHolder {
+    // Enumerates states used to verify references to nested types.
+    enum State {
+        // The default state.
+        STATE_UNSPECIFIED = 0;
+
+        // The active state.
+        STATE_ACTIVE = 1;
+    }
+
+    // Defines a message type nested within the external holder.
+    message Nested {
+        // A value used by the generated field accessors.
+        string value = 1;
+    }
 }
 
 // `MessageDef` implementation should be generated for messages without fields.

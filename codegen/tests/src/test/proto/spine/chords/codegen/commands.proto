@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,6 +80,24 @@ message TestCommand {
     }
 
     spine.chords.codegen.ExternalType external_type = 10;
+
+    // A nested enum declared by a message from another Java package.
+    spine.chords.codegen.ExternalTypeHolder.State external_state = 11;
+
+    // A nested enum whose declaring message is already imported as a field type.
+    spine.chords.codegen.ExternalType.State external_type_state = 12;
+
+    // A nested message declared by a type from another Java package.
+    spine.chords.codegen.ExternalTypeHolder.Nested external_nested = 13;
+
+    // Associates label names with their values.
+    map<string, string> labels = 14;
+
+    // Associates numeric IDs with nested values declared in another Java package.
+    map<int32, spine.chords.codegen.ExternalTypeHolder.Nested> external_nested_by_id = 15;
+
+    // Associates enum names with their values.
+    map<string, EnumType> enum_by_name = 16;
 
     enum EnumType {
         ET_UNDEFINED = 0;

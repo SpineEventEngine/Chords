@@ -36,7 +36,7 @@ object ToolBase {
     const val group = Spine.toolsGroup
     const val version = "2.0.0-SNAPSHOT.376"
     const val dogfoodingVersion = "2.0.0-SNAPSHOT.376"
-    const val intellijPlatformVersion = "2.0.0-SNAPSHOT.333"
+    const val intellijPlatformVersion = "2.0.0-SNAPSHOT.340"
 
     const val lib = "$group:tool-base:$version"
     const val oldLib = "$group:spine-tool-base:2.0.0-SNAPSHOT.332"
