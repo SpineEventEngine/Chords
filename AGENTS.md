@@ -43,6 +43,11 @@ or a preserved detail above.
 
 ## Working Tree Safety
 
+Human changes take precedence over agent work. This applies equally to code and
+documentation, including edits made before or during an agent's turn. If a human
+edits, removes, or replaces content, preserve the latest human version and do not
+reapply an earlier agent version without explicit approval for that exact content.
+
 Treat pre-existing worktree and index changes as human-authored unless their
 provenance is known. Modify or revert one only when the current prompt explicitly
 requests that exact change; general implementation authorization is insufficient.

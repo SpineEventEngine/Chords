@@ -68,15 +68,9 @@ internal fun primitivesBuilder() =
 internal fun externalTypeBuilder() =
     ExternalType.newBuilder()
 
-/**
- * Creates a builder for testing the generated definition of [ExternalTypeHolder].
- */
 internal fun externalTypeHolderBuilder() =
     ExternalTypeHolder.newBuilder()
 
-/**
- * Creates a builder for testing the generated definition of [ExternalTypeHolder.Nested].
- */
 internal fun externalTypeHolderNestedBuilder() =
     ExternalTypeHolder.Nested.newBuilder()
 
