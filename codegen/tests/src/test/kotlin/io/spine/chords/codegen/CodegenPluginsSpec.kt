@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,7 +163,7 @@ internal class CodegenPluginsSpec {
     @Suppress("unused")
     private fun messageDefTestData(): Stream<Arguments> {
         return Stream.of(
-            of(TestCommandDef, testCommandBuilder(), 10, 1),
+            of(TestCommandDef, testCommandBuilder(), 13, 1),
             of(TestCommandOneOfTypeDef, oneOfTypeBuilder(), 3, 1),
             of(TestCommandPrimitivesDef, primitivesBuilder(), 7, 0),
             of(ExternalTypeDef, externalTypeBuilder(), 1, 0),
@@ -294,6 +294,32 @@ internal class CodegenPluginsSpec {
                 TestCommandDef.externalType, testCommandBuilder(),
                 listOf(externalType("ET1"), externalType("ET2")),
                 "external_type", false, false
+            ),
+            of(
+                TestCommandDef.externalState, testCommandBuilder(),
+                listOf(
+                    ExternalTypeHolder.State.STATE_UNSPECIFIED,
+                    ExternalTypeHolder.State.STATE_ACTIVE
+                ),
+                "external_state", false, true
+            ),
+            of(
+                TestCommandDef.externalTypeState, testCommandBuilder(),
+                listOf(
+                    ExternalType.State.TYPE_STATE_UNSPECIFIED,
+                    ExternalType.State.TYPE_STATE_READY
+                ),
+                "external_type_state", false, true
+            ),
+            of(
+                TestCommandDef.externalNested, testCommandBuilder(),
+                listOf(
+                    ExternalTypeHolder.Nested.getDefaultInstance(),
+                    ExternalTypeHolder.Nested.newBuilder()
+                        .setValue("value")
+                        .build()
+                ),
+                "external_nested", false, false
             ),
             of(
                 ExternalTypeDef.id, ExternalType.newBuilder(),

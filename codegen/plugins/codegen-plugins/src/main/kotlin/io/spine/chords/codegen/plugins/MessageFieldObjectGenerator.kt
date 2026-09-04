@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -277,21 +277,21 @@ private fun FieldType.toClassName(typeSystem: TypeSystem)
     }
 
 /**
- * Returns a [ClassName] for the [Type] that is a message or primitive.
+ * Returns a [ClassName] for the [Type] that is a message, enum, or primitive.
  */
 private fun Type.toClassName(typeSystem: TypeSystem): ClassName {
     if (isPrimitive) {
         return primitive.primitiveClass().asClassName()
     }
     val javaPackage = typeSystem.findHeader(this)!!.javaPackage()
-    return typeName.messageClassName(javaPackage)
+    return typeName.typeClassName(javaPackage)
 }
 
 /**
- * Returns a [ClassName] for the [TypeName] that is a message.
+ * Returns a [ClassName] for the [TypeName] that is a message or an enum.
  */
-private fun TypeName.messageClassName(javaPackage: String): ClassName {
-    return ClassName(javaPackage, simpleClassName)
+private fun TypeName.typeClassName(javaPackage: String): ClassName {
+    return ClassName(javaPackage, nestingTypeNameList + simpleName)
 }
 
 /**

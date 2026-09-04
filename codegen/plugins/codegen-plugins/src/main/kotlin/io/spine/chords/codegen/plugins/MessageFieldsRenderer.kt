@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ package io.spine.chords.codegen.plugins
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import io.spine.chords.runtime.MessageDef
-import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageOneof
 import io.spine.protodata.ast.Field
@@ -90,7 +89,7 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
      * for the [fields] provided.
      */
     private fun TypeName.generateFileContent(fields: Iterable<Field>) =
-        FileSpec.builder(fullClassName(typeSystem))
+        FileSpec.builder(javaPackage(typeSystem), messageDefClassName())
             .indent(Indent.defaultJavaIndent.toString())
             .also { fileBuilder ->
                 MessageDefFileGenerator(this, fields, typeSystem)
@@ -113,9 +112,7 @@ public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
      * Returns a name of the generated file for the [TypeName].
      */
     private fun TypeName.generateFileName(): String {
-        return nestingTypeNameList.joinToString(
-            "", "", "${simpleName}$MESSAGE_DEF_CLASS_SUFFIX.kt"
-        )
+        return "${messageDefClassName()}.kt"
     }
 }
 
@@ -134,5 +131,5 @@ internal fun TypeName.javaPackage(typeSystem: TypeSystem): String {
  * Returns a fully qualified [ClassName] for the [TypeName].
  */
 internal fun TypeName.fullClassName(typeSystem: TypeSystem): ClassName {
-    return ClassName(javaPackage(typeSystem), simpleClassName)
+    return ClassName(javaPackage(typeSystem), nestingTypeNameList + simpleName)
 }
