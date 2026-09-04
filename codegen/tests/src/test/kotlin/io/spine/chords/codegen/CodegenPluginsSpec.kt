@@ -163,7 +163,7 @@ internal class CodegenPluginsSpec {
     @Suppress("unused")
     private fun messageDefTestData(): Stream<Arguments> {
         return Stream.of(
-            of(TestCommandDef, testCommandBuilder(), 13, 1),
+            of(TestCommandDef, testCommandBuilder(), 15, 1),
             of(TestCommandOneOfTypeDef, oneOfTypeBuilder(), 3, 1),
             of(TestCommandPrimitivesDef, primitivesBuilder(), 7, 0),
             of(ExternalTypeDef, externalTypeBuilder(), 1, 0),
@@ -320,6 +320,26 @@ internal class CodegenPluginsSpec {
                         .build()
                 ),
                 "external_nested", false, false
+            ),
+            of(
+                TestCommandDef.labels, testCommandBuilder(),
+                listOf(
+                    mapOf("primary" to "first"),
+                    mapOf("secondary" to "second")
+                ),
+                "labels", false, true
+            ),
+            of(
+                TestCommandDef.externalNestedById, testCommandBuilder(),
+                listOf(
+                    mapOf(1 to ExternalTypeHolder.Nested.getDefaultInstance()),
+                    mapOf(
+                        2 to ExternalTypeHolder.Nested.newBuilder()
+                            .setValue("value")
+                            .build()
+                    )
+                ),
+                "external_nested_by_id", false, true
             ),
             of(
                 ExternalTypeDef.id, ExternalType.newBuilder(),

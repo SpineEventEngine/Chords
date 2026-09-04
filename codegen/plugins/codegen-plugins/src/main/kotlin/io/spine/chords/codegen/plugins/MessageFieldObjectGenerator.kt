@@ -44,11 +44,13 @@ import io.spine.protodata.ast.Field
 import io.spine.protodata.ast.FieldType
 import io.spine.protodata.ast.FieldType.KindCase.ENUMERATION
 import io.spine.protodata.ast.FieldType.KindCase.LIST
+import io.spine.protodata.ast.FieldType.KindCase.MAP
 import io.spine.protodata.ast.FieldType.KindCase.MESSAGE
 import io.spine.protodata.ast.FieldType.KindCase.PRIMITIVE
 import io.spine.protodata.ast.Type
 import io.spine.protodata.ast.TypeName
 import io.spine.protodata.ast.isList
+import io.spine.protodata.ast.isMap
 import io.spine.protodata.ast.toType
 import io.spine.protodata.ast.typeName
 import io.spine.protodata.java.getterName
@@ -249,7 +251,7 @@ private fun Field.generateSetValueCode(messageTypeName: TypeName): String {
     val messageSimpleClassName = messageTypeName.simpleClassName
     val builderCast = "builder.safeCast<$messageSimpleClassName.Builder>()"
     val setterCall = "$primarySetterName(newValue)"
-    return if (isList) {
+    return if (isList || isMap) {
         "$builderCast.clear${name.value.camelCase()}().$setterCall"
     } else {
         "$builderCast.$setterCall"
@@ -271,6 +273,10 @@ private fun FieldType.toClassName(typeSystem: TypeSystem)
         MESSAGE, ENUMERATION, PRIMITIVE -> toType().toClassName(typeSystem)
         LIST -> List::class.asClassName().parameterizedBy(
             list.toClassName(typeSystem)
+        )
+        MAP -> Map::class.asClassName().parameterizedBy(
+            map.keyType.primitiveClass().asClassName(),
+            map.valueType.toClassName(typeSystem)
         )
 
         else -> error("The field type is not supported yet: `$this`")
@@ -306,13 +312,13 @@ private val Field.required: Boolean
 /**
  * Returns a "hasValue" invocation code for the [Field].
  *
- * The generated code returns `true` if a field is repeated, is an enum,
- * or a primitive. This is required to be compatible with the design approach
- * of `protoc`-generated Java code. There, `hasValue` methods are not being
- * generated for the fields of such kinds.
+ * The generated code returns `true` if a field is a list, map, enum, or primitive.
+ * This is required to be compatible with the design approach of `protoc`-generated
+ * Java code. There, `hasValue` methods are not being generated for the fields of
+ * such kinds.
  */
 private val Field.hasValueInvocation: String
-    get() = if (isList || type.isEnum || type.isPrimitive)
-        "true"
-    else
+    get() = if (type.isMessage)
         "message.has${name.value.camelCase()}()"
+    else
+        "true"
