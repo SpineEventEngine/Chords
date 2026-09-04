@@ -96,6 +96,9 @@ message TestCommand {
     // Associates numeric IDs with nested values declared in another Java package.
     map<int32, spine.chords.codegen.ExternalTypeHolder.Nested> external_nested_by_id = 15;
 
+    // Associates enum names with their values.
+    map<string, EnumType> enum_by_name = 16;
+
     enum EnumType {
         ET_UNDEFINED = 0;
         ENUM_FIELD_1 = 1;

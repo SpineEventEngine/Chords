@@ -49,8 +49,7 @@ import io.spine.protodata.ast.FieldType.KindCase.MESSAGE
 import io.spine.protodata.ast.FieldType.KindCase.PRIMITIVE
 import io.spine.protodata.ast.Type
 import io.spine.protodata.ast.TypeName
-import io.spine.protodata.ast.isList
-import io.spine.protodata.ast.isMap
+import io.spine.protodata.ast.isSingular
 import io.spine.protodata.ast.toType
 import io.spine.protodata.ast.typeName
 import io.spine.protodata.java.getterName
@@ -251,7 +250,7 @@ private fun Field.generateSetValueCode(messageTypeName: TypeName): String {
     val messageSimpleClassName = messageTypeName.simpleClassName
     val builderCast = "builder.safeCast<$messageSimpleClassName.Builder>()"
     val setterCall = "$primarySetterName(newValue)"
-    return if (isList || isMap) {
+    return if (!type.isSingular) {
         "$builderCast.clear${name.value.camelCase()}().$setterCall"
     } else {
         "$builderCast.$setterCall"
@@ -312,10 +311,9 @@ private val Field.required: Boolean
 /**
  * Returns a "hasValue" invocation code for the [Field].
  *
- * The generated code returns `true` if a field is a list, map, enum, or primitive.
- * This is required to be compatible with the design approach of `protoc`-generated
- * Java code. There, `hasValue` methods are not being generated for the fields of
- * such kinds.
+ * The generated code returns `true` for every field except a singular
+ * message. This follows the field-presence approach used by
+ * `protoc`-generated Java code.
  */
 private val Field.hasValueInvocation: String
     get() = if (type.isMessage)

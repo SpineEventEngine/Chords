@@ -163,7 +163,7 @@ internal class CodegenPluginsSpec {
     @Suppress("unused")
     private fun messageDefTestData(): Stream<Arguments> {
         return Stream.of(
-            of(TestCommandDef, testCommandBuilder(), 15, 1),
+            of(TestCommandDef, testCommandBuilder(), 16, 1),
             of(TestCommandOneOfTypeDef, oneOfTypeBuilder(), 3, 1),
             of(TestCommandPrimitivesDef, primitivesBuilder(), 7, 0),
             of(ExternalTypeDef, externalTypeBuilder(), 1, 0),
@@ -342,6 +342,14 @@ internal class CodegenPluginsSpec {
                     )
                 ),
                 "external_nested_by_id", false, true
+            ),
+            of(
+                TestCommandDef.enumByName, testCommandBuilder(),
+                listOf(
+                    mapOf("undefined" to EnumType.ET_UNDEFINED),
+                    mapOf("first" to EnumType.ENUM_FIELD_1)
+                ),
+                "enum_by_name", false, true
             ),
             of(
                 ExternalTypeDef.id, ExternalType.newBuilder(),
