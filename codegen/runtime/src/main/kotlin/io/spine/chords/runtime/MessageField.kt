@@ -80,11 +80,9 @@ public interface MessageField<T : Message, V : MessageFieldValue> {
     /**
      * Returns `true` if a value was set for this field in the given message.
      *
-     * In the generated implementations, it always returns `true` if a field
-     * is repeated, is an enum, or a primitive. This is required to be
-     * compatible with the design approach of `protoc`-generated Java code.
-     * There, `hasValue` methods are not being generated for the fields
-     * of such kinds.
+     * The generated code returns `true` for every field except a singular
+     * message. This follows the field-presence approach used by
+     * `protoc`-generated Java code.
      */
     public fun hasValue(message: T): Boolean
 

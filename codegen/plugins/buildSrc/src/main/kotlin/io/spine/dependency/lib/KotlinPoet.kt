@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ package io.spine.dependency.lib
  */
 @Suppress("unused", "ConstPropertyName")
 object KotlinPoet {
-    private const val version = "2.0.0"
+    private const val version = "2.3.0"
 
     const val lib = "com.squareup:kotlinpoet:${version}"
 }

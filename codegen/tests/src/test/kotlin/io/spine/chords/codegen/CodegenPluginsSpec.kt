@@ -163,10 +163,12 @@ internal class CodegenPluginsSpec {
     @Suppress("unused")
     private fun messageDefTestData(): Stream<Arguments> {
         return Stream.of(
-            of(TestCommandDef, testCommandBuilder(), 13, 1),
+            of(TestCommandDef, testCommandBuilder(), 16, 1),
             of(TestCommandOneOfTypeDef, oneOfTypeBuilder(), 3, 1),
             of(TestCommandPrimitivesDef, primitivesBuilder(), 7, 0),
             of(ExternalTypeDef, externalTypeBuilder(), 1, 0),
+            of(ExternalTypeHolderDef, externalTypeHolderBuilder(), 0, 0),
+            of(ExternalTypeHolderNestedDef, externalTypeHolderNestedBuilder(), 1, 0),
             of(NoFieldsMessageDef, noFieldsMessageBuilder(), 0, 0),
         )
     }
@@ -320,6 +322,34 @@ internal class CodegenPluginsSpec {
                         .build()
                 ),
                 "external_nested", false, false
+            ),
+            of(
+                TestCommandDef.labels, testCommandBuilder(),
+                listOf(
+                    mapOf("primary" to "first"),
+                    mapOf("secondary" to "second")
+                ),
+                "labels", false, true
+            ),
+            of(
+                TestCommandDef.externalNestedById, testCommandBuilder(),
+                listOf(
+                    mapOf(1 to ExternalTypeHolder.Nested.getDefaultInstance()),
+                    mapOf(
+                        2 to ExternalTypeHolder.Nested.newBuilder()
+                            .setValue("value")
+                            .build()
+                    )
+                ),
+                "external_nested_by_id", false, true
+            ),
+            of(
+                TestCommandDef.enumByName, testCommandBuilder(),
+                listOf(
+                    mapOf("undefined" to EnumType.ET_UNDEFINED),
+                    mapOf("first" to EnumType.ENUM_FIELD_1)
+                ),
+                "enum_by_name", false, true
             ),
             of(
                 ExternalTypeDef.id, ExternalType.newBuilder(),
