@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,27 +26,32 @@
 
 package io.spine.chords.core.appshell
 
+import androidx.compose.foundation.layout.Arrangement.spacedBy
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Divider
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
+import io.spine.chords.core.styling.ChordsTheme
 
 /**
  * Represents the TopBar, aka 'Header', of the main screen.
  *
  * @param modifier A [Modifier] for this component.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 public class TopBar(private val modifier: Modifier = Modifier) : Component() {
 
     /**
@@ -59,22 +64,46 @@ public class TopBar(private val modifier: Modifier = Modifier) : Component() {
 
     @Composable
     protected override fun content() {
-        TopAppBar(
-            title = {
-                Text(
-                    app.name,
-                    style = MaterialTheme.typography.displayLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            actions = actions,
+        Surface(
             modifier = modifier
-                .padding(0.dp)
-                .fillMaxWidth(),
-            windowInsets = WindowInsets(8.dp),
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
-            )
-        )
+                .fillMaxWidth()
+                .height(ChordsTheme.dimensions.appBarHeight),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1F)
+                        .padding(
+                            start = ChordsTheme.dimensions.spacingMedium,
+                            end = ChordsTheme.dimensions.spacingSmall
+                        ),
+                    verticalAlignment = CenterVertically
+                ) {
+                    Text(
+                        app.name,
+                        modifier = Modifier.weight(1F),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    CompositionLocalProvider(
+                        LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
+                    ) {
+                        Row(
+                            horizontalArrangement = spacedBy(
+                                ChordsTheme.dimensions.spacingXSmall
+                            ),
+                            verticalAlignment = CenterVertically,
+                            content = actions
+                        )
+                    }
+                }
+                Divider(
+                    thickness = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+            }
+        }
     }
 }

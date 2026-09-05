@@ -51,9 +51,11 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily.Companion.Monospace
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.input.getSelectedText
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.DropdownListBox
@@ -65,6 +67,7 @@ import io.spine.chords.core.InputField
 import io.spine.chords.core.InputReviser
 import io.spine.chords.core.RawTextContent
 import io.spine.chords.core.exceptionBasedParser
+import io.spine.chords.core.styling.ChordsTheme
 import io.spine.money.Currency
 import io.spine.money.Currency.CURRENCY_UNDEFINED
 import io.spine.money.Currency.UNRECOGNIZED
@@ -113,6 +116,11 @@ public class MoneyField : InputField<Money>() {
      */
     private var selectedCurrency by mutableStateOf(defaultCurrency)
 
+    /**
+     * Width reserved for a currency code in the dropdown list.
+     */
+    public var currencyCodeWidth: Dp by mutableStateOf(56.dp)
+
     init {
         inputReviser = MoneyFieldReviser(defaultCurrency)
     }
@@ -122,8 +130,16 @@ public class MoneyField : InputField<Money>() {
     override fun beforeComposeContent() {
         super.beforeComposeContent()
         inputReviser = MoneyFieldReviser(selectedCurrency)
-        textStyle = LocalTextStyle.current.copy(fontFamily = Monospace)
     }
+
+    /**
+     * Uses a monospaced font for aligned monetary input by default.
+     */
+    @Composable
+    @ReadOnlyComposable
+    override fun defaultTextStyle(): TextStyle = LocalTextStyle.current.copy(
+        fontFamily = Monospace
+    )
 
     override fun parseValue(rawText: String): Money = exceptionBasedParser(
         IllegalArgumentException::class,
@@ -150,16 +166,22 @@ public class MoneyField : InputField<Money>() {
             noneItemEnabled = false
             itemContent = {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp),
+                    modifier = Modifier.padding(
+                        horizontal = ChordsTheme.dimensions.spacingMedium
+                    ),
                     verticalAlignment = CenterVertically
                 ) {
                     Text(
                         text = it.name,
-                        modifier = Modifier.width(50.dp),
+                        modifier = Modifier.width(currencyCodeWidth),
                         fontWeight = SemiBold
                     )
                     Text(
-                        modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+                        modifier = Modifier.padding(
+                            start = ChordsTheme.dimensions.spacingSmall,
+                            top = ChordsTheme.dimensions.spacingXSmall,
+                            bottom = ChordsTheme.dimensions.spacingXSmall
+                        ),
                         text = it.options.name
                     )
                 }

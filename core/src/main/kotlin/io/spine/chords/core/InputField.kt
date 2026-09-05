@@ -28,14 +28,16 @@ package io.spine.chords.core
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldColors
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.text.TextRange
@@ -56,6 +59,7 @@ import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
 import io.spine.chords.core.keyboard.KeyRange.Companion.Whitespace
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.primitive.preventWidthAutogrowing
+import io.spine.chords.core.styling.ChordsTheme
 import java.util.*
 import kotlin.Int.Companion.MAX_VALUE
 import kotlin.math.min
@@ -140,7 +144,7 @@ public typealias RawTextContent = TextFieldValue
  *
  * It is also possible to change the way how the raw text is actually presented
  * to the user by specifying the [visualTransformation] function. This works in
- * the same way as the `visualTransformation` parameter of the [TextField]
+ * the same way as the `visualTransformation` parameter of the [OutlinedTextField]
  * component.
  *
  * Unlike [inputReviser], any modifications applied using
@@ -202,7 +206,7 @@ public typealias RawTextContent = TextFieldValue
  *
  * #### A placeholder and prompt text
  *
- * Just like the standard `TextField` component, it is possible to specify
+ * Just like the standard [OutlinedTextField], it is possible to specify
  * a content that will be displayed in the focused field when nothing is entered
  * in it (see the [placeholder] property). It can be specified as an arbitrary
  * composable content.
@@ -309,8 +313,18 @@ public open class InputField<V> : InputComponent<V>() {
     public var textStyle: TextStyle? by mutableStateOf(null)
 
     /**
+     * The field's shape, or `null` to use the current Material small shape.
+     */
+    public var shape: Shape? by mutableStateOf(null)
+
+    /**
      * A [TextFieldColors] instance, which defines the color scheme for
      * this field.
+     *
+     * When left unassigned, colors are resolved from the current theme during
+     * composition without initializing this property. Therefore, reading it is
+     * only valid after assigning a custom value; use `::colors.isInitialized`
+     * to distinguish that case.
      */
     public lateinit var colors: TextFieldColors
 
@@ -451,10 +465,12 @@ public open class InputField<V> : InputComponent<V>() {
 
     @Composable
     override fun content(): Unit = recompositionWorkaround {
-        if (!::colors.isInitialized) {
-            colors = TextFieldDefaults.colors()
+        val fieldColors = if (::colors.isInitialized) {
+            colors
+        } else {
+            OutlinedTextFieldDefaults.colors()
         }
-        val textStyle = textStyle ?: LocalTextStyle.current
+        val textStyle = textStyle ?: defaultTextStyle()
         val rawTextContent = getRawTextContent()
 
         val interactionSource = remember { MutableInteractionSource() }
@@ -462,7 +478,7 @@ public open class InputField<V> : InputComponent<V>() {
 
         val validationErrorText = ownValidationMessage.value ?: externalValidationMessage?.value
 
-        TextField(
+        OutlinedTextField(
             value = rawTextContent,
             label = label?.let { { Text(text = it) } },
             isError = validationErrorText != null,
@@ -476,8 +492,7 @@ public open class InputField<V> : InputComponent<V>() {
             placeholder = placeholder ?: {
                 Text(
                     promptText ?: "",
-                    fontFamily = textStyle.fontFamily,
-                    color = colorScheme.secondary
+                    fontFamily = textStyle.fontFamily
                 )
             },
             prefix = prefix,
@@ -488,8 +503,10 @@ public open class InputField<V> : InputComponent<V>() {
             maxLines = if (multiline) maxLines else 1,
             enabled = enabled,
             textStyle = textStyle,
-            colors = colors,
+            colors = fieldColors,
+            shape = shape ?: MaterialTheme.shapes.small,
             modifier = modifier(modifier)
+                .heightIn(min = ChordsTheme.dimensions.controlHeight)
                 .focusRequester(focusRequester)
                 .preventWidthAutogrowing()
                 .onPreviewKeyEvent {
@@ -497,6 +514,18 @@ public open class InputField<V> : InputComponent<V>() {
                 }
         )
     }
+
+    /**
+     * Provides the field text style used when [textStyle] is not assigned.
+     *
+     * Subclasses can override this function to retain a specialized font while
+     * still allowing the public component property to take precedence.
+     *
+     * @return The default text style for this field implementation.
+     */
+    @Composable
+    @ReadOnlyComposable
+    protected open fun defaultTextStyle(): TextStyle = LocalTextStyle.current
 
     override fun clear() {
         super.clear()
@@ -508,10 +537,10 @@ public open class InputField<V> : InputComponent<V>() {
 
     /**
      * Given a modifier, which is going to be applied to the displayed
-     * [TextField], provides an opportunity to modify it according to any
+     * [OutlinedTextField], provides an opportunity to modify it according to any
      * requirements of the respective input field implementation.
      *
-     * @param modifier A [Modifier], which is going to be set to the [TextField]
+     * @param modifier A [Modifier], which is going to be set to the [OutlinedTextField]
      *   displayed by this `InputField`.
      * @return A modified version of a given [modifier] if any modifications
      *   are required.

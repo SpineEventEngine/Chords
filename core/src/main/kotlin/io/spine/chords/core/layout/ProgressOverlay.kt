@@ -46,7 +46,7 @@ import io.spine.chords.core.keyboard.matches
  * The background dims the covered content enough for it to read as
  * unavailable, while keeping it recognizable.
  */
-private const val DefaultOverlayAlpha = 0.6f
+private const val DefaultOverlayAlpha = 0.72f
 
 /**
  * Displays the given [content], and covers it with a progress overlay while
@@ -91,7 +91,7 @@ private const val DefaultOverlayAlpha = 0.6f
 public fun ProgressOverlay(
     active: Boolean,
     modifier: Modifier = Modifier,
-    background: Color = colorScheme.background.copy(alpha = DefaultOverlayAlpha),
+    background: Color = colorScheme.surface.copy(alpha = DefaultOverlayAlpha),
     indicator: @Composable () -> Unit = { CircularProgressIndicator() },
     content: @Composable () -> Unit
 ) {

@@ -59,26 +59,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key.Companion.DirectionLeft
 import androidx.compose.ui.input.key.Key.Companion.DirectionRight
 import androidx.compose.ui.input.key.Key.Companion.Enter
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Alt
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.on
-import io.spine.chords.core.layout.WizardContentSize.maxHeight
-import io.spine.chords.core.layout.WizardContentSize.minHeight
-import io.spine.chords.core.layout.WizardContentSize.width
 import io.spine.chords.core.primitive.HorizontalScrollbar
 import io.spine.chords.core.primitive.VerticalScrollbar
-
-/**
- * Bounds of the wizard's content pane.
- */
-private object WizardContentSize {
-    val width = 670.dp
-    val minHeight = 400.dp
-    val maxHeight = 700.dp
-}
+import io.spine.chords.core.styling.ChordsTheme
+import io.spine.chords.core.styling.defaultDimensions
 
 /**
  * The base class for creating a multi-step form component known as a wizard.
@@ -114,6 +105,39 @@ private object WizardContentSize {
     "TooManyFunctions"
 )
 public abstract class Wizard : Component() {
+
+    /**
+     * Appearance and size values unique to a wizard.
+     *
+     * The spacing constructor defaults use the default Chords scale. When a
+     * [Look] is assigned to [Wizard.look], each unchanged spacing value follows
+     * the corresponding token from the active theme.
+     *
+     * @property width The width of the wizard content pane. Defaults to `720.dp`.
+     * @property minHeight The minimum content-pane height. Defaults to `420.dp`.
+     * @property maxHeight The maximum content-pane height. Defaults to `760.dp`.
+     * @property padding The inset around wizard content. Defaults to `32.dp`.
+     * @property sectionSpacing The gap between the title, page, and actions.
+     *   Defaults to `16.dp`.
+     * @property buttonSpacing The gap between adjacent navigation buttons.
+     *   Defaults to `8.dp`.
+     */
+    public data class Look(
+        public val width: Dp = 720.dp,
+        public val minHeight: Dp = 420.dp,
+        public val maxHeight: Dp = 760.dp,
+        public val padding: Dp = defaultDimensions.spacingXXLarge,
+        public val sectionSpacing: Dp = defaultDimensions.spacingLarge,
+        public val buttonSpacing: Dp = defaultDimensions.spacingSmall
+    )
+
+    /**
+     * Specifies appearance-related values that are unique to this wizard.
+     *
+     * Spacing values left at their [Look] defaults follow the corresponding
+     * Chords theme tokens. Customized values take precedence independently.
+     */
+    public var look: Look = Look()
 
     /**
      * The text to be the title of the wizard, or `null`, if the wizard's title
@@ -269,17 +293,18 @@ public abstract class Wizard : Component() {
 
     @Composable
     override fun content() {
+        val currentLook = resolvedLook()
         Box(
             modifier = Modifier
-                .width(width)
-                .heightIn(minHeight, maxHeight),
+                .width(currentLook.width)
+                .heightIn(currentLook.minHeight, currentLook.maxHeight),
             contentAlignment = Center
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(32.dp),
-                verticalArrangement = spacedBy(16.dp)
+                    .padding(currentLook.padding),
+                verticalArrangement = spacedBy(currentLook.sectionSpacing)
             ) {
                 if (title != null) {
                     Title(title!!)
@@ -317,10 +342,38 @@ public abstract class Wizard : Component() {
                     onCancelClick = { cancel() },
                     isOnFirstPage = isOnFirstPage(),
                     isOnLastPage = isOnLastPage(),
-                    submitting
+                    submitting = submitting,
+                    buttonSpacing = currentLook.buttonSpacing
                 )
             }
         }
+    }
+
+    /**
+     * Resolves default-valued spacing against the active theme.
+     *
+     * @return The appearance values to use for the current composition.
+     */
+    @Composable
+    private fun resolvedLook(): Look {
+        val defaultLook = Look()
+        return look.copy(
+            padding = if (look.padding == defaultLook.padding) {
+                ChordsTheme.dimensions.spacingXXLarge
+            } else {
+                look.padding
+            },
+            sectionSpacing = if (look.sectionSpacing == defaultLook.sectionSpacing) {
+                ChordsTheme.dimensions.spacingLarge
+            } else {
+                look.sectionSpacing
+            },
+            buttonSpacing = if (look.buttonSpacing == defaultLook.buttonSpacing) {
+                ChordsTheme.dimensions.spacingSmall
+            } else {
+                look.buttonSpacing
+            }
+        )
     }
 
     /**
@@ -435,7 +488,8 @@ public abstract class Wizard : Component() {
 private fun Title(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.headlineLarge
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onSurface
     )
 }
 
@@ -456,6 +510,7 @@ private fun Title(text: String) {
  *   is the last one.
  * @param submitting Specifies whether wizard's submission is currently
  *   in progress.
+ * @param buttonSpacing The gap between adjacent navigation buttons.
  */
 @Composable
 private fun NavigationPanel(
@@ -465,7 +520,8 @@ private fun NavigationPanel(
     onCancelClick: () -> Unit,
     isOnFirstPage: Boolean,
     isOnLastPage: Boolean,
-    submitting: Boolean
+    submitting: Boolean,
+    buttonSpacing: Dp
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -475,7 +531,7 @@ private fun NavigationPanel(
             Text("Cancel")
         }
         Row(
-            horizontalArrangement = spacedBy(8.dp)
+            horizontalArrangement = spacedBy(buttonSpacing)
         ) {
             TextButton(
                 onClick = onBackClick,
@@ -488,7 +544,7 @@ private fun NavigationPanel(
                     Text("Finish")
                 }
             } else {
-                TextButton(onClick = onNextClick, enabled = !submitting) {
+                Button(onClick = onNextClick, enabled = !submitting) {
                     Text("Next")
                 }
             }

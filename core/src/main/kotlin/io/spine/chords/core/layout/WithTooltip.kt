@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,40 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /**
+ * Displays the given [content] with a tooltip using theme content colors.
+ *
+ * @param tooltip The text shown when the mouse hovers over the content.
+ * @param modifier The [Modifier] applied to the tooltip area.
+ * @param tooltipCardColor The tooltip background, or [Color.Unspecified] to
+ *   use the current theme's inverse surface color.
+ * @param shape The tooltip container shape.
+ * @param content The content to which the tooltip is assigned.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+public fun WithTooltip(
+    tooltip: String,
+    modifier: Modifier = Modifier,
+    tooltipCardColor: Color = Color.Unspecified,
+    shape: RoundedCornerShape = RoundedCornerShape(6.dp),
+    content: @Composable () -> Unit
+) {
+    WithTooltip(
+        tooltip = tooltip,
+        modifier = modifier,
+        tooltipCardColor = tooltipCardColor,
+        shape = shape,
+        tooltipContentColor = Color.Unspecified,
+        content = content
+    )
+}
+
+/**
  * Displays the given `content` with assigning a tooltip for it.
+ *
+ * This overload adds a text-color override while the original five-parameter
+ * function remains available for source and binary compatibility. The required
+ * [tooltipContentColor] keeps calls to the two overloads unambiguous.
  *
  * @param tooltip
  *         the text shown when the mouse hovers over the content.
@@ -51,6 +84,9 @@ import androidx.compose.ui.unit.dp
  *         the background color of the tooltip container.
  * @param shape
  *         the shape of the card for which the tip is shown.
+ * @param tooltipContentColor
+ *         the color of the tooltip text, or [Color.Unspecified] to use the
+ *         current theme's inverse surface content color.
  * @param content
  *         the content to which assign the tooltip.
  */
@@ -59,31 +95,36 @@ import androidx.compose.ui.unit.dp
 public fun WithTooltip(
     tooltip: String,
     modifier: Modifier = Modifier,
-    tooltipCardColor: Color = Color.LightGray,
-    shape: RoundedCornerShape = RoundedCornerShape(
-        topStart = 0.dp,
-        topEnd = 8.dp,
-        bottomEnd = 8.dp,
-        bottomStart = 8.dp
-    ),
+    tooltipCardColor: Color = Color.Unspecified,
+    shape: RoundedCornerShape = RoundedCornerShape(6.dp),
+    tooltipContentColor: Color,
     content: @Composable () -> Unit
 ) {
     TooltipArea(
         tooltip = {
             Card(
                 shape = shape,
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = tooltipCardColor
+                colors = CardDefaults.cardColors(
+                    containerColor = if (tooltipCardColor == Color.Unspecified) {
+                        MaterialTheme.colorScheme.inverseSurface
+                    } else {
+                        tooltipCardColor
+                    }
                 ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 modifier = Modifier
-                    .padding(10.dp)
-                    .widthIn(min = 90.dp, max = 210.dp)
+                    .padding(8.dp)
+                    .widthIn(min = 64.dp, max = 320.dp)
             ) {
                 Text(
                     tooltip,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Black,
-                    modifier = Modifier.padding(10.dp)
+                    color = if (tooltipContentColor == Color.Unspecified) {
+                        MaterialTheme.colorScheme.inverseOnSurface
+                    } else {
+                        tooltipContentColor
+                    },
+                    modifier = Modifier.padding(8.dp)
                 )
             }
         },

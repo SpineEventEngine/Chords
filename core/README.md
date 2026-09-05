@@ -3,6 +3,56 @@
 Facilities and components for writing desktop applications with 
 the [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) framework.
 
+## Default look and feel
+
+Chords applications use a compact Material 3 desktop theme by default. It
+provides neutral work surfaces, semantic light and dark color schemes,
+restrained corner radii, compact typography, and shared dimensions for common
+controls, navigation, tables, dialogs, and supporting panes. The dark scheme is
+selected from the operating system appearance observed at application startup.
+Changes to the system appearance while the application is running are not
+observed automatically; override `ApplicationTheme` when the application needs
+a live theme switch.
+
+The standard Material values are available through `MaterialTheme`. Desktop
+values that Material does not define are available through
+[`ChordsTheme`](src/main/kotlin/io/spine/chords/core/styling/ChordsTheme.kt):
+
+```kotlin
+val rowHeight = ChordsTheme.dimensions.tableRowHeight
+val hoverAlpha = ChordsTheme.interaction.hoveredStateAlpha
+```
+
+An application can replace the theme in one place by overriding
+`Application.ApplicationTheme`:
+
+```kotlin
+@Composable
+override fun ApplicationTheme(content: @Composable () -> Unit) {
+    ChordsTheme(
+        colorScheme = myColorScheme,
+        typography = myTypography,
+        shapes = myShapes,
+        dimensions = ChordsDimensions(
+            controlHeight = 48.dp,
+            tableRowHeight = 44.dp
+        ),
+        content = content
+    )
+}
+```
+
+Component properties take precedence over theme values. Class-based
+components can also be customized application-wide with `sharedDefaults`.
+The effective order is: instance properties, shared component defaults, Chords
+desktop tokens, and finally Material theme values.
+
+Text inputs and selectors expose their text style, shape, modifier, and colors.
+Dropdowns expose popup shape, elevations, item height, padding, and selection
+colors. Tables expose content padding, container/header/row colors, and row
+heights. Dialogs, lightweight windows, and wizards expose their unique sizing,
+spacing, surface, shape, border, and elevation values.
+
 ## Using Spine Chords Core in a Gradle project
 
 Add a dependency to the library as follows:
@@ -99,7 +149,8 @@ In addition to components, the library includes such facilities:
 
 - Extension functions to address common tasks or current shortcomings in
   Compose, like ensuring the usual focus traversal with the Tab key for text
-  fields (see [Modifier.moveFocusOnTab()](src/main/kotlin/io/spine/chords/core/primitive/TextFieldExts.kt)).
+  fields (see
+  [Modifier.moveFocusOnTab()](src/main/kotlin/io/spine/chords/core/primitive/TextFieldExts.kt)).
 
 - **Some simple components** that address common needs like
   [CheckboxWithText](src/main/kotlin/io/spine/chords/core/primitive/CheckboxWithText.kt),

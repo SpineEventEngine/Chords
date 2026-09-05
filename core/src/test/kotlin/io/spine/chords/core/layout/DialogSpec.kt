@@ -27,6 +27,7 @@
 package io.spine.chords.core.layout
 
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
@@ -37,6 +38,8 @@ import io.spine.chords.core.layout.given.DialogSpecEnv.ControlHeight
 import io.spine.chords.core.layout.given.DialogSpecEnv.TestDialog
 import io.spine.chords.core.layout.given.DialogSpecEnv.dialogScene
 import io.spine.chords.core.layout.given.DialogSpecEnv.submittableDialogScene
+import io.spine.chords.core.styling.ChordsDimensions
+import io.spine.chords.core.styling.ChordsTheme
 import java.awt.event.KeyEvent.CTRL_DOWN_MASK
 import java.awt.event.KeyEvent.KEY_PRESSED
 import java.awt.event.KeyEvent.KEY_RELEASED
@@ -49,7 +52,8 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 /**
- * Tests dialog sizing, interaction blocking, submission, and suppressed requests.
+ * Tests dialog sizing and appearance, interaction blocking, submission, and
+ * suppressed requests.
  */
 @DisplayName("`Dialog` should")
 internal class DialogSpec {
@@ -97,6 +101,35 @@ internal class DialogSpec {
 
         dialog.width shouldBe 600.dp
         dialog.height shouldBe 400.dp
+    }
+
+    /**
+     * Customizing one look value must not detach the remaining default values
+     * from the active theme.
+     */
+    @Test
+    fun `resolve default look values from the theme independently`() {
+        val dialog = TestDialog().apply {
+            look = Dialog.Look(buttonsSpacing = 5.dp)
+        }
+        lateinit var resolvedLook: Dialog.Look
+
+        TestScene {
+            ChordsTheme(
+                dimensions = ChordsDimensions(
+                    spacingMedium = 14.dp,
+                    spacingLarge = 18.dp,
+                    spacingXLarge = 30.dp
+                )
+            ) {
+                resolvedLook = dialog.resolvedLook()
+            }
+        }.use { }
+
+        resolvedLook.padding.calculateLeftPadding(LayoutDirection.Ltr) shouldBe 30.dp
+        resolvedLook.titlePadding.calculateBottomPadding() shouldBe 18.dp
+        resolvedLook.buttonsPanelPadding.calculateTopPadding() shouldBe 30.dp
+        resolvedLook.buttonsSpacing shouldBe 5.dp
     }
 
     /**
