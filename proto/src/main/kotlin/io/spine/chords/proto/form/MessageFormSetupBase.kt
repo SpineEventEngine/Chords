@@ -90,9 +90,8 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      * expected to include field editors for all message's fields, which
      * are required to create a valid value of type [M].
      *
-     * The parent field retains its form when hidden and reuses it when shown
-     * again. Switching to another oneof alternative clears its input.
-     * Declare one field-bound form per parent field.
+     * Reuses the parent field's form when shown again with the same setup, following the
+     * [field editor lifecycle][io.spine.chords.proto.form.invoke].
      *
      * @receiver The context introduced by the parent form.
      * @param PM Parent message type.
@@ -185,9 +184,8 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      * [FormPart][MultipartFormScope.FormPart] declarations, which, in turn,
      * should contain the respective field editors.
      *
-     * The parent field retains its form when hidden and reuses it when shown
-     * again. Switching to another oneof alternative clears its input.
-     * Declare one field-bound form per parent field.
+     * Reuses the parent field's form when shown again with the same setup, following the
+     * [field editor lifecycle][io.spine.chords.proto.form.invoke].
      *
      * @receiver The context introduced by the parent form.
      * @param PM Parent message type.

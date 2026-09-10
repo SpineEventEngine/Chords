@@ -27,8 +27,10 @@
 package io.spine.chords.proto.form
 
 import androidx.compose.runtime.mutableStateOf
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.spine.chords.core.primitive.StringField
 import io.spine.chords.proto.TestApplication
 import io.spine.chords.proto.form.given.MessageFormFixtures.AccountFormSetup
 import io.spine.chords.proto.form.given.MessageFormFixtures.TrimmingInputField
@@ -48,8 +50,8 @@ import org.junit.jupiter.api.Test
 /**
  * Verifies ownership and lifetime of field-bound forms and their input editors.
  */
-@DisplayName("`MessageFormSetupBase` should")
-internal class MessageFormSetupBaseSpec {
+@DisplayName("`InputComponentExt` should")
+internal class InputComponentExtSpec {
 
     /**
      * Reusing a nested form must not construct and discard another instance.
@@ -250,100 +252,19 @@ internal class MessageFormSetupBaseSpec {
     }
 
     /**
-     * A form-wide clear also applies to fields whose part has never been displayed.
+     * Two active declarations must fail instead of repeatedly overwriting shared props.
      */
     @Test
-    fun `keep a later form part cleared while preserving its initial values`() {
-        val form = accountForm(account("123"))
-        val showPart = mutableStateOf(false)
-        lateinit var input: TrimmingInputField
-
-        inScene({
-            form.MultipartContent {
-                if (showPart.value) {
-                    FormPart { input = TrimmingInputField(BankAccountDef.number) }
-                }
-            }
-        }) { scene ->
-            form.clear()
-            showPart.value = true
-            scene.render()
-
-            input.value.value shouldBe null
-            form.dirty shouldBe true
-
-            input.enterText("123")
-            scene.render()
-            form.dirty shouldBe false
-        }
-    }
-
-    /**
-     * Defaults of fields first declared after a clear remain the original comparison values.
-     */
-    @Test
-    fun `keep a later field default cleared until the user restores it`() {
+    fun `reject simultaneous editors for the same field`() {
         val form = accountForm()
-        val showField = mutableStateOf(false)
-        lateinit var field: FormFieldScope<String>
 
-        inScene({
-            form.Content {
-                if (showField.value) {
-                    Field(BankAccountDef.number, "123") { field = this }
+        shouldThrow<IllegalArgumentException> {
+            inScene({
+                form.Content {
+                    StringField(BankAccountDef.number) { label = "First" }
+                    StringField(BankAccountDef.number) { label = "Second" }
                 }
-            }
-        }) { scene ->
-            form.clear()
-            showField.value = true
-            scene.render()
-
-            field.fieldValue.value shouldBe null
-            form.dirty shouldBe true
-
-            field.fieldValue.value = "123"
-            scene.render()
-            form.dirty shouldBe false
-        }
-    }
-
-    /**
-     * Neither a late oneof nor its nested editor may restore input discarded by clear.
-     */
-    @Test
-    fun `keep a later nested oneof cleared and recognize restored original input`() {
-        val initial = PaymentMethod.newBuilder().setBankAccount(account("123")).build()
-        val form = paymentForm(initial)
-        val showPart = mutableStateOf(false)
-        lateinit var oneof: OneOfFieldsScope<PaymentMethod>
-        lateinit var input: TrimmingInputField
-
-        inScene({
-            form.MultipartContent {
-                if (showPart.value) {
-                    FormPart {
-                        OneOfFields(PaymentMethodDef.method) {
-                            oneof = this
-                            MessageForm(PaymentMethodDef.bankAccount, BankAccount::newBuilder) {
-                                input = TrimmingInputField(BankAccountDef.number)
-                            }
-                        }
-                    }
-                }
-            }
-        }) { scene ->
-            form.clear()
-            showPart.value = true
-            scene.render()
-
-            oneof.selectedField.value shouldBe null
-            input.value.value shouldBe null
-            form.dirty shouldBe true
-
-            input.enterText("123")
-            scene.render()
-            form.value.value shouldBe initial
-            form.dirty shouldBe false
+            }) {}
         }
     }
 

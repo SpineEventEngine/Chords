@@ -33,7 +33,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
+import com.google.protobuf.Message
 import io.spine.chords.core.ComponentSetup
+import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputField
 import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.FormPartScope
@@ -43,6 +45,8 @@ import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.chords.proto.value.money.BankAccount
 import io.spine.chords.proto.value.money.PaymentMethod
 import io.spine.chords.proto.value.money.PaymentMethodDef
+import io.spine.chords.runtime.MessageField
+import io.spine.chords.runtime.MessageFieldValue
 import java.awt.EventQueue.invokeAndWait
 import org.jetbrains.skia.Surface
 
@@ -118,6 +122,28 @@ internal object MessageFormFixtures {
     }
 
     /**
+     * Binds caller-owned input through the public Field API without automatic editor retention.
+     */
+    context(FormFieldsScope<M>)
+    @Composable
+    fun <M : Message, V : MessageFieldValue> InputComponent<V>.RenderWithinField(
+        field: MessageField<M, V>
+    ) {
+        val input = this
+        Field(field) {
+            input.value = fieldValue
+            input.valid = fieldValueValid
+            input.externalValidationMessage = externalValidationMessage
+            input.onDirtyStateChange = { notifyDirtyStateChanged(it) }
+            input.required = fieldRequired
+            input.enabled = fieldEnabled.value
+            focusRequestDispatcher.handleFocusRequest = { input.focus() }
+            registerFieldValueEditor(input)
+            input.Content()
+        }
+    }
+
+    /**
      * Observes form construction through the published subclass setup API.
      */
     class AccountFormSetup(onCreate: () -> Unit) :
@@ -178,12 +204,17 @@ internal object MessageFormFixtures {
         private var frame = 0L
 
         init {
-            onUiThread {
-                scene.setContent {
-                    MaterialTheme { content() }
+            try {
+                onUiThread {
+                    scene.setContent {
+                        MaterialTheme { content() }
+                    }
                 }
+                render()
+            } catch (e: Exception) {
+                close()
+                throw e
             }
-            render()
         }
 
         /**

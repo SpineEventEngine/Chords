@@ -33,6 +33,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.spine.chords.proto.TestApplication
 import io.spine.chords.proto.form.given.MessageFormFixtures.ObserveDirty
+import io.spine.chords.proto.form.given.MessageFormFixtures.RenderWithinField
 import io.spine.chords.proto.form.given.MessageFormFixtures.TrimmingInputField
 import io.spine.chords.proto.form.given.MessageFormFixtures.account
 import io.spine.chords.proto.form.given.MessageFormFixtures.accountForm
@@ -385,7 +386,7 @@ internal class MessageFormSpec {
         val input = TrimmingInputField()
 
         inScene({
-            form.Content { input.ContentWithinField(BankAccountDef.number) }
+            form.Content { input.RenderWithinField(BankAccountDef.number) }
         }) { scene ->
             form.dirty shouldBe false
             input.enterText("123")
@@ -466,7 +467,7 @@ internal class MessageFormSpec {
                 OneOfFields(PaymentMethodDef.method) {
                     oneof = this
                     MessageForm(PaymentMethodDef.bankAccount, BankAccount::newBuilder) {
-                        input.ContentWithinField(BankAccountDef.number)
+                        input.RenderWithinField(BankAccountDef.number)
                     }
                     Field(PaymentMethodDef.paymentCard) {}
                 }
@@ -491,7 +492,7 @@ internal class MessageFormSpec {
         val input = TrimmingInputField()
 
         inScene({
-            form.Content { input.ContentWithinField(BankAccountDef.number) }
+            form.Content { input.RenderWithinField(BankAccountDef.number) }
         }) { scene ->
             form.dirty shouldBe false
             input.enterText("123")
@@ -520,7 +521,7 @@ internal class MessageFormSpec {
             form.Content {
                 OneOfFields(PaymentMethodDef.method) {
                     MessageForm(PaymentMethodDef.bankAccount, BankAccount::newBuilder) {
-                        input.ContentWithinField(BankAccountDef.number)
+                        input.RenderWithinField(BankAccountDef.number)
                     }
                 }
             }
@@ -546,7 +547,7 @@ internal class MessageFormSpec {
         val input = TrimmingInputField()
 
         inScene({
-            form.Content { input.ContentWithinField(BankAccountDef.number) }
+            form.Content { input.RenderWithinField(BankAccountDef.number) }
         }) { scene ->
             input.enterText("123")
             scene.render()
@@ -569,7 +570,7 @@ internal class MessageFormSpec {
         val input = TrimmingInputField()
 
         inScene({
-            form.Content { input.ContentWithinField(BankAccountDef.number) }
+            form.Content { input.RenderWithinField(BankAccountDef.number) }
         }) { scene ->
             form.dirty shouldBe false
             form.enteringNonNullValue.value = false
@@ -600,7 +601,7 @@ internal class MessageFormSpec {
                         OneOfFields(PaymentMethodDef.method) {
                             MessageForm(PaymentMethodDef.bankAccount, BankAccount::newBuilder) {
                                 input = remember { TrimmingInputField() }
-                                input.ContentWithinField(BankAccountDef.number)
+                                input.RenderWithinField(BankAccountDef.number)
                             }
                         }
                     }
@@ -635,7 +636,7 @@ internal class MessageFormSpec {
         input.onValidate = { "Invalid account number." }
 
         inScene({
-            form.Content { input.ContentWithinField(BankAccountDef.number) }
+            form.Content { input.RenderWithinField(BankAccountDef.number) }
         }) { scene ->
             input.enterText("invalid")
             scene.render()
@@ -666,7 +667,7 @@ internal class MessageFormSpec {
                 OneOfFields(PaymentMethodDef.method) {
                     oneof = this
                     MessageForm(PaymentMethodDef.bankAccount, BankAccount::newBuilder) {
-                        input.ContentWithinField(BankAccountDef.number)
+                        input.RenderWithinField(BankAccountDef.number)
                     }
                 }
             }
@@ -728,7 +729,7 @@ internal class MessageFormSpec {
         val input = TrimmingInputField()
 
         inScene({
-            form.Content { input.ContentWithinField(BankAccountDef.number) }
+            form.Content { input.RenderWithinField(BankAccountDef.number) }
         }) { scene ->
             form.enteringNonNullValue.value = true
             scene.render()
@@ -762,7 +763,8 @@ internal class MessageFormSpec {
                     oneof = this
                     if (selectedField.value == bank) {
                         MessageForm(PaymentMethodDef.bankAccount, BankAccount::newBuilder) {
-                            input = TrimmingInputField(BankAccountDef.number)
+                            input = remember { TrimmingInputField() }
+                            input.RenderWithinField(BankAccountDef.number)
                         }
                     } else {
                         Field(PaymentMethodDef.paymentCard) {}

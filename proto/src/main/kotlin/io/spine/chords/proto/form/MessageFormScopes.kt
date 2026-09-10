@@ -27,6 +27,7 @@
 package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.key
@@ -109,7 +110,7 @@ internal class MultipartFormScopeImpl<M : Message>(
         content: @Composable FormPartScope<M>.() -> Unit
     ) {
         val formPart = remember(form) {
-            FormPartScopeImpl(this, showPart, form.initialValue)
+            FormPartScopeImpl(this, showPart)
         }
         formPart.content()
     }
@@ -373,93 +374,59 @@ public sealed interface FormFieldScope<V : MessageFieldValue> {
     public fun registerFieldValueEditor(fieldValueEditor: InputComponent<V>)
 
     /**
-     * This function is recommended to be invoked by the field editor component
-     * to notify the form that the field's editor has switched to/from the dirty
-     * state (from/to being empty). Editors may also report the same state
-     * after further edits, including edits that leave [fieldValue] unchanged.
-     * Initial notifications are ignored for [MessageForm.dirty]; subsequent
-     * notifications recalculate the form's dirty state.
+     * Reports whether the editor contains input, including incomplete or invalid input.
+     * This selects the enclosing oneof or optional message as soon as typing starts,
+     * even if the editor cannot yet produce a non-null [fieldValue].
+     *
+     * Report subsequent edits even when input remains present and [fieldValue] is unchanged.
+     * Initial notifications do not mark [MessageForm.dirty]; later ones recalculate it.
      *
      * Custom composite editors must report input presence here, rather than
      * forwarding [MessageForm.dirty], which compares against initial values.
      * Field-bound [MessageForm] declarations handle their own nested input.
-     *
-     * Having an editor to invoke this method appropriately is not critical, but
-     * is recommended for improving the user's experience for the kinds of
-     * field editors, which can be in a state when no valid (e.g. no
-     * sufficiently complete) value can be specified on some intermediate stages
-     * of data entry (when a field editor is already not empty, but, being
-     * invalid, still report `null` in `fieldValue`).
-     *
-     * Implementing the appropriate invoking of this function by such editors
-     * makes the functionality of automatic selection of parent oneof radio
-     * buttons or optional checkboxes to be more intuitive. This basically
-     * ensures that such parent field selectors are automatically switched right
-     * when the user starts specifying a value, without waiting for a valid
-     * value to emerge on later stages of editing.
      */
     public fun notifyDirtyStateChanged(dirty: Boolean)
 }
 
 /**
- * An internal implementation of [FormFieldsScope].
+ * Registers field declarations and updates them after their content has run.
  *
- * Not intended to be used for any application development directly.
+ * @property formScope The form containing these declarations.
+ * @property formOneof The enclosing oneof, or `null` for ordinary fields.
  */
 internal abstract class FormFieldsScopeImpl<M : Message>(
     val formScope: MultipartFormScope<M>,
-    val message: M?
+    private val formOneof: MessageForm<M>.FormOneof? = null
 ) : FormFieldsScope<M> {
     @Composable
     override fun <V : MessageFieldValue> Field(
         field: MessageField<M, V>,
         defaultValue: V?,
         content: @Composable FormFieldScope<V>.() -> Unit
-    ) {
-        // We have to store fields by their common base type `MessageFieldValue`
-        // in the form, and we cannot use neither `in` nor `out` for the type
-        // parameter since the respective field in `MessageField` is mutable.
-        @Suppress("UNCHECKED_CAST")
-        val baseTypedField = field as MessageField<M, MessageFieldValue>
-        val formField = registerField(baseTypedField, defaultValue)
-
-        // A narrowing typcast is required since we store fields by their common
-        // base type, and still need to expose it with a respective concrete one
-        // via the respective DSL here.
-        @Suppress("UNCHECKED_CAST")
-        (formField.scope as FormFieldScopeImpl<M, V>).content()
-        formField.update()
-    }
+    ): Unit = WithField(field = field, defaultValue = defaultValue) { content() }
 
     /**
-     * Registers the message field that is edited in the form.
-     *
-     * @param field The message's field being registered.
-     * @param defaultValue A value that should be displayed in the respective
-     *   field editor by default.
+     * Runs field content and returns its result through the shared registration lifecycle.
      */
-    internal open fun registerField(
-        field: MessageField<M, MessageFieldValue>,
-        defaultValue: MessageFieldValue?
-    ): MessageForm<M>.FormField = formScope.form.registerField(field) {
-        val initialValue = if (message != null) {
-            if (field.hasValue(message)) {
-                field.valueIn(message)
-            } else {
-                null
-            }
-        } else {
-            defaultValue
+    @Composable
+    internal fun <V : MessageFieldValue, R> WithField(
+        field: MessageField<M, V>,
+        defaultValue: V?,
+        content: @Composable FormFieldScopeImpl<M, V>.() -> R
+    ): R {
+        // The registry erases V, but the field key preserves its type for this scope.
+        @Suppress("UNCHECKED_CAST")
+        val baseTypedField = field as MessageField<M, MessageFieldValue>
+        val form = formScope.form
+        val formField = form.registerField(baseTypedField) {
+            form.FormField(this, baseTypedField, defaultValue, formOneof)
         }
-        createFormField(formScope.form, field, initialValue)
-    }
 
-    protected open fun createFormField(
-        form: MessageForm<M>,
-        field: MessageField<M, MessageFieldValue>,
-        initialValue: MessageFieldValue?
-    ): MessageForm<M>.FormField =
-        form.FormField(this, field, initialValue)
+        @Suppress("UNCHECKED_CAST")
+        val result = (formField.scope as FormFieldScopeImpl<M, V>).content()
+        formField.update()
+        return result
+    }
 }
 
 /**
@@ -471,7 +438,7 @@ private class OneOfFieldsScopeImpl<M : Message>(
     private val formOneof: MessageForm<M>.FormOneof,
     formPartScopeImpl: FormPartScopeImpl<M>
 ) : FormFieldsScopeImpl<M>(
-    formPartScopeImpl.formScope, formPartScopeImpl.message
+    formPartScopeImpl.formScope, formOneof
 ), OneOfFieldsScope<M> {
 
     override val formPartScope: FormPartScope<M> = formPartScopeImpl
@@ -481,13 +448,6 @@ private class OneOfFieldsScopeImpl<M : Message>(
 
     override val validationMessage: State<String?>
         get() = formOneof.validationMessage
-
-    override fun createFormField(
-        form: MessageForm<M>,
-        field: MessageField<M, MessageFieldValue>,
-        initialValue: MessageFieldValue?
-    ): MessageForm<M>.FormField =
-        form.FormField(this, field, initialValue, formOneof)
 
     override fun <F: MessageFieldValue> registerFieldSelector(
         field: MessageField<M, F>,
@@ -511,9 +471,8 @@ private class OneOfFieldsScopeImpl<M : Message>(
  */
 internal class FormPartScopeImpl<M : Message>(
     formScope: MultipartFormScope<M>,
-    showPart: (() -> Unit)?,
-    message: M?
-) : FormPartScope<M>, FormFieldsScopeImpl<M>(formScope, message) {
+    showPart: (() -> Unit)?
+) : FormPartScope<M>, FormFieldsScopeImpl<M>(formScope) {
 
     private val _showPart: (() -> Unit)? = showPart
 
@@ -534,19 +493,10 @@ internal class FormPartScopeImpl<M : Message>(
         oneof: MessageOneof<M>,
         content: @Composable (OneOfFieldsScope<M>.() -> Unit)
     ) {
-        val formOneof = registerOneof(oneof)
+        val formOneof = formScope.form.registerOneof(oneof)
         val oneOfFieldsScope = OneOfFieldsScopeImpl(formOneof, this)
         oneOfFieldsScope.content()
         formOneof.update()
-    }
-
-    /**
-     * Registers the message's oneof that is edited in the form.
-     *
-     * @param oneof A name of the oneof being registered.
-     */
-    fun registerOneof(oneof: MessageOneof<M>): MessageForm<M>.FormOneof {
-        return formScope.form.registerOneof(oneof)
     }
 
     override fun showPart() {
@@ -575,6 +525,11 @@ internal class FormFieldScopeImpl<M : Message, V : MessageFieldValue>(
      */
     private var editorSetup: AbstractComponentSetup? = null
 
+    /**
+     * Prevents active declarations from overwriting the same editor's properties.
+     */
+    private var editorDisplayed = false
+
     override val fieldRequired = formField.required
     override val fieldValue: MutableState<V?>
         // Fields are stored as a base `MessageFieldValue` type internally.
@@ -595,6 +550,9 @@ internal class FormFieldScopeImpl<M : Message, V : MessageFieldValue>(
         }
         formField.editor = fieldValueEditor
         fieldValueEditor.inputContext = form
+        if (fieldValueEditor is MessageForm<*>) {
+            fieldValueEditor.parentField = formField
+        }
     }
 
     /**
@@ -608,6 +566,13 @@ internal class FormFieldScopeImpl<M : Message, V : MessageFieldValue>(
         setup: AbstractComponentSetup,
         props: Props<C>?
     ): C = key(this, setup) {
+        DisposableEffect(this) {
+            require(!editorDisplayed) {
+                "Declare only one editor for field `${formField.field.name}` at a time."
+            }
+            editorDisplayed = true
+            onDispose { editorDisplayed = false }
+        }
         val previousEditor = formField.editor.takeIf { editorSetup === setup }
         // The same setup creates C, and this scope fixes the field's value type V.
         @Suppress("UNCHECKED_CAST")
@@ -615,30 +580,18 @@ internal class FormFieldScopeImpl<M : Message, V : MessageFieldValue>(
             props = props,
             createInstance = previousEditor?.let { { it as C } }
         ) {
-            EditorContent(this)
+            val editor = this
+            editor.value = fieldValue
+            editor.valid = fieldValueValid
+            editor.externalValidationMessage = this@FormFieldScopeImpl.externalValidationMessage
+            editor.onDirtyStateChange = { notifyDirtyStateChanged(it) }
+            editor.required = fieldRequired
+            editor.enabled = fieldEnabled.value
+            focusRequestDispatcher.handleFocusRequest = { editor.focus() }
+            registerFieldValueEditor(editor)
             editorSetup = setup
+            editor.Content()
         }
-    }
-
-    /**
-     * Binds an editor to this field's state before initializing and rendering it.
-     * Also supports explicitly supplied editor instances with caller-owned lifetimes.
-     */
-    @Composable
-    internal fun EditorContent(editor: InputComponent<V>) {
-        editor.value = fieldValue
-        editor.valid = fieldValueValid
-        editor.externalValidationMessage = externalValidationMessage
-        editor.onDirtyStateChange = { notifyDirtyStateChanged(it) }
-        editor.required = fieldRequired
-        editor.enabled = fieldEnabled.value
-        focusRequestDispatcher.handleFocusRequest = { editor.focus() }
-        registerFieldValueEditor(editor)
-        if (editor is MessageForm<*>) {
-            editor.parentField = formField
-        }
-
-        editor.Content()
     }
 
     override fun notifyDirtyStateChanged(dirty: Boolean) {
