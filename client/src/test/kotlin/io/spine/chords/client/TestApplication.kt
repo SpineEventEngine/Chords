@@ -26,6 +26,7 @@
 
 package io.spine.chords.client
 
+import io.spine.chords.client.appshell.ClientApplication
 import io.spine.chords.core.appshell.Application
 import io.spine.chords.core.appshell.app
 import java.awt.Dimension
@@ -49,7 +50,8 @@ import java.awt.Dimension
  *
  * To prevent this, this object assigns [app] a real, but deliberately minimal
  * [Application] instance rather than a mock. The instance serves no purpose
- * other than satisfying the dependency described above: it declares no views,
+ * other than providing [TestClient] and satisfying the dependency described above.
+ * It declares no views,
  * and its window is never created or shown, as [run][Application.run] is
  * never invoked on it. It also customizes no
  * [shared defaults][Application.sharedDefaults], so the types under test keep
@@ -79,8 +81,9 @@ internal object TestApplication {
     @Synchronized
     fun install() {
         if (!installed) {
-            app = Application(
+            app = ClientApplication(
                 name = "Chords client tests",
+                client = TestClient,
                 views = emptyList(),
                 minWindowSize = Dimension(1, 1)
             )

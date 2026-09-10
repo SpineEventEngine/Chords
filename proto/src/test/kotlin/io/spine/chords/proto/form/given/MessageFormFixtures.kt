@@ -33,18 +33,27 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
+import com.google.protobuf.Message
+import io.spine.chords.core.ComponentSetup
+import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputField
+import io.spine.chords.proto.form.FormFieldsScope
+import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
+import io.spine.chords.proto.form.MessageFormSetupBase
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.chords.proto.value.money.BankAccount
 import io.spine.chords.proto.value.money.PaymentMethod
+import io.spine.chords.proto.value.money.PaymentMethodDef
+import io.spine.chords.runtime.MessageField
+import io.spine.chords.runtime.MessageFieldValue
 import java.awt.EventQueue.invokeAndWait
 import org.jetbrains.skia.Surface
 
 /**
  * Supplies real message forms and a composition for change-tracking tests.
  */
-internal object MessageFormSpecEnv {
+internal object MessageFormFixtures {
 
     /**
      * Observes changes from a composable scope separate from the form's content.
@@ -84,6 +93,11 @@ internal object MessageFormSpecEnv {
     class TrimmingInputField : InputField<String>() {
 
         /**
+         * Exercises the same field-bound declarations as production input components.
+         */
+        companion object : ComponentSetup<TrimmingInputField>({ TrimmingInputField() })
+
+        /**
          * Exercises input callbacks without text-field animations.
          */
         @Composable
@@ -105,6 +119,51 @@ internal object MessageFormSpecEnv {
          * Makes whitespace edits observable without changing the parsed value.
          */
         override fun parseValue(rawText: String): String = rawText.trim()
+    }
+
+    /**
+     * Binds caller-owned input through the public Field API without automatic editor retention.
+     */
+    context(FormFieldsScope<M>)
+    @Composable
+    fun <M : Message, V : MessageFieldValue> InputComponent<V>.RenderWithinField(
+        field: MessageField<M, V>
+    ) {
+        val input = this
+        Field(field) {
+            input.value = fieldValue
+            input.valid = fieldValueValid
+            input.externalValidationMessage = externalValidationMessage
+            input.onDirtyStateChange = { notifyDirtyStateChanged(it) }
+            input.required = fieldRequired
+            input.enabled = fieldEnabled.value
+            focusRequestDispatcher.handleFocusRequest = { input.focus() }
+            registerFieldValueEditor(input)
+            input.Content()
+        }
+    }
+
+    /**
+     * Observes form construction through the published subclass setup API.
+     */
+    class AccountFormSetup(onCreate: () -> Unit) :
+        MessageFormSetupBase<BankAccount, MessageForm<BankAccount>>({
+            onCreate()
+            MessageForm()
+        }) {
+
+        /**
+         * Declares an account editor inside a payment form.
+         */
+        context(FormFieldsScope<PaymentMethod>)
+        @Composable
+        operator fun invoke(
+            content: @Composable FormPartScope<BankAccount>.() -> Unit
+        ): MessageForm<BankAccount> = declareInstance(
+            field = PaymentMethodDef.bankAccount,
+            builder = BankAccount::newBuilder,
+            content = content
+        )
     }
 
     /**
@@ -145,12 +204,17 @@ internal object MessageFormSpecEnv {
         private var frame = 0L
 
         init {
-            onUiThread {
-                scene.setContent {
-                    MaterialTheme { content() }
+            try {
+                onUiThread {
+                    scene.setContent {
+                        MaterialTheme { content() }
+                    }
                 }
+                render()
+            } catch (e: Exception) {
+                close()
+                throw e
             }
-            render()
         }
 
         /**
