@@ -60,7 +60,6 @@ import io.spine.chords.core.keyboard.KeyRange.Companion.Whitespace
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.primitive.preventWidthAutogrowing
 import io.spine.chords.core.styling.ChordsTheme
-import java.util.*
 import kotlin.Int.Companion.MAX_VALUE
 import kotlin.math.min
 import kotlin.reflect.KClass
@@ -527,11 +526,15 @@ public open class InputField<V> : InputComponent<V>() {
     @ReadOnlyComposable
     protected open fun defaultTextStyle(): TextStyle = LocalTextStyle.current
 
+    /**
+     * Clears the text and its validation state before reporting an empty editor.
+     */
     override fun clear() {
         super.clear()
         invalidValueText = null
         selection = TextRange(0)
         ownValidationMessage.value = null
+        valid.value = true
         onDirtyStateChange?.invoke(false)
     }
 
@@ -612,7 +615,7 @@ public open class InputField<V> : InputComponent<V>() {
      * @param newSelection The cursor/selection to be applied along with
      *   [newText].
      * @param prevText The raw text the field had before this change, used to
-     *   detect a transition of the dirty state.
+     *   distinguish text edits from cursor or selection changes.
      */
     private fun commitRawText(
         newText: String,
@@ -640,10 +643,8 @@ public open class InputField<V> : InputComponent<V>() {
         this.valid.value = valid
         ownValidationMessage.value = validationErrorMessage
 
-        val prevTextEmpty = prevText.isEmpty()
-        val newTextEmpty = newText.isEmpty()
-        if (newTextEmpty != prevTextEmpty) {
-            onDirtyStateChange?.invoke(prevTextEmpty)
+        if (newText != prevText) {
+            onDirtyStateChange?.invoke(newText.isNotEmpty())
         }
         if (value.value != prevValue) {
             onChange?.invoke(value.value)

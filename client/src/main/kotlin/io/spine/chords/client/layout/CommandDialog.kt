@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import io.spine.base.CommandMessage
@@ -109,6 +110,18 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     private var commandMessageForm: CommandMessageForm<C> by writeOnce()
 
     /**
+     * The command values to display when this dialog's form is first composed.
+     *
+     * Set this before displaying the dialog. Later assignments do not replace
+     * user edits. Individual fields can also supply defaults when this property
+     * is `null`.
+     *
+     * Only fields with an editor take their initial values from this message.
+     * Supply other fields, such as IDs, through [createCommandBuilder].
+     */
+    public var initialValue: C? = null
+
+    /**
      * Stores the dirty state reported by the [commandMessageForm].
      *
      * Its value is exposed to consumers through [dirty].
@@ -116,11 +129,11 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     private val dirtyState = mutableStateOf(false)
 
     /**
-     * Has a value of `true` when the command form is in the "dirty" state.
+     * Whether the form's input differs from its initial values.
      *
-     * A "dirty" state means that at least one of the form's fields currently
-     * displays some data, either valid or invalid. A value of `false` means
-     * that none of the fields displays any data.
+     * Initial values leave this `false`. Editing, clearing, or invalid input
+     * makes it `true`; restoring all initial values clears it.
+     * Use this in [onBeforeCancel] for Cancel, window close, and Escape.
      */
     public val dirty: Boolean
         get() = dirtyState.value
@@ -138,6 +151,7 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
     protected final override fun contentSection() {
         commandMessageForm = CommandMessageForm(
             ::createCommandBuilder,
+            value = remember { mutableStateOf(initialValue) },
             onBeforeBuild = ::beforeBuild,
             props = {
                 validationDisplayMode = MANUAL

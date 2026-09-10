@@ -849,6 +849,8 @@ public abstract class AbstractComponentSetup(
      *
      * @props props A lambda, which, given a component's instance, configures
      *   its properties according to client's requirements.
+     * @param createInstance An instance factory that takes precedence over
+     *   the factory supplied to this setup's constructor.
      * @props content A lambda, which, given a component's instance, renders
      *   the composable content for that component.
      * @return A component's instance that was created and cached for this
@@ -881,7 +883,7 @@ public abstract class AbstractComponentSetup(
         // with some subclasses that have type parameters (e.g., MessageForm).
         @Suppress("UNCHECKED_CAST")
         instance = checkNotNull(
-            (this.createInstance ?: createInstance)?.invoke()
+            (createInstance ?: this.createInstance)?.invoke()
         ) {
             "Either constructor's or `create` function's `createInstance` " +
                     "parameter must be specified as a non-null value."

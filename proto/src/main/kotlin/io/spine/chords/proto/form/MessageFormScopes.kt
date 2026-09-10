@@ -106,7 +106,7 @@ internal class MultipartFormScopeImpl<M : Message>(
         content: @Composable FormPartScope<M>.() -> Unit
     ) {
         val formPart = remember(form) {
-            FormPartScopeImpl(this, showPart, form.value.value)
+            FormPartScopeImpl(this, showPart, form.initialValue)
         }
         formPart.content()
     }
@@ -372,7 +372,14 @@ public sealed interface FormFieldScope<V : MessageFieldValue> {
     /**
      * This function is recommended to be invoked by the field editor component
      * to notify the form that the field's editor has switched to/from the dirty
-     * state (from/to being empty).
+     * state (from/to being empty). Editors may also report the same state
+     * after further edits, including edits that leave [fieldValue] unchanged.
+     * Initial notifications are ignored for [MessageForm.dirty]; subsequent
+     * notifications recalculate the form's dirty state.
+     *
+     * Custom composite editors must report input presence here, rather than
+     * forwarding [MessageForm.dirty], which compares against initial values.
+     * Field-bound [MessageForm] declarations handle their own nested input.
      *
      * Having an editor to invoke this method appropriately is not critical, but
      * is recommended for improving the user's experience for the kinds of

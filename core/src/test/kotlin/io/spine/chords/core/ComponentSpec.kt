@@ -32,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.layout.TestScene
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
@@ -63,6 +64,33 @@ internal class ComponentSpec {
             scene.render()
 
             component shouldBeSameInstanceAs initialComponent
+            component.renderedValue shouldBe "second"
+        }
+    }
+
+    /**
+     * Callers can retain an instance while using the usual property update lifecycle.
+     */
+    @Test
+    fun `use an explicit instance factory and update its properties`() {
+        val supplied = PropertyComponent()
+        val setup: AbstractComponentSetup = PropertyComponent
+        var configuredValue by mutableStateOf("first")
+        lateinit var component: PropertyComponent
+
+        TestScene {
+            val currentValue = configuredValue
+            component = setup.createAndRender(
+                props = Props { value = currentValue },
+                createInstance = { supplied }
+            ) { Content() }
+        }.use { scene ->
+            component shouldBeSameInstanceAs supplied
+            component.renderedValue shouldBe "first"
+
+            configuredValue = "second"
+            scene.render()
+            component shouldBeSameInstanceAs supplied
             component.renderedValue shouldBe "second"
         }
     }
