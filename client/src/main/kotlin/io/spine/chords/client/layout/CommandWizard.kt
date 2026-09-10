@@ -129,15 +129,15 @@ public abstract class CommandWizard<C : CommandMessage, B : ValidatingBuilder<ou
     /**
      * Has a value of `true` when the command form is in the "dirty" state.
      *
-     * A "dirty" state means that at least one of the form's fields currently
-     * displays some data, either valid or invalid. A value of `false` means
-     * that none of the fields displays any data.
+     * Field defaults leave this `false`. Editing, clearing, or invalid input
+     * makes it `true`; restoring all field defaults clears it. The wizard
+     * starts without an initial command message.
      *
      * All of the wizard's pages edit the fields of the same command message
      * form, and the fields that have been edited remain registered in that form
      * when the user navigates away from their page. This property therefore
-     * reports the data entered on any of the wizard's pages, and not just on
-     * the one that is currently displayed.
+     * reports differences from initial values on any of the wizard's pages,
+     * including pages that are no longer displayed.
      */
     public val dirty: Boolean
         get() = dirtyState.value

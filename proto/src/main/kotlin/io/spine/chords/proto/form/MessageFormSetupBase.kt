@@ -32,6 +32,7 @@ import com.google.protobuf.Message
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.appshell.Props
 import io.spine.chords.runtime.MessageField
+import io.spine.chords.runtime.MessageFieldValue
 import io.spine.protobuf.ValidatingBuilder
 
 /**
@@ -90,6 +91,10 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      * expected to include field editors for all message's fields, which
      * are required to create a valid value of type [M].
      *
+     * The parent field retains its form when hidden and reuses it when shown
+     * again. Switching to another oneof alternative clears its input.
+     * Declare one field-bound form per parent field.
+     *
      * @receiver The context introduced by the parent form.
      * @param PM Parent message type.
      * @param B A type of the message builder.
@@ -105,8 +110,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      *   after any valid field is entered to it.
      * @param content A form's content, which can contain an arbitrary
      *   layout along with field editor declarations.
-     * @return A form's instance that has been created for this
-     *   declaration site.
+     * @return The form instance registered for the parent field.
      */
     context(FormFieldsScope<PM>)
     @Composable
@@ -182,6 +186,10 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      * [FormPart][MultipartFormScope.FormPart] declarations, which, in turn,
      * should contain the respective field editors.
      *
+     * The parent field retains its form when hidden and reuses it when shown
+     * again. Switching to another oneof alternative clears its input.
+     * Declare one field-bound form per parent field.
+     *
      * @receiver The context introduced by the parent form.
      * @param PM Parent message type.
      * @param B A type of the message builder.
@@ -196,8 +204,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      *   after any valid field is entered to it.
      * @param content A form's content, which can contain an arbitrary
      *   layout along with field editor declarations.
-     * @return a form's instance that has been created for this
-     *         declaration site.
+     * @return The form instance registered for the parent field.
      */
     context(FormFieldsScope<PM>)
     @Composable
@@ -211,20 +218,38 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
         defaultValue: M? = null,
         onBeforeBuild: (B) -> Unit = {},
         content: @Composable MultipartFormScope<M>.() -> Unit
-    ): F = createAndRender({
-        // Storing the builder as `ValidatingBuilder` internally.
-        @Suppress("UNCHECKED_CAST")
-        this.builder = builder as () -> ValidatingBuilder<M>
-        @Suppress(
-            // Storing `onBeforeBuild` using a more general
-            // `ValidatingBuilder<out M>` type internally.
-            "UNCHECKED_CAST"
-        )
-        this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
-        multipartContent = content
-        props.run { configure() }
-    }) {
-        ContentWithinField(field, defaultValue)
+    ): F {
+        val fieldsScope = this@FormFieldsScope as FormFieldsScopeImpl<PM>
+        val formField = fieldsScope.run {
+            // The field registry stores values by their common base type.
+            @Suppress("UNCHECKED_CAST")
+            registerField(field as MessageField<PM, MessageFieldValue>, defaultValue)
+        }
+        return createAndRender({
+            // Storing the builder as `ValidatingBuilder` internally.
+            @Suppress("UNCHECKED_CAST")
+            this.builder = builder as () -> ValidatingBuilder<M>
+            @Suppress(
+                // Storing `onBeforeBuild` using a more general
+                // `ValidatingBuilder<out M>` type internally.
+                "UNCHECKED_CAST"
+            )
+            this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
+            multipartContent = content
+            props.run { configure() }
+        }, createInstance = {
+            val newForm = create<F>()
+            val previousForm = formField.editor
+            // Keep initial values and edits when a wizard page is shown again.
+            @Suppress("UNCHECKED_CAST")
+            if (previousForm != null && previousForm::class == newForm::class) {
+                previousForm as F
+            } else {
+                newForm
+            }
+        }) {
+            ContentWithinField(field, defaultValue)
+        }
     }
 
     /**

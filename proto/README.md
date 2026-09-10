@@ -33,3 +33,16 @@ of components:
 - Components for editing and displaying time related values — see
   the [`time`](src/main/kotlin/io/spine/chords/proto/time) package.
 - etc.
+
+### Detecting changes in a form
+
+`MessageForm.dirty` is `true` while input differs from the initial values,
+including invalid or partial input. Restoring all initial values clears it;
+comparison uses parsed values, so equivalent text is clean.
+Supply initial data through `value` or field `defaultValue` arguments; displaying
+these values alone leaves the form clean. Use the existing `onDirtyStateChange`
+callback to observe edits.
+
+Initial values and edits are retained across recomposition and separately
+shown form parts. See [MessageForm](src/main/kotlin/io/spine/chords/proto/form/MessageForm.kt)
+for the dirty-state contract.
