@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,12 +44,12 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.text.TextStyle
 import com.google.protobuf.Message
 import io.spine.base.FieldPath
-import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.InputContext
 import io.spine.chords.core.ValidationErrorText
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.core.recompositionWorkaround
 import io.spine.chords.proto.form.MessageForm.Companion.Multipart
 import io.spine.chords.proto.form.MessageForm.Companion.create
@@ -486,6 +487,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * expected to include field editors for all message's fields, which
          * are required to create a valid value of type [M].
          *
+         * The parent field retains its form when hidden and reuses it when shown
+         * again. Switching to another oneof alternative clears its input.
+         * Declare one field-bound form per parent field.
+         *
          * @receiver The context introduced by the parent form.
          * @param PM Parent message type.
          * @param M A type of the message being edited with the form.
@@ -502,8 +507,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
-         * @return A form's instance that has been created for this
-         *   declaration site.
+         * @return The form instance registered for the parent field.
          */
         context(FormFieldsScope<PM>)
         @Composable
@@ -587,6 +591,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * [FormPart][MultipartFormScope.FormPart] declarations, which, in turn,
          * should contain the respective field editors.
          *
+         * The parent field retains its form when hidden and reuses it when shown
+         * again. Switching to another oneof alternative clears its input.
+         * Declare one field-bound form per parent field.
+         *
          * @receiver The context introduced by the parent form.
          * @param PM Parent message type.
          * @param M A type of the message being edited with the form.
@@ -603,8 +611,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          *   after any valid field is entered to it.
          * @param content A form's content, which can contain an arbitrary
          *   layout along with field editor declarations.
-         * @return a form's instance that has been created for this
-         *   declaration site.
+         * @return The form instance registered for the parent field.
          */
         context(FormFieldsScope<PM>)
         @Composable
@@ -691,7 +698,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     internal inner class FormOneof(
         private val oneof: MessageOneof<M>,
-        initialSelectedField: MessageField<M, MessageFieldValue>?
+        private val initialSelectedField: MessageField<M, MessageFieldValue>?
     ) {
 
         /**
@@ -732,6 +739,17 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * is needed to detect further [selectedMessageField] state changes.
          */
         private var lastSelectedField: MessageField<M, MessageFieldValue>? = initialSelectedField
+
+        /**
+         * Distinguishes initial selection from subsequent user input.
+         */
+        private var inputInitialized = false
+
+        /**
+         * Whether the user has selected a different oneof alternative.
+         */
+        val dirty: Boolean
+            get() = inputInitialized && selectedMessageField.value != initialSelectedField
 
         /**
          * Takes a note of a form field that was declared in the oneof
@@ -778,6 +796,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 lastSelectedField = selectedMessageField.value
                 handleSelectedFieldNumberChange(selectedMessageField.value)
             }
+            SideEffect { inputInitialized = true }
         }
 
         /**
@@ -790,7 +809,13 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         ) {
             clearOtherFields(newSelectedField)
             fields[newSelectedField]?.focusEditor()
-            updateDirty()
+            if (newSelectedField != null) {
+                enteringNonNullValue.value = true
+                lastObservedEnteringNonNullValue = true
+            }
+            if (inputInitialized) {
+                updateDirty()
+            }
         }
 
         /**
@@ -862,6 +887,31 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         )
 
         /**
+         * The initial field value, treating empty text like an empty editor.
+         */
+        private val initialInput = value.value?.takeUnless { it == "" }
+
+        /**
+         * Whether the selected editor differs from its initial input.
+         */
+        val dirty: Boolean
+            get() {
+                if (!inputInitialized) {
+                    return false
+                }
+                if (formOneof != null && formOneof.selectedMessageField.value != this.field) {
+                    return false
+                }
+                val nestedForm = editor as? MessageForm<*>
+                if (nestedForm != null) {
+                    return nestedForm.dirty
+                }
+                val currentValue = value.value?.takeUnless { it == "" }
+                val partialInput = value.value == null && editorDirty == true
+                return currentValue != initialInput || !valueValid.value || partialInput
+            }
+
+        /**
          * A [FormFieldScope] instance for DSL declarations related to
          * this field.
          */
@@ -872,6 +922,16 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * which is stored to be able to detect further [value] state updates.
          */
         private var lastObservedValue: MessageFieldValue? = value.value
+
+        /**
+         * Detects invalid input even when the parsed value remains `null`.
+         */
+        private var lastObservedValid = true
+
+        /**
+         * Excludes the editor's initial value and validation from user edits.
+         */
+        private var inputInitialized = false
 
         /**
          * A field-related validation error message, if the previous form
@@ -930,28 +990,33 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          *
          * @see [FormFieldScope.notifyDirtyStateChanged]
          */
-        private var dirty: Boolean? = null
+        private var editorDirty: Boolean? = null
 
         /**
-         * Reports whether the field can effectively be considered to be in
-         * a "dirty" state.
+         * Whether the editor currently contains input, used to select its
+         * enclosing oneof or optional message automatically.
          *
-         * More precisely, this property is `true` if either the field editor
-         * has reported a "genuine" dirty state, or a field editor component has
-         * a non-`null` and non-default value (albeit not being reported as
-         * being "dirty" explicitly). The second case can technically sometimes
-         * be possible if an editor component is implemented in a way that
-         * doesn't bother to report its dirty state
-         * (by invoking [FormFieldScope.notifyDirtyStateChanged]).
+         * Nested forms inspect their fields because [MessageForm.dirty]
+         * compares input with initial values instead of reporting its presence.
+         * Editors that do not report input presence can still supply a
+         * non-default message value.
          *
-         * @see [FormFieldScope.notifyDirtyStateChanged]
+         * @see FormFieldScope.notifyDirtyStateChanged
          */
         val effectivelyDirty: Boolean
             get() {
                 var eDirtyField = _effectivelyDirty
                 if (eDirtyField == null) {
-                    eDirtyField = (dirty == true) ||
-                            (value.value is Message && !(value.value as Message).isDefault())
+                    val nestedForm = editor as? MessageForm<*>
+                    eDirtyField = if (nestedForm != null) {
+                        nestedForm.fields.values.any { it.effectivelyDirty } ||
+                                nestedForm.oneofs.values.any {
+                                    it.selectedMessageField.value != null
+                                }
+                    } else {
+                        (editorDirty == true) ||
+                                (value.value is Message && !(value.value as Message).isDefault())
+                    }
                     _effectivelyDirty = eDirtyField
                 }
                 return eDirtyField
@@ -993,10 +1058,18 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         @Composable
         fun update() {
             val currentValue = value.value
+            val currentValid = valueValid.value
+            val inputChanged = currentValue != lastObservedValue ||
+                    currentValid != lastObservedValid
             if (currentValue != lastObservedValue) {
                 handleValueEdited()
-                lastObservedValue = currentValue
             }
+            if (inputInitialized && editor !is MessageForm<*> && inputChanged) {
+                updateDirty()
+            }
+            lastObservedValue = currentValue
+            lastObservedValid = currentValid
+            SideEffect { inputInitialized = true }
         }
 
         /**
@@ -1022,23 +1095,31 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         }
 
         /**
-         * Clears (sets to `null`) the value stored in the [value] state without
-         * triggering [handleValueEdited].
+         * Clears input and validation without treating the reset as new user input.
          */
         fun clearValueSilently() {
             value.value = null
+            valueValid.value = true
             lastObservedValue = null
+            lastObservedValid = true
+            editorDirty = false
             _effectivelyDirty = false
             lastObservedEffectivelyDirty = false
         }
 
+        /**
+         * Forwards editor input through the form's existing dirty callback.
+         */
         fun dirtyStateChanged(dirty: Boolean) {
-            this.dirty = dirty
+            editorDirty = dirty
             checkEffectivelyDirtyStateChange()
+            if (inputInitialized) {
+                updateDirty()
+            }
         }
 
         /**
-         * Recalculates the effective dirty state and propagates a change to the form.
+         * Recalculates the effective dirty state and updates the form's input state.
          */
         private fun checkEffectivelyDirtyStateChange() {
             _effectivelyDirty = null
@@ -1047,8 +1128,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 lastObservedEffectivelyDirty = effectivelyDirty
                 if (effectivelyDirty) {
                     selectThisOneofField()
+                    enteringNonNullValue.value = true
+                    lastObservedEnteringNonNullValue = true
                 }
-                this@MessageForm.updateDirty()
             }
         }
     }
@@ -1126,6 +1208,13 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * edited in the form, mapped to by their respective names.
      */
     private val oneofs = linkedMapOf<MessageOneof<M>, FormOneof>()
+
+    /**
+     * The message supplied before the first composition, retained for fields
+     * and form parts that are displayed later.
+     */
+    internal var initialValue: M? = null
+        private set
 
     /**
      * The latest cached message value that was emitted by [MessageForm] for
@@ -1231,6 +1320,16 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     private var lastObservedEnteringNonNullValue: Boolean = false
 
     /**
+     * The initial optional-message selection, before any user input.
+     */
+    private var initialEnteringNonNullValue = false
+
+    /**
+     * Distinguishes an explicit optional-message selection from automatic selection on input.
+     */
+    private var optionalSelectionEdited = false
+
+    /**
      * A [MultipartFormScope] instance, which is an outermost scope for
      * declarations within this form.
      */
@@ -1239,30 +1338,33 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     private val formScope = MultipartFormScopeImpl(this)
 
     /**
-     * Has a value of `true` when the form is in the "dirty" state.
+     * Whether the current input differs from the form's initial values.
      *
-     * A "dirty" state means that a component currently displays any data
-     * (either valid or invalid). For the form this means that any of its fields
-     * display any valid or invalid data (e.g. even if the user has entered
-     * something that is not valid so far).
+     * Initial values and validation leave the form clean. Editing, clearing,
+     * or entering invalid input makes it dirty; restoring the initial values
+     * clears it. Comparison uses parsed values, so equivalent text is clean.
+     * Nested forms, oneof selections, and separately displayed parts contribute
+     * to the same state through the existing [onDirtyStateChange] callback.
      *
-     * A value of `false` means that neither of the form's fields displays
-     * any data.
+     * Explicitly selecting an optional message counts as input. Automatic
+     * selection while typing does not keep the form dirty after that input
+     * is removed. This state is independent of [valid].
      */
     public val dirty: Boolean get() = _dirty
 
     /**
      * The mutable backing value exposed through [dirty].
      */
-    private var _dirty = false
+    private var _dirty by mutableStateOf(false)
 
     override fun initialize() {
         super.initialize()
         requireProperty(::builder.isInitialized, "builder")
 
+        initialValue = value.value
         lastEmittedMessageValue = value.value
-        _dirty = identifyInitialDirtyState(value.value)
         enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
+        initialEnteringNonNullValue = enteringNonNullValue.value
         lastObservedEnteringNonNullValue = enteringNonNullValue.value
         editorsEnabledInternal = mutableStateOf(shouldEnableEditors)
     }
@@ -1414,6 +1516,11 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     @ReadOnlyComposable
     private fun updateBeforeRendering() {
+        if (enteringNonNullValue.value != lastObservedEnteringNonNullValue) {
+            optionalSelectionEdited =
+                enteringNonNullValue.value != initialEnteringNonNullValue
+            updateDirty()
+        }
         if (lastEmittedMessageValue != null && value.value == null) {
             if (enteringNonNullValue.value) {
                 enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
@@ -1428,25 +1535,6 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         lastObservedEnteringNonNullValue = enteringNonNullValue
 
         editorsEnabledInternal.value = shouldEnableEditors
-    }
-
-    /**
-     * Determines whether the form starts dirty for the given message value.
-     */
-    private fun identifyInitialDirtyState(initialMessageValue: M?): Boolean = when {
-        initialMessageValue == null ->
-            false
-
-        !initialMessageValue.isDefault() ->
-            true
-
-        messageDef.oneofs.any { oneof ->
-            oneof.selectedField(initialMessageValue) != null
-        } ->
-            true
-
-        else ->
-            false
     }
 
     /**
@@ -1479,14 +1567,16 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
 
 
     /**
-     * Clears the data entered in the form.
+     * Clears field input and oneof selections, then reports the resulting dirty state.
      */
     override fun clear() {
+        super.clear()
         clearValidationDisplay()
-        fields.values.forEach {
-            it.value.value = null
-            it.editor?.clear()
-        }
+        // Clear all input presence before an editor can notify its enclosing form.
+        oneofs.values.forEach { it.selectedMessageField.value = null }
+        fields.values.forEach { it.clearValueSilently() }
+        fields.values.forEach { it.editor?.clear() }
+        updateDirty()
     }
 
     /**
@@ -1516,29 +1606,18 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     internal fun registerOneof(
         oneof: MessageOneof<M>
     ): FormOneof = oneofs.getOrPut(oneof) {
-        val initialSelectedField =
-            if (value.value != null) {
-                oneof.selectedField(value.value!!)
-            } else {
-                null
-            }
-        FormOneof(oneof, initialSelectedField)
+        FormOneof(oneof, initialValue?.let { oneof.selectedField(it) })
     }
 
     /**
-     * Recalculates and publishes the form-wide dirty state.
+     * Compares current input with its initial values and reports the dirty state.
      */
     private fun updateDirty() {
-        val dirty =
-            fields.values.any { it.effectivelyDirty } ||
-                    oneofs.values.any { it.selectedMessageField.value != null }
-        if (!_dirty && dirty) {
-            enteringNonNullValue.value = true
-        }
-        if (_dirty != dirty) {
-            _dirty = dirty
-            onDirtyStateChange?.invoke(dirty)
-        }
+        val optionalSelectionChanged = optionalSelectionEdited &&
+                enteringNonNullValue.value != initialEnteringNonNullValue
+        _dirty = fields.values.any { it.dirty } || oneofs.values.any { it.dirty } ||
+                optionalSelectionChanged
+        onDirtyStateChange?.invoke(_dirty)
     }
 
     /**

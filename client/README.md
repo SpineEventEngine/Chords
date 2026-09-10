@@ -146,12 +146,36 @@ ProgressOverlay(posting) {
 }
 ```
 
+#### Confirming cancellation of a prefilled command dialog
+
+Set `CommandDialog.initialValue` before displaying the dialog, then use
+`dirty` to confirm cancellation while the form differs from its initial values:
+
+```kotlin
+val dialog = EditItemDialog().apply {
+    initialValue = initialCommand
+    onBeforeCancel = {
+        !dirty || ConfirmationDialog.showConfirmation {
+            message = "Discard your changes?"
+        }
+    }
+}
+dialog.open()
+```
+
+`onBeforeCancel` handles the Cancel button, window close, and Escape.
+Initial values leave `dirty` false. Editing, including invalid or partial input,
+sets it to true; restoring all initial values clears it. Standalone
+`CommandMessageForm` instances inherit the same property from `MessageForm` and
+accept initial values through `value`.
+
 #### Confirming cancellation of a command wizard
 
-A `CommandWizard` reports through its `dirty` property whether any data has been
-entered on any of its pages, with the same meaning that `CommandDialog.dirty`
-has. All pages edit the fields of a single command message form, so `dirty`
-stays `true` for the data entered on a page that is not displayed anymore.
+A `CommandWizard` starts without an initial command message. Its initial input
+comes from field defaults. Its `dirty` property reports differences from those
+defaults on any page, with the same comparison rules as `CommandDialog.dirty`.
+All pages edit a single command message form, so changes on hidden pages still
+count. Restoring all initial values clears `dirty`.
 
 The `Wizard.onBeforeCancel` callback is invoked when the user presses "Cancel",
 and returning `false` from it keeps the wizard open. The callback suspends, so

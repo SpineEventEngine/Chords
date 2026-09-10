@@ -24,7 +24,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.proto
+
+import io.spine.chords.core.appshell.Application
+import io.spine.chords.core.appshell.app
+import java.awt.Dimension
+
 /**
- * The version of all Chords libraries.
+ * Installs application defaults for component tests without opening a window.
  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.118")
+internal object TestApplication {
+
+    /**
+     * Prevents assigning the application singleton more than once per test JVM.
+     */
+    private var installed = false
+
+    /**
+     * Makes the default component configuration available to each suite.
+     */
+    @Synchronized
+    fun install() {
+        if (!installed) {
+            app = Application(
+                name = "Chords proto tests",
+                views = emptyList(),
+                minWindowSize = Dimension(1, 1)
+            )
+            installed = true
+        }
+    }
+}

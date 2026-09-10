@@ -169,7 +169,10 @@ public interface InputContext {
  * optionally filled sections).
  *
  * Whenever the input component transitions from/to the dirty state, it has
- * to invoke the [onDirtyStateChange] callback.
+ * to invoke the [onDirtyStateChange] callback. It may also report the same
+ * state again after further edits, even if the parsed value is unchanged.
+ * Compound editors such as message forms can compare input with initial
+ * values; their documentation defines when they return to a clean state.
  *
  * @param V A type of values that this input component allows editing.
  *
@@ -242,7 +245,10 @@ public abstract class InputComponent<V> : FocusableComponent() {
      * A callback, which is invoked every time when a component transitions
      * between an empty and dirty state (in any direction). A callback has
      * an argument of `true`, when the new state is dirty, and `false` when it
-     * becomes empty.
+     * becomes empty. Components may also invoke it after further edits with
+     * the same state, including edits that leave the parsed value unchanged.
+     * A form can define dirty state relative to its initial values, as
+     * documented by the form component.
      */
     public var onDirtyStateChange: ((Boolean) -> Unit)? = null
 
