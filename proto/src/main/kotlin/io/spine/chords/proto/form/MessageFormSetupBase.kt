@@ -32,7 +32,6 @@ import com.google.protobuf.Message
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.appshell.Props
 import io.spine.chords.runtime.MessageField
-import io.spine.chords.runtime.MessageFieldValue
 import io.spine.protobuf.ValidatingBuilder
 
 /**
@@ -218,14 +217,10 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
         defaultValue: M? = null,
         onBeforeBuild: (B) -> Unit = {},
         content: @Composable MultipartFormScope<M>.() -> Unit
-    ): F {
-        val fieldsScope = this@FormFieldsScope as FormFieldsScopeImpl<PM>
-        val formField = fieldsScope.run {
-            // The field registry stores values by their common base type.
-            @Suppress("UNCHECKED_CAST")
-            registerField(field as MessageField<PM, MessageFieldValue>, defaultValue)
-        }
-        return createAndRender({
+    ): F = DeclareFieldEditor(
+        field = field,
+        defaultValue = defaultValue,
+        props = {
             // Storing the builder as `ValidatingBuilder` internally.
             @Suppress("UNCHECKED_CAST")
             this.builder = builder as () -> ValidatingBuilder<M>
@@ -237,20 +232,8 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
             this.onBeforeBuild = onBeforeBuild as (ValidatingBuilder<out M>) -> Unit
             multipartContent = content
             props.run { configure() }
-        }, createInstance = {
-            val newForm = create<F>()
-            val previousForm = formField.editor
-            // Keep initial values and edits when a wizard page is shown again.
-            @Suppress("UNCHECKED_CAST")
-            if (previousForm != null && previousForm::class == newForm::class) {
-                previousForm as F
-            } else {
-                newForm
-            }
-        }) {
-            ContentWithinField(field, defaultValue)
         }
-    }
+    )
 
     /**
      * Creates a [MessageForm] instance without rendering it in

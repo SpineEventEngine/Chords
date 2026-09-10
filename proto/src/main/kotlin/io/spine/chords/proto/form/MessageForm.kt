@@ -698,7 +698,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     internal inner class FormOneof(
         private val oneof: MessageOneof<M>,
-        private val initialSelectedField: MessageField<M, MessageFieldValue>?
+        val initialSelectedField: MessageField<M, MessageFieldValue>?
     ) {
 
         /**
@@ -706,7 +706,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * oneof's fields.
          */
         val selectedMessageField: MutableState<MessageField<M, MessageFieldValue>?> =
-            mutableStateOf(initialSelectedField)
+            mutableStateOf(initialSelectedField.takeUnless { inputCleared })
 
         /**
          * A current validation message pertaining to this oneof in general (not
@@ -738,7 +738,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * The last value of [selectedMessageField] that has been observed, which
          * is needed to detect further [selectedMessageField] state changes.
          */
-        private var lastSelectedField: MessageField<M, MessageFieldValue>? = initialSelectedField
+        private var lastSelectedField = selectedMessageField.value
 
         /**
          * Distinguishes initial selection from subsequent user input.
@@ -796,7 +796,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 lastSelectedField = selectedMessageField.value
                 handleSelectedFieldNumberChange(selectedMessageField.value)
             }
-            SideEffect { inputInitialized = true }
+            SideEffect {
+                if (!inputInitialized) {
+                    inputInitialized = true
+                    if (inputCleared) {
+                        updateDirty()
+                    }
+                }
+            }
         }
 
         /**
@@ -828,7 +835,8 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             fields.entries.forEach {
                 if (it.key != exceptThisField) {
                     val field = it.value
-                    field.editor?.clear() ?: field.clearValueSilently()
+                    field.clearValueSilently()
+                    field.editor?.clear()
                 }
             }
         }
@@ -868,6 +876,12 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         val focusRequestDispatcher: FocusRequestDispatcher = FocusRequestDispatcher()
 
         /**
+         * Whether a clear must also apply to editors first displayed later.
+         */
+        var inputCleared = this@MessageForm.inputCleared
+            private set
+
+        /**
          * The currently edited field's value.
          *
          * A value of `null` means that the value for this field is missing
@@ -876,12 +890,12 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          */
         val value: MutableState<MessageFieldValue?> = mutableStateOf(
             if (
-                formOneof == null ||
-                formOneof.selectedMessageField.value == field
+                !inputCleared && (formOneof == null ||
+                        formOneof.selectedMessageField.value == field)
             ) {
                 initialValue
             } else {
-                // Unselected oneof fields shouldn't have a value.
+                // Cleared fields and unselected oneof fields have no current value.
                 null
             }
         )
@@ -889,7 +903,16 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         /**
          * The initial field value, treating empty text like an empty editor.
          */
-        private val initialInput = value.value?.takeUnless { it == "" }
+        val initialInput = initialValue?.takeUnless {
+            it == "" || (formOneof != null && formOneof.initialSelectedField != field)
+        }
+
+        /**
+         * Whether this field contributes to the message being built.
+         * Ordinary fields always do; oneof fields do only while selected.
+         */
+        val selected: Boolean
+            get() = formOneof == null || formOneof.selectedMessageField.value == this.field
 
         /**
          * Whether the selected editor differs from its initial input.
@@ -899,7 +922,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
                 if (!inputInitialized) {
                     return false
                 }
-                if (formOneof != null && formOneof.selectedMessageField.value != this.field) {
+                if (!selected) {
                     return false
                 }
                 val nestedForm = editor as? MessageForm<*>
@@ -977,6 +1000,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * Having this information is required for performing a "deep"
          * validation cascade (validating a form with all of its
          * nested subforms).
+         * Field-bound declarations also reuse this editor when its composition returns.
          */
         var editor: InputComponent<out MessageFieldValue>? = null
 
@@ -1069,7 +1093,14 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             }
             lastObservedValue = currentValue
             lastObservedValid = currentValid
-            SideEffect { inputInitialized = true }
+            SideEffect {
+                if (!inputInitialized) {
+                    inputInitialized = true
+                    if (inputCleared) {
+                        updateDirty()
+                    }
+                }
+            }
         }
 
         /**
@@ -1098,6 +1129,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          * Clears input and validation without treating the reset as new user input.
          */
         fun clearValueSilently() {
+            inputCleared = true
             value.value = null
             valueValid.value = true
             lastObservedValue = null
@@ -1215,6 +1247,16 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     internal var initialValue: M? = null
         private set
+
+    /**
+     * The enclosing field, which retains initial input if this form appears after a clear.
+     */
+    internal var parentField: MessageForm<*>.FormField? = null
+
+    /**
+     * Prevents later field declarations from restoring input discarded by [clear].
+     */
+    private var inputCleared = false
 
     /**
      * The latest cached message value that was emitted by [MessageForm] for
@@ -1362,9 +1404,18 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         requireProperty(::builder.isInitialized, "builder")
 
         initialValue = value.value
+        val enclosingField = parentField
+        if (enclosingField?.inputCleared == true) {
+            // Field binding ensures that this form edits the enclosing field's message type.
+            @Suppress("UNCHECKED_CAST")
+            initialValue = enclosingField.initialInput as M?
+            inputCleared = true
+        }
         lastEmittedMessageValue = value.value
         enteringNonNullValue.value = identifyInitialEnteringNonNullValue()
-        initialEnteringNonNullValue = enteringNonNullValue.value
+        initialEnteringNonNullValue = identifyInitialEnteringNonNullValue(initialValue)
+        optionalSelectionEdited = inputCleared &&
+                enteringNonNullValue.value != initialEnteringNonNullValue
         lastObservedEnteringNonNullValue = enteringNonNullValue.value
         editorsEnabledInternal = mutableStateOf(shouldEnableEditors)
     }
@@ -1540,8 +1591,10 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     /**
      * Determines whether the form should initially produce a non-null message.
      */
-    private fun identifyInitialEnteringNonNullValue(): Boolean = when {
-        required || value.value != null ->
+    private fun identifyInitialEnteringNonNullValue(
+        messageValue: M? = value.value
+    ): Boolean = when {
+        required || messageValue != null ->
             true
 
         messageDef.fields.isEmpty() -> {
@@ -1571,6 +1624,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     override fun clear() {
         super.clear()
+        inputCleared = true
         clearValidationDisplay()
         // Clear all input presence before an editor can notify its enclosing form.
         oneofs.values.forEach { it.selectedMessageField.value = null }
@@ -1662,7 +1716,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     ) {
         if (updateValidationErrors) {
             clearValidationDisplay()
-            fields.values.forEach {
+            fields.values.filter { it.selected }.forEach {
                 it.editor?.updateValidationDisplay(focusInvalidPart)
             }
         }
@@ -1697,7 +1751,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         val nestedErrorsPresent =
             enteringNonNullValue.value &&
                     fields.values.any {
-                        !it.valueValid.value
+                        it.selected && !it.valueValid.value
                     }
         if (updateValidationErrors) {
             recoveringFromManualValidationErrors = nestedErrorsPresent
@@ -1902,8 +1956,8 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
     protected fun focusInvalidField() {
         val fieldToFocus =
             fields.values.firstOrNull { field ->
-                !field.valueValid.value ||
-                        field.externalValidationMessage.value != null
+                field.selected &&
+                        (!field.valueValid.value || field.externalValidationMessage.value != null)
             } ?: run {
                 val formOneof = oneofs.values.firstOrNull {
                     it.validationMessage.value != null ||

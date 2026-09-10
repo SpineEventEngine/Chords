@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
+import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.appshell.Props
@@ -38,6 +39,10 @@ import io.spine.chords.runtime.MessageFieldValue
  * This extension adds a way to declare any [InputComponent] [C] as an editor of
  * field [field] within the parent
  * [MessageForm][io.spine.chords.proto.form.MessageForm].
+ *
+ * The parent field retains its editor, including invalid input, when hidden
+ * and reuses it when shown again with the same component setup. Switching to
+ * another oneof alternative clears its input. Declare one editor per field.
  *
  * Technically, this is an
  * [operator function](https://kotlinlang.org/docs/operator-overloading.html#invoke-operator),
@@ -115,8 +120,7 @@ import io.spine.chords.runtime.MessageFieldValue
  * @param props A lambda that receives a component's instance, and should
  *   configure its properties in a way that is needed for this component's
  *   instance. It is invoked before each recomposition of the component.
- * @return A component's instance that has been created for this
- *   declaration site.
+ * @return The editor instance registered for the parent field.
  * @see ComponentSetup.invoke
  */
 context(FormFieldsScope<M>)
@@ -128,10 +132,32 @@ public operator fun <
 > ComponentSetup<C>.invoke(
     field: MessageField<M, V>,
     props: Props<C>? = null
+): C = DeclareFieldEditor(field = field, props = props)
+
+/**
+ * Registers a field through the regular [FormFieldsScope.Field] lifecycle,
+ * then obtains and renders its editor with the current properties.
+ *
+ * Both ordinary input components and nested forms use this declaration path.
+ * The setup must consistently create editors of type [C] for this field.
+ */
+context(FormFieldsScope<M>)
+@Composable
+internal fun <
+        C : InputComponent<V>,
+        M : Message,
+        V : MessageFieldValue
+> AbstractComponentSetup.DeclareFieldEditor(
+    field: MessageField<M, V>,
+    defaultValue: V? = null,
+    props: Props<C>? = null
 ): C {
-    return createAndRender(props) {
-        ContentWithinField(field)
+    var editor: C? = null
+    Field(field, defaultValue) {
+        val scope = this as FormFieldScopeImpl<*, V>
+        editor = scope.Editor(this@DeclareFieldEditor, props)
     }
+    return checkNotNull(editor)
 }
 
 /**
@@ -168,15 +194,7 @@ internal fun <
     defaultValue: V? = null
 ) {
     Field(field, defaultValue) {
-        this@InputComponent.value = this@Field.fieldValue
-        this@InputComponent.valid = this@Field.fieldValueValid
-        this@InputComponent.externalValidationMessage = this@Field.externalValidationMessage
-        this@InputComponent.onDirtyStateChange = { this@Field.notifyDirtyStateChanged(it) }
-        this@InputComponent.required = this@Field.fieldRequired
-        this@InputComponent.enabled = this@Field.fieldEnabled.value
-        this@Field.focusRequestDispatcher.handleFocusRequest = { focus() }
-        registerFieldValueEditor(this@InputComponent)
-
-        Content()
+        val scope = this as FormFieldScopeImpl<*, V>
+        scope.EditorContent(this@InputComponent)
     }
 }

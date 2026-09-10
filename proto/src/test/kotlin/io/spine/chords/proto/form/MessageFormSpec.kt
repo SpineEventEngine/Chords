@@ -32,12 +32,12 @@ import androidx.compose.runtime.remember
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.spine.chords.proto.TestApplication
-import io.spine.chords.proto.form.given.MessageFormSpecEnv.ObserveDirty
-import io.spine.chords.proto.form.given.MessageFormSpecEnv.TrimmingInputField
-import io.spine.chords.proto.form.given.MessageFormSpecEnv.account
-import io.spine.chords.proto.form.given.MessageFormSpecEnv.accountForm
-import io.spine.chords.proto.form.given.MessageFormSpecEnv.inScene
-import io.spine.chords.proto.form.given.MessageFormSpecEnv.paymentForm
+import io.spine.chords.proto.form.given.MessageFormFixtures.ObserveDirty
+import io.spine.chords.proto.form.given.MessageFormFixtures.TrimmingInputField
+import io.spine.chords.proto.form.given.MessageFormFixtures.account
+import io.spine.chords.proto.form.given.MessageFormFixtures.accountForm
+import io.spine.chords.proto.form.given.MessageFormFixtures.inScene
+import io.spine.chords.proto.form.given.MessageFormFixtures.paymentForm
 import io.spine.chords.proto.value.money.BankAccount
 import io.spine.chords.proto.value.money.BankAccountDef
 import io.spine.chords.proto.value.money.PaymentCardNumber
@@ -762,8 +762,7 @@ internal class MessageFormSpec {
                     oneof = this
                     if (selectedField.value == bank) {
                         MessageForm(PaymentMethodDef.bankAccount, BankAccount::newBuilder) {
-                            input = remember { TrimmingInputField() }
-                            input.ContentWithinField(BankAccountDef.number)
+                            input = TrimmingInputField(BankAccountDef.number)
                         }
                     } else {
                         Field(PaymentMethodDef.paymentCard) {}

@@ -29,11 +29,14 @@ package io.spine.chords.proto.form
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import com.google.protobuf.Message
+import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.InputComponent
+import io.spine.chords.core.appshell.Props
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
@@ -566,6 +569,12 @@ internal class FormFieldScopeImpl<M : Message, V : MessageFieldValue>(
 ) : FormFieldScope<V> {
     private val form: MessageForm<M> = formField.formFieldsScopeImpl.formScope.form
 
+    /**
+     * Identifies the setup that created the registered editor, so it can be
+     * reused without constructing another instance to inspect its type.
+     */
+    private var editorSetup: AbstractComponentSetup? = null
+
     override val fieldRequired = formField.required
     override val fieldValue: MutableState<V?>
         // Fields are stored as a base `MessageFieldValue` type internally.
@@ -581,8 +590,55 @@ internal class FormFieldScopeImpl<M : Message, V : MessageFieldValue>(
         get() = formField.focusRequestDispatcher
 
     override fun registerFieldValueEditor(fieldValueEditor: InputComponent<V>) {
+        if (formField.editor !== fieldValueEditor) {
+            editorSetup = null
+        }
         formField.editor = fieldValueEditor
         fieldValueEditor.inputContext = form
+    }
+
+    /**
+     * Keeps an editor for this field across composition visits, while applying
+     * the current props through the standard component lifecycle.
+     *
+     * A different field or setup must get its own composition instance.
+     */
+    @Composable
+    internal fun <C : InputComponent<V>> Editor(
+        setup: AbstractComponentSetup,
+        props: Props<C>?
+    ): C = key(this, setup) {
+        val previousEditor = formField.editor.takeIf { editorSetup === setup }
+        // The same setup creates C, and this scope fixes the field's value type V.
+        @Suppress("UNCHECKED_CAST")
+        setup.createAndRender(
+            props = props,
+            createInstance = previousEditor?.let { { it as C } }
+        ) {
+            EditorContent(this)
+            editorSetup = setup
+        }
+    }
+
+    /**
+     * Binds an editor to this field's state before initializing and rendering it.
+     * Also supports explicitly supplied editor instances with caller-owned lifetimes.
+     */
+    @Composable
+    internal fun EditorContent(editor: InputComponent<V>) {
+        editor.value = fieldValue
+        editor.valid = fieldValueValid
+        editor.externalValidationMessage = externalValidationMessage
+        editor.onDirtyStateChange = { notifyDirtyStateChanged(it) }
+        editor.required = fieldRequired
+        editor.enabled = fieldEnabled.value
+        focusRequestDispatcher.handleFocusRequest = { editor.focus() }
+        registerFieldValueEditor(editor)
+        if (editor is MessageForm<*>) {
+            editor.parentField = formField
+        }
+
+        editor.Content()
     }
 
     override fun notifyDirtyStateChanged(dirty: Boolean) {
