@@ -34,10 +34,10 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import io.spine.chords.core.appshell.app
 import io.spine.base.EntityState
-import io.spine.chords.core.DropdownSelector
 import io.spine.chords.client.appshell.client
+import io.spine.chords.core.DropdownSelector
+import io.spine.chords.core.appshell.app
 import io.spine.chords.runtime.MessageFieldValue
 import kotlin.reflect.full.allSupertypes
 import kotlin.reflect.javaType
@@ -93,9 +93,9 @@ public abstract class EntityChooser<
     override val items: MutableState<Iterable<I>> = mutableStateOf(listOf())
 
     /**
-     * The live observation that supplies entity states for this chooser.
+     * The observation owned by the current composition, absent while the chooser is hidden.
      */
-    private val entityStates = app.client.readAndObserve(entityStateClass, ::entityId)
+    private var entityStates: DataObservation<List<E>>? by mutableStateOf(null)
 
     /**
      * The latest observed entity states indexed by their IDs.
@@ -213,9 +213,12 @@ public abstract class EntityChooser<
 
     @Composable
     override fun content() {
-        DisposableEffect(entityStates) {
+        DisposableEffect(this) {
+            val observation = app.client.readAndObserve(entityStateClass, ::entityId)
+            entityStates = observation
             onDispose {
-                entityStates.cancel()
+                observation.cancel()
+                entityStates = null
             }
         }
         super.content()
@@ -225,11 +228,12 @@ public abstract class EntityChooser<
     @ReadOnlyComposable
     override fun beforeComposeContent() {
         super.beforeComposeContent()
+        val entities = entityStates?.value.orEmpty()
         entityStatesByIds.clear()
-        entityStates.value.forEach {
+        entities.forEach {
             entityStatesByIds[entityId(it)] = it
         }
-        items.value = entityStates.value.filter {
+        items.value = entities.filter {
             entityId(it) !in excludedEntityIds
         }.map { entityId(it) }
     }

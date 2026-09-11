@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
+import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputComponent
 import io.spine.chords.core.appshell.Props
@@ -35,73 +36,28 @@ import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 
 /**
- * This extension adds a way to declare any [InputComponent] [C] as an editor of
- * field [field] within the parent
- * [MessageForm][io.spine.chords.proto.form.MessageForm].
+ * Declares an [InputComponent] as the editor of [field] in the containing [MessageForm].
  *
- * Technically, this is an
- * [operator function](https://kotlinlang.org/docs/operator-overloading.html#invoke-operator),
- * which allows using component's classes like functions.
+ * The field retains its editor, including invalid input, while hidden. Returning with
+ * the same component setup reuses it and applies current [props]. Switching to another
+ * oneof alternative clears its input. Declare one editor per field at a time.
  *
- * For example in case of
- * a component [C] being `SomeInputComponent`, it can be
- * placed inside a [MessageForm] that edits a message of type `ParentMessage` to
- * edit some of its fields (e.g. `ParentMessage.parentField1`) like this:
+ * Custom setup instances must stay stable across recompositions and form-part visits
+ * to retain their editors. Editors must acquire and release composition-bound resources
+ * in their content; initialization runs only once per instance.
  *
- * ```kotlin
- *     <MessageForm ...>
- *         SomeInputComponent(ParentMessageDef.parentField1) {
- *             property1 = value1
- *             property2 = value2
- *             ...
- *         }
- *         ...
- *     </MessageForm>
- * ```
- *
- * Where `property1`, `property2`, etc. are properties of `SomeInputComponent`,
- * which might additionally need to be configured for this particular field
- * editor declaration. If no property configurations are required for this
- * `SomeInputComponent` declaration, it can be expressed like this:
+ * For example, inside a form part for
+ * [BankAccount][io.spine.chords.proto.value.money.BankAccount]:
  *
  * ```kotlin
- *     <MessageForm ...>
- *         SomeInputComponent(ParentMessageDef.parentField1)
- *         ...
- *     </MessageForm>
+ * StringField(BankAccountDef.number) {
+ *     label = "Account number"
+ * }
  * ```
  *
- * ### A practical tip for importing this extension
- *
- * The shorthand syntax above (e.g. `SomeInputComponent(ParentMessageDef.parentField1)`)
- * is using this `invoke` operator function implicitly, and the "full" syntax
- * for the same expression would be like this:
- * `SomeInputComponent.Companion.invoke(ParentMessageDef.parentField1)`.
- * Nevertheless, for readability and conciseness it's not recommended to use
- * this "full" form, and a shorthand implicit syntax is recommended.
- *
- * Like any extension, the use of this function requires importing it though!
- * Unfortunately IntelliJ IDEA doesn't automatically offer to import this
- * `invoke` operator function when writing the shorthand notation, and importing
- * this function explicitly can be tedious.
- *
- * As a simple practical solution, IntelliJ IDEA can be "asked" to import it
- * automatically if you temporarily write the `.invoke` call explicitly,
- * like this:
- *
- * ```
- *     SomeInputComponent.invoke(ParentMessageDef.parentField1)`
- * ```
- *
- * This will make the IDEA to offer the respective import, after which you can
- * just remove the explicit `.invoke` call:
- *
- * ```
- *     SomeInputComponent(ParentMessageDef.parentField1)`
- * ```
- *
- * This needs to be done only once per file, while using the shortened notation
- * throughout the file after this.
+ * Import `io.spine.chords.proto.form.invoke` to use this shorthand. If IntelliJ IDEA
+ * does not offer the import, temporarily write `StringField.invoke(BankAccountDef.number)`
+ * and remove `.invoke` after importing the extension.
  *
  * @receiver A context introduced by the parent form whose fields need to
  *   be edited.
@@ -115,8 +71,8 @@ import io.spine.chords.runtime.MessageFieldValue
  * @param props A lambda that receives a component's instance, and should
  *   configure its properties in a way that is needed for this component's
  *   instance. It is invoked before each recomposition of the component.
- * @return A component's instance that has been created for this
- *   declaration site.
+ * @return The editor instance registered for the parent field.
+ * @throws IllegalArgumentException If multiple editors for this field are composed at once.
  * @see ComponentSetup.invoke
  */
 context(FormFieldsScope<M>)
@@ -128,55 +84,28 @@ public operator fun <
 > ComponentSetup<C>.invoke(
     field: MessageField<M, V>,
     props: Props<C>? = null
-): C {
-    return createAndRender(props) {
-        ContentWithinField(field)
-    }
-}
+): C = DeclareFieldEditor(field = field, props = props)
 
 /**
- * Renders a composable component's content, which is wrapped into
- * the [Field][FormFieldsScope.Field] declaration in order to seamlessly
- * embed this component into
- * [MessageForm][io.spine.chords.proto.form.MessageForm].
+ * Registers a field through the regular [FormFieldsScope.Field] lifecycle,
+ * then obtains and renders its editor with the current properties.
  *
- * NOTE: this method is not expected to be invoked by application developers,
- * and it is used internally within the library.
- *
- * A regular way to both lazily instantiate and render a component is via
- * the respective component's companion object's `invoke` operator (see the
- * [ComponentSetup.invoke] operator functions).
- *
- * @receiver A context introduced by the parent form whose fields need to
- *   be edited.
- * @param M A type of message, which contains a field that is edited by
- *   this component.
- * @param V A type of field (which belongs to the message of type [M]) that is
- *   edited by this component.
- *
- * @param field The message's field, which is edited by this input component.
- * @param defaultValue A field value that should be displayed in the input
- *   component by default.
+ * Both ordinary input components and nested forms use this declaration path.
+ * The setup must consistently create editors of type [C] for this field.
  */
 context(FormFieldsScope<M>)
 @Composable
 internal fun <
+        C : InputComponent<V>,
         M : Message,
         V : MessageFieldValue
-> InputComponent<V>.ContentWithinField(
+> AbstractComponentSetup.DeclareFieldEditor(
     field: MessageField<M, V>,
-    defaultValue: V? = null
-) {
-    Field(field, defaultValue) {
-        this@InputComponent.value = this@Field.fieldValue
-        this@InputComponent.valid = this@Field.fieldValueValid
-        this@InputComponent.externalValidationMessage = this@Field.externalValidationMessage
-        this@InputComponent.onDirtyStateChange = { this@Field.notifyDirtyStateChanged(it) }
-        this@InputComponent.required = this@Field.fieldRequired
-        this@InputComponent.enabled = this@Field.fieldEnabled.value
-        this@Field.focusRequestDispatcher.handleFocusRequest = { focus() }
-        registerFieldValueEditor(this@InputComponent)
-
-        Content()
+    defaultValue: V? = null,
+    props: Props<C>? = null
+): C {
+    val fieldsScope = this@FormFieldsScope as FormFieldsScopeImpl<M>
+    return fieldsScope.WithField(field = field, defaultValue = defaultValue) {
+        Editor(this@DeclareFieldEditor, props)
     }
 }
