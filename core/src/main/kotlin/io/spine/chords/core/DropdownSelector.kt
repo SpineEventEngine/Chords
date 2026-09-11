@@ -29,6 +29,7 @@ package io.spine.chords.core
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -40,8 +41,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
@@ -73,13 +72,13 @@ import androidx.compose.ui.text.AnnotatedString.Range
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextDecoration.Companion.Underline
+import io.spine.chords.core.primitive.OutlinedField
 import io.spine.chords.core.primitive.moveFocusOnTab
 import io.spine.chords.core.primitive.preventWidthAutogrowing
 import io.spine.chords.core.styling.ChordsTheme
-import java.util.*
+import java.util.Locale
 
 /**
  * A base class for components that allow selecting one item from a drop-down
@@ -153,6 +152,18 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     public var shape: Shape? by mutableStateOf(null)
 
     /**
+     * Reserves a line below the selector for validation. Disable this for compact
+     * filters; actual errors still appear when present.
+     */
+    public var reserveValidationSpace: Boolean by mutableStateOf(true)
+
+    /**
+     * Insets shared by standard and custom dropdown item content. A `null` value
+     * uses the theme's medium horizontal spacing; explicit zero padding is retained.
+     */
+    public var itemContentPadding: PaddingValues? by mutableStateOf(null)
+
+    /**
      * Indicates whether the drop-down menu is expanded or not.
      */
     private val expanded = mutableStateOf(false)
@@ -192,7 +203,8 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
      * each drop-down list item. By default, this method displays the item's
      * text representation as defined by the [itemText] function, with
      * highlighting its portion that matches the [searchString] entered by
-     * the user.
+     * the user. The surrounding item supplies [itemContentPadding], so overrides
+     * do not need to repeat the standard insets.
      *
      * @param item
      *         an item whose composable content should be rendered.
@@ -203,12 +215,24 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
     @Composable
     protected open fun itemContent(item: I, itemText: String): Unit = recompositionWorkaround {
         Text(
-            modifier = Modifier.padding(horizontal = ChordsTheme.dimensions.spacingMedium),
             text = itemText.annotateSubstring(
                 searchString,
-                SpanStyle(fontWeight = Bold)
+                SpanStyle(textDecoration = Underline)
             )
         )
+    }
+
+    /**
+     * Applies the selector's insets before dispatching to standard or custom item content.
+     */
+    @Composable
+    internal fun ItemContent(item: I) {
+        val padding = itemContentPadding ?: PaddingValues(
+            horizontal = ChordsTheme.dimensions.spacingMedium
+        )
+        Box(Modifier.padding(padding)) {
+            itemContent(item, itemText(item))
+        }
     }
 
     @Composable
@@ -216,7 +240,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
         val selectorColors = if (::fieldColors.isInitialized) {
             fieldColors
         } else {
-            OutlinedTextFieldDefaults.colors()
+            null
         }
         val fieldText = getFieldText(searchString)
 
@@ -232,10 +256,7 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
             expanded = this@DropdownSelector.expanded
             enabled = this@DropdownSelector.enabled
             preselectNoneByDefault = searchString.trim().length == 0
-            itemContent = {
-                val itemText = itemText(it)
-                itemContent(it, itemText)
-            }
+            itemContent = { ItemContent(it) }
             invoker = { SelectorField(selectorColors) }
         }
     }
@@ -245,24 +266,28 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
      */
     @Composable
     @OptIn(ExperimentalComposeUiApi::class)
-    private fun DropdownListBoxScope.SelectorField(selectorColors: TextFieldColors) {
+    private fun DropdownListBoxScope.SelectorField(selectorColors: TextFieldColors?) {
         val validationErrorText = externalValidationMessage?.value
-        OutlinedTextField(
+        val showSupportingText = reserveValidationSpace || validationErrorText != null
+        if (!showSupportingText) {
+            SideEffect { adjustPositionBasedOnSupportingTextHeight(0) }
+        }
+        OutlinedField(
             value = TextFieldValue(getFieldText(searchString), selection),
             singleLine = true,
             onValueChange = { handleDropdownInputChange(it) },
             enabled = enabled,
             label = { Text(text = label) },
             isError = validationErrorText != null,
-            supportingText = (validationErrorText ?: "").let {
+            supportingText = if (showSupportingText) {
                 {
                     Text(
-                        text = it,
+                        text = validationErrorText ?: "",
                         modifier = Modifier.onGloballyPositioned { coordinates ->
                             adjustPositionBasedOnSupportingTextHeight(coordinates.size.height)
                         })
                 }
-            },
+            } else null,
             textStyle = fieldTextStyle,
             colors = selectorColors,
             shape = shape ?: MaterialTheme.shapes.small,

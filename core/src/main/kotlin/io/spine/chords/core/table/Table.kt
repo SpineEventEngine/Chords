@@ -26,6 +26,7 @@
 
 package io.spine.chords.core.table
 
+import androidx.compose.foundation.LocalScrollbarStyle
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -64,7 +65,6 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -97,6 +97,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
+import io.spine.chords.core.layout.popupAppearance
+import io.spine.chords.core.primitive.CircularIconButton
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.styling.defaultDimensions
 import io.spine.chords.core.table.TableSortingDirection.ASCENDING
@@ -106,6 +108,11 @@ import io.spine.chords.core.table.TableSortingDirection.DESCENDING
  * The table padding used when no composable theme value is available.
  */
 private val defaultTableContentPadding = PaddingValues(defaultDimensions.spacingLarge)
+
+/**
+ * Marks omitted row-action padding so an equal, explicit value still takes precedence.
+ */
+private val defaultRowActionsItemPadding = PaddingValues(defaultDimensions.spacingMedium, 0.dp)
 
 /**
  * A list of entities in a tabular format.
@@ -788,17 +795,17 @@ public class TableSortingState<E>(
  * @param itemsProvider A function that provides a list of actions
  *   based on the given entity.
  * @param itemsLook The styling configuration applied to all row actions
- *   in this table.
+ *   in this table. Unspecified appearance follows the active Chords theme.
  * @param modifier A modifier to be applied to the menu.
  * @param buttonPadding The padding around the "More" button,
- *   affecting its placement within the cell. By default, no padding is applied,
- *   placing the button at the right edge of the cell.
+ *   affecting its placement within the cell. The default end inset keeps the
+ *   button's hover surface clear of the table edge.
  */
 public data class RowActionsConfig<E>(
     val itemsProvider: (E) -> List<RowActionsItem<E>>,
-    val itemsLook: RowActionsItemLook,
+    val itemsLook: RowActionsItemLook = RowActionsItemLook(),
     val modifier: Modifier = Modifier,
-    val buttonPadding: PaddingValues = PaddingValues()
+    val buttonPadding: PaddingValues = PaddingValues(end = 8.dp)
 )
 
 /**
@@ -820,16 +827,30 @@ public data class RowActionsItem<E>(
 /**
  * An object allowing adjustments of row action item visual appearance parameters.
  *
- * @param textColor The color of the item text.
+ * @param textColor The item text color, or [Color.Unspecified] to use the theme foreground.
  * @param modifier A modifier to apply additional styling to the item.
  * @param contentPadding The padding applied inside each dropdown menu item.
- *   By default, no padding is applied for the item content.
+ *   Omitted padding follows the active Chords medium spacing on both horizontal sides;
+ *   explicitly supplied padding remains fixed.
  */
 public data class RowActionsItemLook(
-    val textColor: Color,
+    val textColor: Color = Color.Unspecified,
     val modifier: Modifier = Modifier,
-    val contentPadding: PaddingValues = PaddingValues(0.dp)
-)
+    val contentPadding: PaddingValues = defaultRowActionsItemPadding
+) {
+    /**
+     * Resolves uncustomized item colors and padding against the active theme.
+     */
+    @Composable
+    internal fun resolved(): RowActionsItemLook = copy(
+        textColor = if (textColor == Color.Unspecified) colorScheme.onSurface else textColor,
+        contentPadding = if (contentPadding === defaultRowActionsItemPadding) {
+            PaddingValues(ChordsTheme.dimensions.spacingMedium, 0.dp)
+        } else {
+            contentPadding
+        }
+    )
+}
 
 /**
  * Vertical scrollbar component.
@@ -1016,6 +1037,8 @@ private fun <E> ContentTableRow(
 /**
  * Table row component.
  *
+ * Header and body cells reserve the scrollbar width so content cannot overlap its track.
+ *
  * @param columnsLayout The columns and any fixed width used by the final column.
  * @param modifier The [Modifier] to be applied to this row.
  * @param height The minimum height of the row.
@@ -1051,7 +1074,8 @@ private fun <E> TableRow(
             .then(rowHeightModifier)
             .height(Min)
             .then(modifier)
-            .background(backgroundColor),
+            .background(backgroundColor)
+            .padding(end = LocalScrollbarStyle.current.thickness),
         horizontalArrangement = SpaceBetween,
         verticalAlignment = CenterVertically
     ) {
@@ -1140,8 +1164,8 @@ private fun <E> RowActionsButton(
     visibility: MutableState<Boolean>,
     onRowActionsClicked: (E) -> Unit,
 ) {
-    IconButton(
-        modifier = Modifier.size(ChordsTheme.dimensions.iconButtonSize),
+    CircularIconButton(
+        modifier = Modifier.size(32.dp),
         onClick = {
             onRowActionsClicked(entity)
             visibility.value = true
@@ -1178,11 +1202,11 @@ private fun <E> RowActionsDropdown(
     onCancel: () -> Unit
 ) {
     val items = config.itemsProvider(value)
-    val look = config.itemsLook
+    val look = config.itemsLook.resolved()
     DropdownMenu(
         expanded = visible,
         onDismissRequest = onCancel,
-        modifier = config.modifier
+        modifier = config.modifier.popupAppearance()
     ) {
         items.forEach {
             DropdownMenuItem(
@@ -1192,9 +1216,7 @@ private fun <E> RowActionsDropdown(
                     it.onClick(value)
                 },
                 enabled = it.enabled(value),
-                modifier = look.modifier.heightIn(
-                    min = ChordsTheme.dimensions.dropdownItemHeight
-                ),
+                modifier = look.modifier.height(ChordsTheme.dimensions.dropdownItemHeight),
                 colors = MenuDefaults.itemColors(
                     textColor = look.textColor
                 ),

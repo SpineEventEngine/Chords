@@ -24,34 +24,37 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.core.layout
+package io.spine.chords.core.given
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.spine.chords.core.DropdownSelector
 
 /**
- * Displays explanatory dialog text in a secondary color with the standard gap below it.
- *
- * @param content The heading content.
+ * Supplies fixed-size custom content so selector insets can be measured independently of text.
  */
-@Composable
-public fun DialogHeading(
-    content: @Composable RowScope.() -> Unit
-) {
-    CompositionLocalProvider(LocalContentColor provides colorScheme.onSurfaceVariant) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            content = content
-        )
+internal class CustomItemSelector : DropdownSelector<String>() {
+
+    /**
+     * Provides a single choice for the layout fixture.
+     */
+    override val items: State<Iterable<String>> = mutableStateOf(listOf("Item"))
+
+    /**
+     * Uses the supplied choice as its searchable text.
+     */
+    override fun itemText(item: String): String = item
+
+    /**
+     * Replaces the default text with an icon-sized block without its own padding.
+     */
+    @Composable
+    override fun itemContent(item: String, itemText: String) {
+        Box(Modifier.size(20.dp))
     }
 }

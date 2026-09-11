@@ -7,7 +7,7 @@ the [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/)
 
 Chords applications use a compact Material 3 desktop theme by default. It
 provides neutral work surfaces, semantic light and dark color schemes,
-restrained corner radii, compact typography, and shared dimensions for common
+restrained corner radii, regular-weight typography, and shared dimensions for common
 controls, navigation, tables, dialogs, and supporting panes. The dark scheme is
 selected from the operating system appearance observed at application startup.
 Changes to the system appearance while the application is running are not
@@ -46,6 +46,23 @@ Component properties take precedence over theme values. Class-based
 components can also be customized application-wide with `sharedDefaults`.
 The effective order is: instance properties, shared component defaults, Chords
 desktop tokens, and finally Material theme values.
+
+Menus, dialogs, and tooltips use `ChordsTheme.overlayColor` and a visible outline to separate
+layers in dark themes. Custom popup panels can use
+[`PopupSurface`](src/main/kotlin/io/spine/chords/core/layout/PopupSurface.kt); Material
+dropdown menus can apply `Modifier.popupAppearance()` from the same file.
+Filled actions use
+[`PrimaryButton`](src/main/kotlin/io/spine/chords/core/primitive/PrimaryButton.kt);
+outlined actions use
+[`SecondaryButton`](src/main/kotlin/io/spine/chords/core/primitive/SecondaryButton.kt).
+For actions represented by a single icon, use
+[`CircularIconButton`](src/main/kotlin/io/spine/chords/core/primitive/CircularIconButton.kt).
+These buttons provide hover and keyboard focus feedback in the active window.
+[`EmptyState`](src/main/kotlin/io/spine/chords/core/layout/EmptyState.kt) supplies the illustration,
+caption, and alignment for empty work areas.
+[`ScrollableColumn`](src/main/kotlin/io/spine/chords/core/layout/ScrollableColumn.kt) keeps long
+details reachable within a bounded pane. Each component's KDoc includes usage examples.
+Confirmation prompts share `ChordsTheme.confirmationTextStyle`.
 
 Text inputs and selectors expose their text style, shape, modifier, and colors.
 Dropdowns expose popup shape, elevations, item height, padding, and selection

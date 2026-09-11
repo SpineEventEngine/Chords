@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,12 @@
 package io.spine.chords.core.primitive
 
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.focus.FocusDirection.Companion.Next
@@ -39,6 +43,28 @@ import androidx.compose.ui.unit.Dp
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Shift
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.on
+import io.spine.chords.core.styling.ChordsTheme
+
+/**
+ * Keeps disabled field values, labels, and hints readable while retaining Material state colors.
+ */
+@Composable
+internal fun defaultOutlinedTextFieldColors(): TextFieldColors {
+    val disabled = ChordsTheme.disabledContentColor
+    return OutlinedTextFieldDefaults.colors(
+        disabledTextColor = disabled,
+        disabledLabelColor = disabled,
+        disabledPlaceholderColor = disabled,
+        disabledSupportingTextColor = disabled,
+        disabledPrefixColor = disabled,
+        disabledSuffixColor = disabled,
+        disabledLeadingIconColor = disabled,
+        disabledTrailingIconColor = disabled,
+        disabledBorderColor = colorScheme.outline.copy(
+            alpha = ChordsTheme.interaction.disabledContentAlpha
+        )
+    )
+}
 
 /**
  * A [Modifier], which can be used for multiline [TextField] components to

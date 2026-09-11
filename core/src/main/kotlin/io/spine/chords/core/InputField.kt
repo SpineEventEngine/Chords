@@ -31,8 +31,6 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
@@ -58,6 +56,7 @@ import androidx.compose.ui.text.input.VisualTransformation.Companion.None
 import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
 import io.spine.chords.core.keyboard.KeyRange.Companion.Whitespace
 import io.spine.chords.core.keyboard.matches
+import io.spine.chords.core.primitive.OutlinedField
 import io.spine.chords.core.primitive.preventWidthAutogrowing
 import io.spine.chords.core.styling.ChordsTheme
 import kotlin.Int.Companion.MAX_VALUE
@@ -317,6 +316,12 @@ public open class InputField<V> : InputComponent<V>() {
     public var shape: Shape? by mutableStateOf(null)
 
     /**
+     * Reserves a line below the field for validation. Disable this for compact
+     * filters; actual errors still appear when present.
+     */
+    public var reserveValidationSpace: Boolean by mutableStateOf(true)
+
+    /**
      * A [TextFieldColors] instance, which defines the color scheme for
      * this field.
      *
@@ -467,7 +472,7 @@ public open class InputField<V> : InputComponent<V>() {
         val fieldColors = if (::colors.isInitialized) {
             colors
         } else {
-            OutlinedTextFieldDefaults.colors()
+            null
         }
         val textStyle = textStyle ?: defaultTextStyle()
         val rawTextContent = getRawTextContent()
@@ -477,15 +482,13 @@ public open class InputField<V> : InputComponent<V>() {
 
         val validationErrorText = ownValidationMessage.value ?: externalValidationMessage?.value
 
-        OutlinedTextField(
+        OutlinedField(
             value = rawTextContent,
             label = label?.let { { Text(text = it) } },
             isError = validationErrorText != null,
-            supportingText = (validationErrorText ?: "").let {
-                {
-                    supportingText(it)
-                }
-            },
+            supportingText = if (reserveValidationSpace || validationErrorText != null) {
+                { supportingText(validationErrorText ?: "") }
+            } else null,
             onValueChange = { handleChangeAttempt(rawTextContent, it) },
             visualTransformation = inputTransformation(visualTransformation, focused.value),
             placeholder = placeholder ?: {

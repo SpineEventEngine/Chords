@@ -28,8 +28,8 @@ package io.spine.chords.core.appshell
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -98,9 +98,9 @@ public fun NavigationDrawer(
                                     MaterialTheme.colorScheme.onPrimaryContainer,
                                 unselectedContainerColor = MaterialTheme.colorScheme.surface,
                                 unselectedIconColor =
-                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                    ChordsTheme.supportingTextColor,
                                 unselectedTextColor =
-                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                    ChordsTheme.supportingTextColor
                             )
                         )
                     }

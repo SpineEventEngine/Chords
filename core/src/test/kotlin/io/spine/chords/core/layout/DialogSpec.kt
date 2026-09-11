@@ -127,8 +127,10 @@ internal class DialogSpec {
         }.use { }
 
         resolvedLook.padding.calculateLeftPadding(LayoutDirection.Ltr) shouldBe 30.dp
+        resolvedLook.padding.calculateTopPadding() shouldBe 30.dp
+        resolvedLook.padding.calculateBottomPadding() shouldBe 18.dp
         resolvedLook.titlePadding.calculateBottomPadding() shouldBe 18.dp
-        resolvedLook.buttonsPanelPadding.calculateTopPadding() shouldBe 30.dp
+        resolvedLook.buttonsPanelPadding.calculateTopPadding() shouldBe 18.dp
         resolvedLook.buttonsSpacing shouldBe 5.dp
     }
 

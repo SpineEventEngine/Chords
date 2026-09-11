@@ -97,7 +97,11 @@ public fun SubheaderText(text: String) {
         modifier = Modifier.padding(bottom = ChordsTheme.dimensions.spacingLarge),
         horizontalArrangement = Start
     ) {
-        Text(text, style = MaterialTheme.typography.titleSmall)
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

@@ -57,12 +57,74 @@ import androidx.compose.ui.unit.dp
 import io.spine.chords.core.styling.ChordsTheme
 
 /**
- * Lays out a standard desktop application view with actions and an optional
- * toolbar and supporting details pane.
+ * Lays out a desktop view with page actions, a toolbar, a work area, and an optional details pane.
  *
- * The central surface is suitable for a table, form, or other primary work
- * area. Applications can omit the supporting pane for list-only or form-only
- * screens and override every color, inset, and pane width independently.
+ * The scaffold fills its parent, which must provide a bounded height. The work area fills the
+ * space below the header and toolbar. Callers manage navigation, selection, and scrolling.
+ *
+ * - [actions] appear beside the title and are omitted when [showHeader] is `false`.
+ * - [toolbar] spans both the work area and details pane. It can sit inside the bordered surface
+ *   or directly on the page background through [toolbarInWorkArea].
+ * - [supportingPane] reserves a fixed width on the right. Pass `null` to give that space back to
+ *   [content]. The pane does not collapse automatically in narrow windows.
+ * - [content] and [supportingPane] own their scrolling. Use a lazy list for a table-like list or
+ *   `ScrollableColumn` for details; keep fixed headings and actions outside the scroll container.
+ *
+ * Example with a selectable list and details:
+ * ```kotlin
+ * @Composable
+ * fun ItemBrowser(labels: List<String>, onAdd: () -> Unit) {
+ *     var selected by remember { mutableStateOf<String?>(null) }
+ *     AppViewScaffold(
+ *         title = "Items",
+ *         actions = { PrimaryButton(onClick = onAdd) { Text("Add") } },
+ *         supportingPane = {
+ *             Text("Details", style = MaterialTheme.typography.titleMedium)
+ *             ScrollableColumn {
+ *                 Text(selected ?: "Select an item to see its details.")
+ *             }
+ *         }
+ *     ) {
+ *         LazyColumn {
+ *             items(labels) { label ->
+ *                 Text(
+ *                     text = label,
+ *                     modifier = Modifier.fillMaxWidth()
+ *                         .clickable { selected = label }
+ *                         .padding(12.dp)
+ *                 )
+ *             }
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * Example with controls in place of a heading. Put actions in [toolbar] when hiding the header:
+ * ```kotlin
+ * @Composable
+ * fun SearchView(onSearch: (String) -> Unit, results: @Composable () -> Unit) {
+ *     var query by remember { mutableStateOf("") }
+ *     AppViewScaffold(
+ *         title = "Search",
+ *         showHeader = false,
+ *         toolbarInWorkArea = false,
+ *         toolbar = {
+ *             OutlinedTextField(
+ *                 value = query,
+ *                 onValueChange = { query = it },
+ *                 modifier = Modifier.weight(1F),
+ *                 singleLine = true
+ *             )
+ *             PrimaryButton(onClick = { onSearch(query) }) { Text("Search") }
+ *         }
+ *     ) {
+ *         results()
+ *     }
+ * }
+ * ```
+ *
+ * Omitted appearance values come from [ChordsTheme] and `MaterialTheme`. Set application-wide
+ * dimensions on the theme; use parameters here for differences specific to one view.
  *
  * @param title The view title.
  * @param modifier A modifier applied to the complete view.
@@ -77,12 +139,16 @@ import io.spine.chords.core.styling.ChordsTheme
  * @param contentPadding Padding around the primary work area content.
  * @param workAreaShape The work-area shape, or `null` to use the current
  *   Material medium shape.
- * @param toolbarHeight The toolbar height, or `null` to use the current Chords
+ * @param toolbarHeight The minimum toolbar height, or `null` to use the current Chords
  *   control height.
- * @param supportingPaneWidth The details pane width, or `null` to use the
+ * @param supportingPaneWidth The details pane width including its padding, or `null` to use the
  *   current Chords theme value.
  * @param supportingPanePadding The details pane inset, or `null` to use the
  *   current Chords theme value.
+ * @param showHeader Whether to display the view title, description, and header actions.
+ * @param toolbarInWorkArea Whether the toolbar belongs to the bordered work area.
+ *   When false, it appears directly on the page background above the work area.
+ * @param sectionSpacing The gap between page sections. Defaults to the theme's large gap.
  * @param actions Primary and secondary page actions displayed near the title.
  * @param toolbar Optional controls displayed above the work area.
  * @param supportingPane Optional details or contextual content displayed on
@@ -107,6 +173,9 @@ public fun AppViewScaffold(
     toolbarHeight: Dp? = null,
     supportingPaneWidth: Dp? = null,
     supportingPanePadding: PaddingValues? = null,
+    showHeader: Boolean = true,
+    toolbarInWorkArea: Boolean = true,
+    sectionSpacing: Dp = ChordsTheme.dimensions.spacingLarge,
     actions: @Composable RowScope.() -> Unit = {},
     toolbar: (@Composable RowScope.() -> Unit)? = null,
     supportingPane: (@Composable ColumnScope.() -> Unit)? = null,
@@ -137,9 +206,14 @@ public fun AppViewScaffold(
                 .padding(
                     pagePadding ?: PaddingValues(ChordsTheme.dimensions.spacingLarge)
                 ),
-            verticalArrangement = spacedBy(ChordsTheme.dimensions.spacingLarge)
+            verticalArrangement = spacedBy(sectionSpacing)
         ) {
-            ViewHeader(title, description, actions)
+            if (showHeader) {
+                ViewHeader(title, description, actions)
+            }
+            if (toolbar != null && !toolbarInWorkArea) {
+                ViewToolbar(toolbarHeight, 0.dp, toolbar)
+            }
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -149,20 +223,11 @@ public fun AppViewScaffold(
                 border = BorderStroke(1.dp, borderColor)
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    if (toolbar != null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(
-                                    min = toolbarHeight
-                                        ?: ChordsTheme.dimensions.controlHeight
-                                )
-                                .padding(horizontal = ChordsTheme.dimensions.spacingMedium),
-                            horizontalArrangement = spacedBy(
-                                ChordsTheme.dimensions.spacingSmall
-                            ),
-                            verticalAlignment = CenterVertically,
-                            content = toolbar
+                    if (toolbar != null && toolbarInWorkArea) {
+                        ViewToolbar(
+                            toolbarHeight,
+                            ChordsTheme.dimensions.spacingMedium,
+                            toolbar
                         )
                         Divider(color = borderColor)
                     }
@@ -208,6 +273,26 @@ public fun AppViewScaffold(
 }
 
 /**
+ * Aligns toolbar controls consistently inside the work area or directly on the page.
+ */
+@Composable
+private fun ViewToolbar(
+    height: Dp?,
+    horizontalPadding: Dp,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = height ?: ChordsTheme.dimensions.controlHeight)
+            .padding(horizontal = horizontalPadding),
+        horizontalArrangement = spacedBy(ChordsTheme.dimensions.spacingSmall),
+        verticalAlignment = CenterVertically,
+        content = content
+    )
+}
+
+/**
  * Renders an application view's heading and actions.
  *
  * @param title The view title.
@@ -229,7 +314,7 @@ private fun ViewHeader(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (description != null) {
                 Text(
@@ -240,7 +325,8 @@ private fun ViewHeader(
             }
         }
         Row(
-            horizontalArrangement = spacedBy(ChordsTheme.dimensions.spacingSmall),
+            modifier = Modifier.padding(end = ChordsTheme.dimensions.spacingLarge),
+            horizontalArrangement = spacedBy(ChordsTheme.dimensions.spacingLarge),
             verticalAlignment = CenterVertically,
             content = actions
         )

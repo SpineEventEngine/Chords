@@ -86,19 +86,35 @@ public fun CheckboxWithText(
 }
 
 /**
- * A styled overload of [CheckboxWithText] with layout and text overrides.
+ * A labeled checkbox whose state and appearance are controlled by the caller.
  *
- * The original overload remains unchanged for source and binary compatibility.
- * The required [modifier] keeps calls to the two overloads unambiguous.
+ * Apply [onChange] to [checked] to display a toggle. Clicking the label also toggles the checkbox.
+ * Supply [modifier], even `Modifier`, to select this overload and optionally set [textStyle].
+ * The text style controls typography; the foreground follows the theme and [enabled] state.
+ *
+ * Example:
+ * ```kotlin
+ * @Composable
+ * fun NotificationOption() {
+ *     var checked by remember { mutableStateOf(false) }
+ *     CheckboxWithText(
+ *         checked = checked,
+ *         onChange = { checked = it },
+ *         text = "Enable notifications",
+ *         modifier = Modifier.width(280.dp),
+ *         textStyle = MaterialTheme.typography.bodySmall
+ *     )
+ * }
+ * ```
  *
  * @param checked Indicates whether the checkbox is checked.
- * @param onChange Invoked when the user tries to change the checked state.
+ * @param onChange Receives the requested checked value; the caller updates [checked].
  * @param text A text displayed to the right of the checkbox.
- * @param modifier A modifier applied to the complete labeled control.
+ * @param modifier A modifier applied to the checkbox and label row.
  * @param textStyle A text style, or `null` to use the current theme default.
  * @param enabled Indicates whether the component accepts user input.
  * @param focusRequestDispatcher Specifies when the component should be focused.
- * @param externalValidationMessage A validation error displayed by the component.
+ * @param externalValidationMessage An error displayed in a separate row below the control.
  */
 @Composable
 @Suppress("LongParameterList") // Preserves the original API while adding visual overrides.
@@ -198,19 +214,35 @@ public fun CheckboxWithText(
 }
 
 /**
- * A state-backed styled overload of [CheckboxWithText].
+ * A styled labeled checkbox that updates the supplied [MutableState] itself.
  *
- * The original state-backed overload remains unchanged for source and binary
- * compatibility. The required [modifier] keeps overload resolution unambiguous.
+ * A `null` value appears unchecked; toggling it stores a non-null Boolean. The optional [onChange]
+ * callback runs after the new value is stored. Supply [modifier] to select the styled overload.
+ *
+ * Example with retained form state:
+ * ```kotlin
+ * @Composable
+ * fun TermsOption() {
+ *     val accepted = remember { mutableStateOf<Boolean?>(null) }
+ *     CheckboxWithText(
+ *         checked = accepted,
+ *         text = "I accept the terms",
+ *         modifier = Modifier.fillMaxWidth(),
+ *         textStyle = MaterialTheme.typography.bodyMedium
+ *     )
+ * }
+ * ```
+ *
+ * Use the Boolean overload when changes must be accepted by another state owner before appearing.
  *
  * @param checked The state that stores the checked value.
  * @param onChange Invoked after the checked value changes.
  * @param text A text displayed to the right of the checkbox.
- * @param modifier A modifier applied to the complete labeled control.
+ * @param modifier A modifier applied to the checkbox and label row.
  * @param textStyle A text style, or `null` to use the current theme default.
  * @param enabled Indicates whether the component accepts user input.
  * @param focusRequestDispatcher Specifies when the component should be focused.
- * @param externalValidationMessage A validation error displayed by the component.
+ * @param externalValidationMessage An error displayed in a separate row below the control.
  */
 @Composable
 @Suppress("LongParameterList") // Preserves the original API while adding visual overrides.

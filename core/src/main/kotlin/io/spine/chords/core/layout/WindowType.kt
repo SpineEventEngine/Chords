@@ -46,6 +46,7 @@ import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -111,8 +112,8 @@ public sealed class WindowType {
     public open class DesktopWindow(public val resizable: Boolean = false) : WindowType() {
 
         /**
-         * The content background, or [Unspecified] to use the current Material
-         * surface color.
+         * The content background, or [Unspecified] to use the Chords
+         * overlay color.
          */
         public val containerColor: Color
             get() = customContainerColor
@@ -127,7 +128,7 @@ public sealed class WindowType {
          *
          * @param resizable Specifies whether the window can be resized.
          * @param containerColor The content background, or [Unspecified] to use
-         *   the current Material surface color.
+         *   the Chords overlay color.
          */
         public constructor(
             resizable: Boolean,
@@ -177,6 +178,9 @@ public sealed class WindowType {
             }
         }
 
+        /**
+         * Measures the native window content and supplies its overlay surface and foreground.
+         */
         @Composable
         private fun DesktopDialogContent(
             dialog: Dialog,
@@ -197,15 +201,19 @@ public sealed class WindowType {
                         fillSpecifiedDimensions = true
                     )
                 }
-                Column(
-                    modifier = sizeModifier
-                        .background(
-                            if (containerColor == Unspecified) {
-                                colorScheme.surface
-                            } else {
-                                containerColor
-                            }
-                        ),
+                Surface(
+                    modifier = sizeModifier,
+                    color = if (containerColor == Unspecified) {
+                        ChordsTheme.overlayColor
+                    } else {
+                        containerColor
+                    },
+                    contentColor = if (containerColor == Unspecified) {
+                        colorScheme.onSurface
+                    } else {
+                        contentColorFor(containerColor)
+                    },
+                    border = BorderStroke(1.dp, colorScheme.outline)
                 ) {
                     val heightMode =
                         if (dialog.height.isSpecified || contentFittedSize != null) {
@@ -269,8 +277,8 @@ public sealed class WindowType {
     ) : WindowType() {
 
         /**
-         * The dialog surface, or [Unspecified] to use the current Material
-         * surface color.
+         * The dialog surface, or [Unspecified] to use the Chords
+         * overlay color.
          */
         public val containerColor: Color
             get() = customContainerColor
@@ -289,7 +297,7 @@ public sealed class WindowType {
 
         /**
          * The dialog border, or [Unspecified] to use the current Material
-         * outline variant.
+         * outline.
          */
         public val borderColor: Color
             get() = customBorderColor
@@ -319,12 +327,12 @@ public sealed class WindowType {
          *
          * @param backdropColor The modal backdrop color.
          * @param containerColor The dialog surface, or [Unspecified] to use the
-         *   current Material surface color.
+         *   Chords overlay color.
          * @param shape The dialog shape, or `null` to use the current Material
          *   large shape.
          * @param shadowElevation The dialog shadow elevation.
          * @param borderColor The dialog border, or [Unspecified] to use the
-         *   current Material outline variant.
+         *   current Material outline.
          */
         @Suppress("LongParameterList") // These are independent visual override points.
         public constructor(
@@ -382,6 +390,9 @@ public sealed class WindowType {
             }
         }
 
+        /**
+         * Separates a lightweight dialog from its backdrop with a surface, border, and shadow.
+         */
         @Composable
         private fun dialogFrame(
             dialog: Dialog,
@@ -399,15 +410,20 @@ public sealed class WindowType {
                     ),
                 shape = shape ?: shapes.large,
                 color = if (containerColor == Unspecified) {
-                    colorScheme.surface
+                    ChordsTheme.overlayColor
                 } else {
                     containerColor
+                },
+                contentColor = if (containerColor == Unspecified) {
+                    colorScheme.onSurface
+                } else {
+                    contentColorFor(containerColor)
                 },
                 shadowElevation = shadowElevation,
                 border = BorderStroke(
                     width = 1.dp,
                     color = if (borderColor == Unspecified) {
-                        colorScheme.outlineVariant
+                        colorScheme.outline
                     } else {
                         borderColor
                     }
@@ -484,7 +500,7 @@ public sealed class WindowType {
  * This prevents short text from producing impractically narrow windows while
  * still allowing wider form layouts to determine their preferred width.
  */
-internal val DefaultDialogMinWidth = 400.dp
+internal val DefaultDialogMinWidth = 480.dp
 
 /**
  * Measures unspecified dimensions from the content and caps them at the
@@ -629,6 +645,6 @@ private fun DialogTitle(
             .preferUnwrappedWidth(),
         text = text,
         style = typography.titleLarge,
-        color = colorScheme.onSurface
+        color = colorScheme.onSurfaceVariant
     )
 }

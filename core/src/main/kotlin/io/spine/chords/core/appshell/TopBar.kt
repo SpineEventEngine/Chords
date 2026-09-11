@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Divider
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -45,6 +44,7 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
+import io.spine.chords.core.primitive.CircularIconButton
 import io.spine.chords.core.styling.ChordsTheme
 
 /**
@@ -57,7 +57,7 @@ public class TopBar(private val modifier: Modifier = Modifier) : Component() {
     /**
      * The actions displayed in the right corner of the top app bar.
      *
-     * This should typically be [IconButton]s.
+     * This should typically be [CircularIconButton]s.
      * The default layout here is a Row, so icons inside will be placed horizontally.
      */
     internal var actions: @Composable RowScope.() -> Unit = {}
@@ -76,23 +76,23 @@ public class TopBar(private val modifier: Modifier = Modifier) : Component() {
                         .fillMaxWidth()
                         .weight(1F)
                         .padding(
-                            start = ChordsTheme.dimensions.spacingMedium,
-                            end = ChordsTheme.dimensions.spacingSmall
+                            start = ChordsTheme.dimensions.spacingLarge,
+                            end = ChordsTheme.dimensions.spacingXXLarge
                         ),
                     verticalAlignment = CenterVertically
                 ) {
                     Text(
                         app.name,
                         modifier = Modifier.weight(1F),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        style = MaterialTheme.typography.titleLarge,
+                        color = ChordsTheme.supportingTextColor
                     )
                     CompositionLocalProvider(
-                        LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
+                        LocalContentColor provides MaterialTheme.colorScheme.onSurface
                     ) {
                         Row(
                             horizontalArrangement = spacedBy(
-                                ChordsTheme.dimensions.spacingXSmall
+                                ChordsTheme.dimensions.spacingXLarge
                             ),
                             verticalAlignment = CenterVertically,
                             content = actions

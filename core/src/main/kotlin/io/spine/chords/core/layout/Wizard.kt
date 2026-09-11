@@ -39,10 +39,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -67,6 +65,8 @@ import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.on
 import io.spine.chords.core.primitive.HorizontalScrollbar
+import io.spine.chords.core.primitive.PrimaryButton
+import io.spine.chords.core.primitive.SecondaryButton
 import io.spine.chords.core.primitive.VerticalScrollbar
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.styling.defaultDimensions
@@ -116,9 +116,9 @@ public abstract class Wizard : Component() {
      * @property width The width of the wizard content pane. Defaults to `720.dp`.
      * @property minHeight The minimum content-pane height. Defaults to `420.dp`.
      * @property maxHeight The maximum content-pane height. Defaults to `760.dp`.
-     * @property padding The inset around wizard content. Defaults to `32.dp`.
+     * @property padding The inset around wizard content. Defaults to `24.dp`.
      * @property sectionSpacing The gap between the title, page, and actions.
-     *   Defaults to `16.dp`.
+     *   Defaults to `12.dp`.
      * @property buttonSpacing The gap between adjacent navigation buttons.
      *   Defaults to `8.dp`.
      */
@@ -126,8 +126,8 @@ public abstract class Wizard : Component() {
         public val width: Dp = 720.dp,
         public val minHeight: Dp = 420.dp,
         public val maxHeight: Dp = 760.dp,
-        public val padding: Dp = defaultDimensions.spacingXXLarge,
-        public val sectionSpacing: Dp = defaultDimensions.spacingLarge,
+        public val padding: Dp = defaultDimensions.spacingXLarge,
+        public val sectionSpacing: Dp = defaultDimensions.spacingMedium,
         public val buttonSpacing: Dp = defaultDimensions.spacingSmall
     )
 
@@ -359,12 +359,12 @@ public abstract class Wizard : Component() {
         val defaultLook = Look()
         return look.copy(
             padding = if (look.padding == defaultLook.padding) {
-                ChordsTheme.dimensions.spacingXXLarge
+                ChordsTheme.dimensions.spacingXLarge
             } else {
                 look.padding
             },
             sectionSpacing = if (look.sectionSpacing == defaultLook.sectionSpacing) {
-                ChordsTheme.dimensions.spacingLarge
+                ChordsTheme.dimensions.spacingMedium
             } else {
                 look.sectionSpacing
             },
@@ -489,7 +489,7 @@ private fun Title(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleLarge,
-        color = MaterialTheme.colorScheme.onSurface
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
 
@@ -527,24 +527,30 @@ private fun NavigationPanel(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = SpaceBetween
     ) {
-        TextButton(onClick = onCancelClick) {
+        SecondaryButton(onClick = onCancelClick) {
             Text("Cancel")
         }
         Row(
             horizontalArrangement = spacedBy(buttonSpacing)
         ) {
-            TextButton(
+            SecondaryButton(
                 onClick = onBackClick,
                 enabled = !isOnFirstPage && !submitting
             ) {
                 Text("Back")
             }
             if (isOnLastPage) {
-                Button(onClick = onFinishClick, enabled = !submitting) {
+                PrimaryButton(
+                    onClick = onFinishClick,
+                    enabled = !submitting
+                ) {
                     Text("Finish")
                 }
             } else {
-                Button(onClick = onNextClick, enabled = !submitting) {
+                PrimaryButton(
+                    onClick = onNextClick,
+                    enabled = !submitting
+                ) {
                     Text("Next")
                 }
             }

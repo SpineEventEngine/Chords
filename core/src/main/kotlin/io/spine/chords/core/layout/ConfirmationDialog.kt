@@ -26,16 +26,15 @@
 
 package io.spine.chords.core.layout
 
+import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.appshell.Props
+import io.spine.chords.core.styling.ChordsTheme
 import kotlinx.coroutines.CompletableDeferred
 
 /**
@@ -154,25 +153,14 @@ public class ConfirmationDialog : Dialog() {
      */
     @Composable
     protected override fun contentSection() {
-        val textStyle = typography.bodyLarge
-
-        Column(
-            modifier = Modifier.preferUnwrappedWidth()
-        ) {
-            Row {
-                Text(
-                    text = message,
-                    style = textStyle
-                )
-            }
-            if (description.isNotBlank()) {
-                Row(
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(
-                        text = description,
-                        style = textStyle
-                    )
+        ProvideTextStyle(ChordsTheme.confirmationTextStyle) {
+            Column(
+                modifier = Modifier.preferUnwrappedWidth(),
+                verticalArrangement = spacedBy(ChordsTheme.dimensions.spacingSmall)
+            ) {
+                Text(message)
+                if (description.isNotBlank()) {
+                    Text(description)
                 }
             }
         }

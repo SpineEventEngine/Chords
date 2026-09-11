@@ -39,9 +39,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -51,6 +50,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment.Companion.Bottom
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.key.Key.Companion.Enter
 import androidx.compose.ui.input.key.Key.Companion.Escape
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,6 +63,8 @@ import io.spine.chords.core.appshell.app
 import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.layout.WindowType.DesktopWindow
+import io.spine.chords.core.primitive.PrimaryButton
+import io.spine.chords.core.primitive.SecondaryButton
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.styling.defaultDimensions
 
@@ -326,21 +328,26 @@ public abstract class Dialog : Component() {
      * corresponding token from the active theme.
      *
      * @property padding The padding applied to the entire content of the dialog.
-     *   Defaults to `24.dp` on every side.
+     *   Defaults to `24.dp` at the top and sides and `16.dp` at the bottom.
      * @property titlePadding The padding applied to the title of the dialog.
      *   Defaults to `16.dp` at the bottom and zero on the other sides.
      * @property buttonsPanelPadding The padding applied to the buttons panel of
-     *   the dialog. Defaults to `24.dp` at the top and zero on the other sides.
+     *   the dialog. Defaults to `16.dp` at the top and zero on the other sides.
      * @property buttonsSpacing The space between the buttons of the dialog.
      *   Defaults to `12.dp`.
      */
     public data class Look(
-        public var padding: PaddingValues = PaddingValues(defaultDimensions.spacingXLarge),
+        public var padding: PaddingValues = PaddingValues(
+            start = defaultDimensions.spacingXLarge,
+            top = defaultDimensions.spacingXLarge,
+            end = defaultDimensions.spacingXLarge,
+            bottom = defaultDimensions.spacingLarge
+        ),
         public var titlePadding: PaddingValues = PaddingValues(
             bottom = defaultDimensions.spacingLarge
         ),
         public var buttonsPanelPadding: PaddingValues = PaddingValues(
-            top = defaultDimensions.spacingXLarge
+            top = defaultDimensions.spacingLarge
         ),
         public var buttonsSpacing: Dp = defaultDimensions.spacingMedium
     )
@@ -358,7 +365,12 @@ public abstract class Dialog : Component() {
         val defaultLook = Look()
         return look.copy(
             padding = if (look.padding == defaultLook.padding) {
-                PaddingValues(ChordsTheme.dimensions.spacingXLarge)
+                PaddingValues(
+                    start = ChordsTheme.dimensions.spacingXLarge,
+                    top = ChordsTheme.dimensions.spacingXLarge,
+                    end = ChordsTheme.dimensions.spacingXLarge,
+                    bottom = ChordsTheme.dimensions.spacingLarge
+                )
             } else {
                 look.padding
             },
@@ -370,7 +382,7 @@ public abstract class Dialog : Component() {
             buttonsPanelPadding = if (
                 look.buttonsPanelPadding == defaultLook.buttonsPanelPadding
             ) {
-                PaddingValues(top = ChordsTheme.dimensions.spacingXLarge)
+                PaddingValues(top = ChordsTheme.dimensions.spacingLarge)
             } else {
                 look.buttonsPanelPadding
             },
@@ -633,7 +645,26 @@ public abstract class Dialog : Component() {
      */
     @Composable
     protected final override fun content() {
-        windowType.dialogWindow(this)
+        ChordsTheme(
+            colorScheme = MaterialTheme.colorScheme.copy(
+                onSurfaceVariant = lerp(
+                    MaterialTheme.colorScheme.onSurface,
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    DialogSupportingSurfaceBlend
+                )
+            ),
+            typography = MaterialTheme.typography,
+            shapes = MaterialTheme.shapes,
+            dimensions = ChordsTheme.dimensions,
+            interaction = ChordsTheme.interaction.copy(
+                disabledContentAlpha = maxOf(
+                    ChordsTheme.interaction.disabledContentAlpha,
+                    DialogDisabledContentAlpha
+                )
+            )
+        ) {
+            windowType.dialogWindow(this)
+        }
     }
 
     /**
@@ -883,14 +914,14 @@ private fun DialogButton(
     }
     val modifier = Modifier.heightIn(min = ChordsTheme.dimensions.compactControlHeight)
     if (primary) {
-        Button(
+        PrimaryButton(
             onClick = onClick,
             modifier = modifier,
             enabled = enabled,
             content = { content() }
         )
     } else {
-        TextButton(
+        SecondaryButton(
             onClick = onClick,
             modifier = modifier,
             enabled = enabled,
@@ -898,3 +929,13 @@ private fun DialogButton(
         )
     }
 }
+
+/**
+ * Disabled fields remain legible against the raised dialog surface.
+ */
+private const val DialogDisabledContentAlpha = 0.88F
+
+/**
+ * Keeps dialog instructions close to the value text while preserving a visible hierarchy.
+ */
+private const val DialogSupportingSurfaceBlend = 0.04F

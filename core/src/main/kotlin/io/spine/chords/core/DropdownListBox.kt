@@ -26,7 +26,6 @@
 
 package io.spine.chords.core
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,7 +50,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -114,6 +112,7 @@ import io.spine.chords.core.keyboard.KeyModifiers.Companion.Shift
 import io.spine.chords.core.keyboard.KeyRange
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
+import io.spine.chords.core.layout.PopupSurface
 import io.spine.chords.core.primitive.VerticalScrollbar
 import io.spine.chords.core.styling.ChordsTheme
 import java.awt.event.KeyEvent.CHAR_UNDEFINED
@@ -1007,12 +1006,10 @@ public class DropdownListBox<I> : Component() {
             onPreviewKeyEvent = { handleKeyEventWhenDropdownExpanded(it) }
         ) {
             val contentPadding = listContentPadding ?: ChordsTheme.dimensions.spacingXSmall
-            Surface(
+            PopupSurface(
                 shape = listShape ?: MaterialTheme.shapes.small,
-                color = colorScheme.surface,
                 tonalElevation = listTonalElevation,
-                shadowElevation = listShadowElevation,
-                border = BorderStroke(1.dp, colorScheme.outlineVariant)
+                shadowElevation = listShadowElevation
             ) {
                 visibleListHeight = min(
                     totalItemsHeight, listAvailableHeight - contentPadding * 2

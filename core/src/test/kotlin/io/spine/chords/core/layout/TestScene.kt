@@ -28,12 +28,20 @@ package io.spine.chords.core.layout
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.input.pointer.PointerEventType.Companion.Move
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Press
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Release
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -90,6 +98,13 @@ internal class TestScene(
     private val density = Density(1f)
 
     /**
+     * Supplies window activation to the off-screen composition, like a visible desktop window.
+     */
+    private val windowInfo = object : WindowInfo {
+        override var isWindowFocused: Boolean by mutableStateOf(true)
+    }
+
+    /**
      * The scene that composes and lays out the content.
      */
     private val scene = onUiThread { ComposeScene(density = density) }
@@ -113,8 +128,10 @@ internal class TestScene(
                 Constraints(maxWidth = width.roundToPx(), maxHeight = height.roundToPx())
             }
             scene.setContent {
-                MaterialTheme {
-                    content()
+                CompositionLocalProvider(LocalWindowInfo provides windowInfo) {
+                    MaterialTheme {
+                        content()
+                    }
                 }
             }
         }
@@ -152,8 +169,15 @@ internal class TestScene(
      * @param position The position to click at, in pixels.
      */
     fun click(position: Offset) = onUiThread {
-        scene.sendPointerEvent(Press, position)
-        scene.sendPointerEvent(Release, position)
+        scene.sendPointerEvent(Press, position, button = PointerButton.Primary)
+        scene.sendPointerEvent(Release, position, button = PointerButton.Primary)
+    }
+
+    /**
+     * Moves the mouse without changing focus or pressing a button.
+     */
+    fun movePointerTo(position: Offset) = onUiThread {
+        scene.sendPointerEvent(Move, position)
     }
 
     /**
@@ -180,6 +204,13 @@ internal class TestScene(
      */
     fun releaseKey(keyCode: Int, modifiers: Int = NoModifierKeys) = onUiThread {
         scene.sendKeyEvent(keyEvent(KEY_RELEASED, keyCode, modifiers))
+    }
+
+    /**
+     * Changes window activation to model a modal dialog covering its parent.
+     */
+    fun setWindowFocused(focused: Boolean) = onUiThread {
+        windowInfo.isWindowFocused = focused
     }
 
     /**

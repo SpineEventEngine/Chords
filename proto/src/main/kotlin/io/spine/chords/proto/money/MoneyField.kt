@@ -53,30 +53,29 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily.Companion.Monospace
-import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.input.getSelectedText
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.DropdownListBox
 import io.spine.chords.core.DropdownListBoxScope
-import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
-import io.spine.chords.core.keyboard.key
-import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.InputField
 import io.spine.chords.core.InputReviser
 import io.spine.chords.core.RawTextContent
 import io.spine.chords.core.exceptionBasedParser
+import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
+import io.spine.chords.core.keyboard.key
+import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.styling.ChordsTheme
+import io.spine.chords.proto.value.money.decimalSeparator
+import io.spine.chords.proto.value.money.formatAmount
+import io.spine.chords.proto.value.money.options
+import io.spine.chords.proto.value.money.parseAmount
 import io.spine.money.Currency
 import io.spine.money.Currency.CURRENCY_UNDEFINED
 import io.spine.money.Currency.UNRECOGNIZED
 import io.spine.money.Currency.USD
 import io.spine.money.Money
-import io.spine.chords.proto.value.money.decimalSeparator
-import io.spine.chords.proto.value.money.formatAmount
-import io.spine.chords.proto.value.money.options
-import io.spine.chords.proto.value.money.parseAmount
 import kotlin.math.abs
 
 /**
@@ -173,8 +172,7 @@ public class MoneyField : InputField<Money>() {
                 ) {
                     Text(
                         text = it.name,
-                        modifier = Modifier.width(currencyCodeWidth),
-                        fontWeight = SemiBold
+                        modifier = Modifier.width(currencyCodeWidth)
                     )
                     Text(
                         modifier = Modifier.padding(
