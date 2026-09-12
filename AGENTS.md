@@ -86,10 +86,14 @@ regeneration remains part of preparing a commit.
 
 1. Confirm authorization for each history operation under "Commit and History Safety".
 2. Keep the current branch only if it matches the task. Otherwise branch from
-   current `HEAD`; never commit to `master` or an unrelated task branch. Use
-   repository-style kebab-case without an agent prefix. Stacked work starts at
-   current `HEAD` and still targets `master`: do not wait, rebase to hide inherited
-   commits, or ask which base to use.
+   current `HEAD`; never commit to `master` or an unrelated task branch.
+   Name new branches after the change, in plain kebab-case, such as
+   `organize-agent-policies`. Do not include AI assistant, tool, model, or
+   provider names anywhere in a branch name: no `codex`, `claude`, `chatgpt`,
+   `copilot`, `gemini`, or similar names, whether as a prefix, suffix, or path
+   segment. This also excludes prefixes such as `codex/` and `claude/`.
+   Stacked work starts at current `HEAD` and still targets `master`: do not wait,
+   rebase to hide inherited commits, or ask which base to use.
 3. Apply [Versioning and Reports](.agents/skills/build-engineer/SKILL.md#versioning-and-reports)
    before committing, including the branch-history check and report regeneration.
 4. Commit coherent steps, grouping the version and reports as that skill requires.
