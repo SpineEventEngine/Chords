@@ -12,6 +12,12 @@ You are the documentation reviewer for Chords. Focus strictly on documentation
 quality: comments, Markdown, examples, change descriptions, and guidance. Apply
 `.agents/guidelines/english-style.md` only to its defined errors. Leave
 authoring strategy, implementation correctness, and test design to their skills.
+Use [Documentation Writing](../docs-writer/SKILL.md) as the source of truth for
+authoring rules, including component API examples and their verification.
+
+Review is read-only unless the task requests edits or checks. Read source and
+existing verification results; do not run builds, tests, or other checks solely
+because the task asks for a review.
 
 ## Review Procedure
 
@@ -52,7 +58,9 @@ authoring strategy, implementation correctness, and test design to their skills.
 
 - **Prose is minimum and complete.** Require the subject or change and its
   purpose or outcome. Flag mechanics, repetition, purposeless headings, and
-  inventories. Apply the `AGENTS.md` PR and issue rules, including no hard wrap.
+  inventories. Apply the
+  [PR and issue rules](../docs-writer/SKILL.md#github-issues-and-pull-requests),
+  including no hard wrap.
 - **Heading hierarchy is valid.** Use one top-level `#`; do not skip levels.
 - **Commands are fenced.** Use fenced code blocks for shell commands and file
   examples. Avoid indented command blocks.
@@ -64,19 +72,24 @@ authoring strategy, implementation correctness, and test design to their skills.
 - **Terminology is consistent.** Use one term for the same concept within a
   change set: Chords, Compose Multiplatform, Spine Event Engine, Protobuf,
   ProtoData, codegen plugins, codegen runtime, application shell.
-- **No orphans.** A paragraph, list item, or table cell must not end with a
-  final line containing only one word. Require reflow or a rewrite.
+- **No new orphans.** Added or rewritten paragraphs, list items, and table
+  cells must not end with a one-word line. Do not require unrelated prose to be
+  reflowed solely to repair legacy wrapping.
+- **Operational commands are explicit.** Keep root and codegen build directories
+  and JDKs distinct. Remote publication and credential operations must not look
+  like routine local checks; Maven-local publication has a different scope.
 - **Project docs keep their ownership.** `README.md` is the project entry
   point, library READMEs own usage instructions, `.agents/project.md` owns the
-  project map and CI notes, skills own task-specific policy, and `AGENTS.md`
+  project map and architecture, skills own task-specific policy, and `AGENTS.md`
   owns agent operating policy. KDoc owns API-level documentation.
 
 ### C. Skills And Agent Docs
 
 - **Skill frontmatter is compact and trigger-focused.** `name` is hyphen-case
   and matches the directory. `description` explains when to use the skill.
-- **Skill body follows the pattern.** Prefer role intro, use cases, fast path
-  or workflow, policy checks, repository notes, verification, and output format.
+- **Skill bodies carry useful decisions.** Keep only purpose, workflow,
+  decision-changing policy, relevant references, verification, and output.
+  Do not add headings merely to fill a template.
 - **Policy stays abstract.** Prefer roles, invariants, and decisions to
   refactor-sensitive names or messages; keep identifiers in labeled examples.
 - **Shared guidelines stay shared.** Skills reference `.agents/guidelines/`
@@ -100,7 +113,7 @@ Return three sections, in this order:
   missing important comments for non-obvious behavior, or Markdown structure
   that prevents correct rendering.
 - **Should fix** - unclear comments, duplicated policy, stale module maps,
-  inconsistent terminology, orphaned one-word final lines, overbroad inline
+  inconsistent terminology, new orphaned one-word final lines, overbroad inline
   comments, or examples that are technically right but likely to mislead.
 - **Nits** - wording, wrapping, minor style, or handoff notes for the relevant
   engineering or testing skill.

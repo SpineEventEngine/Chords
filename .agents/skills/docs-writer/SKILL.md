@@ -2,8 +2,8 @@
 name: docs-writer
 description: >
   Writes, edits, and restructures Chords documentation. Use when asked to
-  create or update README.md files, .agents/project.md, AGENTS.md, skills,
-  KDoc comments, or inline explanatory comments. Verifies claims against
+  create or update Markdown, agent rules, KDoc, comments, and commit, issue,
+  or pull-request descriptions. Verifies claims against
   current code, tests, workflows, and build files.
 ---
 
@@ -31,10 +31,39 @@ durable documentation like `.agents/project.md` unless they become maintained do
 
 ## Write Minimum Complete Prose
 
-Apply the `AGENTS.md` "Prose", pull request, and issue rules. State what the
+Apply the `AGENTS.md` "Prose" rules. State what the
 subject or change is and why it matters. Keep each fact once and only when it
 helps the reader act, decide, or form a correct expectation. Remove narration
 and restated identifiers, signatures, code, or execution order.
+
+## GitHub Issues and Pull Requests
+
+Follow `AGENTS.md` for authorization, branch choice, draft status, assignment,
+and public-repository confidentiality. This section defines the prose.
+Do not hard-wrap issue or PR prose, even in local drafts; break lines only for
+intentional Markdown structure. The repository's 100-character limit does not
+apply to GitHub prose fields.
+
+### Issues
+
+Use one short problem-or-outcome paragraph followed only by acceptance criteria
+needed to establish completion. Add reproduction, background, proposal, or
+affected areas only when they define scope or a decision. Avoid repetition and
+file or call-site inventories.
+
+### Pull Requests
+
+- Omit a trailing period from the title.
+- Use `## Summary` followed by `## Changes`. Add optional sections such as
+  `## Important notes` or `## Reviewer notes` only for material constraints or
+  reviewer actions. Omit routine, empty, or redundant sections.
+- Include no verification, testing, build, or check information in the
+  description, and no agent-attribution section such as `Created by <agent>`.
+- For stacked work, `## Reviewer notes` is required: name the source branch
+  and exact boundary commit, state that earlier commits are outside this task,
+  and direct review to the task commits after that boundary. Do not claim the
+  parent PR is open or unmerged unless that state was verified.
+- Add a GitHub closing keyword, such as `Fixes #123`, for every resolved issue.
 
 ## Keep AI Policy Abstract
 
@@ -64,8 +93,10 @@ claims against the nearest README, build file, workflow, or source file.
 - Use consistent terminology: Chords, Compose Multiplatform, Spine Event
   Engine, Protobuf, ProtoData, codegen plugins, codegen runtime, application
   shell, class-based components.
-- Do not leave orphans: avoid wrapping any paragraph, list item, or table cell
-  so that a single word is left on its own final line.
+- Name the precise relationship instead of using vague ownership language.
+  Keep literal API terms and state or resource ownership when that is the contract.
+- Avoid a one-word final line in added or rewritten paragraphs, list items, and
+  table cells. Do not reflow unchanged prose solely to fix a legacy orphan.
 - Do not duplicate long explanations between README files, `AGENTS.md`, and
   skills; link to the owning document instead.
 - Keep lines within 100 characters, matching the code style limit.
@@ -79,8 +110,38 @@ claims against the nearest README, build file, workflow, or source file.
   for type and value parameters, and backticked identifiers.
 - Use comments to explain why a constraint exists, not what the next statement does.
 - Mention important effects: recomposition triggers, server calls,
-  generated-code dependencies, experimental Compose APIs, and returned errors.
+  state changes, environment dependencies, generated-code dependencies,
+  experimental Compose APIs, and returned errors.
+- For APIs that return messages or invoke callbacks, document the possible
+  results and their conditions. State ordering only when callers can observe it.
+- Explain qualifiers such as `estimated`, `approximate`, and `best-effort`:
+  name the source of uncertainty and the resulting behavioral limit.
+- Prefer precise API and lifecycle terms to metaphors the reader must interpret.
 - Do not add comments that restate names, parameters, or obvious operations.
+
+## Component API Documentation
+
+New UI components, whether class-based or composable functions, require KDoc
+with practical usage examples. Apply this to public components, reusable
+internal rendering primitives, and new public component overloads. Update the same
+documentation when their contract changes.
+
+- State the purpose, then explain the behavior, defaults, state ownership,
+  configuration, and constraints that callers need to use the API correctly.
+  Cover parameters and relevant effects; omit details that do not affect callers.
+- Include at least one small Kotlin example of actual use. Add another only
+  when it demonstrates a distinct configuration or state-management pattern.
+  Make required context clear and use the supported API and toolchain.
+- For internal primitives, name the intended callers and public alternative.
+  Private implementation helpers need purpose and constraint documentation,
+  but do not require usage examples unless those examples clarify a real contract.
+- Follow neighboring KDoc structure. Use short paragraphs, fenced examples,
+  and lists where they improve scanning. Avoid filler, repeated signatures,
+  implementation narration, and documentation length targets.
+- Verify claims against the implementation and compile new or changed examples
+  in the owning module. Temporary compilation sources must be removed afterward.
+  If compilation is unavailable, report that limitation. For substantial KDoc
+  additions, generate the API documentation and check examples and links in the output.
 
 ## Make Docs Actionable
 
@@ -104,11 +165,7 @@ claims against the nearest README, build file, workflow, or source file.
 
 ## Output Format (for interactive sessions)
 
-When writing documentation:
-
-1. State the target audience and file location.
-2. Summarize the documentation changed.
-3. List source files, workflows, or docs used to verify claims.
-4. Report validation commands run and any remaining unverified claims.
+Report the location, outcome, verification, and remaining gaps without empty
+categories or repeated task and diff context.
 
 Follow the git-history policy in `AGENTS.md`.

@@ -1,10 +1,9 @@
 ---
 name: security-reviewer
 description: >
-  Chords security review guidance. Use for publishing-credential handling,
-  GitHub Actions secrets, GPG-encrypted key files, dependency provenance,
-  Gradle wrapper integrity, agent prompt/configuration safety under
-  `.agents/**`, and accidental secret exposure in this public repository.
+  Reviews Chords publishing credentials, workflow secrets, dependency
+  provenance, client transport and data exposure, and agent configuration.
+  Use for security-sensitive changes in this public repository.
 ---
 
 # Security Reviewer
@@ -12,7 +11,11 @@ description: >
 Use this skill for security-focused review or implementation guidance. Chords
 is a public open-source repository with no runtime backend of its own, so the
 main risk surface is the supply chain — publishing credentials, CI workflows,
-and dependencies — plus the agent configuration itself under `.agents/**`.
+and dependencies — plus client communication and agent configuration.
+
+Review is read-only unless the task requests edits or checks. Do not turn a
+security review into credential rotation, remote configuration changes, or a
+publishing operation.
 
 ## Scope
 
@@ -26,7 +29,10 @@ and dependencies — plus the agent configuration itself under `.agents/**`.
   `gradle-wrapper-validation` workflow).
 - Accidental commits of credentials, tokens, private keys, or TeamDev-internal
   data into this public repository.
-- Agent configuration files (`.agents/**`, `openai.yaml`, `AGENTS.md`): flag
+- Client communication: transport configuration, sensitive data in diagnostics,
+  and UI behavior that mistakes local validation for server authorization.
+- Agent configuration (`AGENTS.md`, `.agents/**`, `.claude/**`, and Copilot
+  instructions), including skill `agents/openai.yaml` metadata: flag
   prompt-injection risks in `default_prompt` fields and skill instructions
   that could cause an agent to exfiltrate secrets or bypass safety rules.
 
@@ -57,6 +63,10 @@ and dependencies — plus the agent configuration itself under `.agents/**`.
 - Prompt-injection risks in `.agents/**`: overbroad `default_prompt` fields,
   skill instructions that could bypass the policy in `AGENTS.md`, and
   instructions that could cause an agent to exfiltrate secrets.
+- Tool grants and default prompts that exceed a skill's stated role. Do not
+  copy another repository's permissions as part of a policy transfer.
+- Sensitive payloads exposed through logs, exceptions, serialized state, or
+  user-facing diagnostics. Inspect handling without printing their contents.
 
 ## Output Format
 

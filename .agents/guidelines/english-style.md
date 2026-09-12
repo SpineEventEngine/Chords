@@ -26,6 +26,7 @@ reviewing documentation changes, and writing new Chords documentation.
 |---------------|-------------------------------------------------------------------|
 | Kotlin / Java | KDoc/Javadoc bodies and tag descriptions; block and line comments |
 | Protobuf      | `//` doc comments for types and fields, and file-header prose      |
+| Shell         | Prose in `#` comments, excluding directives and shebangs          |
 | Markdown      | Body prose and headings                                           |
 
 Within a doc comment, edit only description text. Tag names, type references,
@@ -59,6 +60,12 @@ In Kotlin and Java:
 In Protobuf:
 
 - Lint directives such as `// buf:lint:ignore`.
+
+In shell:
+
+- Commands, string literals, expansions, heredocs, and shebangs.
+- Tool directives such as `# shellcheck disable=...` and editor modelines.
+- Comment markers inside a string or heredoc; these remain part of its data.
 
 In Markdown:
 

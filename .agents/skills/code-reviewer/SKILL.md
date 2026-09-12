@@ -105,8 +105,9 @@ duplicate its steps.
   import aliases added without explicit human direction.
 - Missing or weak tests for changed logic, extensions, or codegen behavior.
   Added-suite structure follows `.agents/skills/kotlin-jvm-tester/SKILL.md`.
-- Version-policy misses: `chordsVersion` not incremented, or `pom.xml` /
-  `dependencies.md` not regenerated when required.
+- Version-policy misses: apply
+  [Versioning and Reports](../build-engineer/SKILL.md#versioning-and-reports)
+  to the increment and generated reports.
 - Module-ownership violations, leaked state, unjustified reflection, and
   hidden background work.
 - Workarounds that mask a root cause instead of fixing it.

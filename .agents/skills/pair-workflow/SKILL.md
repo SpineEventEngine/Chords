@@ -140,7 +140,10 @@ This holds when the run was started with `--create-pr`. That flag does not
 delegate Git to you: the driver branches, commits, pushes, and opens the pull
 request itself, after the workflow reaches `done`. Your extra obligation in
 that case is content, not history — bump `chordsVersion`, regenerate `pom.xml`
-and `dependencies.md`, and write `## Pull Request` — and the ref and index
+and `dependencies.md` following
+[Versioning and Reports](../build-engineer/SKILL.md#versioning-and-reports),
+and write `## Pull Request` following the
+[PR writing rules](../docs-writer/SKILL.md#pull-requests). The ref and index
 comparison still runs after your turn.
 
 The branch the run started from is not your concern either way. The driver
@@ -463,8 +466,8 @@ still `blocked`; a default cannot substitute for a specification.
    handoff, which is what the next round compares against.
 3. Decide whether the plan needs another look, on the same rule the
    implementation phase uses:
-   - Verdict `APPROVE` or `APPROVE WITH CHANGES`, or every Must-fix finding
-     dispositioned `Accepted` and applied → carry on to step 4 and implement.
+   - Verdict `APPROVE` or `APPROVE WITH CHANGES`, with all findings
+     dispositioned and accepted changes applied → carry on to step 4 and implement.
    - Verdict `REQUEST CHANGES` and `plan_round` < `max_rounds` → increment
      `plan_round`, set `status: plan-review-requested`, `turn: agent2`, and
      stop there. Do not implement a plan the reviewer has rejected.
@@ -507,9 +510,9 @@ still `blocked`; a default cannot substitute for a specification.
 
 ### Manual Testing
 
-Automated tests do not settle every acceptance criterion. Rendering, focus and
-keyboard behavior, window responsiveness under a slow or black-holed endpoint,
-and anything whose criterion is about how the UI feels are judged by a person.
+Automated tests do not settle every acceptance criterion. Follow
+[Testing](../tester/SKILL.md) to distinguish off-screen rendering and interaction
+coverage from native window behavior and visual quality that need a person.
 
 On your final turn, decide honestly and set `manual_testing`:
 

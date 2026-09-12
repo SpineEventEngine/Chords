@@ -84,7 +84,7 @@ fi
 [[ -x "${java_home}/bin/java" ]] \
     || die "'${java_home}' has no bin/java; it is not a JDK home"
 
-# Verify rather than trust. AGENTS.md warns that JDK selection here silently
+# Verify rather than trust. The root-build guideline warns that JDK selection silently
 # picks a newer ARM JVM when the expected one is not registered, and the root
 # build then fails in ways that look like a code problem.
 settings="$("${java_home}/bin/java" -XshowSettings:properties -version 2>&1)"

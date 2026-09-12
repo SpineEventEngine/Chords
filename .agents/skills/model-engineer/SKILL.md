@@ -72,6 +72,12 @@ description: >
   type-URL compatibility check and breaking-change authorization above.
 - Update neighboring Kotlin extensions when a declaration, field, or generated
   accessor they expose changes.
+- Name messages and fields for their meaning and role, not storage details or
+  hypothetical future uses. Document value meaning, constraints, and behavior
+  callers need; omit framework mechanics that the declaration already expresses.
+- Prefer existing model extensions and generated accessors over repeated manual
+  traversal. Build values with generated builders and use validated construction
+  when validation is part of the contract.
 - Do not manually edit generated Protobuf or Chords outputs. Change the source
   model, or use `codegen-engineer` when the generator itself must change.
 

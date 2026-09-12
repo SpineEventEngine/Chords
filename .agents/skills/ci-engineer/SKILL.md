@@ -4,7 +4,7 @@ description: >
   Chords CI/CD workflow guidance. Use for authoring or reviewing GitHub Actions
   workflows under `.github/workflows`: Ubuntu/Windows builds, license-report
   and version-increment guards, Gradle wrapper validation, and artifact
-  publishing.
+  publishing. This skill does not trigger workflows.
 ---
 
 # CI Engineering
@@ -16,8 +16,10 @@ skill authors and reviews workflow definitions, it does not trigger them.
 
 ## Scope
 
-- `.github/workflows/build-on-ubuntu.yml`: JDK 11 build on every push.
-- `.github/workflows/build-on-windows.yml`: Windows build on `master` pushes.
+- `.github/workflows/build-on-ubuntu.yml`: JDK 11 build on every push using
+  `./gradlew build --stacktrace`.
+- `.github/workflows/build-on-windows.yml`: JDK 11 build on `master` pushes
+  using `gradlew.bat build --stacktrace --no-daemon`.
 - `.github/workflows/ensure-reports-updated.yml`: via
   `config/scripts/ensure-reports-updated.sh`, requires `pom.xml` plus either
   `dependencies.md` or `license-report.md` in the PR. It does not inspect
@@ -37,8 +39,8 @@ workflows invoke, use `.agents/skills/build-engineer/SKILL.md`.
 
 - Do not weaken the guards that gate merges: the version-increment check, the
   license-report check, wrapper validation, and the build steps.
-- Preserve existing triggers, branch filters, JDK versions, and working
-  directories unless the task explicitly asks to change them. Note that the
+- Preserve existing triggers, branch filters, JDK versions, cache configuration,
+  and working directories unless the task explicitly asks to change them. The
   repository checkout must initialize the `config` submodule where scripts
   from it are used.
 - Reference secrets by name through `secrets.*`. Never inline secret values,

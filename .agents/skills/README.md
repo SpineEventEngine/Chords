@@ -26,7 +26,7 @@ review also uses `kotlin-engineer` with the area skill.
 - `code-reviewer`: review scoped component, model, codegen, or build diffs for
   correctness, regressions, contracts, and tests; read-only by default.
 - `security-reviewer`: review publishing credentials, GitHub Actions secrets,
-  provenance, wrapper integrity, agent config, and secret exposure.
+  provenance, wrapper integrity, client data exposure, and agent config.
 
 ## Operations and Coordination
 
@@ -36,7 +36,7 @@ review also uses `kotlin-engineer` with the area skill.
 
 ## Documentation
 
-- `docs-writer`: write or restructure project documentation and change prose.
+- `docs-writer`: write project documentation, comments, and commit, issue, or PR prose.
 - `docs-reviewer`: review those documentation forms and change descriptions for
   accuracy and minimum complete prose; read-only by default.
 - `proofread`: apply the English catalog to project-owned comments and Markdown

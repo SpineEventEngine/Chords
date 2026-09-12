@@ -3,8 +3,8 @@ name: proofread
 description: >
   Proofreads project-owned Chords comments and documentation for English
   grammar, punctuation, and spelling. Use for branch changes, a repository-wide
-  prose sweep, or a path-scoped review of Kotlin/Java comments, Protobuf
-  comments, and Markdown. Applies the Chords English catalog, preserves code and
+  prose sweep, or a path-scoped review of Kotlin/Java, Protobuf, and shell
+  comments and Markdown. Applies the Chords English catalog, preserves code and
   machine-read text, and reports ambiguous cases instead of guessing.
 ---
 
@@ -47,7 +47,8 @@ leave the text unchanged and report it.
    Keep only Chords prose-bearing file types:
 
    - `*.kt`, `*.kts`, and `*.java`;
-   - `*.proto`; and
+   - `*.proto`;
+   - `*.sh`; and
    - `*.md`.
 
    In full-sweep and scoped-sweep modes, scan tracked files only. In branch-diff
@@ -74,7 +75,8 @@ leave the text unchanged and report it.
    Read the complete English catalog before editing. Restrict changes to the
    prose identified in its "Where English Prose Lives" section:
 
-   - In Kotlin, Kotlin script, Java, and Protobuf files, edit only comment text.
+   - In Kotlin, Kotlin script, Java, Protobuf, and shell files, edit only comment text.
+     Shell strings, commands, heredocs, expansions, and shebangs are not prose.
    - In Markdown, edit only headings and body prose.
    - Never edit code tokens, string literals, identifiers, code examples,
      link targets, file paths, commands, generated content, copyright headers,
