@@ -26,11 +26,26 @@
 
 package io.spine.chords.core.table
 
+import androidx.compose.foundation.layout.Arrangement.Start
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import io.kotest.matchers.shouldBe
 import io.spine.chords.core.table.TableSortingDirection.DESCENDING
 import org.junit.jupiter.api.Test
 
 internal class TableColumnSpec {
+
+    /**
+     * Default columns should follow compact desktop table alignment and inset.
+     */
+    @Test
+    fun `use compact left-aligned layout by default`() {
+        val column = TableColumn<User>(name = "Name") { }
+
+        column.horizontalArrangement shouldBe Start
+        column.padding.calculateLeftPadding(LayoutDirection.Ltr) shouldBe 12.dp
+        column.padding.calculateRightPadding(LayoutDirection.Ltr) shouldBe 12.dp
+    }
 
     @Test
     fun `store the extracted column value`() {

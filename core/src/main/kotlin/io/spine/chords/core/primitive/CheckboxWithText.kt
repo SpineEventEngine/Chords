@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -39,12 +42,13 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key.Companion.Spacebar
 import androidx.compose.ui.semantics.Role.Companion.Checkbox
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.TextStyle
 import io.spine.chords.core.FocusRequestDispatcher
 import io.spine.chords.core.ValidationErrorText
 import io.spine.chords.core.focusRequestDispatcher
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.on
+import io.spine.chords.core.styling.ChordsTheme
 
 /**
  * A checkbox that includes a given text on the right.
@@ -70,11 +74,66 @@ public fun CheckboxWithText(
     focusRequestDispatcher: FocusRequestDispatcher? = null,
     externalValidationMessage: State<String?>? = null
 ) {
+    CheckboxWithText(
+        checked = checked,
+        onChange = onChange,
+        text = text,
+        modifier = Modifier,
+        enabled = enabled,
+        focusRequestDispatcher = focusRequestDispatcher,
+        externalValidationMessage = externalValidationMessage
+    )
+}
+
+/**
+ * A labeled checkbox whose state and appearance are controlled by the caller.
+ *
+ * Apply [onChange] to [checked] to display a toggle. Clicking the label also toggles the checkbox.
+ * Supply [modifier], even `Modifier`, to select this overload and optionally set [textStyle].
+ * The text style controls typography; the foreground follows the theme and [enabled] state.
+ *
+ * Example:
+ * ```kotlin
+ * @Composable
+ * fun NotificationOption() {
+ *     var checked by remember { mutableStateOf(false) }
+ *     CheckboxWithText(
+ *         checked = checked,
+ *         onChange = { checked = it },
+ *         text = "Enable notifications",
+ *         modifier = Modifier.width(280.dp),
+ *         textStyle = MaterialTheme.typography.bodySmall
+ *     )
+ * }
+ * ```
+ *
+ * @param checked Indicates whether the checkbox is checked.
+ * @param onChange Receives the requested checked value; the caller updates [checked].
+ * @param text A text displayed to the right of the checkbox.
+ * @param modifier A modifier applied to the checkbox and label row.
+ * @param textStyle A text style, or `null` to use the current theme default.
+ * @param enabled Indicates whether the component accepts user input.
+ * @param focusRequestDispatcher Specifies when the component should be focused.
+ * @param externalValidationMessage An error displayed in a separate row below the control.
+ */
+@Composable
+@Suppress("LongParameterList") // Preserves the original API while adding visual overrides.
+public fun CheckboxWithText(
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+    text: String,
+    modifier: Modifier,
+    textStyle: TextStyle? = null,
+    enabled: Boolean = true,
+    focusRequestDispatcher: FocusRequestDispatcher? = null,
+    externalValidationMessage: State<String?>? = null
+) {
     fun toggle() = onChange(!checked)
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
+            .heightIn(min = ChordsTheme.dimensions.compactControlHeight)
             .clickable(
                 enabled = enabled,
                 onClick = { toggle() },
@@ -83,15 +142,27 @@ public fun CheckboxWithText(
                 toggle()
             },
         verticalAlignment = CenterVertically,
-        horizontalArrangement = spacedBy(8.dp)
+        horizontalArrangement = spacedBy(ChordsTheme.dimensions.spacingSmall)
     ) {
         Checkbox(
             checked = checked,
             onCheckedChange = null,
             enabled = enabled,
-            modifier = Modifier.focusRequestDispatcher(focusRequestDispatcher)
+            modifier = Modifier
+                .size(ChordsTheme.dimensions.compactControlHeight)
+                .focusRequestDispatcher(focusRequestDispatcher)
         )
-        Text(text)
+        Text(
+            text = text,
+            style = textStyle ?: MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(
+                alpha = if (enabled) {
+                    1f
+                } else {
+                    ChordsTheme.interaction.disabledContentAlpha
+                }
+            )
+        )
     }
     if (externalValidationMessage?.value != null) {
         Row(
@@ -119,12 +190,68 @@ public fun CheckboxWithText(
  *   the user input.
  * @param focusRequestDispatcher A [FocusRequestDispatcher], which specifies
  *   when the component should be focused.
+ * @param externalValidationMessage A validation error that should be displayed
+ *   by the component.
  */
 @Composable
 public fun CheckboxWithText(
     checked: MutableState<Boolean?>,
     onChange: ((Boolean) -> Unit)? = null,
     text: String,
+    enabled: Boolean = true,
+    focusRequestDispatcher: FocusRequestDispatcher? = null,
+    externalValidationMessage: State<String?>? = null
+) {
+    CheckboxWithText(
+        checked = checked,
+        onChange = onChange,
+        text = text,
+        modifier = Modifier,
+        enabled = enabled,
+        focusRequestDispatcher = focusRequestDispatcher,
+        externalValidationMessage = externalValidationMessage
+    )
+}
+
+/**
+ * A styled labeled checkbox that updates the supplied [MutableState] itself.
+ *
+ * A `null` value appears unchecked; toggling it stores a non-null Boolean. The optional [onChange]
+ * callback runs after the new value is stored. Supply [modifier] to select the styled overload.
+ *
+ * Example with retained form state:
+ * ```kotlin
+ * @Composable
+ * fun TermsOption() {
+ *     val accepted = remember { mutableStateOf<Boolean?>(null) }
+ *     CheckboxWithText(
+ *         checked = accepted,
+ *         text = "I accept the terms",
+ *         modifier = Modifier.fillMaxWidth(),
+ *         textStyle = MaterialTheme.typography.bodyMedium
+ *     )
+ * }
+ * ```
+ *
+ * Use the Boolean overload when changes must be accepted by another state owner before appearing.
+ *
+ * @param checked The state that stores the checked value.
+ * @param onChange Invoked after the checked value changes.
+ * @param text A text displayed to the right of the checkbox.
+ * @param modifier A modifier applied to the checkbox and label row.
+ * @param textStyle A text style, or `null` to use the current theme default.
+ * @param enabled Indicates whether the component accepts user input.
+ * @param focusRequestDispatcher Specifies when the component should be focused.
+ * @param externalValidationMessage An error displayed in a separate row below the control.
+ */
+@Composable
+@Suppress("LongParameterList") // Preserves the original API while adding visual overrides.
+public fun CheckboxWithText(
+    checked: MutableState<Boolean?>,
+    onChange: ((Boolean) -> Unit)? = null,
+    text: String,
+    modifier: Modifier,
+    textStyle: TextStyle? = null,
     enabled: Boolean = true,
     focusRequestDispatcher: FocusRequestDispatcher? = null,
     externalValidationMessage: State<String?>? = null
@@ -138,6 +265,8 @@ public fun CheckboxWithText(
         text = text,
         enabled = enabled,
         focusRequestDispatcher = focusRequestDispatcher,
-        externalValidationMessage = externalValidationMessage
+        externalValidationMessage = externalValidationMessage,
+        modifier = modifier,
+        textStyle = textStyle
     )
 }

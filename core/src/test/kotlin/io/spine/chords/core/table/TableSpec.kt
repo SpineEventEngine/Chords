@@ -26,24 +26,41 @@
 
 package io.spine.chords.core.table
 
+import androidx.compose.foundation.LocalScrollbarStyle
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.shouldBe
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.TestApplication
 import io.spine.chords.core.layout.TestScene
+import io.spine.chords.core.styling.ChordsTheme
+import io.spine.chords.core.styling.chordsLightColorScheme
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 /**
- * Verifies the selection behavior of entity tables.
+ * Verifies table selection and separation of row actions from the scrollbar.
  */
 @DisplayName("`Table` should")
 internal class TableSpec {
@@ -89,6 +106,51 @@ internal class TableSpec {
     }
 
     /**
+     * A scrollbar must have its own space even when an application increases its thickness.
+     */
+    @ParameterizedTest
+    @ValueSource(ints = [8, 24])
+    fun `keep row actions clear of the scrollbar`(scrollbarWidth: Int) {
+        val scheme = chordsLightColorScheme()
+        val entities = (0 until EntityCount).map { TableEntity(it, it) }
+        var firstCellBounds = Rect.Zero
+        TestScene(width = 300.dp, height = 160.dp) {
+            ChordsTheme(colorScheme = scheme) {
+                CompositionLocalProvider(
+                    LocalScrollbarStyle provides LocalScrollbarStyle.current.copy(
+                        thickness = scrollbarWidth.dp
+                    )
+                ) {
+                    VisibilityTrackingTable {
+                        this.entities = entities
+                        selectedEntity = mutableStateOf(null)
+                        contentPadding = PaddingValues()
+                        columns = listOf(TableColumn(
+                            name = "Value",
+                            padding = PaddingValues()
+                        ) { entity ->
+                            Box(Modifier.fillMaxSize().onGloballyPositioned {
+                                if (entity.id == 0) firstCellBounds = it.boundsInRoot()
+                            })
+                        })
+                        enableRowActions()
+                    }
+                }
+            }
+        }.use { scene ->
+            firstCellBounds.right shouldBe (300 - scrollbarWidth - 48).toFloat()
+            val buttonCenter = Offset((300 - scrollbarWidth - 24).toFloat(), 60f)
+            scene.movePointerTo(buttonCenter)
+            scene.render()
+
+            scene.pixelAt((buttonCenter.x - 8).dp, 60.dp) shouldBe
+                    scheme.primaryContainer.toArgb()
+            scene.pixelAt((300 - scrollbarWidth - 4).dp, 60.dp) shouldBe
+                    scheme.primary.copy(alpha = 0.1f).compositeOver(scheme.surface).toArgb()
+        }
+    }
+
+    /**
      * Installs the application that supplies shared component defaults.
      */
     private companion object {
@@ -129,6 +191,15 @@ private class VisibilityTrackingTable : Table<TableEntity>() {
         columns = listOf(TableColumn(name = "Value") { entity ->
             TrackVisibility(entity)
         })
+    }
+
+    /**
+     * Supplies an action so layout checks include the trailing button column.
+     */
+    fun enableRowActions() {
+        rowActions = RowActionsConfig(
+            itemsProvider = { listOf(RowActionsItem("Action", {})) }
+        )
     }
 
     /**

@@ -69,7 +69,7 @@ internal class DialogSizingSpec {
      */
     @Test
     fun `provide the width that a dialog's window is able to reproduce`() {
-        val contentWidth = 400.5.dp
+        val contentWidth = DefaultDialogMinWidth + 0.5.dp
 
         val width = dialogWidth {
             ContentStub(contentWidth, contentWidth)
@@ -142,7 +142,7 @@ internal class DialogSizingSpec {
      */
     @Test
     fun `limit the width that a long text requests`() {
-        val maxTextWidth = 480.dp
+        val maxTextWidth = DefaultDialogMinWidth + 80.dp
 
         val width = dialogWidth {
             ContentStub(

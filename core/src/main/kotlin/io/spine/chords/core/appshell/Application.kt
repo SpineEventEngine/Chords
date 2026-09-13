@@ -39,6 +39,7 @@ import io.spine.chords.core.layout.ConfirmationDialog
 import io.spine.chords.core.layout.Dialog
 import io.spine.chords.core.layout.DialogSetup
 import io.spine.chords.core.layout.WindowType
+import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.writeOnce
 import java.awt.Dimension
 
@@ -215,7 +216,9 @@ public open class Application(
                 appWindow
             }
             if (mainWindowVisible) {
-                appWindowContent(appWindow)
+                ApplicationTheme {
+                    appWindowContent(appWindow)
+                }
             }
         }
     }
@@ -228,6 +231,20 @@ public open class Application(
     internal fun initializeUi(appWindow: AppWindow) {
         check(_ui == null) { "The application UI has already been initialized." }
         _ui = ApplicationUI(appWindow)
+    }
+
+    /**
+     * Applies the application's theme to all window content.
+     *
+     * The default implementation installs [ChordsTheme]. Applications can
+     * override this function to supply different Material colors, typography,
+     * shapes, Chords desktop dimensions, or an entirely custom theme.
+     *
+     * @param content The application content to which the theme is applied.
+     */
+    @Composable
+    protected open fun ApplicationTheme(content: @Composable () -> Unit) {
+        ChordsTheme(content = content)
     }
 
     /**
