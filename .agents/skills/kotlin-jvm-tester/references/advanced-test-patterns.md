@@ -6,12 +6,14 @@ for an ordinary suite of flat `@Test` methods.
 
 ## Nested case groups
 
-Keep `@Nested inner class` on one line and put the name on the next. Backtick
-multi-word names and Kotlin keywords, but not a legal single identifier. A
-`@Nested` class carries KDoc like any other declaration.
+Keep annotations and `inner class` on separate lines. Backtick multi-word names
+and Kotlin keywords, but not a legal single identifier. A nested class carries
+KDoc like any other declaration.
 
 The outer `@DisplayName` supplies the subject and the `should` lead-in. Make
 the nested display name and its test names continue that sentence.
+
+Example structure for a subject declared as `Projection`:
 
 ```kotlin
 /**
@@ -24,8 +26,8 @@ internal class ProjectionSpec {
      * Groups state-integrity cases.
      */
     @DisplayName("preserve state")
-    @Nested inner class
-    StateIntegrity {
+    @Nested
+    inner class StateIntegrity {
 
         /**
          * Covers repeated delivery of the same message.
@@ -42,39 +44,17 @@ A legacy suite may keep its full display-name stem until materially reworked.
 
 ## Parameterized tests
 
-Use `@ParameterizedTest` with `@MethodSource`. The local pattern in
-`CodegenPluginsSpec` is `@TestInstance(PER_CLASS)` with a private instance
-factory returning `Stream<Arguments>`; do not replace it with `@JvmStatic`.
+Use `@ParameterizedTest` so each fixed case has its own result. A single scalar
+argument can use `@ValueSource`; use `@MethodSource` for compound cases. Give
+invocations names that identify their parameters.
 
-```kotlin
-/**
- * Verifies classification for supplied values.
- */
-@TestInstance(PER_CLASS)
-internal class ClassificationSpec {
+Put a local `@MethodSource` factory in a companion object and annotate it with
+`@JvmStatic`. Return `List<Arguments>` or `Stream<Arguments>`. Keep it limited
+to supplying cases; scenario-building utilities belong in the suite's `SpecEnv`.
+Use `@TestInstance(PER_CLASS)` only when shared lifecycle is independently
+required and safe, not merely to avoid a static factory.
 
-    /**
-     * Classifies each supplied value.
-     */
-    @ParameterizedTest
-    @MethodSource("classificationCases")
-    fun `classify each supplied value`(value: String, expected: Boolean) {
-        classify(value) shouldBe expected
-    }
-
-    /**
-     * Returns values paired with their expected classification.
-     */
-    @Suppress("unused")
-    private fun classificationCases(): Stream<Arguments> = Stream.of(
-        of("accepted", true),
-        of("rejected", false),
-    )
-}
-```
-
-Prefer this to a loop for fixed cases so failures name the case. Otherwise use
-`withClue` around each iteration.
+For cases that cannot be parameterized, use `withClue` around each loop iteration.
 
 ## Test-environment helpers
 

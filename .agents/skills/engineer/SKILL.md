@@ -36,8 +36,8 @@ the code being changed:
   `.github/workflows`: Ubuntu/Windows builds, license-report and
   version-increment guards, wrapper validation, and publishing.
 - `.agents/skills/security-reviewer/SKILL.md` for publishing credentials,
-  workflow secrets, dependency provenance, agent prompt/configuration safety
-  under `.agents/**`, and secret-exposure review.
+  workflow secrets, dependency provenance, client data exposure, and agent
+  prompt/configuration safety.
 
 For changes that cross areas, read each area-specific skill and keep
 verification commands separate (the root project and `codegen/plugins` use

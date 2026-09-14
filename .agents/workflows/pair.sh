@@ -2405,8 +2405,8 @@ create_pr() {
     # a commit, or a push behind.
     # The body is written with `###` headings so it nests inside `## Pull
     # Request` in the document — at `##` they would end the section rather than
-    # belong to it. Promote them back on the way out, since AGENTS.md specifies
-    # `## Summary` and `## Changes` in the PR description itself.
+    # belong to it. Promote them back to the `## Summary` and `## Changes`
+    # headings required by .agents/skills/docs-writer/SKILL.md.
     body="$(section "$doc" "Pull Request")"
     pr_body_is_usable "$doc" \
         || die "the ## Pull Request section requires exact, non-empty "\
@@ -2511,7 +2511,7 @@ create_pr() {
     # left to publish. A clean worktree does not mean the work is published.
     if [[ -n "$dirty" ]]; then
         # The version bump and its regenerated reports are their own commit,
-        # with the message format AGENTS.md fixes for it. `--only` prevents a
+        # with the format in .agents/skills/build-engineer/SKILL.md. `--only` prevents a
         # staged task file left by an earlier failed commit from leaking into
         # this dedicated commit.
         if ! git -C "$REPO_ROOT" diff --quiet HEAD -- \
@@ -2606,8 +2606,8 @@ create_pr() {
     fi
 
     # A stacked PR shows commits from its parent branch, and a reviewer has no
-    # way to tell those from this task's work. AGENTS.md allows ## Reviewer
-    # notes for exactly this: material information the reviewer needs. It says
+    # way to tell those from this task's work. The docs-writer skill requires
+    # ## Reviewer notes for this boundary. The note says
     # nothing about verification and attributes nothing to an agent, so the
     # rules on both stay intact.
     if [[ -n "$stacked_on" ]]; then
@@ -2619,9 +2619,8 @@ Review the task commits after \`${start_short}\`."
         body="$(printf '%s\n' "$body" | merge_reviewer_note "$stacking_note")"
     fi
 
-    # AGENTS.md: draft, assigned to the author, base ${target_branch}, no
-    # trailing period in the title, no verification detail and no agent
-    # attribution in the body.
+    # AGENTS.md requires a draft, assigned to the author, based on ${target_branch}.
+    # docs-writer requires no trailing period, verification detail, or agent attribution.
     body="${body}"$'\n\n'"Fixes #${number}"
     local url pr_title
     pr_title="$(pr_title_from "$title")"
@@ -2879,8 +2878,9 @@ PROMPT_PREVIOUS
 A pull request will be opened from this work once the workflow finishes, so on
 your final turn the changeset must be PR-ready. Per AGENTS.md: bump
 `chordsVersion` in version.gradle.kts, regenerate pom.xml and dependencies.md
-with the focused command in "Versioning and Reports", and write a ## Pull
-Request section holding the PR description. Write its two required headings as
+using "Versioning and Reports" in .agents/skills/build-engineer/SKILL.md.
+Write a ## Pull Request section following .agents/skills/docs-writer/SKILL.md.
+Write its two required headings as
 `### Summary` and `### Changes` — at `##` they would end the ## Pull Request
 section instead of nesting inside it, and the driver promotes them back to `##`
 in the published description. No verification or testing detail, and no agent

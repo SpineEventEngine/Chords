@@ -111,9 +111,9 @@ ISSUE_BODY
 ## Pull Request
 
 <!-- agent1, final turn, only when the prompt says a pull request will be
-     opened. Follow "Creating a Pull Request" in AGENTS.md: no verification or
-     testing detail, and no agent attribution. The driver appends the closing
-     keyword.
+     opened. Follow "GitHub Issues and Pull Requests" in
+     .agents/skills/docs-writer/SKILL.md: no verification or testing detail, and
+     no agent attribution. The driver appends the closing keyword.
 
      Write the two required sections as `### Summary` and `### Changes` so they
      nest here; at `##` they would end this section instead. The driver

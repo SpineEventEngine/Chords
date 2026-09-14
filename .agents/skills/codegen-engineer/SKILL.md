@@ -49,6 +49,15 @@ that merely consume generated metadata, prefer
 - Cover generator behavior changes with tests in `codegen/tests`, which
   exercise generation end-to-end against test Protobuf definitions.
 
+## Generation Flow
+
+The separate `codegen/plugins` build produces ProtoData plugins. The root
+`publishCodegenPluginsToMavenLocal` task publishes them to Maven local before
+the `io.spine.chords` Gradle plugin applies them in a generated workspace.
+`modulesWithChordsCodegen` selects the consumers (`proto-values` and
+`codegen-tests`). This dependency chain is automatic; changes to it belong in
+the root `build.gradle.kts` or `buildSrc`.
+
 ## Verification
 
 Codegen plugin changes, from the repository root:

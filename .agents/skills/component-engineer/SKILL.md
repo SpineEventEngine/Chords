@@ -50,12 +50,13 @@ For published model Protobuf declarations and Kotlin model extensions under
 - For the Kotlin language itself — the root compiler/library split, explicit
   API mode, null-safety, `lateinit` in `Props`, and coroutine scoping — use the
   `.agents/skills/kotlin-engineer/SKILL.md` rules.
-- Match existing KDoc style: `@param` tags for type parameters and
-  constructor-like parameters, backticked identifiers, and wrapped lines
-  within 100 characters.
+- New components and new public component overloads must include useful KDoc and
+  usage examples as part of the implementation. Follow
+  [Component API Documentation](../docs-writer/SKILL.md#component-api-documentation)
+  for content, scope, and verification.
 - When changing a public component, check the KDoc examples of the changed
-  class and its neighbors: examples are not compiled or covered by tests and
-  go stale silently.
+  component and affected callers. KDoc examples are not compiled by ordinary
+  builds and can go stale silently.
 - Keep the copyright header year current in modified files.
 
 ## Hotspots
@@ -68,6 +69,21 @@ For published model Protobuf declarations and Kotlin model extensions under
 - Entity components: trace `app.client` read/observe calls, entity-to-ID
   mapping, and selection state, including `EntityChooser` and `DropdownSelector`.
 
+## Server Connections
+
+- Keep transport adapters focused on the external capability and its result.
+  Application-specific decisions belong in consumer callbacks or application
+  code. Expose metadata only when a current caller needs its defined meaning.
+- UI validation and action eligibility guide the user; the server remains
+  authoritative for business invariants and authorization. Do not embed a
+  consuming application's business rules in a reusable component.
+- Keep business rejections, server failures, and transport failures distinct.
+  A failed read or malformed response must not become an ordinary empty result
+  or a business rejection. Initial and retained observation values remain valid
+  only with the status that describes their freshness or failure.
+- Trace subscription, callback, and job cleanup on close, disposal, cancellation,
+  and reuse. Keep lifecycle changes consistent with the public contract.
+
 ## Verification
 
 Apply `.agents/guidelines/root-build.md`, then run the narrowest relevant
@@ -79,6 +95,6 @@ command first, from the repository root:
 .agents/workflows/gradle-root.sh clean build
 ```
 
-UI rendering and interaction cannot be covered by automated tests here. For
-visual or interactive changes, verify compilation and existing tests, then
-state clearly in the final response what manual verification remains.
+Follow [Testing](../tester/SKILL.md) for off-screen layout and interaction
+coverage. Compilation alone does not verify rendering or interaction. Report
+native window or visual checks that remain, with the action and expected result.

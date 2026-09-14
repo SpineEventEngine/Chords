@@ -40,7 +40,8 @@ Each of these owns its area; this skill stays out of them:
   write one once that decision is made.
 - `.agents/skills/code-reviewer/SKILL.md` — review output format and
   verdict. Report Kotlin findings through it; do not invent a second format.
-- `AGENTS.md` — verification commands, versioning, and safety policy.
+- `.agents/skills/tester/SKILL.md` — coverage and verification commands.
+- `AGENTS.md` — global quality, authorization, and safety policy.
 
 ## Toolchain Ceiling
 
@@ -105,6 +106,9 @@ Within the root modules:
   `!!` for a genuine contract violation, and put the reason on the same
   line. `requireNotNull(x) { "why" }` or `checkNotNull` is almost always the
   better expression of the same intent, because it fails with a message.
+- **Express required values with non-null types.** Enforce the invariant once
+  at the boundary instead of passing nullable values that every caller must
+  reject later.
 - **`lateinit var` is sanctioned for `Props`-style configuration** — the
   established idiom for component properties supplied after construction
   (`public lateinit var onSelectItem: (I?) -> Unit` in `DropdownListBox`).
@@ -112,7 +116,8 @@ Within the root modules:
   property. Never `lateinit` a primitive or nullable type — that does not
   compile; use `Delegates.notNull()` for a primitive.
 - **Structured concurrency by default.** Take a `CoroutineScope` from the
-  caller or use `coroutineScope { }`.
+  caller or use `coroutineScope { }`. For work tied to a composition, use
+  `rememberCoroutineScope` or `LaunchedEffect` so disposal cancels the work.
 - **The `GlobalScope` exception, in the shape `client` already uses it.**
   Work that must outlive the composition or call that started it launches on
   `GlobalScope` only with `@OptIn(DelicateCoroutinesApi::class)` and a
@@ -142,9 +147,13 @@ Within the root modules:
 - **Expose read-only types from public API** — `List` over `MutableList`,
   `StateFlow` over `MutableStateFlow`, `State` over `MutableState`, and never
   the mutable backing property itself. Explicit API mode makes each of these a
-  published contract.
+  published contract. An existing component contract that deliberately accepts
+  caller-owned `MutableState` for two-way value binding is different: preserve
+  that contract and document who updates the state.
 - **Immutability first**: `val` over `var`, and `copy()` on a data class
   rather than mutation.
+- **Use `T` for an undifferentiated type parameter.** Use `K`, `V`, `R`, `E`,
+  or a descriptive name when the parameter's role needs distinction.
 - **Named arguments once a Kotlin call takes three or more parameters**,
   which is what stops a silent argument swap between same-typed parameters.
   This applies only where parameter names are available to the caller —
@@ -152,12 +161,19 @@ Within the root modules:
   which includes the generated Protobuf builders used throughout `proto` and
   `proto-values`. There, keep the call readable by other means: one setter
   per line in a builder chain, or a local variable per value.
+- **Put each subsequent call in a chain on a new indented line**, starting
+  with `.` or `?.`, even when the chain fits on one line. Keep a property
+  receiver together and put its following call on the next line. Apply this
+  inside arguments and after scope-function lambdas too, including terminal
+  builder calls such as `vBuild()`.
 - **Kotlin property syntax for Java getters** — `isDeleted`, not `isDeleted()`;
   `message.value`, not `message.getValue()`. Keep calls for operations or
   methods that expose no Kotlin property.
 - **One declaration per import.** Never add wildcards or an alias without
-  explicit human direction. Import clear members directly; qualify collisions
-  and generic factories like `of`, `from`, `get`, `create`, `valueOf`, or `newBuilder`.
+  explicit human direction. Import clear members directly, including recognizable
+  enum constants and nested members. Apply this to all source sets; Java uses
+  `import static`. Qualify collisions and generic names such as `of`, `from`,
+  `get`, `create`, `valueOf`, `newBuilder`, `newUuid`, `generate`, `pack`, or `unpack`.
 - **`data class` for pure value types only** — not for components,
   services, or anything with a lifecycle.
 - **Deprecated API only on explicit instruction.** When directed to use one,
@@ -197,7 +213,8 @@ Within the root modules:
 
 Compile the narrowest module first. The JDK, architecture, and invocation
 constraints live in `.agents/guidelines/root-build.md`; the full command set is
-in `AGENTS.md`, "Verification and Quality".
+in [Testing](../tester/SKILL.md#verification).
+Configure IntelliJ IDEA Detekt with `quality/detekt-config.yml`.
 
 ```bash
 .agents/workflows/gradle-root.sh :<module>:compileKotlin
