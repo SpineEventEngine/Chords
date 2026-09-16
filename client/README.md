@@ -54,6 +54,12 @@ complete, which recomposes the Compose code that reads it. Creating an
 observation therefore never blocks the UI thread, even when the server is
 unreachable.
 
+Observations remove entities when the server reports that they were archived,
+deleted, or no longer match the subscription filter. A single-entity observation
+asynchronously rereads its query after a removal and uses the first remaining
+match, or `null` or its supplied default when none remain. A later matching
+update makes the entity available again.
+
 A new observation carries the `DataObservationStatus.Refreshing` status while
 its initial read is in progress. If the connection is already known to be
 unavailable, the observation is instead returned in

@@ -24,41 +24,40 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.google.protobuf.gradle.protobuf
-import com.google.protobuf.gradle.protoc
-import io.spine.internal.dependency.Kotlin
-import io.spine.internal.dependency.KotlinX
-import io.spine.internal.dependency.Material3
-import io.spine.internal.dependency.Protobuf
-import io.spine.internal.dependency.Spine
+syntax = "proto3";
 
-plugins {
-    id("io.spine.tools.gradle.bootstrap")
-    id("com.google.protobuf")
-    id("org.jetbrains.compose") version "1.5.12"
+package spine.chords.client;
+
+import "spine/options.proto";
+import "spine/core/user_id.proto";
+
+option (type_url_prefix) = "type.spine.chords";
+option java_package = "io.spine.chords.client.given";
+option java_multiple_files = true;
+
+// An entity with a message ID for client observation tests.
+message ObservedItem {
+    option (entity).kind = PROJECTION;
+
+    // Identifies an item across subscription updates.
+    spine.core.UserId id = 1;
+
+    // Distinguishes successive states of the same item.
+    string label = 2 [(column) = true];
 }
 
-// Generates entity fixtures for the client protocol tests.
-spine {
-    assembleModel()
-    enableJava()
+// An entity with a scalar ID for client observation tests.
+message NamedItem {
+    option (entity).kind = PROJECTION;
+
+    // Identifies an item without a Protobuf message wrapper.
+    string name = 1;
 }
 
-protobuf {
-    protoc {
-        artifact = Protobuf.compiler
-    }
-}
+// A state whose message-based entity ID is kept outside the state.
+message IdlessItem {
+    option (entity).kind = PROJECTION;
 
-dependencies {
-    implementation(Kotlin.reflect)
-    implementation(KotlinX.Coroutines.swing)
-    implementation(compose.desktop.currentOs)
-    implementation(Material3.Desktop.lib)
-    implementation(Spine.CoreJvm.core)
-    implementation(Spine.CoreJvm.client)
-    implementation(project(":core"))
-    implementation(project(":proto-values"))
-    implementation(project(":proto"))
-    implementation(project(":runtime"))
+    // A display value that must not be mistaken for an entity ID.
+    string label = 1 [(column) = true];
 }

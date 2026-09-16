@@ -67,6 +67,7 @@ public interface Client {
     /**
      * Reads the list of entities with the [entityClass] class and returns an
      * observation that maintains an up-to-date list.
+     * Archived and deleted entities are removed when the server reports them.
      *
      * This function returns without waiting for the server. The observation is
      * returned with an empty list, and the list read from the server appears in
@@ -97,7 +98,8 @@ public interface Client {
      * Reads all entities of type [entityClass] that match the given
      * [queryFilter]. Then sets up observation to receive future updates to the
      * entities, filtering the observed updates using the provided
-     * [observeFilter].
+     * [observeFilter]. Entities are removed when they are archived, deleted,
+     * or stop matching [observeFilter]. A later matching update adds them again.
      *
      * This function returns without waiting for the server. The observation is
      * returned with an empty list, and the list read from the server appears in
@@ -138,6 +140,8 @@ public interface Client {
      *   or [observeFilter], the returned observation gets the first matching
      *   value.
      * - If no entries match the specified criteria, the value is `null`.
+     * - An archive, deletion, or removal from [observeFilter] triggers an asynchronous
+     *   reread. The value becomes the first remaining match, or `null` if none remain.
      *
      * This function returns without waiting for the server. The observation is
      * returned with a `null` value, and the value read from the server appears
@@ -173,6 +177,8 @@ public interface Client {
      *
      * This overload guarantees a non-null value by using [defaultValue] when no
      * entity matches. If several entities match, the first one is used.
+     * An archive, deletion, or removal from [observeFilter] triggers an asynchronous
+     * reread. The value becomes the first remaining match, or [defaultValue] if none remain.
      *
      * This function returns without waiting for the server. The observation is
      * returned with [defaultValue], and the value read from the server appears

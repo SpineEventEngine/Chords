@@ -33,8 +33,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -316,14 +316,19 @@ internal class DataObservationScope(
 
     /**
      * Refreshes the given [observation] in this coroutine scope.
+     * An invalidation supplies [expectedGeneration] to skip superseded subscriptions.
      *
      * @return The job that performs the refresh. It completes without running
      *   the refresh if this scope has been closed meanwhile, because [close]
      *   cancels the scope.
      */
-    private fun refresh(observation: DataObservation<*>): Job =
+    fun refresh(observation: DataObservation<*>, expectedGeneration: Long? = null): Job =
         coroutineScope.launch {
-            observation.refresh()
+            if (expectedGeneration == null) {
+                observation.refresh()
+            } else {
+                observation.refreshIfCurrent(expectedGeneration)
+            }
         }
 
     /**
