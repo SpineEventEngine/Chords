@@ -30,6 +30,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import io.grpc.Status
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.spine.chords.client.given.InvalidatingObservationSource
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.atomic.AtomicInteger
@@ -47,6 +48,97 @@ import org.junit.jupiter.api.Test
  */
 @DisplayName("`DataObservation` should")
 internal class DataObservationSpec {
+
+    /**
+     * Several removals from one subscription need only one authoritative reread.
+     */
+    @Test
+    fun `coalesce queued invalidations from the same subscription`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        source.readValue = "refreshed"
+        source.invalidate()
+        source.invalidate()
+
+        source.deliverRefreshes() shouldBe 2
+
+        source.readCount shouldBe 2
+        observation.value shouldBe "refreshed"
+        observation.status.value shouldBe DataObservationStatus.Active
+    }
+
+    /**
+     * Cancellation supersedes refresh requests that have already been queued.
+     */
+    @Test
+    fun `ignore queued invalidations after cancellation`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        source.invalidate()
+        observation.cancel()
+
+        source.deliverRefreshes() shouldBe 1
+
+        source.readCount shouldBe 1
+        observation.status.value shouldBe DataObservationStatus.Cancelled
+    }
+
+    /**
+     * A queued invalidation cannot restart a read while the observation is disconnected.
+     */
+    @Test
+    fun `ignore queued invalidations after connection loss`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        source.invalidate()
+        observation.waitForConnection()
+
+        source.deliverRefreshes() shouldBe 1
+
+        source.readCount shouldBe 1
+        observation.status.value shouldBe DataObservationStatus.WaitingForConnection
+    }
+
+    /**
+     * Recovery supplies a newer snapshot than requests from the disconnected subscription.
+     */
+    @Test
+    fun `ignore queued invalidations after reconnection refresh`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        source.invalidate()
+        observation.waitForConnection()
+        source.readValue = "reconnected"
+        observation.refresh()
+
+        source.deliverRefreshes() shouldBe 1
+
+        source.readCount shouldBe 2
+        observation.value shouldBe "reconnected"
+        observation.status.value shouldBe DataObservationStatus.Active
+    }
+
+    /**
+     * A queued reread must not silently retry a terminal stream failure.
+     */
+    @Test
+    fun `ignore queued invalidations after terminal failure`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        source.invalidate()
+        val failure = Status.PERMISSION_DENIED.asRuntimeException()
+        source.fail(failure)
+
+        source.deliverRefreshes() shouldBe 1
+
+        source.readCount shouldBe 1
+        observation.status.value shouldBe DataObservationStatus.Failed(failure)
+    }
 
     @Test
     fun `read initial data and apply subscription updates`() {

@@ -43,8 +43,8 @@ import io.spine.client.EventFilter.eq
 import io.spine.client.Subscription
 import io.spine.core.UserId
 import java.lang.Runtime.getRuntime
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -65,10 +65,7 @@ private const val ChannelShutdownTimeoutSeconds = 5L
 /**
  * Provides API to interact with the application server via gRPC.
  *
- * @param host The host of the application server to which client
- *   should connect.
- * @param port The port on which the application server is listening for
- *   gRPC connections.
+ * @param channel The owned channel used for server requests.
  * @param user The callback that should return the user ID on whose behalf
  *   the `DesktopClient` should send requests to the server.
  *   If the callback return `null` the client will send requests
@@ -77,19 +74,28 @@ private const val ChannelShutdownTimeoutSeconds = 5L
 @Suppress(
     "TooManyFunctions" /* The functions implement the public Client contract. */
 )
-public class DesktopClient(
-    host: String,
-    port: Int,
-    private val user: () -> UserId? = { null }
+public class DesktopClient internal constructor(
+    private val channel: ManagedChannel,
+    private val user: () -> UserId?
 ) : Client {
 
     /**
-     * The gRPC channel used for all requests to the server.
+     * Connects to the application server and owns the resulting channel.
+     *
+     * @param host The host of the application server.
+     * @param port The port accepting gRPC connections.
+     * @param user Supplies the actor for each request, or `null` for a guest.
      */
-    private val channel: ManagedChannel = ManagedChannelBuilder
-        .forAddress(host, port)
-        .usePlaintext()
-        .build()
+    public constructor(
+        host: String,
+        port: Int,
+        user: () -> UserId? = { null }
+    ) : this(
+        ManagedChannelBuilder.forAddress(host, port)
+            .usePlaintext()
+            .build(),
+        user
+    )
 
     /**
      * The underlying Spine client that performs server requests.
@@ -158,11 +164,19 @@ public class DesktopClient(
                 .select(entityClass)
                 .run()
         },
-        subscribe = { onUpdate, onError ->
-            subscribeTo(entityClass, onUpdate, onError)
+        subscribe = { onUpdate, onRemoval, onError ->
+            subscribeTo(
+                entityClass = entityClass,
+                onUpdate = onUpdate,
+                onRemoval = onRemoval,
+                onError = onError
+            )
         },
         applyUpdate = { entities, entity ->
             updateList(entities, entity, extractId)
+        },
+        applyRemoval = { entities, id ->
+            entities.filterNot { extractId(it) == id }
         }
     )
 
@@ -179,11 +193,20 @@ public class DesktopClient(
                 .where(queryFilter)
                 .run()
         },
-        subscribe = { onUpdate, onError ->
-            subscribeTo(entityClass, onUpdate, onError, observeFilter)
+        subscribe = { onUpdate, onRemoval, onError ->
+            subscribeTo(
+                entityClass = entityClass,
+                onUpdate = onUpdate,
+                onRemoval = onRemoval,
+                onError = onError,
+                filter = observeFilter
+            )
         },
         applyUpdate = { entities, entity ->
             updateList(entities, entity, extractId)
+        },
+        applyRemoval = { entities, id ->
+            entities.filterNot { extractId(it) == id }
         }
     )
 
@@ -200,8 +223,14 @@ public class DesktopClient(
                 .run()
                 .firstOrNull()
         },
-        subscribe = { onUpdate, onError ->
-            subscribeTo(entityClass, onUpdate, onError, observeFilter)
+        subscribe = { onUpdate, onRemoval, onError ->
+            subscribeTo(
+                entityClass = entityClass,
+                onUpdate = onUpdate,
+                onRemoval = onRemoval,
+                onError = onError,
+                filter = observeFilter
+            )
         },
         applyUpdate = { _, entity -> entity }
     )
@@ -220,8 +249,14 @@ public class DesktopClient(
                 .run()
                 .firstOrNull() ?: defaultValue
         },
-        subscribe = { onUpdate, onError ->
-            subscribeTo(entityClass, onUpdate, onError, observeFilter)
+        subscribe = { onUpdate, onRemoval, onError ->
+            subscribeTo(
+                entityClass = entityClass,
+                onUpdate = onUpdate,
+                onRemoval = onRemoval,
+                onError = onError,
+                filter = observeFilter
+            )
         },
         applyUpdate = { _, entity -> entity }
     )
@@ -336,41 +371,63 @@ public class DesktopClient(
      * When the connection is already known to be unavailable, no initial read
      * is attempted: the observation is returned waiting for a connection, and
      * the scope refreshes it once the connection is restored.
+     *
+     * Without [applyRemoval], removals trigger a fresh query because the observed
+     * value does not have a known ID extractor.
      */
     private fun <T, U> createObservation(
         initialValue: T,
         read: () -> T,
         subscribe: (
             onUpdate: (U) -> Unit,
+            onRemoval: (Any) -> Unit,
             onError: (Throwable) -> Unit
         ) -> ObservationSubscription,
-        applyUpdate: (T, U) -> T
+        applyUpdate: (T, U) -> T,
+        applyRemoval: ((T, Any) -> T)? = null
     ): DataObservation<T> {
-        val observation = createDataObservation(
-            initialValue,
-            read,
-            subscribe,
-            applyUpdate,
-            { connectionStatus.value },
-            observationScope::unregister,
-            observationScope::retryWhileConnected
+        val observation = DataObservation(
+            initialValue = initialValue,
+            read = read,
+            subscribe = { onChange, onInvalidated, onError ->
+                subscribe(
+                    { update -> onChange { value -> applyUpdate(value, update) } },
+                    { id ->
+                        if (applyRemoval != null) {
+                            onChange { value -> applyRemoval(value, id) }
+                        } else {
+                            onInvalidated()
+                        }
+                    },
+                    onError
+                )
+            },
+            connectionStatus = { connectionStatus.value },
+            requestContext = IO,
+            onCancelled = observationScope::unregister,
+            onRecoveryNeeded = observationScope::retryWhileConnected,
+            onRefreshNeeded = { observation, generation ->
+                observationScope.refresh(observation, generation)
+            }
         )
         observationScope.registerAndInitialize(observation)
         return observation
     }
 
     /**
-     * Creates an entity subscription with uniform update and failure handling.
+     * Creates an entity subscription that forwards updates, removals, and failures.
      */
     private fun <E : EntityState> subscribeTo(
         entityClass: Class<E>,
         onUpdate: (E) -> Unit,
+        onRemoval: (Any) -> Unit,
         onError: (Throwable) -> Unit,
         filter: CompositeEntityStateFilter? = null
     ): ObservationSubscription {
         val request = clientRequest()
             .subscribeTo(entityClass)
             .observe(onUpdate)
+            .whenNoLongerMatching(Any::class.java, onRemoval)
             .onStreamingError(onError)
         filter?.let {
             request.where(it)

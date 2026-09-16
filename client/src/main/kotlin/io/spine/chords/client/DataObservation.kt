@@ -88,10 +88,11 @@ public class DataObservation<out T> internal constructor(
      */
     private val read: () -> T,
     /**
-     * Creates a server subscription and registers its update and failure callbacks.
+     * Registers state updates, query invalidations, and failures for a server subscription.
      */
     private val subscribe: (
         onUpdate: ((T) -> T) -> Unit,
+        onInvalidated: () -> Unit,
         onError: (Throwable) -> Unit
     ) -> ObservationSubscription,
     /**
@@ -109,7 +110,11 @@ public class DataObservation<out T> internal constructor(
     /**
      * Requests a delayed retry when a stream fails on a connected channel.
      */
-    private val onRecoveryNeeded: (DataObservation<*>) -> Unit = {}
+    private val onRecoveryNeeded: (DataObservation<*>) -> Unit = {},
+    /**
+     * Schedules a reread only while the invalidated subscription generation is current.
+     */
+    private val onRefreshNeeded: (DataObservation<*>, Long) -> Unit = { _, _ -> }
 ) : State<T> {
 
     /**
@@ -177,12 +182,26 @@ public class DataObservation<out T> internal constructor(
      * from this function. Coroutine cancellation is propagated to the caller
      * without being converted into an observation failure.
      */
+    public suspend fun refresh() {
+        refresh(expectedGeneration = null)
+    }
+
+    /**
+     * Rereads an invalidated query unless a lifecycle change has superseded its subscription.
+     */
+    internal suspend fun refreshIfCurrent(expectedGeneration: Long) {
+        refresh(expectedGeneration = expectedGeneration)
+    }
+
+    /**
+     * Serializes refreshes and optionally limits a request to its originating subscription.
+     */
     @Suppress(
         "ReturnCount" /* Each failed or stale recovery phase must stop immediately. */
     )
-    public suspend fun refresh() {
+    private suspend fun refresh(expectedGeneration: Long?) {
         refreshMutex.withLock {
-            val refreshGeneration = beginRefresh() ?: return
+            val refreshGeneration = beginRefresh(expectedGeneration) ?: return
             val pendingUpdates = PendingUpdates<T>()
             try {
                 val result = withContext(requestContext) {
@@ -252,6 +271,7 @@ public class DataObservation<out T> internal constructor(
                         update
                     )
                 },
+                { onRefreshNeeded(this, refreshGeneration) },
                 { error ->
                     bufferOrHandleFailure(
                         refreshGeneration,
@@ -379,12 +399,13 @@ public class DataObservation<out T> internal constructor(
 
     /**
      * Starts a new generation and detaches the previous subscription.
+     * An invalidation must still belong to [expectedGeneration] when it starts its refresh.
      */
-    private fun beginRefresh(): Long? {
+    private fun beginRefresh(expectedGeneration: Long?): Long? {
         val previousSubscription: ObservationSubscription?
         val refreshGeneration: Long
         synchronized(stateLock) {
-            if (cancelled) {
+            if (cancelled || (expectedGeneration != null && generation != expectedGeneration)) {
                 return null
             }
             generation++
@@ -623,7 +644,7 @@ internal fun <T, U> createDataObservation(
 ): DataObservation<T> = DataObservation(
     initialValue,
     read,
-    { onUpdate, onError ->
+    { onUpdate, _, onError ->
         subscribe(
             { update ->
                 onUpdate { value -> applyUpdate(value, update) }
