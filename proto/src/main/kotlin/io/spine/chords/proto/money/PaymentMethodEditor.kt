@@ -30,11 +30,13 @@ import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import io.spine.chords.core.ComponentSetup
-import io.spine.chords.core.ValidationErrorText
 import io.spine.chords.core.styling.ChordsDimensions
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.proto.form.CustomMessageForm
@@ -54,6 +56,9 @@ private val defaultLookDimensions = ChordsDimensions()
 
 /**
  * A component that edits a [PaymentMethod].
+ *
+ * Reserves a line for a missing-method error so validation does not shift
+ * the controls that follow this editor.
  */
 public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
     { PaymentMethod.newBuilder() }
@@ -125,11 +130,11 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
                         BankAccountField(bankAccount)
                     }
                 }
-                if (validationMessage.value != null) {
-                    Row {
-                        ValidationErrorText(validationMessage)
-                    }
-                }
+                Text(
+                    text = validationMessage.value ?: "",
+                    style = typography.bodySmall,
+                    color = colorScheme.error
+                )
             }
         }
     }

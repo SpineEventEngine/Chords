@@ -27,12 +27,16 @@
 package io.spine.chords.core.layout
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -43,15 +47,22 @@ import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasurePolicy
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
+import io.spine.chords.core.TestApplication
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 /**
  * Tests the way that a dialog, whose size is detected automatically,
@@ -59,6 +70,112 @@ import org.junit.jupiter.api.Test
  */
 @DisplayName("An automatically sized `Dialog` should")
 internal class DialogSizingSpec {
+
+    /**
+     * A fractional dp height must survive the native window's conversion to whole dp units.
+     */
+    @Test
+    fun `round automatic native height up without clipping a physical pixel`() {
+        var measuredSize = IntSize.Zero
+        TestScene {
+            CompositionLocalProvider(LocalDensity provides density) {
+                Box(
+                    Modifier
+                        .onSizeChanged { measuredSize = it }
+                        .dialogSize(
+                            width = 480.dp,
+                            height = Dp.Unspecified,
+                            maxWidth = AvailableWidth,
+                            maxHeight = AvailableHeight,
+                            fillSpecifiedDimensions = true
+                        )
+                ) {
+                    Box(Modifier.size(100.dp, 100.5.dp))
+                }
+            }
+        }.use { }
+
+        val nativeHeight = (measuredSize.height / density.density).toInt()
+        val restoredHeight = (nativeHeight * density.density).toInt()
+        restoredHeight shouldBeGreaterThanOrEqual with(density) { 100.5.dp.roundToPx() }
+    }
+
+    /**
+     * Native preferred-size measurement can use unbounded or very large finite constraints.
+     * A fixed-width dialog must wrap its message before its automatic height is chosen.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `measure automatic height using the specified native width`(unbounded: Boolean) {
+        val dialog = InputTextDialog().apply {
+            width = 480.dp
+            message = "Please confirm that the selected item is no longer needed " +
+                "and enter the reason for this change."
+            textFieldLabel = "Reason"
+            noOfTextLines = 2
+        }
+        var preferredSize = IntSize.Zero
+        TestScene(width = 16000.dp, height = 400.dp) {
+            val measurementModifier = if (unbounded) {
+                Modifier.wrapContentWidth(unbounded = true)
+            } else {
+                Modifier
+            }
+            Box(measurementModifier) {
+                BoxWithConstraints {
+                    Column(
+                        Modifier
+                            .dialogSize(
+                                width = dialog.width,
+                                height = dialog.height,
+                                maxWidth = maxWidth,
+                                maxHeight = maxHeight,
+                                fillSpecifiedDimensions = true
+                            )
+                            .onSizeChanged { preferredSize = it }
+                            .padding(dialog.resolvedLook().padding)
+                    ) {
+                        dialog.windowContentInternal(DialogContentHeightMode.AtMost)
+                    }
+                }
+            }
+        }.use {
+            it.render()
+        }
+
+        TestScene(width = dialog.width) {
+            Column(Modifier.padding(dialog.resolvedLook().padding)) {
+                dialog.windowContentInternal(DialogContentHeightMode.AtMost)
+            }
+        }.use { scene ->
+            preferredSize shouldBe scene.contentSize
+        }
+    }
+
+    /**
+     * Native window decorations can leave less space than the requested outer width.
+     */
+    @ParameterizedTest
+    @ValueSource(ints = [460, 478])
+    fun `fit the native client area when narrower than requested`(clientWidth: Int) {
+        TestScene(width = clientWidth.dp) {
+            BoxWithConstraints {
+                Box(
+                    Modifier.dialogSize(
+                        width = 480.dp,
+                        height = Dp.Unspecified,
+                        maxWidth = maxWidth,
+                        maxHeight = maxHeight,
+                        fillSpecifiedDimensions = true
+                    )
+                ) {
+                    Box(Modifier.size(100.dp))
+                }
+            }
+        }.use { scene ->
+            scene.contentSize.width shouldBe clientWidth
+        }
+    }
 
     /**
      * A window's size is expressed in whole [Dp] units, while its content is
@@ -432,6 +549,15 @@ internal class DialogSizingSpec {
     }
 
     private companion object {
+
+        /**
+         * Enables composing the input field in the sizing regression.
+         */
+        @JvmStatic
+        @BeforeAll
+        fun setUpApplication() {
+            TestApplication.install()
+        }
 
         /**
          * The density that makes a whole [Dp] unit occupy more than one pixel,

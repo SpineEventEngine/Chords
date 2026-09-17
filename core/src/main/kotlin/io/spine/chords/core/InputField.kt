@@ -467,6 +467,31 @@ public open class InputField<V> : InputComponent<V>() {
      */
     protected open fun formatValue(value: V): String = value as String
 
+    /**
+     * Supplies the empty editor's canonical value before its containing form records initial input.
+     */
+    override fun initialize() {
+        super.initialize()
+        normalizeEmptyValue()
+    }
+
+    /**
+     * Treats an initial value with empty displayed text as missing, just like cleared input.
+     * The containing form can then report its required-value error on this editor.
+     */
+    override fun updateValidationDisplay(focusInvalidPart: Boolean) {
+        normalizeEmptyValue()
+    }
+
+    /**
+     * Keeps empty initial values equivalent to text cleared by the user.
+     */
+    private fun normalizeEmptyValue() {
+        if (invalidValueText == null && value.value?.let { formatValue(it) } == "") {
+            value.value = null
+        }
+    }
+
     @Composable
     override fun content(): Unit = recompositionWorkaround {
         val fieldColors = if (::colors.isInitialized) {

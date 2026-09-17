@@ -73,8 +73,8 @@ import io.spine.chords.core.styling.ChordsTheme
  * }
  * ```
  *
- * With [colors] left `null`, the editor uses Chords colors and a 1 dp focused outline, including
- * the error state. An explicit [textStyle] color takes precedence over the default text color.
+ * With [colors] left `null`, the editor uses Chords colors and a 1 dp outline in every state.
+ * An explicit [textStyle] color takes precedence over the default text color.
  * Supplying [colors] switches to the native Material `OutlinedTextField`: this preserves its
  * editor and cursor colors on supported Compose versions, but also restores its border thickness.
  *
@@ -195,7 +195,8 @@ internal fun OutlinedField(
                         interactionSource = interactionSource,
                         colors = fieldColors,
                         shape = shape,
-                        focusedBorderThickness = 1.dp
+                        focusedBorderThickness = 1.dp,
+                        unfocusedBorderThickness = 1.dp
                     )
                 }
             )

@@ -55,11 +55,11 @@ import org.junit.jupiter.params.provider.ValueSource
 internal class OutlinedFieldSpec {
 
     /**
-     * Focused fields retain a thin outline in both normal and validation states.
+     * Normal and error outlines stay thin without changing the background before or after focus.
      */
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `keep a focused outline thin`(error: Boolean) {
+    fun `keep outlines thin and backgrounds unchanged before and after focus`(error: Boolean) {
         val scheme = chordsDarkColorScheme()
         TestScene {
             ChordsTheme(colorScheme = scheme) {
@@ -74,11 +74,17 @@ internal class OutlinedFieldSpec {
                 }
             }
         }.use { scene ->
+            repeat(30) { scene.render() }
+            val unfocusedColor = if (error) scheme.error else scheme.outline
+            scene.pixelAt(200.dp, 8.dp) shouldBe unfocusedColor.toArgb()
+            scene.pixelAt(200.dp, 9.dp) shouldBe scheme.surface.toArgb()
+            scene.pixelAt(200.dp, 20.dp) shouldBe scheme.surface.toArgb()
             scene.click(120.dp, 32.dp)
             repeat(30) { scene.render() }
             val borderColor = if (error) scheme.error else scheme.primary
             scene.pixelAt(200.dp, 8.dp) shouldBe borderColor.toArgb()
             scene.pixelAt(200.dp, 9.dp) shouldBe scheme.surface.toArgb()
+            scene.pixelAt(200.dp, 20.dp) shouldBe scheme.surface.toArgb()
         }
     }
 
