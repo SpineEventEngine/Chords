@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.constrain
+import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.window.DialogState
@@ -510,6 +511,10 @@ internal val DefaultDialogMinWidth = 480.dp
  * instead of expanding them to the width of an unwrapped paragraph. A text that
  * should still be displayed on a single line requests such a width explicitly
  * (see [preferUnwrappedWidth]).
+ *
+ * A native preferred-size pass can supply very large finite bounds as well as
+ * unbounded ones. Always measure a specified width at that width, constrained
+ * by the client area, so wrapped text contributes its full height.
  */
 internal fun Modifier.dialogSize(
     width: Dp,
@@ -520,11 +525,7 @@ internal fun Modifier.dialogSize(
 ): Modifier =
     then(
         if (width.isSpecified) {
-            if (fillSpecifiedDimensions) {
-                Modifier.fillMaxWidth()
-            } else {
-                Modifier.width(width)
-            }
+            Modifier.width(width)
         } else {
             Modifier
                 .then(WindowSafeMinIntrinsicWidth)
@@ -541,9 +542,32 @@ internal fun Modifier.dialogSize(
                 Modifier.height(height)
             }
         } else {
-            Modifier.heightIn(max = maxHeight)
+            Modifier
+                .heightIn(max = maxHeight)
+                .then(if (fillSpecifiedDimensions) WindowSafeContentHeight else Modifier)
         }
     )
+
+/**
+ * Rounds automatic native height up to whole dp units so the window does not clip
+ * a fractional dp from its content. Even one clipped pixel can trigger scrolling on focus.
+ */
+private object WindowSafeContentHeight : LayoutModifier {
+
+    /**
+     * Leaves room for the measured content after native size conversion, within available bounds.
+     */
+    override fun MeasureScope.measure(
+        measurable: Measurable,
+        constraints: Constraints
+    ): MeasureResult {
+        val placeable = measurable.measure(constraints)
+        val height = ceil(ceil(placeable.height / density) * density).toInt()
+        return layout(placeable.width, constraints.constrainHeight(height)) {
+            placeable.placeRelative(IntOffset.Zero)
+        }
+    }
+}
 
 /**
  * Sizes the content to its minimum intrinsic width, rounded up so that
