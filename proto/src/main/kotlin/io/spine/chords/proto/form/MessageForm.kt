@@ -900,11 +900,12 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         )
 
         /**
-         * The initial field value, treating empty text like an empty editor.
+         * The initial field value after the editor has normalized its initial input.
          */
-        val initialInput = fieldValue(initialValue, defaultValue)?.takeUnless {
+        var initialInput = fieldValue(initialValue, defaultValue)?.takeUnless {
             it == "" || (formOneof != null && formOneof.initialSelectedField != field)
         }
+            private set
 
         /**
          * Resolves this field against the form's original or current input snapshot.
@@ -1096,6 +1097,9 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             lastObservedValid = currentValid
             SideEffect {
                 if (!inputInitialized) {
+                    if (!initialInputChanged) {
+                        initialInput = value.value?.takeUnless { it == "" }
+                    }
                     inputInitialized = true
                     if (initialInputChanged) {
                         updateDirty()
@@ -1845,6 +1849,8 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
 
     /**
      * Displays a constraint violation associated with a field or oneof.
+     * A missing required oneof value belongs to its selected editor, if any.
+     * An editor with its own invalid input already provides more specific feedback.
      */
     private fun showFieldConstraintViolation(
         fieldPath: FieldPath,
@@ -1860,7 +1866,19 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
             checkNotNull(oneofEntry) {
                 "Neither message's field nor oneof was found with this name: $fieldName."
             }
-            oneofEntry.value.validationMessage.value = constraintViolation.formattedMessage
+            val oneof = oneofEntry.value
+            val selected = oneof.selectedFormField
+            when {
+                selected == null ->
+                    oneof.validationMessage.value = constraintViolation.formattedMessage
+                oneofEntry.key.required && selected.value.value == null -> {
+                    if (selected.valueValid.value) {
+                        selected.externalValidationMessage.value = "A value must be set."
+                    }
+                }
+                else -> selected.externalValidationMessage.value =
+                    constraintViolation.formattedMessage
+            }
         }
     }
 

@@ -32,14 +32,38 @@ import io.kotest.matchers.shouldBe
 import io.spine.chords.core.layout.TestScene
 import io.spine.chords.core.styling.ChordsTheme
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 
 /**
- * Verifies how [InputField] reserves space for external validation messages.
+ * Verifies empty input and the space reserved for external validation messages.
  */
 @DisplayName("`InputField` should")
 internal class InputFieldSpec {
+
+    /**
+     * Supplied empty text must use the same absent value as input cleared by the user.
+     */
+    @Test
+    fun `report empty initial text as missing before validation`() {
+        TestApplication.install()
+        val field = InputField<String>()
+            .apply { value = mutableStateOf("") }
+
+        TestScene { ChordsTheme { field.Content() } }.use {
+            field.value.value shouldBe null
+
+            field.updateValidationDisplay(focusInvalidPart = false)
+
+            field.value.value shouldBe null
+            field.valid.value shouldBe true
+
+            field.value.value = "12345678"
+            field.updateValidationDisplay(focusInvalidPart = false)
+            field.value.value shouldBe "12345678"
+        }
+    }
 
     /**
      * Forms retain their reserved row; compact filters reclaim it after an error clears.

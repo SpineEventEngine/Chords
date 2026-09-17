@@ -33,6 +33,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import com.google.protobuf.Message
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputComponent
@@ -221,7 +223,7 @@ internal object MessageFormFixtures {
          * Advances frames until recomposition and its effects have settled.
          */
         fun render() {
-            repeat(10) {
+            repeat(30) {
                 onUiThread {
                     Snapshot.sendApplyNotifications()
                     scene.render(surface.canvas, ++frame * 16_000_000L)
@@ -231,6 +233,28 @@ internal object MessageFormFixtures {
                 }
             }
             error("The form composition did not settle.")
+        }
+
+        /**
+         * Returns visible text so tests can observe feedback without depending on its wording.
+         */
+        fun displayedText(): Set<String> = onUiThread {
+            val pending = ArrayDeque(
+                scene.roots
+                    .map { it.semanticsOwner.rootSemanticsNode }
+            )
+            val text = mutableSetOf<String>()
+            while (pending.isNotEmpty()) {
+                val node = pending.removeFirst()
+                node.config
+                    .getOrNull(SemanticsProperties.Text)
+                    .orEmpty()
+                    .map { it.text }
+                    .filter { it.isNotBlank() }
+                    .forEach { text.add(it) }
+                pending.addAll(node.children)
+            }
+            text
         }
 
         /**
