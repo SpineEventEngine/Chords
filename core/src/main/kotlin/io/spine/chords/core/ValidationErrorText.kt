@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,23 +30,25 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 
 /**
- * A validation error text.
+ * Displays a validation error using the theme's supporting text style.
  *
  * @param validationError A [MutableState] that holds the validation error text.
  *   If the text is `null`, nothing is added to the composition.
- * @param style A text's style.
+ * @param style The text style; defaults to the theme's supporting text.
  * @param color A text's color.
  */
 @Composable
-public fun ValidationErrorText(validationError: State<String?>,
-                               style: TextStyle = typography.bodySmall,
-                               color: Color = colorScheme.error) {
+public fun ValidationErrorText(
+    validationError: State<String?>,
+    style: TextStyle = typography.bodySmall,
+    color: Color = colorScheme.error
+) {
     val validationErrorText = validationError.value
     if (validationErrorText != null) {
         Text(

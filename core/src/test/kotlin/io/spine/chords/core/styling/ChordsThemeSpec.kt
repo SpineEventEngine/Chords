@@ -149,6 +149,8 @@ internal class ChordsThemeSpec {
         assertTextContrast(scheme.onSurface, overlay)
         assertTextContrast(scheme.onSurfaceVariant, overlay)
         assertTextContrast(scheme.primary, overlay)
+        assertTextContrast(scheme.error, overlay)
+        assertTextContrast(scheme.onError, scheme.error)
         assertTextContrast(scheme.onPrimary, scheme.primary)
         assertTextContrast(scheme.onSurfaceVariant, scheme.surface)
     }
@@ -171,6 +173,8 @@ internal class ChordsThemeSpec {
         assertTextContrast(scheme.onSurface, overlay)
         assertTextContrast(scheme.onSurfaceVariant, overlay)
         assertTextContrast(scheme.primary, overlay)
+        assertTextContrast(scheme.error, overlay)
+        assertTextContrast(scheme.onError, scheme.error)
         assertTextContrast(scheme.onPrimary, scheme.primary)
         assertTextContrast(scheme.onSurfaceVariant, scheme.surface)
     }
