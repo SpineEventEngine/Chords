@@ -33,24 +33,92 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
+import io.kotest.assertions.withClue
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.spine.chords.core.styling.ChordsTheme
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 /**
  * Verifies that overflow keeps lower actions reachable while the surrounding header stays fixed.
  */
 @DisplayName("`ScrollableColumn` should")
 internal class ScrollableColumnSpec {
+
+    /**
+     * New scroll states must not change the content width after their first measurement.
+     * Alternating short and long selections also keeps the surrounding controls in place.
+     */
+    @ParameterizedTest(name = "starts with overflow: {0}")
+    @ValueSource(booleans = [false, true])
+    fun `keep content geometry stable when selecting another item`(startsWithOverflow: Boolean) {
+        val selection = mutableStateOf(0)
+        var bodyBounds = Rect.Zero
+        var headerBounds = Rect.Zero
+        var footerBounds = Rect.Zero
+        TestScene {
+            ChordsTheme {
+                Column(Modifier.size(240.dp, 180.dp)) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(40.dp)
+                            .onGloballyPositioned { headerBounds = it.boundsInRoot() }
+                    )
+                    key(selection.value) {
+                        val longContent = (selection.value % 2 == 0) == startsWithOverflow
+                        ScrollableColumn(Modifier.weight(1F)) {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(if (longContent) 300.dp else 48.dp)
+                                    .onGloballyPositioned { bodyBounds = it.boundsInRoot() }
+                            )
+                        }
+                    }
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                            .onGloballyPositioned { footerBounds = it.boundsInRoot() }
+                    )
+                }
+            }
+        }
+            .use { scene ->
+                val initialHeader = headerBounds
+                val initialFooter = footerBounds
+                val initialWidth = bodyBounds.width
+
+                repeat(3) { item ->
+                    if (item > 0) {
+                        selection.value = item
+                        scene.render()
+                    }
+                    val firstFrame = bodyBounds
+                    repeat(5) { scene.render() }
+
+                    withClue("Selected item $item; starts with overflow: $startsWithOverflow") {
+                        bodyBounds shouldBe firstFrame
+                        bodyBounds.width shouldBe initialWidth
+                        headerBounds shouldBe initialHeader
+                        footerBounds shouldBe initialFooter
+                    }
+                }
+            }
+    }
 
     /**
      * A long body must not consume all remaining space and hide its following action.

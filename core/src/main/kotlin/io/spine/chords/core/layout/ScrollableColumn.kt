@@ -42,15 +42,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import io.spine.chords.core.styling.ChordsTheme
 
 /**
  * Keeps a column's overflowing content reachable without scrolling surrounding controls.
  *
- * Fills the available area, which must have a bounded height. A scrollbar and its gutter appear
- * only when needed. Content that already manages scrolling, such as a lazy list, belongs outside
- * this container.
+ * Fills the available area, which must have a bounded height. The scrollbar gutter always reserves
+ * the same width so content does not rewrap after measurement or selection changes. The scrollbar
+ * appears only when needed. Content that already manages scrolling, such as a lazy list, belongs
+ * outside this container.
  *
  * Example with a fixed header and action:
  * ```kotlin
@@ -94,12 +94,8 @@ public fun ScrollableColumn(
     scrollState: ScrollState = rememberScrollState(),
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val overflows = scrollState.maxValue > 0
-    val gutter = if (overflows) {
-        LocalScrollbarStyle.current.thickness + ChordsTheme.dimensions.spacingSmall
-    } else {
-        0.dp
-    }
+    val overflows = scrollState.maxValue in 1 until Int.MAX_VALUE
+    val gutter = LocalScrollbarStyle.current.thickness + ChordsTheme.dimensions.spacingSmall
     Box(modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -111,7 +107,9 @@ public fun ScrollableColumn(
         if (overflows) {
             VerticalScrollbar(
                 adapter = rememberScrollbarAdapter(scrollState),
-                modifier = Modifier.align(CenterEnd).fillMaxHeight()
+                modifier = Modifier
+                    .align(CenterEnd)
+                    .fillMaxHeight()
             )
         }
     }
