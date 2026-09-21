@@ -10,7 +10,7 @@ all modules and does not describe the project structure per-subproject.
  -->
 <groupId>io.spine.chords</groupId>
 <artifactId>Chords</artifactId>
-<version>2.0.0-SNAPSHOT.124</version>
+<version>2.0.0-SNAPSHOT.125</version>
 
 <inceptionYear>2015</inceptionYear>
 
@@ -242,7 +242,7 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>io.spine.chords</groupId>
     <artifactId>spine-chords-codegen-plugins</artifactId>
-    <version>2.0.0-SNAPSHOT.124</version>
+    <version>2.0.0-SNAPSHOT.125</version>
   </dependency>
   <dependency>
     <groupId>io.spine.tools</groupId>
