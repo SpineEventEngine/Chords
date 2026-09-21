@@ -34,6 +34,14 @@ of components:
   the [`time`](src/main/kotlin/io/spine/chords/proto/time) package.
 - etc.
 
+### Validating payment card numbers
+
+Set `PaymentCardNumberField.onValidate` to `PaymentCardNumberValidator::validate`
+to enable offline Visa and Mastercard validation. Applications can also configure
+it through shared component defaults. See
+[PaymentCardNumberValidator](src/main/kotlin/io/spine/chords/proto/money/PaymentCardNumberValidator.kt)
+for supported number formats and the limits of offline validation.
+
 ### Detecting changes in a form
 
 `MessageForm.dirty` is `true` while input differs from the initial values,
