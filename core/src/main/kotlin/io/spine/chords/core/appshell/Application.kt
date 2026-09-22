@@ -212,7 +212,6 @@ public open class Application(
                     exitApplication()
                 })
                 initializeUi(appWindow)
-                appWindow.mainScreen.topBar.actions = { topBarActions() }
                 appWindow
             }
             if (mainWindowVisible) {
@@ -224,12 +223,15 @@ public open class Application(
     }
 
     /**
-     * Initializes this application's UI API for the given window.
+     * Configures the main screen and initializes this application's UI API for the given window.
      *
      * @param appWindow The window managed through the initialized API.
      */
     internal fun initializeUi(appWindow: AppWindow) {
         check(_ui == null) { "The application UI has already been initialized." }
+        appWindow.mainScreen.showTopBar = showTopBar
+        appWindow.mainScreen.topBar.actions = { topBarActions() }
+        appWindow.mainScreen.navigationFooter = { expanded -> NavigationFooter(expanded) }
         _ui = ApplicationUI(appWindow)
     }
 
@@ -248,7 +250,20 @@ public open class Application(
     }
 
     /**
-     * Renders the [TopBar.actions] of the top app bar.
+     * Whether the main screen displays the application name and [topBarActions] in a top bar.
+     *
+     * The default is `true`. Override with `false` to give its space to the sidebar and current
+     * view. This setting is read when the application window is initialized and does not affect
+     * its native title bar. Actions remain available through [NavigationFooter] when supplied.
+     *
+     * ```kotlin
+     * override val showTopBar: Boolean = false
+     * ```
+     */
+    protected open val showTopBar: Boolean = true
+
+    /**
+     * Renders the [TopBar.actions] of the top app bar when [showTopBar] is `true`.
      *
      * Typically, these actions are login/logout, notifications, settings, etc.
      */
@@ -256,6 +271,29 @@ public open class Application(
     protected open fun topBarActions() {
         // Do nothing by default.
     }
+
+    /**
+     * Displays application actions at the bottom of the sidebar, below the view destinations.
+     *
+     * The default is empty. Use [NavigationDrawerAction] for controls that open menus or perform
+     * actions without selecting a view. Hide their labels when [expanded] is false.
+     *
+     * ```kotlin
+     * @Composable
+     * override fun NavigationFooter(expanded: Boolean) {
+     *     NavigationDrawerAction(
+     *         label = "Account",
+     *         expanded = expanded,
+     *         onClick = { showAccountMenu = true },
+     *         icon = { Icon(Icons.Default.AccountCircle, contentDescription = null) }
+     *     )
+     * }
+     * ```
+     *
+     * In this example, `showAccountMenu` is observable state used to display the account menu.
+     */
+    @Composable
+    protected open fun NavigationFooter(expanded: Boolean) {}
 
     /**
      * An implementation of the application ([Application]'s subclass) can

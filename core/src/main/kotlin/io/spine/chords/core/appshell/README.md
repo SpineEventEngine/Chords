@@ -17,6 +17,16 @@ application-wide APIs from within any component.
 See the details in the [Application](Application.kt) and 
 [AppView](AppView.kt) KDocs.
 
+The navigation sidebar starts expanded and can collapse to icons using the button above the
+destinations. The button supports Tab and Enter and has an accessible name and tooltip. Collapsed
+destinations keep their tooltips and selection highlight. Resizing preserves the current view's
+state, and switching views preserves the sidebar's expansion state until the main screen closes.
+Applications can place menu buttons at the bottom through `Application.NavigationFooter` and
+`NavigationDrawerAction`. These controls keep their icon position when labels are hidden and do
+not select a view.
+Override `Application.showTopBar` with `false` to omit the application header and give its space
+to the sidebar and current view. The native window title bar is unaffected.
+
 ### Theme customization
 
 `Application` installs the compact Chords Material 3 theme around all window

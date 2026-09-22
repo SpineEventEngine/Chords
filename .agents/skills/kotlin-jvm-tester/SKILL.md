@@ -3,7 +3,8 @@ name: kotlin-jvm-tester
 description: >
   Chords JVM test-writing policy: Kotlin, JUnit Jupiter, Kotest assertions,
   `internal` `*Spec` suites, hand-written stubs, fixtures, and `testlib` bases.
-  Use when adding, restructuring, or reviewing tests in any JVM module.
+  Use when adding, restructuring, or reviewing tests or test-support code in
+  any JVM module.
 ---
 
 # Kotlin JVM Tests
@@ -62,7 +63,11 @@ the code under test. `AGENTS.md` remains authoritative for repository policy.
   the suite; do not add a production wrapper just to give a test a name.
 - Use `<Subject>SpecEnv` only for a suite-specific object with utility functions
   that create test data or arrange scenarios. Place it in a `given` subpackage.
-- Name other test-support types for their role and place them in `given` too.
+- Reserve `given` for types that describe the test environment or provide test
+  data. Put testing tools that drive, measure, or observe behavior in a `testing`
+  subpackage, including instrumented components and recorders. Choose by
+  responsibility, not by whether a helper is used by one suite or several.
+- Name other test-support types for their role.
   Stubs, fakes, fixtures, factories, recorders, and configurable collaborators
   must not use the `SpecEnv` suffix. Do not introduce `TestEnv` names.
 - Make method and nested-group names continue the suite's `should` sentence.
@@ -76,8 +81,9 @@ its `given/AppWindowSpecEnv.kt` as the flat-suite reference.
 - Keep one subject per suite and separate arrange, act, and assert with blanks.
 - Keep only tests, framework lifecycle/setup, required overrides, and `assert*`
   helpers in the suite. A companion `@MethodSource` factory is framework setup;
-  move scenario-building utilities, drivers, readers, extractors, and selectors
-  to the matching `SpecEnv`. Keep fixture types in role-named files under `given`.
+  move scenario-building utilities to the matching `SpecEnv`. Put extracted
+  testing tools and fixture types in role-named files under `testing` or `given`
+  according to their responsibility above.
 - Prefix assertion helpers with `assert`. Do not disguise a factory, driver,
   or state reader as an assertion helper.
 - Do not pin presentation-only copy by repeating labels, tooltips, headings,

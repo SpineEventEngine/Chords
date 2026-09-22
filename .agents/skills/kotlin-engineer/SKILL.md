@@ -102,6 +102,14 @@ Within the root modules:
 
 ## Must Do
 
+- **Match source filenames to their primary declaration.** Name each
+  project-owned `.kt` file after its primary top-level class, object, interface,
+  or function, including spelling and case. Rename the file when the primary
+  declaration is renamed. Preserve established conventions such as
+  `SomeClassExts.kt`, `SomeClassSpec.kt`, and `SomeClassSpecEnv.kt`; test and
+  fixture names follow [kotlin-jvm-tester](../kotlin-jvm-tester/SKILL.md).
+  If no single declaration is primary, name the file for the related
+  declarations' shared purpose.
 - **Null-safety through `?.`, `?:`, `let`, and `requireNotNull`.** Reserve
   `!!` for a genuine contract violation, and put the reason on the same
   line. `requireNotNull(x) { "why" }` or `checkNotNull` is almost always the

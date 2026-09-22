@@ -50,9 +50,19 @@ public class MainScreen(
 ) : Screen {
 
     /**
-     * The top app bar, as per [Material UI definition](https://m3.material.io/components/top-app-bar/overview).
+     * Displays the application name and actions above the sidebar and current view.
      */
     internal val topBar: TopBar = TopBar()
+
+    /**
+     * Whether the main screen reserves space for the top bar, configured before composition.
+     */
+    internal var showTopBar: Boolean = true
+
+    /**
+     * Application controls displayed below the view destinations without changing navigation.
+     */
+    internal var navigationFooter: @Composable (Boolean) -> Unit = {}
 
     /**
      * The instance of the view [Navigator] that is initialized
@@ -65,10 +75,18 @@ public class MainScreen(
         Navigator(initialView ?: appViews[0]) {
             viewNavigator = it
             Scaffold(
-                topBar = { topBar.Content() }
+                topBar = {
+                    if (showTopBar) {
+                        topBar.Content()
+                    }
+                }
             ) {
                 val topPadding = it.calculateTopPadding()
-                NavigationDrawer(appViews, topPadding)
+                NavigationDrawer(
+                    appViews = appViews,
+                    topPadding = topPadding,
+                    footer = navigationFooter
+                )
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ package io.spine.chords.core.appshell
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import cafe.adriel.voyager.core.screen.Screen
 import io.spine.chords.core.Component
@@ -75,4 +76,24 @@ public abstract class AppView
 protected constructor(
     public val name: String,
     public val icon: ImageVector = Icons.Default.Menu
-) : Component(), Screen
+) : Component(), Screen {
+
+    /**
+     * Displays an optional status badge at the lower right of the navigation icon.
+     *
+     * The drawer calls this in both expansion states, even while another view is selected.
+     * Read observable state here to keep the badge current. The badge does not change the icon's
+     * size or position. Supply compact content; the default displays nothing.
+     *
+     * For example, a view can display a count with Material's badge:
+     * ```kotlin
+     * @OptIn(ExperimentalMaterial3Api::class)
+     * @Composable
+     * override fun NavigationBadge() {
+     *     Badge { Text("3") }
+     * }
+     * ```
+     */
+    @Composable
+    public open fun NavigationBadge() {}
+}
