@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.core.appshell.given
+package io.spine.chords.core.appshell.testing
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -53,7 +53,7 @@ import io.spine.chords.core.appshell.NavigationDrawerAction
 internal class SidebarAccountMenu(private val showTooltip: Boolean = true) {
 
     /**
-     * Identifies the fixture's popup content independently of production menu copy.
+     * Identifies the tool's popup content independently of production menu copy.
      */
     val menuLabel: String = "Close account menu"
 

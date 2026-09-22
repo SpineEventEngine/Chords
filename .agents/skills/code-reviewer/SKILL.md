@@ -104,7 +104,8 @@ duplicate its steps.
   imports left behind after a move or rename, wildcard imports, and Kotlin
   import aliases added without explicit human direction.
 - Missing or weak tests for changed logic, extensions, or codegen behavior.
-  Added-suite structure follows `.agents/skills/kotlin-jvm-tester/SKILL.md`.
+  Test and test-support naming, structure, and package placement follow
+  `.agents/skills/kotlin-jvm-tester/SKILL.md`.
 - Version-policy misses: apply
   [Versioning and Reports](../build-engineer/SKILL.md#versioning-and-reports)
   to the increment and generated reports.

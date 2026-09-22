@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.core.appshell.given
+package io.spine.chords.core.appshell.testing
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,7 +51,7 @@ import io.spine.chords.core.appshell.AppView
 internal class StatefulNavigationView(name: String) : AppView(name) {
 
     /**
-     * Distinguishes multiple destinations implemented by this fixture class.
+     * Distinguishes multiple destinations measured by this testing tool.
      */
     override val key: String = name
 

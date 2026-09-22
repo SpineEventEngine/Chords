@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.Navigator
 import io.spine.chords.core.appshell.NavigationDrawer
+import io.spine.chords.core.appshell.testing.StatefulNavigationView
 import io.spine.chords.core.layout.TestScene
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.styling.chordsLightColorScheme

@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.SemanticsProperties.Text
 import androidx.compose.ui.semantics.getOrNull
 import io.spine.chords.core.appshell.AppWindow
 import io.spine.chords.core.appshell.Application
+import io.spine.chords.core.appshell.testing.StatefulNavigationView
 import io.spine.chords.core.layout.TestScene
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.styling.chordsLightColorScheme

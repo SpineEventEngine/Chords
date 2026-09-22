@@ -163,7 +163,8 @@ when verification crosses model, component, or codegen contracts.
   Kotlin implementation, refactor, or review, paired with the area skill.
 - Follow [Component Engineering](.agents/skills/component-engineer/SKILL.md)
   for UI components and [Kotlin JVM Testing](.agents/skills/kotlin-jvm-tester/SKILL.md)
-  before adding or restructuring a suite.
+  for naming, structure, and package placement when adding or restructuring
+  tests or test-support code.
 - Every declaration in project-owned source, including private ones, needs a
   standard documentation comment describing purpose, behavior, or constraints.
   Follow `docs-writer`; do not merely restate the declaration's name.

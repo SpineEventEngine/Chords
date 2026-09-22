@@ -30,7 +30,7 @@ import io.kotest.matchers.shouldBe
 import io.spine.chords.core.TestApplication
 import io.spine.chords.core.appshell.given.MainScreenSpecEnv.scene
 import io.spine.chords.core.appshell.given.MainScreenSpecEnv.text
-import io.spine.chords.core.appshell.given.StatefulNavigationView
+import io.spine.chords.core.appshell.testing.StatefulNavigationView
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.params.ParameterizedTest

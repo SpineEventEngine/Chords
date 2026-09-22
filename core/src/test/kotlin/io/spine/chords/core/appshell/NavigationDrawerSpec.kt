@@ -52,7 +52,7 @@ import io.spine.chords.core.appshell.given.NavigationDrawerSpecEnv.scene
 import io.spine.chords.core.appshell.given.NavigationDrawerSpecEnv.text
 import io.spine.chords.core.appshell.given.NavigationDrawerSpecEnv.toggle
 import io.spine.chords.core.appshell.given.NavigationDrawerSpecEnv.views
-import io.spine.chords.core.appshell.given.SidebarAccountMenu
+import io.spine.chords.core.appshell.testing.SidebarAccountMenu
 import io.spine.chords.core.styling.chordsLightColorScheme
 import java.awt.event.KeyEvent.VK_ENTER
 import java.awt.event.KeyEvent.VK_ESCAPE
