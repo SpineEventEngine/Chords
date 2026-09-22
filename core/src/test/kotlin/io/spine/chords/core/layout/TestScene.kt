@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Move
@@ -42,6 +43,8 @@ import androidx.compose.ui.input.pointer.PointerEventType.Companion.Press
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Release
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.WindowInfo
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.getAllSemanticsNodes
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -86,6 +89,7 @@ import org.jetbrains.skia.Surface
  * @param content The content to be displayed in this scene.
  */
 @OptIn(ExperimentalComposeUiApi::class)
+@Suppress("TooManyFunctions") // Rendering and input controls share one scene and its UI thread.
 internal class TestScene(
     private val width: Dp = DefaultSceneWidth,
     private val height: Dp = DefaultSceneHeight,
@@ -143,6 +147,14 @@ internal class TestScene(
      */
     val contentSize: IntSize
         get() = onUiThread { scene.contentSize }
+
+    /**
+     * Returns accessibility nodes, optionally unmerged to measure individual labels and icons.
+     */
+    fun semanticsNodes(mergingEnabled: Boolean = true): List<SemanticsNode> = onUiThread {
+        scene.roots
+            .flatMap { it.semanticsOwner.getAllSemanticsNodes(mergingEnabled) }
+    }
 
     /**
      * Renders the next frame, which applies all the state changes that have
@@ -228,6 +240,26 @@ internal class TestScene(
             "Cannot read the pixels rendered by the test scene."
         }
         bitmap.getColor(x.value.toInt(), y.value.toInt())
+    }
+
+    /**
+     * Captures a rectangular region in row order to compare its appearance across UI changes.
+     */
+    fun pixelsIn(bounds: Rect): List<Int> = onUiThread {
+        Bitmap()
+            .use { bitmap ->
+                bitmap.allocN32Pixels(surface.width, surface.height)
+                check(surface.readPixels(bitmap, 0, 0)) {
+                    "Cannot read the pixels rendered by the test scene."
+                }
+                buildList {
+                    for (y in bounds.top.toInt() until bounds.bottom.toInt()) {
+                        for (x in bounds.left.toInt() until bounds.right.toInt()) {
+                            add(bitmap.getColor(x, y))
+                        }
+                    }
+                }
+            }
     }
 
     /**
