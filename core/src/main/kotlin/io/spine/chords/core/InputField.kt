@@ -444,7 +444,7 @@ public open class InputField<V> : InputComponent<V>() {
      *   used throws its own specific exception to signify the parsing failure.
      *   ```
      *      override fun parseValue(rawText: String): Url =
-     *         exceptionBasedParser(IllegalArgumentException::class, "Enter a valid URL value") {
+     *         exceptionBasedParser(IllegalArgumentException::class, "Enter a valid URL.") {
      *             Url::class.parse(rawText)
      *         }
      *   ```
@@ -860,7 +860,7 @@ public sealed class ParsingOrValidationException(
  *   this exception.
  */
 public class ParseException(
-    validationErrorMessage: String = "Enter a valid value",
+    validationErrorMessage: String = "Enter a valid value.",
     cause: Throwable? = null
 ) : ParsingOrValidationException(validationErrorMessage, cause) {
     public companion object {
@@ -1148,7 +1148,7 @@ private fun inputTransformation(
  */
 public inline fun <V> exceptionBasedParser(
     parseFailureException: KClass<out Throwable>,
-    failureMessage: String = "Enter a valid value",
+    failureMessage: String = "Enter a valid value.",
     parser: () -> V,
 ): V =
     try {

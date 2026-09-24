@@ -58,6 +58,8 @@ For published model Protobuf declarations and Kotlin model extensions under
   component and affected callers. KDoc examples are not compiled by ordinary
   builds and can go stale silently.
 - Keep the copyright header year current in modified files.
+- Write validation messages as short, complete sentences ending with a period.
+  Describe the correction when known, and keep labels and button text unpunctuated.
 
 ## Hotspots
 

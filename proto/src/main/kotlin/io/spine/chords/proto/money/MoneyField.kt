@@ -142,7 +142,7 @@ public class MoneyField : InputField<Money>() {
 
     override fun parseValue(rawText: String): Money = exceptionBasedParser(
         IllegalArgumentException::class,
-        "Invalid format"
+        "Enter a valid amount."
     ) {
         Money::class.parseAmount(rawText, selectedCurrency)
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ package io.spine.chords.proto.people
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputField
 import io.spine.chords.core.exceptionBasedParser
-import io.spine.people.PersonName
 import io.spine.chords.proto.value.person.format
 import io.spine.chords.proto.value.person.parse
+import io.spine.people.PersonName
 
 /**
  * A field that allows editing a [PersonName] value.
@@ -46,7 +46,7 @@ public class PersonNameField : InputField<PersonName>() {
 
     override fun parseValue(rawText: String): PersonName = exceptionBasedParser(
         IllegalArgumentException::class,
-        "Enter given and family name"
+        "Enter a given name and family name."
     ) {
         PersonName::class.parse(rawText)
     }

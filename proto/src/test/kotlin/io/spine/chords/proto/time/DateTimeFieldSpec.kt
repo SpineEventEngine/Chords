@@ -36,7 +36,7 @@ import java.time.ZoneOffset
 import org.junit.jupiter.api.Test
 
 private const val TestDateTimePattern = "yyyy-MM-dd HH:mm"
-private const val OutOfRangeMessage = "Enter a date/time within the supported range"
+private const val OutOfRangeMessage = "Enter a date/time within the supported range."
 
 @DisplayName("`DateTimeField` should")
 internal class DateTimeFieldSpec {

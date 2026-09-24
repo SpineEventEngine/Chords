@@ -81,7 +81,7 @@ public object PaymentCardNumberValidator {
             !hasSupportedNetworkAndLength(number) ||
             !hasValidChecksum(number)
         ) {
-            "Enter a valid card number"
+            "Enter a valid card number."
         } else {
             null
         }
