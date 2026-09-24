@@ -63,6 +63,8 @@ caption, and alignment for empty work areas.
 [`ScrollableColumn`](src/main/kotlin/io/spine/chords/core/layout/ScrollableColumn.kt) keeps long
 details reachable within a bounded pane. Each component's KDoc includes usage examples.
 Confirmation prompts share `ChordsTheme.confirmationTextStyle`.
+Validation messages use short, complete sentences ending with a period. Custom
+validators should follow the same convention. Labels and buttons omit periods.
 
 Text inputs and selectors expose their text style, shape, modifier, and colors.
 Dropdowns expose popup shape, elevations, item height, padding, and selection

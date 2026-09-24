@@ -78,16 +78,16 @@ import androidx.compose.ui.unit.dp
 import com.google.protobuf.Timestamp
 import com.google.protobuf.util.Timestamps
 import io.spine.chords.core.ComponentSetup
-import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
-import io.spine.chords.core.keyboard.KeyRange
-import io.spine.chords.core.keyboard.key
-import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.InputField
 import io.spine.chords.core.InputReviser
 import io.spine.chords.core.InputReviser.Companion.DigitsOnly
 import io.spine.chords.core.InputReviser.Companion.maxLength
-import io.spine.chords.core.RawTextContent
 import io.spine.chords.core.ParseException
+import io.spine.chords.core.RawTextContent
+import io.spine.chords.core.keyboard.KeyModifiers.Companion.Ctrl
+import io.spine.chords.core.keyboard.KeyRange
+import io.spine.chords.core.keyboard.key
+import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.layout.WithTooltip
 import io.spine.chords.core.styling.ChordsInteraction
 import io.spine.chords.core.styling.ChordsTheme
@@ -469,11 +469,11 @@ internal fun parseDateTime(
             ofPattern(dateTimePattern)
         )
     } catch (e: DateTimeParseException) {
-        throw ParseException("Enter a valid value", e)
+        throw ParseException("Enter a valid value.", e)
     }
     val instant = localDateTime.toInstant(zoneOffset)
     if (!Timestamps.isValid(instant.epochSecond, instant.nano)) {
-        throw ParseException("Enter a date/time within the supported range")
+        throw ParseException("Enter a date/time within the supported range.")
     }
     return Timestamp.newBuilder()
         .setSeconds(instant.epochSecond)

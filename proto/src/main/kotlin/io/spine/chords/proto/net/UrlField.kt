@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputField
 import io.spine.chords.core.InputReviser.Companion.NonWhitespaces
 import io.spine.chords.core.exceptionBasedParser
-import io.spine.net.Url
 import io.spine.chords.proto.value.net.parse
+import io.spine.net.Url
 
 /**
  * A field that allows entering a URL.
@@ -47,7 +47,7 @@ public class UrlField : InputField<Url>() {
 
     override fun parseValue(rawText: String): Url = exceptionBasedParser(
         IllegalArgumentException::class,
-        "Enter a valid URL value"
+        "Enter a valid URL."
     ) {
         Url::class.parse(rawText)
     }
