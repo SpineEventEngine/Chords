@@ -102,8 +102,7 @@ public class InputTextDialog : Dialog() {
          *     }
          * ```
          *
-         * And one more example demonstrating another usage scenario where
-         * the dialog functions as a confirmation with the required text input:
+         * A confirmation can also collect an optional reason with a separate label and hint:
          * ```
          *     val rejectionReason = InputTextDialog.inputText {
          *         title = "Confirm rejection"
