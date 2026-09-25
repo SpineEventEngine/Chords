@@ -54,6 +54,20 @@ private const val InputComponentNoOfLines = 3
  * if [InputTextDialog.noOfTextLines] is set to `1`, it restricts input
  * to a single line.
  *
+ * The [dirty] property reports changes from the initial text. Applications
+ * can use it in [onBeforeCancel] to confirm discarding input. Returning
+ * `false` keeps the dialog open and leaves its suspending caller waiting.
+ *
+ * ```kotlin
+ * InputTextDialog.inputText {
+ *     onBeforeCancel = {
+ *         !dirty || ConfirmationDialog.showConfirmation {
+ *             message = "Discard the entered text?"
+ *         }
+ *     }
+ * }
+ * ```
+ *
  * See the [InputTextDialog.inputText] function on how to use the dialog.
  */
 public class InputTextDialog : Dialog() {
@@ -97,6 +111,7 @@ public class InputTextDialog : Dialog() {
          *         description = "Please confirm or cancel if you are not sure."
          *         okButtonText = "Reject"
          *         textFieldLabel = "Rejection reason"
+         *         textFieldHint = "This value is optional"
          *     }
          *     if (rejectionReason != null) {
          *         // Use `rejectionReason` value.
@@ -136,10 +151,17 @@ public class InputTextDialog : Dialog() {
     public var description: String = ""
 
     /**
-     * A label displayed by the input text component that explains
-     * the input details, if any.
+     * A label identifying the input. It appears above the field when
+     * [textFieldHint] is supplied, or inside the field otherwise.
      */
     public var textFieldLabel: String = ""
+
+    /**
+     * An optional hint displayed as the field's floating label, with [textFieldLabel]
+     * shown separately above it. A `null` value keeps the label inside the field.
+     * This is presentation text and does not add validation rules.
+     */
+    public var textFieldHint: String? = null
 
     /**
      * A [MutableState] that holds the entered text value.
@@ -147,7 +169,25 @@ public class InputTextDialog : Dialog() {
     private val text: MutableState<String?> = mutableStateOf("")
 
     /**
-     * The initial value of the input text component.
+     * The text captured when the field is first displayed.
+     */
+    private var initialText: String = ""
+
+    /**
+     * The entered text on submission, or `null` when the dialog closes without submitting.
+     */
+    private val result = CompletableDeferred<String?>()
+
+    /**
+     * Whether the current input differs from the initially displayed text.
+     * Restoring that text clears the flag; whitespace edits still count as changes.
+     */
+    public val dirty: Boolean
+        get() = text.value.orEmpty() != initialText
+
+    /**
+     * The initial value of the input text component. Changes after the first
+     * composition do not replace the user's input.
      */
     public var defaultText: String = ""
 
@@ -187,6 +227,15 @@ public class InputTextDialog : Dialog() {
     }
 
     /**
+     * Applies the configured starting value once, preserving edits across recompositions.
+     */
+    override fun initialize() {
+        super.initialize()
+        initialText = defaultText
+        text.value = initialText
+    }
+
+    /**
      * Creates the content of the dialog.
      */
     @Composable
@@ -213,10 +262,12 @@ public class InputTextDialog : Dialog() {
                     }
                 }
             }
+            if (textFieldHint != null && textFieldLabel.isNotBlank()) {
+                SubheaderText(textFieldLabel)
+            }
             Row {
-                text.value = defaultText
                 StringField {
-                    label = textFieldLabel
+                    label = textFieldHint ?: textFieldLabel
                     multiline = noOfTextLines > 1
                     minLines = noOfTextLines
                     maxLines = noOfTextLines
@@ -228,10 +279,20 @@ public class InputTextDialog : Dialog() {
     }
 
     /**
-     * Just closes the dialog since there is no data to submit.
+     * Returns the entered text after the configured submission check has allowed closing.
      */
     protected override suspend fun submitContent() {
-        close()
+        super.close()
+        result.complete(text.value.orEmpty())
+    }
+
+    /**
+     * Resolves an accepted cancellation or an external close without returning input.
+     * A refused [onBeforeCancel] check never reaches this method.
+     */
+    public override fun close() {
+        super.close()
+        result.complete(null)
     }
 
     /**
@@ -243,23 +304,10 @@ public class InputTextDialog : Dialog() {
      * without sharing that dialog's eventual input.
      */
     private suspend fun show(): String? {
-        var dialogCancelled = false
-        val dialogClosure = CompletableDeferred<Unit>()
-        onBeforeSubmit = {
-            dialogClosure.complete(Unit)
-            true
-        }
-        onBeforeCancel = {
-            dialogCancelled = true
-            dialogClosure.complete(Unit)
-            true
-        }
         val displayedDialog = openOrGetDisplayed()
         if (displayedDialog !== this) {
             return null
         }
-        dialogClosure.await()
-        return if (dialogCancelled) null
-        else text.value
+        return result.await()
     }
 }
