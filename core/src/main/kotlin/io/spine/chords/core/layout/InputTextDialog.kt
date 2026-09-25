@@ -34,7 +34,10 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.AbstractComponentSetup
@@ -102,7 +105,7 @@ public class InputTextDialog : Dialog() {
          *     }
          * ```
          *
-         * A confirmation can also collect an optional reason with a separate label and hint:
+         * A confirmation can also require a reason with a separate label and hint:
          * ```
          *     val rejectionReason = InputTextDialog.inputText {
          *         title = "Confirm rejection"
@@ -110,7 +113,8 @@ public class InputTextDialog : Dialog() {
          *         description = "Please confirm or cancel if you are not sure."
          *         okButtonText = "Reject"
          *         textFieldLabel = "Rejection reason"
-         *         textFieldHint = "This value is optional"
+         *         textFieldHint = "This value is required"
+         *         textRequired = true
          *     }
          *     if (rejectionReason != null) {
          *         // Use `rejectionReason` value.
@@ -163,9 +167,30 @@ public class InputTextDialog : Dialog() {
     public var textFieldHint: String? = null
 
     /**
+     * Whether submission requires at least one non-whitespace character.
+     * Invalid input stays editable and receives an inline error after submission is attempted.
+     * The default is `false`; [textFieldHint] remains independently configurable.
+     */
+    public var textRequired: Boolean by mutableStateOf(false)
+
+    /**
      * A [MutableState] that holds the entered text value.
      */
     private val text: MutableState<String?> = mutableStateOf("")
+
+    /**
+     * Reveals required-input feedback only after the user attempts submission.
+     */
+    private val validationRequested = mutableStateOf(false)
+
+    /**
+     * Keeps required-input feedback current as the user edits the field after a failed submission.
+     */
+    private val textValidationMessage = derivedStateOf {
+        if (validationRequested.value && textRequired && text.value.isNullOrBlank()) {
+            "Enter a value."
+        } else null
+    }
 
     /**
      * The text captured when the field is first displayed.
@@ -272,15 +297,21 @@ public class InputTextDialog : Dialog() {
                     maxLines = noOfTextLines
                     modifier = Modifier.fillMaxWidth()
                     value = text
+                    externalValidationMessage = textValidationMessage
                 }
             }
         }
     }
 
     /**
-     * Returns the entered text after the configured submission check has allowed closing.
+     * Returns valid text after the configured submission check has allowed closing.
+     * Missing required text keeps the dialog open and reveals the field's error.
      */
     protected override suspend fun submitContent() {
+        validationRequested.value = true
+        if (textValidationMessage.value != null) {
+            return
+        }
         super.close()
         result.complete(text.value.orEmpty())
     }

@@ -63,6 +63,12 @@ internal class InputTextDialogScene(private val dialog: InputTextDialog) : AutoC
         get() = inputNode().config[SemanticsProperties.EditableText].text
 
     /**
+     * Whether the rendered field exposes a validation error to accessibility clients.
+     */
+    val hasValidationError: Boolean
+        get() = inputNode().config.getOrNull(SemanticsProperties.Error) != null
+
+    /**
      * Edits the production field through its accessibility callback.
      */
     fun enterText(value: String) {

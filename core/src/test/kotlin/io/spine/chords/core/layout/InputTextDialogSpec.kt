@@ -150,6 +150,42 @@ internal class InputTextDialogSpec {
     }
 
     /**
+     * Required input must remain editable after a failed submission and accept a later correction.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = ["", " \t\n", "\u00a0"])
+    fun `retain blank required text until corrected`(blank: String): Unit = runBlocking {
+        withTimeout(5_000) {
+            val request = async {
+                InputTextDialog.inputText {
+                    textRequired = true
+                }
+            }
+            yield()
+            val dialog = TestApplication.currentBottomDialog
+                .shouldBeInstanceOf<InputTextDialog>()
+            InputTextDialogScene(dialog).use { scene ->
+                scene.enterText(blank)
+                scene.hasValidationError shouldBe false
+
+                scene.submit()
+
+                TestApplication.currentBottomDialog shouldBeSameInstanceAs dialog
+                request.isCompleted shouldBe false
+                scene.hasValidationError shouldBe true
+                scene.text shouldBe blank
+
+                scene.enterText("A supplied reason")
+
+                scene.hasValidationError shouldBe false
+                scene.submit()
+                request.await() shouldBe "A supplied reason"
+                TestApplication.currentBottomDialog shouldBe null
+            }
+        }
+    }
+
+    /**
      * Unchanged or restored input closes directly, including fields that normalize empty to null.
      */
     @ParameterizedTest
