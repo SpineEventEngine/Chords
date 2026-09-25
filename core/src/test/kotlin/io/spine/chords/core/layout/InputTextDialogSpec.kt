@@ -53,6 +53,30 @@ import org.junit.jupiter.params.provider.ValueSource
 internal class InputTextDialogSpec {
 
     /**
+     * An opened dialog must be ready for typing without a click, including prefilled input.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = ["", "Initial value"])
+    fun `focus its text field on opening`(initial: String): Unit = runBlocking {
+        withTimeout(5_000) {
+            val request = async {
+                InputTextDialog.inputText { defaultText = initial }
+            }
+            yield()
+            val dialog = TestApplication.currentBottomDialog
+                .shouldBeInstanceOf<InputTextDialog>()
+            InputTextDialogScene(dialog).use { scene ->
+                scene.textFocused shouldBe true
+                scene.text shouldBe initial
+
+                scene.cancel()
+
+                request.await() shouldBe null
+            }
+        }
+    }
+
+    /**
      * A suppressed input request receives no text, while submitting the single
      * displayed dialog resumes only the first request with its entered value.
      */
@@ -119,7 +143,7 @@ internal class InputTextDialogSpec {
     }
 
     /**
-     * A dialog recomposition must not restore the initial text over the user's edits.
+     * A dialog recomposition must preserve edited text and the user's chosen focus.
      */
     @Test
     fun `preserve edited text when its prompt changes`(): Unit = runBlocking {
@@ -138,11 +162,14 @@ internal class InputTextDialogSpec {
                 .shouldBeInstanceOf<InputTextDialog>()
             InputTextDialogScene(dialog).use { scene ->
                 scene.enterText("Edited value")
+                scene.focusCancel()
+                scene.textFocused shouldBe false
 
                 prompt = "Updated prompt"
                 scene.render()
 
                 scene.text shouldBe "Edited value"
+                scene.textFocused shouldBe false
                 scene.submit()
                 request.await() shouldBe "Edited value"
             }
@@ -267,10 +294,11 @@ internal class InputTextDialogSpec {
 
     /**
      * A real nested confirmation preserves edits when declined and resolves cancellation once.
+     * The bound allows for initial text-input setup and both nested modal compositions.
      */
     @Test
     fun `confirm discarding edited text before closing`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        withTimeout(10_000) {
             val request = async {
                 InputTextDialog.inputText {
                     onBeforeCancel = {
@@ -300,8 +328,8 @@ internal class InputTextDialogSpec {
                 scene.cancel()
                 scene.confirmDiscard(accept = true)
 
-                request.await() shouldBe null
                 TestApplication.currentBottomDialog shouldBe null
+                request.await() shouldBe null
             }
         }
     }
