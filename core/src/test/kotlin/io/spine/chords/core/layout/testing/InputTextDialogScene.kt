@@ -63,6 +63,24 @@ internal class InputTextDialogScene(private val dialog: InputTextDialog) : AutoC
         get() = inputNode().config[SemanticsProperties.EditableText].text
 
     /**
+     * Whether keyboard input is directed to the dialog's text field.
+     */
+    val textFocused: Boolean
+        get() = inputNode().config.getOrNull(SemanticsProperties.Focused) == true
+
+    /**
+     * Focuses Cancel without activating it to check whether recomposition preserves focus.
+     */
+    fun focusCancel() {
+        invokeAndWait {
+            checkNotNull(buttonNode(dialog.cancelButtonText)
+                .config[SemanticsActions.RequestFocus].action)
+                .invoke()
+        }
+        render()
+    }
+
+    /**
      * Whether the rendered field exposes a validation error to accessibility clients.
      */
     val hasValidationError: Boolean
@@ -127,14 +145,19 @@ internal class InputTextDialogScene(private val dialog: InputTextDialog) : AutoC
      * Finds a button using its configured label and activates it with pointer input.
      */
     private fun clickButton(label: String) {
-        val button = scene.semanticsNodes()
-            .single { node ->
-                node.config.getOrNull(SemanticsActions.OnClick) != null &&
-                        node.config.getOrNull(SemanticsProperties.Text)
-                            .orEmpty()
-                            .any { it.text == label }
-            }
+        val button = buttonNode(label)
         scene.click(button.boundsInRoot.center)
         render()
     }
+
+    /**
+     * Finds an interactive button by its configured label.
+     */
+    private fun buttonNode(label: String) = scene.semanticsNodes()
+        .single { node ->
+            node.config.getOrNull(SemanticsActions.OnClick) != null &&
+                    node.config.getOrNull(SemanticsProperties.Text)
+                        .orEmpty()
+                        .any { it.text == label }
+        }
 }

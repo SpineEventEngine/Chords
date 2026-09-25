@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -56,6 +57,8 @@ private const val InputComponentNoOfLines = 3
  * By default, the dialog is configured to allow multiline text input. However,
  * if [InputTextDialog.noOfTextLines] is set to `1`, it restricts input
  * to a single line.
+ * The text field receives focus when the dialog opens. Later recompositions
+ * preserve the user's chosen focus.
  *
  * The [dirty] property reports changes from the initial text. Applications
  * can use it in [onBeforeCancel] to confirm discarding input. Returning
@@ -290,7 +293,7 @@ public class InputTextDialog : Dialog() {
                 SubheaderText(textFieldLabel)
             }
             Row {
-                StringField {
+                val field = StringField {
                     label = textFieldHint ?: textFieldLabel
                     multiline = noOfTextLines > 1
                     minLines = noOfTextLines
@@ -298,6 +301,9 @@ public class InputTextDialog : Dialog() {
                     modifier = Modifier.fillMaxWidth()
                     value = text
                     externalValidationMessage = textValidationMessage
+                }
+                LaunchedEffect(field) {
+                    field.focus()
                 }
             }
         }
