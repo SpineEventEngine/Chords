@@ -208,7 +208,7 @@ private fun NavigationDestination(
                 vertical = ChordsTheme.dimensions.spacingXSmall
             )
             .fillMaxWidth()
-            .heightIn(min = maxOf(56.dp, ChordsTheme.dimensions.navigationItemHeight))
+            .heightIn(min = maxOf(48.dp, ChordsTheme.dimensions.navigationItemHeight))
             .semantics { role = Tab },
         shape = MaterialTheme.shapes.small,
         color = colors.containerColor(selected).value,
@@ -297,7 +297,7 @@ public fun NavigationDrawerAction(
                     vertical = ChordsTheme.dimensions.spacingXSmall
                 )
                 .fillMaxWidth()
-                .heightIn(min = maxOf(56.dp, ChordsTheme.dimensions.navigationItemHeight))
+                .heightIn(min = maxOf(48.dp, ChordsTheme.dimensions.navigationItemHeight))
                 .semantics {
                     role = Button
                     contentDescription = label

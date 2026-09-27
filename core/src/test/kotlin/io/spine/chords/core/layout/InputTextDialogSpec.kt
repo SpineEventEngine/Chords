@@ -29,6 +29,7 @@ package io.spine.chords.core.layout
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -177,7 +178,7 @@ internal class InputTextDialogSpec {
     }
 
     /**
-     * Required input must remain editable after a failed submission and accept a later correction.
+     * Blank input is highlighted without extra text and accepts a later correction.
      */
     @ParameterizedTest
     @ValueSource(strings = ["", " \t\n", "\u00a0"])
@@ -186,6 +187,7 @@ internal class InputTextDialogSpec {
             val request = async {
                 InputTextDialog.inputText {
                     textRequired = true
+                    requiredTextValidationMessage = ""
                 }
             }
             yield()
@@ -194,12 +196,14 @@ internal class InputTextDialogSpec {
             InputTextDialogScene(dialog).use { scene ->
                 scene.enterText(blank)
                 scene.hasValidationError shouldBe false
+                val initialLabels = scene.displayedText
 
                 scene.submit()
 
                 TestApplication.currentBottomDialog shouldBeSameInstanceAs dialog
                 request.isCompleted shouldBe false
                 scene.hasValidationError shouldBe true
+                scene.displayedText shouldBe initialLabels
                 scene.text shouldBe blank
 
                 scene.enterText("A supplied reason")
@@ -208,6 +212,42 @@ internal class InputTextDialogSpec {
                 scene.submit()
                 request.await() shouldBe "A supplied reason"
                 TestApplication.currentBottomDialog shouldBe null
+            }
+        }
+    }
+
+    /**
+     * Default feedback is visible and a configured replacement updates without accepting blanks.
+     */
+    @Test
+    fun `display and update its required text validation message`(): Unit = runBlocking {
+        withTimeout(5_000) {
+            val request = async {
+                InputTextDialog.inputText { textRequired = true }
+            }
+            yield()
+            val dialog = TestApplication.currentBottomDialog
+                .shouldBeInstanceOf<InputTextDialog>()
+            InputTextDialogScene(dialog).use { scene ->
+                dialog.requiredTextValidationMessage.isNotBlank() shouldBe true
+
+                scene.submit()
+
+                scene.displayedText shouldContain dialog.requiredTextValidationMessage
+                scene.hasValidationError shouldBe true
+                request.isCompleted shouldBe false
+
+                dialog.requiredTextValidationMessage = "Please provide a reason."
+                scene.render()
+
+                scene.displayedText shouldContain dialog.requiredTextValidationMessage
+                scene.hasValidationError shouldBe true
+                request.isCompleted shouldBe false
+
+                scene.enterText("A supplied reason")
+                scene.submit()
+
+                request.await() shouldBe "A supplied reason"
             }
         }
     }

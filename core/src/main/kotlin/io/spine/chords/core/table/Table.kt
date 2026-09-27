@@ -59,6 +59,7 @@ import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Divider
@@ -97,6 +98,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.Component
+import io.spine.chords.core.layout.WithTooltip
 import io.spine.chords.core.layout.popupAppearance
 import io.spine.chords.core.primitive.CircularIconButton
 import io.spine.chords.core.styling.ChordsTheme
@@ -146,6 +148,10 @@ private val defaultRowActionsItemPadding = PaddingValues(defaultDimensions.spaci
  *     }
  * }
  * ```
+ *
+ * Clicking a sortable header selects or reverses its ordering. The active header shows a
+ * Clear sorting button beside its direction arrow. Clearing restores [defaultComparator]
+ * while preserving the selected entity.
  *
  * Example with column sorting:
  * ```kotlin
@@ -751,6 +757,14 @@ public class TableSortingState<E>(
     }
 
     /**
+     * Removes column sorting so the table uses its default comparator again.
+     * Clearing an already unsorted table has no effect.
+     */
+    public fun clear() {
+        currentSorting = null
+    }
+
+    /**
      * Returns `true` when the given column is the current sorting target.
      *
      * @param column The column to check.
@@ -931,7 +945,8 @@ private fun <E> HeaderTableRow(
 }
 
 /**
- * Displays a single table header cell.
+ * Displays a single table header cell, reserving space for sorting controls.
+ * Long labels wrap instead of compressing the arrow or circular reset button.
  *
  * NOTE: the Pointer Hover API used in this method is experimental
  * in the current version of Compose (1.5.12).
@@ -957,6 +972,7 @@ private fun <E> HeaderCell(
     ) {
         Text(
             text = column.name,
+            modifier = Modifier.weight(1f, fill = false),
             style = typography.labelMedium,
             color = colorScheme.onSurfaceVariant
         )
@@ -979,6 +995,20 @@ private fun <E> HeaderCell(
                     .alpha(if (direction != null || isHovered) 1f else 0f),
                 tint = colorScheme.onSurfaceVariant
             )
+        }
+        if (direction != null) {
+            WithTooltip(tooltip = "Clear sorting") {
+                CircularIconButton(
+                    onClick = { sortingState.clear() },
+                    modifier = Modifier.size(20.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear sorting",
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
     }
 }

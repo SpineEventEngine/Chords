@@ -87,6 +87,15 @@ internal class InputTextDialogScene(private val dialog: InputTextDialog) : AutoC
         get() = inputNode().config.getOrNull(SemanticsProperties.Error) != null
 
     /**
+     * Collects displayed labels and messages to detect extra validation text after submission.
+     */
+    val displayedText: List<String>
+        get() = scene.semanticsNodes()
+            .flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }
+            .map { it.text }
+            .filter { it.isNotEmpty() }
+
+    /**
      * Edits the production field through its accessibility callback.
      */
     fun enterText(value: String) {
