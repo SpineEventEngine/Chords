@@ -512,16 +512,23 @@ public abstract class Dialog : Component() {
     protected var submitAvailable: Boolean = false
 
     /**
+     * Whether the Submit button, submission shortcut, and [submit] can proceed.
+     *
+     * Subclasses can add eligibility conditions by combining them with this
+     * default, which prevents submission while [submitting]. Cancellation and
+     * content editing are unaffected.
+     */
+    protected open val submitEnabled: Boolean
+        get() = !submitting
+
+    /**
      * Specifies whether the dialog can currently be submitted with
      * the submission shortcut (see [submitShortcutKey]).
      *
-     * The shortcut is available whenever the Submit button is, and, just like
-     * that button, it is unavailable while the dialog is [submitting], so that
-     * the dialog cannot be submitted again while its submission is
-     * in progress.
+     * Follows the Submit button's visibility and [submitEnabled] state.
      */
     internal val submitShortcutEnabled: Boolean
-        get() = submitAvailable && !submitting
+        get() = submitAvailable && submitEnabled
 
     /**
      * Specifies whether the "Cancel" button should be displayed.
@@ -592,8 +599,7 @@ public abstract class Dialog : Component() {
      * controls and doesn't close the dialog. Any such effects should be a part
      * of the actual dialog's implementation in its [submitContent] method.
      *
-     * This is a no-op while the dialog is [submitting], so that a submission
-     * cannot be started while another one is in progress. The live property is
+     * This is a no-op while [submitEnabled] is `false`. The live property is
      * checked here rather than being relied upon through the disabled Submit
      * button, because disabling a button takes effect only in the next
      * composition, and because a custom [buttonsSection] can invoke this method
@@ -601,11 +607,11 @@ public abstract class Dialog : Component() {
      * enabled for the whole submission.
      */
     public fun submit() {
-        if (submitting) {
+        if (!submitEnabled) {
             return
         }
         launch {
-            if (onBeforeSubmit()) {
+            if (onBeforeSubmit() && submitEnabled) {
                 submitContent()
             }
         }
@@ -792,7 +798,7 @@ public abstract class Dialog : Component() {
         if (submitAvailable) {
             DialogButton(
                 label = submitButtonText,
-                enabled = !submitting,
+                enabled = submitEnabled,
                 primary = true
             ) {
                 submit()

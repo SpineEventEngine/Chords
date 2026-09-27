@@ -175,6 +175,12 @@ sets it to true; restoring all initial values clears it. Standalone
 `CommandMessageForm` instances inherit the same property from `MessageForm` and
 accept initial values through `value`.
 
+`CommandDialog` requires changed input before submitting by default. Its Submit
+button and submission shortcut become available when `dirty` is true and become
+unavailable again when the initial input is restored. Set
+`submitOnlyWhenDirty = false` for confirmations and forms that can submit their
+initial values without edits. Cancellation remains available.
+
 #### Confirming cancellation of a command wizard
 
 A `CommandWizard` starts without an initial command message. Its initial input
