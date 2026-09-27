@@ -30,8 +30,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import io.spine.base.CommandMessage
@@ -137,6 +139,23 @@ public abstract class CommandDialog<C : CommandMessage, B : ValidatingBuilder<C>
      */
     public val dirty: Boolean
         get() = dirtyState.value
+
+    /**
+     * Requires changed input before the dialog can be submitted.
+     *
+     * Defaults to `true`. The Submit button is disabled until
+     * [dirty] becomes `true`; restoring the initial input disables it again.
+     * The submission shortcut and [submit] follow the same restriction.
+     * Set this to `false` for confirmations or forms whose initial input can
+     * be submitted without edits.
+     */
+    public var submitOnlyWhenDirty: Boolean by mutableStateOf(true)
+
+    /**
+     * Combines the optional changed-input requirement with submission progress.
+     */
+    override val submitEnabled: Boolean
+        get() = super.submitEnabled && (!submitOnlyWhenDirty || dirty)
 
     override fun updateProps() {
         super.updateProps()

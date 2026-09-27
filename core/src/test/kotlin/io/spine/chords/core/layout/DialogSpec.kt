@@ -26,6 +26,7 @@
 
 package io.spine.chords.core.layout
 
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ import io.spine.chords.core.TestApplication
 import io.spine.chords.core.layout.given.DialogSpecEnv.ContentWidth
 import io.spine.chords.core.layout.given.DialogSpecEnv.ControlHeight
 import io.spine.chords.core.layout.given.DialogSpecEnv.TestDialog
+import io.spine.chords.core.layout.given.DialogSpecEnv.button
 import io.spine.chords.core.layout.given.DialogSpecEnv.dialogScene
 import io.spine.chords.core.layout.given.DialogSpecEnv.submittableDialogScene
 import io.spine.chords.core.styling.ChordsDimensions
@@ -236,6 +238,74 @@ internal class DialogSpec {
 
         dialog.submitShortcutEnabled shouldBe false
         dialog.cancelAvailableInternal shouldBe true
+    }
+
+    /**
+     * Custom eligibility controls the shared button and shortcut while leaving Cancel available.
+     */
+    @Test
+    fun `disable and restore submission through its standard controls`() {
+        val dialog = TestDialog(submitAvailable = true, cancelAvailable = true)
+            .apply { allowSubmission = false }
+
+        submittableDialogScene(dialog).use { scene ->
+            repeat(4) { scene.render() }
+            dialog.submitShortcutEnabled shouldBe false
+            button(scene, "OK").config.contains(SemanticsProperties.Disabled) shouldBe true
+            button(scene, "Cancel").config.contains(SemanticsProperties.Disabled) shouldBe false
+
+            scene.click(button(scene, "OK").boundsInRoot.center)
+            dialog.submit()
+            scene.render()
+
+            dialog.submissions shouldBe 0
+
+            dialog.allowSubmission = true
+            scene.render()
+
+            dialog.submitShortcutEnabled shouldBe true
+            button(scene, "OK").config.contains(SemanticsProperties.Disabled) shouldBe false
+
+            scene.click(button(scene, "OK").boundsInRoot.center)
+            scene.render()
+
+            dialog.submissions shouldBe 1
+
+            dialog.allowSubmission = false
+            dialog.submit()
+            scene.render()
+
+            dialog.submissions shouldBe 1
+        }
+    }
+
+    /**
+     * A pre-submit callback can change eligibility while a submission request is pending.
+     */
+    @Test
+    fun `recheck eligibility after the pre-submit callback`() {
+        val dialog = TestDialog(submitAvailable = true)
+        var checks = 0
+        dialog.onBeforeSubmit = {
+            checks += 1
+            dialog.allowSubmission = false
+            true
+        }
+
+        submittableDialogScene(dialog).use { scene ->
+            dialog.submit()
+            scene.render()
+
+            checks shouldBe 1
+            dialog.submissions shouldBe 0
+
+            dialog.allowSubmission = true
+            dialog.onBeforeSubmit = { true }
+            dialog.submit()
+            scene.render()
+
+            dialog.submissions shouldBe 1
+        }
     }
 
     /**

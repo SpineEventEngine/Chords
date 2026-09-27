@@ -33,11 +33,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.spine.chords.core.layout.Dialog
@@ -83,6 +90,16 @@ internal object DialogSpecEnv {
     }
 
     /**
+     * Locates a rendered dialog button by its accessible label.
+     */
+    fun button(scene: TestScene, label: String): SemanticsNode = scene.semanticsNodes()
+        .single { node ->
+            node.config.getOrNull(SemanticsActions.OnClick) != null &&
+                    node.config.getOrNull(SemanticsProperties.Text)
+                        ?.any { it.text == label } == true
+        }
+
+    /**
      * A dialog whose content records the interactions that reach it.
      *
      * @param submitAvailable Whether submission is available.
@@ -92,6 +109,17 @@ internal object DialogSpecEnv {
         submitAvailable: Boolean = false,
         cancelAvailable: Boolean = false
     ) : Dialog() {
+
+        /**
+         * Adds a caller-defined eligibility condition without blocking content editing.
+         */
+        var allowSubmission: Boolean by mutableStateOf(true)
+
+        /**
+         * Applies the test's eligibility condition alongside the normal progress guard.
+         */
+        override val submitEnabled: Boolean
+            get() = super.submitEnabled && allowSubmission
 
         /**
          * The number of clicks received by the dialog content.
