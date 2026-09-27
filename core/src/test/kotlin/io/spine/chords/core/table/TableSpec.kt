@@ -47,16 +47,19 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.floats.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.TestApplication
 import io.spine.chords.core.layout.TestScene
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.styling.chordsLightColorScheme
+import io.spine.chords.core.table.testing.TableSortingScene
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 
 /**
@@ -147,6 +150,80 @@ internal class TableSpec {
                     scheme.primaryContainer.toArgb()
             scene.pixelAt((300 - scrollbarWidth - 4).dp, 60.dp) shouldBe
                     scheme.primary.copy(alpha = 0.1f).compositeOver(scheme.surface).toArgb()
+        }
+    }
+
+    /**
+     * Reset restores the default order from either direction and preserves the selected row.
+     */
+    @ParameterizedTest
+    @CsvSource("0, 1", "0, 2", "1, 1", "1, 2")
+    fun `clear column sorting through the active header`(column: Int, clicks: Int) {
+        TableSortingScene().use { scene ->
+            scene.rowOrder shouldBe listOf(2, 1, 3)
+            scene.canClear shouldBe false
+
+            repeat(clicks) { scene.clickHeader(column) }
+
+            val ascending = (column == 0) == (clicks == 1)
+            scene.rowOrder shouldBe if (ascending) listOf(1, 2, 3) else listOf(3, 2, 1)
+            scene.canClear shouldBe true
+
+            scene.clear(usingKeyboard = false)
+
+            scene.rowOrder shouldBe listOf(2, 1, 3)
+            scene.canClear shouldBe false
+            scene.selected shouldBe 1
+
+            scene.clickHeader(column)
+            scene.clear(usingKeyboard = true)
+
+            scene.rowOrder shouldBe listOf(2, 1, 3)
+            scene.canClear shouldBe false
+            scene.selected shouldBe 1
+        }
+    }
+
+    /**
+     * Long headings must yield space to a small, square reset control without shrinking its icon.
+     */
+    @ParameterizedTest
+    @ValueSource(ints = [240, 480])
+    fun `keep the compact sorting reset round beside long headings`(width: Int) {
+        TableSortingScene(width = width, heading = "Expiration date").use { scene ->
+            scene.clickHeader(0)
+
+            scene.clearButtonBounds.width shouldBe 20f
+            scene.clearButtonBounds.height shouldBe 20f
+            scene.clearIconBounds.width shouldBe 16f
+            scene.clearIconBounds.height shouldBe 16f
+
+            scene.clear(usingKeyboard = false)
+
+            scene.rowOrder shouldBe listOf(2, 1, 3)
+        }
+    }
+
+    /**
+     * Narrow columns keep their complete headings readable with or without sorting controls.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `wrap long headings instead of truncating them`(sortable: Boolean) {
+        val heading = "Long column heading"
+        val wideHeight = TableSortingScene(
+            width = 480,
+            heading = heading,
+            sortable = sortable
+        ).use { scene ->
+            if (sortable) scene.clickHeader(0)
+            scene.headingBounds(0).height
+        }
+
+        TableSortingScene(width = 240, heading = heading, sortable = sortable).use { scene ->
+            if (sortable) scene.clickHeader(0)
+
+            scene.headingBounds(0).height shouldBeGreaterThan wideHeight
         }
     }
 
