@@ -171,10 +171,23 @@ public class InputTextDialog : Dialog() {
 
     /**
      * Whether submission requires at least one non-whitespace character.
-     * Invalid input stays editable and receives an inline error after submission is attempted.
+     * Missing text stays editable and receives error highlighting after submission is attempted.
+     * [requiredTextValidationMessage] controls the message shown below the field.
      * The default is `false`; [textFieldHint] remains independently configurable.
      */
     public var textRequired: Boolean by mutableStateOf(false)
+
+    /**
+     * The validation message shown when required text is missing after a submission attempt.
+     * An empty string hides the message while retaining error highlighting and blocking submission.
+     * Applications can configure it through shared defaults or override it for a single dialog:
+     * ```kotlin
+     * InputTextDialog::class defaultsTo {
+     *     requiredTextValidationMessage = ""
+     * }
+     * ```
+     */
+    public var requiredTextValidationMessage: String by mutableStateOf("A value must be set.")
 
     /**
      * A [MutableState] that holds the entered text value.
@@ -187,11 +200,11 @@ public class InputTextDialog : Dialog() {
     private val validationRequested = mutableStateOf(false)
 
     /**
-     * Keeps required-input feedback current as the user edits the field after a failed submission.
+     * Supplies the configured feedback while required text is missing after submission.
      */
     private val textValidationMessage = derivedStateOf {
         if (validationRequested.value && textRequired && text.value.isNullOrBlank()) {
-            "Enter a value."
+            requiredTextValidationMessage
         } else null
     }
 
