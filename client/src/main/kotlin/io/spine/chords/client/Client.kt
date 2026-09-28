@@ -28,12 +28,14 @@ package io.spine.chords.client
 
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
+import io.spine.base.EntityColumn
 import io.spine.base.EntityState
 import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
+import io.spine.client.OrderBy.Direction
 import io.spine.core.UserId
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +43,7 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * Provides an API for interacting with the application server.
  */
+@Suppress("TooManyFunctions" /* Groups the supported server communication operations. */)
 public interface Client {
 
     /**
@@ -132,6 +135,67 @@ public interface Client {
     ): DataObservation<List<E>>
 
     /**
+     * Reads one ordered page, applying its filter, order, and positive [limit] on the server.
+     *
+     * Include an exclusive cursor boundary in [queryFilter] for an adjacent page. [orderBy]
+     * must define a unique, stable ordering when used for cursor pagination. This is a blocking
+     * read, like [read]; call it off the UI thread. It creates no subscription.
+     *
+     * @param E The type of entity returned by the query.
+     * @param entityClass The entity type to select on the server.
+     * @param queryFilter Selects matching entities and any exclusive cursor boundary.
+     * @param orderBy The column that determines the result order.
+     * @param direction Either [Direction.ASCENDING] or [Direction.DESCENDING].
+     * @param limit The positive maximum number of entities to return.
+     * @return The server-selected page, which may contain fewer than [limit] entities.
+     * @throws IllegalArgumentException If [limit] or [direction] is invalid, before any request.
+     */
+    public fun <E : EntityState> readPage(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        orderBy: EntityColumn,
+        direction: Direction,
+        limit: Int
+    ): List<E>
+
+    /**
+     * Maintains one ordered page using the same lifecycle and recovery as [readAndObserve].
+     *
+     * The server applies [queryFilter], [orderBy], [direction], and the positive [limit]. Matching
+     * updates and removals cause a fresh page read so its membership and order remain correct;
+     * the client never accumulates entities beyond the page. [observeFilter] must include changes
+     * that can affect the query, including entries that can move into the page.
+     *
+     * For cursor pagination, include the boundary in [queryFilter] and use a unique, stable
+     * [orderBy] column. Cancel the previous observation when moving to another page. As with other
+     * observations, this returns an initial empty list and reads asynchronously.
+     *
+     * Ordinary changes retain the subscription and [DataObservationStatus.Active] status while
+     * rereading. Each completed page is published even if notifications received during that read
+     * require a further read. Explicit refreshes can proceed between these reads.
+     * A failed read retains the last value and follows [DataObservation]'s failure policy:
+     * connection failures recover automatically; other failures require an explicit refresh.
+     *
+     * @param E The type of entity read and observed.
+     * @param entityClass The entity type to select and observe on the server.
+     * @param queryFilter Selects matching entities and any exclusive cursor boundary.
+     * @param observeFilter Covers all changes that can affect the page's membership or order.
+     * @param orderBy The column that determines the page's result order.
+     * @param direction Either [Direction.ASCENDING] or [Direction.DESCENDING].
+     * @param limit The positive maximum number of entities retained in the page.
+     * @return An observation containing the current page and its lifecycle status.
+     * @throws IllegalArgumentException If [limit] or [direction] is invalid, before any request.
+     */
+    public fun <E : EntityState> readPageAndObserve(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
+        orderBy: EntityColumn,
+        direction: Direction,
+        limit: Int
+    ): DataObservation<List<E>>
+
+    /**
      * Returns an observation that maintains an up-to-date nullable entity value
      * according to the given filter parameters.
      *
@@ -142,6 +206,7 @@ public interface Client {
      * - If no entries match the specified criteria, the value is `null`.
      * - An archive, deletion, or removal from [observeFilter] triggers an asynchronous
      *   reread. The value becomes the first remaining match, or `null` if none remain.
+     *   The subscription stays active during this read; failures follow [DataObservation]'s policy.
      *
      * This function returns without waiting for the server. The observation is
      * returned with a `null` value, and the value read from the server appears
@@ -179,6 +244,7 @@ public interface Client {
      * entity matches. If several entities match, the first one is used.
      * An archive, deletion, or removal from [observeFilter] triggers an asynchronous
      * reread. The value becomes the first remaining match, or [defaultValue] if none remain.
+     * The subscription stays active during this read; failures follow [DataObservation]'s policy.
      *
      * This function returns without waiting for the server. The observation is
      * returned with [defaultValue], and the value read from the server appears

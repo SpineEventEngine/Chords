@@ -33,6 +33,7 @@ import io.spine.chords.client.given.EntityChooserSpecEnv.AccountChooser
 import io.spine.chords.client.given.EntityChooserSpecEnv.AccountEntity
 import io.spine.chords.client.given.EntityChooserSpecEnv.EntitySource
 import io.spine.chords.client.given.EntityChooserSpecEnv.inScene
+import io.spine.chords.client.testing.TestClient
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.chords.proto.form.invoke

@@ -92,6 +92,30 @@ The status distinguishes connecting, connected, temporarily unavailable, and
 closed clients. It lets applications notify users while ordinary data
 observations recover automatically.
 
+### Reading pages
+
+Use `readPage()` to read a bounded, ordered result without a subscription, or
+`readPageAndObserve()` to keep one page current through a standard observation.
+Both send the filter, order, and positive limit to the server. The observed page
+is reread when matching entities change or are removed, so the retained list
+stays bounded and follows the server's ordering.
+
+Ordinary rereads retain the active subscription and status. Notifications received
+during a read cause another read, without opening another subscription. Each completed
+page is shown while the next read catches up with ongoing changes. Explicit refreshes
+can proceed between reads. Read failures retain the last page and follow the observation
+failure policy described above.
+
+For adjacent pages, include an exclusive cursor boundary in the query filter
+and order by a unique, stable column. The observation filter must cover changes
+that can move entries into or out of the page. Cancel the previous observation
+when navigating away. Connection recovery and cancellation follow the same
+rules as other data observations.
+
+Implementations of `Client`, including test doubles and decorators, must implement
+both paging methods when upgrading to `2.0.0-SNAPSHOT.132`. This extends the interface's
+implementation requirements; existing implementations need to be updated and recompiled.
+
 ### Server-aware components
 
 This library also introduces some components that leverage 

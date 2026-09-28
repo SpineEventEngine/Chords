@@ -27,6 +27,7 @@
 package io.spine.chords.client
 
 import io.spine.chords.client.appshell.ClientApplication
+import io.spine.chords.client.testing.TestClient
 import io.spine.chords.core.appshell.Application
 import io.spine.chords.core.appshell.app
 import java.awt.Dimension

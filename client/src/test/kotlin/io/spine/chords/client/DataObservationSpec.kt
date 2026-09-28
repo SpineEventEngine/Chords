@@ -30,12 +30,14 @@ import androidx.compose.runtime.snapshots.Snapshot
 import io.grpc.Status
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
-import io.spine.chords.client.given.InvalidatingObservationSource
+import io.spine.chords.client.testing.InvalidatingObservationSource
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.DisplayName
@@ -47,7 +49,249 @@ import org.junit.jupiter.api.Test
  * the refresh that created them is no longer current.
  */
 @DisplayName("`DataObservation` should")
+@Suppress("LargeClass" /* Keeps query, subscription, and recovery regressions in one suite. */)
 internal class DataObservationSpec {
+
+    /**
+     * Ordinary changes keep the stream and its active status through consecutive reads.
+     */
+    @Test
+    fun `reread invalidations without replacing the active subscription`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        source.onRead = { observation.status.value shouldBe DataObservationStatus.Active }
+
+        source.readValue = "second"
+        source.invalidate()
+        source.deliverReads() shouldBe 1
+        observation.value shouldBe "second"
+        source.readValue = "third"
+        source.invalidate()
+        source.deliverReads() shouldBe 1
+
+        observation.value shouldBe "third"
+        source.readCount shouldBe 3
+        source.subscribeCount shouldBe 1
+        source.cancelCount shouldBe 0
+    }
+
+    /**
+     * A notification received after a query snapshot requires another read on the same stream.
+     */
+    @Test
+    fun `include changes received during an invalidation read`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        val notifyOriginalSubscription = source.captureInvalidation()
+        source.readValue = "outdated snapshot"
+        source.onRead = {
+            source.onRead = {}
+            source.readValue = "latest"
+            notifyOriginalSubscription()
+        }
+
+        source.invalidate()
+        source.deliverReads()
+
+        observation.value shouldBe "latest"
+        source.readCount shouldBe 3
+        source.subscribeCount shouldBe 1
+    }
+
+    /**
+     * Pages keep advancing when every intermediate query overlaps another notification.
+     */
+    @Test
+    fun `publish snapshots while invalidations continue`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        val snapshots = listOf("first", "second", "third", "fourth")
+        source.readValue = snapshots[0]
+        source.onRead = {
+            val index = source.readCount - 2
+            observation.value shouldBe if (index == 0) "initial" else snapshots[index - 1]
+            observation.status.value shouldBe DataObservationStatus.Active
+            if (index < snapshots.lastIndex) {
+                source.readValue = snapshots[index + 1]
+                source.invalidate()
+            }
+        }
+
+        source.invalidate()
+        source.deliverReads() shouldBe 1
+
+        observation.value shouldBe snapshots.last()
+        source.readCount shouldBe snapshots.size + 1
+        source.subscribeCount shouldBe 1
+        source.cancelCount shouldBe 0
+    }
+
+    /**
+     * An explicit refresh can replace the subscription between two invalidation reads.
+     */
+    @Test
+    fun `allow an explicit refresh between invalidation reads`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        var refresh: Job? = null
+        source.onRead = {
+            if (source.readCount == 2) {
+                source.invalidate()
+                refresh = launch(start = UNDISPATCHED) { observation.refresh() }
+            } else {
+                source.subscribeCount shouldBe 2
+                source.onRead = {}
+            }
+        }
+
+        source.invalidate()
+        source.deliverReads() shouldBe 1
+        checkNotNull(refresh)
+            .join()
+
+        source.readCount shouldBe 3
+        source.subscribeCount shouldBe 2
+        source.cancelCount shouldBe 1
+        observation.status.value shouldBe DataObservationStatus.Active
+    }
+
+    /**
+     * A single-value update received during a removal read must survive its older snapshot.
+     */
+    @Test
+    fun `preserve direct updates received during an invalidation read`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        source.readValue = "outdated snapshot"
+        source.onRead = {
+            source.readValue = "latest"
+            source.update("latest")
+            source.onRead = { observation.value shouldBe "latest" }
+        }
+
+        source.invalidate()
+        source.deliverReads()
+
+        observation.value shouldBe "latest"
+        source.readCount shouldBe 3
+        source.subscribeCount shouldBe 1
+    }
+
+    /**
+     * Cancellation during a query discards its result and any invalidation already received.
+     */
+    @Test
+    fun `discard an invalidation read completed after cancellation`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        source.readValue = "cancelled result"
+        source.onRead = {
+            source.invalidate()
+            observation.cancel()
+        }
+
+        source.invalidate()
+        source.deliverReads() shouldBe 1
+
+        observation.value shouldBe "initial"
+        observation.status.value shouldBe DataObservationStatus.Cancelled
+        source.readCount shouldBe 2
+        source.subscribeCount shouldBe 1
+        source.cancelCount shouldBe 1
+    }
+
+    /**
+     * Losing the connection invalidates an in-flight query even if that query returns normally.
+     */
+    @Test
+    fun `discard an invalidation read completed after connection loss`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        source.readValue = "disconnected result"
+        source.onRead = { observation.waitForConnection() }
+
+        source.invalidate()
+        source.deliverReads() shouldBe 1
+
+        observation.value shouldBe "initial"
+        observation.status.value shouldBe DataObservationStatus.WaitingForConnection
+        source.readCount shouldBe 2
+        source.cancelCount shouldBe 0
+    }
+
+    /**
+     * Non-connection query failures retain the last value and require an explicit retry.
+     */
+    @Test
+    fun `retain the last value after a terminal reread failure`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        val failure = Status.INTERNAL.asRuntimeException()
+        source.readFailure = failure
+
+        source.invalidate()
+        source.deliverReads() shouldBe 1
+
+        observation.value shouldBe "initial"
+        observation.status.value shouldBe DataObservationStatus.Failed(failure)
+        observation.needsRecovery shouldBe false
+        source.cancelCount shouldBe 1
+        source.invalidate()
+        source.deliverReads() shouldBe 0
+
+        source.readFailure = null
+        source.readValue = "retried"
+        observation.refresh()
+        observation.value shouldBe "retried"
+        observation.status.value shouldBe DataObservationStatus.Active
+    }
+
+    /**
+     * A failed query uses the same connection-recovery contract as subscription failures.
+     */
+    @Test
+    fun `retain the last value while recovering from a failed reread`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        source.readFailure = Status.UNAVAILABLE.asRuntimeException()
+
+        source.invalidate()
+        source.deliverReads() shouldBe 1
+
+        observation.value shouldBe "initial"
+        observation.status.value shouldBe DataObservationStatus.WaitingForConnection
+        observation.needsRecovery shouldBe true
+        source.cancelCount shouldBe 1
+    }
+
+    /**
+     * An old callback cannot start work after an explicit refresh replaces its subscription.
+     */
+    @Test
+    fun `ignore invalidations delivered by a replaced subscription`(): Unit = runBlocking {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        observation.refresh()
+        val oldInvalidation = source.captureInvalidation()
+        observation.refresh()
+
+        oldInvalidation()
+        source.deliverReads() shouldBe 0
+
+        source.readCount shouldBe 2
+        source.invalidate()
+        source.deliverReads() shouldBe 1
+        source.readCount shouldBe 3
+    }
 
     /**
      * Several removals from one subscription need only one authoritative reread.
@@ -61,7 +305,7 @@ internal class DataObservationSpec {
         source.invalidate()
         source.invalidate()
 
-        source.deliverRefreshes() shouldBe 2
+        source.deliverReads() shouldBe 1
 
         source.readCount shouldBe 2
         observation.value shouldBe "refreshed"
@@ -79,7 +323,7 @@ internal class DataObservationSpec {
         source.invalidate()
         observation.cancel()
 
-        source.deliverRefreshes() shouldBe 1
+        source.deliverReads() shouldBe 1
 
         source.readCount shouldBe 1
         observation.status.value shouldBe DataObservationStatus.Cancelled
@@ -96,7 +340,7 @@ internal class DataObservationSpec {
         source.invalidate()
         observation.waitForConnection()
 
-        source.deliverRefreshes() shouldBe 1
+        source.deliverReads() shouldBe 1
 
         source.readCount shouldBe 1
         observation.status.value shouldBe DataObservationStatus.WaitingForConnection
@@ -115,7 +359,7 @@ internal class DataObservationSpec {
         source.readValue = "reconnected"
         observation.refresh()
 
-        source.deliverRefreshes() shouldBe 1
+        source.deliverReads() shouldBe 1
 
         source.readCount shouldBe 2
         observation.value shouldBe "reconnected"
@@ -134,7 +378,7 @@ internal class DataObservationSpec {
         val failure = Status.PERMISSION_DENIED.asRuntimeException()
         source.fail(failure)
 
-        source.deliverRefreshes() shouldBe 1
+        source.deliverReads() shouldBe 1
 
         source.readCount shouldBe 1
         observation.status.value shouldBe DataObservationStatus.Failed(failure)
