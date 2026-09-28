@@ -74,6 +74,7 @@ private const val ObservationRetryDelayMillis = 1_000L
  * @param coroutineContext The context for the background work, overridable in
  *   tests to make the scheduling deterministic.
  */
+@Suppress("TooManyFunctions" /* Keeps observation scheduling and lifecycle in one scope. */)
 internal class DataObservationScope(
     private val connectionStatus: () -> ConnectionStatus,
     coroutineContext: CoroutineContext = IO
@@ -316,19 +317,22 @@ internal class DataObservationScope(
 
     /**
      * Refreshes the given [observation] in this coroutine scope.
-     * An invalidation supplies [expectedGeneration] to skip superseded subscriptions.
      *
      * @return The job that performs the refresh. It completes without running
      *   the refresh if this scope has been closed meanwhile, because [close]
      *   cancels the scope.
      */
-    fun refresh(observation: DataObservation<*>, expectedGeneration: Long? = null): Job =
+    fun refresh(observation: DataObservation<*>): Job =
         coroutineScope.launch {
-            if (expectedGeneration == null) {
-                observation.refresh()
-            } else {
-                observation.refreshIfCurrent(expectedGeneration)
-            }
+            observation.refresh()
+        }
+
+    /**
+     * Rereads a query while retaining the subscription identified by [expectedGeneration].
+     */
+    fun reread(observation: DataObservation<*>, expectedGeneration: Long): Job =
+        coroutineScope.launch {
+            observation.rereadIfCurrent(expectedGeneration)
         }
 
     /**

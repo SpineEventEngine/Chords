@@ -112,9 +112,9 @@ public class DataObservation<out T> internal constructor(
      */
     private val onRecoveryNeeded: (DataObservation<*>) -> Unit = {},
     /**
-     * Schedules a reread only while the invalidated subscription generation is current.
+     * Schedules a query read while retaining the invalidated subscription.
      */
-    private val onRefreshNeeded: (DataObservation<*>, Long) -> Unit = { _, _ -> }
+    private val onRereadNeeded: (DataObservation<*>, Long) -> Unit = { _, _ -> }
 ) : State<T> {
 
     /**
@@ -147,6 +147,12 @@ public class DataObservation<out T> internal constructor(
      * Holds the currently installed server subscription, if any.
      */
     private var subscription: ObservationSubscription? = null
+
+    /**
+     * Coalesces query invalidations into one worker for the current subscription generation.
+     * Access requires [stateLock].
+     */
+    private var pendingReread: PendingReread? = null
 
     /**
      * Tracks in-flight subscriptions that became obsolete because the connection failed.
@@ -182,26 +188,12 @@ public class DataObservation<out T> internal constructor(
      * from this function. Coroutine cancellation is propagated to the caller
      * without being converted into an observation failure.
      */
-    public suspend fun refresh() {
-        refresh(expectedGeneration = null)
-    }
-
-    /**
-     * Rereads an invalidated query unless a lifecycle change has superseded its subscription.
-     */
-    internal suspend fun refreshIfCurrent(expectedGeneration: Long) {
-        refresh(expectedGeneration = expectedGeneration)
-    }
-
-    /**
-     * Serializes refreshes and optionally limits a request to its originating subscription.
-     */
     @Suppress(
         "ReturnCount" /* Each failed or stale recovery phase must stop immediately. */
     )
-    private suspend fun refresh(expectedGeneration: Long?) {
+    public suspend fun refresh() {
         refreshMutex.withLock {
-            val refreshGeneration = beginRefresh(expectedGeneration) ?: return
+            val refreshGeneration = beginRefresh() ?: return
             val pendingUpdates = PendingUpdates<T>()
             try {
                 val result = withContext(requestContext) {
@@ -253,6 +245,84 @@ public class DataObservation<out T> internal constructor(
     }
 
     /**
+     * Rereads an invalidated query without replacing its subscription or changing active status.
+     *
+     * Invalidations received during a read request another read while allowing its result to
+     * appear immediately. A directly applied update prevents the older snapshot from replacing it.
+     * Each query releases the mutex so explicit refresh and connection recovery can proceed.
+     */
+    internal suspend fun rereadIfCurrent(expectedGeneration: Long) {
+        val request = synchronized(stateLock) {
+            pendingReread
+                ?.takeIf {
+                    it.generation == expectedGeneration && isCurrent(expectedGeneration)
+                }
+        } ?: return
+        try {
+            while (true) {
+                refreshMutex.withLock {
+                    if (!beginReread(request)) {
+                        return
+                    }
+                    val value = withContext(requestContext) { read() }
+                    synchronized(stateLock) {
+                        if (isCurrent(request.generation) && !request.valueUpdated) {
+                            mutableValue.value = value
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            rethrowCancellation(e)
+            handleFailure(request.generation, e, cancelConnectedSubscription = true)
+        } finally {
+            synchronized(stateLock) {
+                if (pendingReread === request) {
+                    pendingReread = null
+                }
+            }
+        }
+    }
+
+    /**
+     * Starts one query or releases the worker atomically so the next callback can schedule it.
+     */
+    private fun beginReread(request: PendingReread): Boolean = synchronized(stateLock) {
+        if (!isCurrent(request.generation) || pendingReread !== request) {
+            false
+        } else if (request.invalidated) {
+            request.invalidated = false
+            request.valueUpdated = false
+            true
+        } else {
+            pendingReread = null
+            false
+        }
+    }
+
+    /**
+     * Records invalidations before scheduling work, including callbacks received during a read.
+     */
+    private fun invalidate(expectedGeneration: Long) {
+        val schedule = synchronized(stateLock) {
+            if (!isCurrent(expectedGeneration)) {
+                return
+            }
+            val pending = pendingReread
+            if (pending != null) {
+                pending.invalidated = true
+                false
+            } else {
+                pendingReread = PendingReread(expectedGeneration)
+                true
+            }
+        }
+        if (schedule) {
+            onRereadNeeded(this, expectedGeneration)
+        }
+    }
+
+    /**
      * Performs the blocking subscription and read operations for one refresh.
      */
     @Suppress(
@@ -271,7 +341,7 @@ public class DataObservation<out T> internal constructor(
                         update
                     )
                 },
-                { onRefreshNeeded(this, refreshGeneration) },
+                { invalidate(refreshGeneration) },
                 { error ->
                     bufferOrHandleFailure(
                         refreshGeneration,
@@ -337,6 +407,7 @@ public class DataObservation<out T> internal constructor(
                 abandonedSubscriptionGenerations.add(generation)
             }
             generation++
+            pendingReread = null
             previousSubscription = subscription
             subscription = null
             mutableStatus.value = Cancelled
@@ -359,6 +430,7 @@ public class DataObservation<out T> internal constructor(
                 abandonedSubscriptionGenerations.add(generation)
             }
             generation++
+            pendingReread = null
             subscription = null
             mutableStatus.value = WaitingForConnection
         }
@@ -399,16 +471,16 @@ public class DataObservation<out T> internal constructor(
 
     /**
      * Starts a new generation and detaches the previous subscription.
-     * An invalidation must still belong to [expectedGeneration] when it starts its refresh.
      */
-    private fun beginRefresh(expectedGeneration: Long?): Long? {
+    private fun beginRefresh(): Long? {
         val previousSubscription: ObservationSubscription?
         val refreshGeneration: Long
         synchronized(stateLock) {
-            if (cancelled || (expectedGeneration != null && generation != expectedGeneration)) {
+            if (cancelled) {
                 return null
             }
             generation++
+            pendingReread = null
             refreshGeneration = generation
             subscribingGeneration = refreshGeneration
             previousSubscription = subscription
@@ -451,6 +523,11 @@ public class DataObservation<out T> internal constructor(
                 pendingUpdates.updates.add(update)
             } else {
                 mutableValue.value = update(mutableValue.value)
+                pendingReread
+                    ?.let {
+                        it.invalidated = true
+                        it.valueUpdated = true
+                    }
             }
         }
     }
@@ -568,6 +645,7 @@ public class DataObservation<out T> internal constructor(
                 return
             }
             generation++
+            pendingReread = null
             previousSubscription = subscription
             subscription = null
             mutableStatus.value = if (connectionFailure) {
@@ -605,6 +683,24 @@ public class DataObservation<out T> internal constructor(
             else -> false
         }
     }
+}
+
+/**
+ * Tracks further query requests and direct updates that must survive the current read.
+ *
+ * @property generation The subscription whose callbacks requested the read.
+ */
+private class PendingReread(val generation: Long) {
+
+    /**
+     * Requires another read before the current worker can finish.
+     */
+    var invalidated: Boolean = true
+
+    /**
+     * Prevents the current query from overwriting a directly applied subscription update.
+     */
+    var valueUpdated: Boolean = false
 }
 
 /**

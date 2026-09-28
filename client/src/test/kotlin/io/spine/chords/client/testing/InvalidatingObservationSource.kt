@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.client.given
+package io.spine.chords.client.testing
 
 import io.spine.chords.client.ConnectionStatus
 import io.spine.chords.client.DataObservation
@@ -32,7 +32,7 @@ import io.spine.chords.client.ObservationSubscription
 import kotlin.coroutines.EmptyCoroutineContext
 
 /**
- * Keeps invalidation refreshes queued until a test delivers them after a lifecycle change.
+ * Keeps invalidation reads queued until a test delivers them after a lifecycle change.
  */
 internal class InvalidatingObservationSource {
 
@@ -48,6 +48,33 @@ internal class InvalidatingObservationSource {
         private set
 
     /**
+     * Counts subscription creation separately from query reads.
+     */
+    var subscribeCount: Int = 0
+        private set
+
+    /**
+     * Counts cancellations of established subscriptions.
+     */
+    var cancelCount: Int = 0
+        private set
+
+    /**
+     * Delivers callbacks after the query snapshot has been captured.
+     */
+    var onRead: () -> Unit = {}
+
+    /**
+     * Makes a query fail after any callbacks configured in [onRead].
+     */
+    var readFailure: Exception? = null
+
+    /**
+     * Receives transformations that can race with an invalidation read.
+     */
+    private var onUpdate: ((String) -> String) -> Unit = {}
+
+    /**
      * Holds the current subscription's invalidation callback.
      */
     private var onInvalidated: () -> Unit = {}
@@ -58,9 +85,9 @@ internal class InvalidatingObservationSource {
     private var onError: (Throwable) -> Unit = {}
 
     /**
-     * Retains refresh requests until the test chooses to run them.
+     * Retains read requests until the test chooses to run them.
      */
-    private val pendingRefreshes = mutableListOf<suspend () -> Unit>()
+    private val pendingReads = mutableListOf<suspend () -> Unit>()
 
     /**
      * Uses the real observation lifecycle with synchronously controlled reads and scheduling.
@@ -69,18 +96,23 @@ internal class InvalidatingObservationSource {
         initialValue = "",
         read = {
             readCount++
-            readValue
+            val snapshot = readValue
+            onRead()
+            readFailure?.let { throw it }
+            snapshot
         },
-        subscribe = { _, invalidated, error ->
+        subscribe = { update, invalidated, error ->
+            subscribeCount++
+            onUpdate = update
             onInvalidated = invalidated
             onError = error
-            ObservationSubscription {}
+            ObservationSubscription { cancelCount++ }
         },
         connectionStatus = { ConnectionStatus.CONNECTED },
         requestContext = EmptyCoroutineContext,
         onCancelled = {},
-        onRefreshNeeded = { observation, generation ->
-            pendingRefreshes.add { observation.refreshIfCurrent(generation) }
+        onRereadNeeded = { observation, generation ->
+            pendingReads.add { observation.rereadIfCurrent(generation) }
         }
     )
 
@@ -92,6 +124,18 @@ internal class InvalidatingObservationSource {
     }
 
     /**
+     * Captures a callback so tests can deliver it after cancellation or recovery.
+     */
+    fun captureInvalidation(): () -> Unit = onInvalidated
+
+    /**
+     * Reports a state that can be applied directly to the observed value.
+     */
+    fun update(value: String) {
+        onUpdate { value }
+    }
+
+    /**
      * Reports a terminal stream failure before a queued reread can run.
      */
     fun fail(cause: Throwable) {
@@ -99,12 +143,12 @@ internal class InvalidatingObservationSource {
     }
 
     /**
-     * Runs queued refresh requests and returns the number of callbacks delivered.
+     * Runs queued read requests and returns the number of callbacks delivered.
      */
-    suspend fun deliverRefreshes(): Int {
-        val refreshes = pendingRefreshes.toList()
-        pendingRefreshes.clear()
-        refreshes.forEach { it() }
-        return refreshes.size
+    suspend fun deliverReads(): Int {
+        val reads = pendingReads.toList()
+        pendingReads.clear()
+        reads.forEach { it() }
+        return reads.size
     }
 }

@@ -59,15 +59,4 @@ internal object DesktopClientSpecEnv {
             }
         }
     }
-
-    /**
-     * Waits for a queued reread to start before checking its observation's completion.
-     */
-    fun ObservationChannel.awaitReads(count: Int) = runBlocking {
-        withTimeout(5_000) {
-            while (readCount < count) {
-                delay(10)
-            }
-        }
-    }
 }

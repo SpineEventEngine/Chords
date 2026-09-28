@@ -24,15 +24,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.client
+package io.spine.chords.client.testing
 
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
+import io.spine.base.EntityColumn
 import io.spine.base.EntityState
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
+import io.spine.chords.client.Client
+import io.spine.chords.client.CommandConsequences
+import io.spine.chords.client.ConnectionStatus
+import io.spine.chords.client.DataObservation
+import io.spine.chords.client.EventSubscription
+import io.spine.chords.client.EventSubscriptions
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
+import io.spine.client.OrderBy.Direction
 import io.spine.core.UserId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,6 +48,7 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * Provides controllable observations without opening a server connection in component tests.
  */
+@Suppress("TooManyFunctions" /* Implements every operation of the public Client contract. */)
 internal object TestClient : Client {
 
     /**
@@ -82,6 +91,29 @@ internal object TestClient : Client {
         queryFilter: CompositeQueryFilter,
         observeFilter: CompositeEntityStateFilter
     ): DataObservation<List<E>> = error("Unexpected filtered observation.")
+
+    /**
+     * Rejects page reads outside the exercised chooser API.
+     */
+    override fun <E : EntityState> readPage(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        orderBy: EntityColumn,
+        direction: Direction,
+        limit: Int
+    ): List<E> = error("Unexpected page read.")
+
+    /**
+     * Rejects page observations outside the exercised chooser API.
+     */
+    override fun <E : EntityState> readPageAndObserve(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
+        orderBy: EntityColumn,
+        direction: Direction,
+        limit: Int
+    ): DataObservation<List<E>> = error("Unexpected page observation.")
 
     /**
      * Rejects observations outside the exercised chooser API.

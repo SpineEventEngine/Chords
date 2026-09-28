@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.chords.client.given
+package io.spine.chords.client.testing
 
 import io.grpc.CallOptions
 import io.grpc.ClientCall
@@ -40,6 +40,7 @@ import io.spine.client.EntityId
 import io.spine.client.EntityStateUpdate
 import io.spine.client.EntityStateWithVersion
 import io.spine.client.EntityUpdates
+import io.spine.client.Query
 import io.spine.client.QueryResponse
 import io.spine.client.Subscription
 import io.spine.client.SubscriptionId
@@ -50,17 +51,37 @@ import io.spine.protobuf.AnyPacker
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.Dispatchers.IO
 
 /**
  * Supplies protocol responses to the real Spine client without network or transport threads.
+ *
+ * @param observationContext Schedules observations, including reads, on a controllable dispatcher.
  */
 @Suppress("TooManyFunctions" /* Implements the gRPC channel and drives observation responses. */)
-internal class ObservationChannel : ManagedChannel(), AutoCloseable {
+internal class ObservationChannel(
+    observationContext: CoroutineContext = IO
+) : ManagedChannel(), AutoCloseable {
 
     /**
      * Supplies the next complete query result.
      */
     var items: List<EntityState> = emptyList()
+
+    /**
+     * Captures the query sent to the server so ordering and limits can be checked.
+     */
+    @Volatile
+    var lastQuery: Query? = null
+        private set
+
+    /**
+     * Captures the most recently requested subscription filter.
+     */
+    @Volatile
+    var lastTopic: Topic? = null
+        private set
 
     /**
      * Delivers subscription changes during a read to exercise refresh ordering.
@@ -71,6 +92,36 @@ internal class ObservationChannel : ManagedChannel(), AutoCloseable {
      * Counts reads across the request thread and test thread.
      */
     private val reads = AtomicInteger()
+
+    /**
+     * Counts subscription RPCs independently of bounded query requests.
+     */
+    private val subscribes = AtomicInteger()
+
+    /**
+     * Counts activation streams opened by the client.
+     */
+    private val activations = AtomicInteger()
+
+    /**
+     * Counts cancellation RPCs sent by the client.
+     */
+    private val cancellations = AtomicInteger()
+
+    /**
+     * The number of subscription requests observed by this channel.
+     */
+    val subscribeCount: Int get() = subscribes.get()
+
+    /**
+     * The number of activation streams opened through this channel.
+     */
+    val activationCount: Int get() = activations.get()
+
+    /**
+     * The number of explicit subscription cancellations sent through this channel.
+     */
+    val cancelCount: Int get() = cancellations.get()
 
     /**
      * Identifies when an asynchronous reread has begun.
@@ -90,7 +141,11 @@ internal class ObservationChannel : ManagedChannel(), AutoCloseable {
     /**
      * Exercises the public observation methods with the production subscription adapter.
      */
-    val client = DesktopClient(channel = this, user = { null })
+    val client = DesktopClient(
+        channel = this,
+        user = { null },
+        observationContext = observationContext
+    )
 
     /**
      * Creates a call that delivers the response selected by its gRPC method.
@@ -157,6 +212,7 @@ internal class ObservationChannel : ManagedChannel(), AutoCloseable {
     private fun respond(method: String?, request: Any, reply: (Any) -> Unit) {
         when (method) {
             "Read" -> {
+                lastQuery = request as Query
                 reads.incrementAndGet()
                 val result = items.map {
                     EntityStateWithVersion.newBuilder()
@@ -169,13 +225,21 @@ internal class ObservationChannel : ManagedChannel(), AutoCloseable {
                     .addAllMessage(result)
                     .build())
             }
-            "Subscribe" -> reply(Subscription.newBuilder()
-                .setId(SubscriptionId.newBuilder()
-                    .setValue(Identifier.newUuid()))
-                .setTopic(request as Topic)
-                .build())
-            "Activate" -> streams[request as Subscription] = reply
+            "Subscribe" -> {
+                subscribes.incrementAndGet()
+                lastTopic = request as Topic
+                reply(Subscription.newBuilder()
+                    .setId(SubscriptionId.newBuilder()
+                        .setValue(Identifier.newUuid()))
+                    .setTopic(request)
+                    .build())
+            }
+            "Activate" -> {
+                activations.incrementAndGet()
+                streams[request as Subscription] = reply
+            }
             "Cancel" -> {
+                cancellations.incrementAndGet()
                 streams.remove(request as Subscription)
                 reply(Responses.ok())
             }

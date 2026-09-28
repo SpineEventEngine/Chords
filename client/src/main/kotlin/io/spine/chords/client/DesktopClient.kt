@@ -32,6 +32,7 @@ import io.grpc.ManagedChannelBuilder
 import io.grpc.Status.Code.UNAVAILABLE
 import io.grpc.StatusRuntimeException
 import io.spine.base.CommandMessage
+import io.spine.base.EntityColumn
 import io.spine.base.EntityState
 import io.spine.base.Error
 import io.spine.base.EventMessage
@@ -40,11 +41,15 @@ import io.spine.client.ClientRequest
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.client.EventFilter.eq
+import io.spine.client.OrderBy.Direction
+import io.spine.client.OrderBy.Direction.ASCENDING
+import io.spine.client.OrderBy.Direction.DESCENDING
 import io.spine.client.Subscription
 import io.spine.core.UserId
 import java.lang.Runtime.getRuntime
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -70,13 +75,16 @@ private const val ChannelShutdownTimeoutSeconds = 5L
  *   the `DesktopClient` should send requests to the server.
  *   If the callback return `null` the client will send requests
  *   to the server on behalf of the guest user.
+ * @param observationContext Runs background observations and blocking reads; tests may supply
+ *   a controlled dispatcher when their channel responds synchronously.
  */
 @Suppress(
     "TooManyFunctions" /* The functions implement the public Client contract. */
 )
 public class DesktopClient internal constructor(
     private val channel: ManagedChannel,
-    private val user: () -> UserId?
+    private val user: () -> UserId?,
+    private val observationContext: CoroutineContext = IO
 ) : Client {
 
     /**
@@ -109,7 +117,7 @@ public class DesktopClient internal constructor(
      * shutdown.
      */
     private val observationScope =
-        DataObservationScope({ connectionStatus.value })
+        DataObservationScope({ connectionStatus.value }, observationContext)
 
     /**
      * Runs best-effort subscription cancellation requests.
@@ -209,6 +217,70 @@ public class DesktopClient internal constructor(
             entities.filterNot { extractId(it) == id }
         }
     )
+
+    /**
+     * Sends the page boundary, sort order, and limit through the standard Spine query service.
+     */
+    override fun <E : EntityState> readPage(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        orderBy: EntityColumn,
+        direction: Direction,
+        limit: Int
+    ): List<E> {
+        validatePage(direction, limit)
+        return clientRequest()
+            .select(entityClass)
+            .where(queryFilter)
+            .orderBy(orderBy, direction)
+            .limit(limit)
+            .run()
+    }
+
+    /**
+     * Rereads a bounded page after changes that may alter its membership or ordering.
+     */
+    override fun <E : EntityState> readPageAndObserve(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
+        orderBy: EntityColumn,
+        direction: Direction,
+        limit: Int
+    ): DataObservation<List<E>> {
+        validatePage(direction, limit)
+        return createObservation<List<E>, E>(
+            initialValue = emptyList(),
+            read = {
+                readPage(
+                    entityClass = entityClass,
+                    queryFilter = queryFilter,
+                    orderBy = orderBy,
+                    direction = direction,
+                    limit = limit
+                )
+            },
+            subscribe = { onUpdate, onRemoval, onError ->
+                subscribeTo(
+                    entityClass = entityClass,
+                    onUpdate = onUpdate,
+                    onRemoval = onRemoval,
+                    onError = onError,
+                    filter = observeFilter
+                )
+            }
+        )
+    }
+
+    /**
+     * Rejects invalid page arguments before any query or subscription reaches the server.
+     */
+    private fun validatePage(direction: Direction, limit: Int) {
+        require(limit > 0) { "Page limit must be positive." }
+        require(direction == ASCENDING || direction == DESCENDING) {
+            "Page ordering direction must be ascending or descending."
+        }
+    }
 
     override fun <E : EntityState> readOneAndObserve(
         entityClass: Class<E>,
@@ -372,8 +444,8 @@ public class DesktopClient internal constructor(
      * is attempted: the observation is returned waiting for a connection, and
      * the scope refreshes it once the connection is restored.
      *
-     * Without [applyRemoval], removals trigger a fresh query because the observed
-     * value does not have a known ID extractor.
+     * Missing update or removal transformations reread the query using the active subscription.
+     * Ordered pages preserve server-selected membership; single values resolve removals.
      */
     private fun <T, U> createObservation(
         initialValue: T,
@@ -383,7 +455,7 @@ public class DesktopClient internal constructor(
             onRemoval: (Any) -> Unit,
             onError: (Throwable) -> Unit
         ) -> ObservationSubscription,
-        applyUpdate: (T, U) -> T,
+        applyUpdate: ((T, U) -> T)? = null,
         applyRemoval: ((T, Any) -> T)? = null
     ): DataObservation<T> {
         val observation = DataObservation(
@@ -391,7 +463,13 @@ public class DesktopClient internal constructor(
             read = read,
             subscribe = { onChange, onInvalidated, onError ->
                 subscribe(
-                    { update -> onChange { value -> applyUpdate(value, update) } },
+                    { update ->
+                        if (applyUpdate != null) {
+                            onChange { value -> applyUpdate(value, update) }
+                        } else {
+                            onInvalidated()
+                        }
+                    },
                     { id ->
                         if (applyRemoval != null) {
                             onChange { value -> applyRemoval(value, id) }
@@ -403,11 +481,11 @@ public class DesktopClient internal constructor(
                 )
             },
             connectionStatus = { connectionStatus.value },
-            requestContext = IO,
+            requestContext = observationContext,
             onCancelled = observationScope::unregister,
             onRecoveryNeeded = observationScope::retryWhileConnected,
-            onRefreshNeeded = { observation, generation ->
-                observationScope.refresh(observation, generation)
+            onRereadNeeded = { observation, generation ->
+                observationScope.reread(observation, generation)
             }
         )
         observationScope.registerAndInitialize(observation)
