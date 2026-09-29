@@ -36,7 +36,7 @@ import io.spine.client.OrderBy.Direction.DESCENDING
 import io.spine.client.QueryFilter
 
 /**
- * Supplies ordered entities and queries shared by paging lifecycle tests.
+ * Ordered selections for testing page boundaries and navigator lifetimes.
  */
 internal object ObservedItemPages {
 

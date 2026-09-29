@@ -33,9 +33,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import io.spine.base.EntityState
 
 /**
- * Creates a navigator for [query] and [client], starts it after composition commits, and closes
- * it when the composition leaves or either input changes. Equivalent queries retain the page.
- * Re-entering the composition creates a new navigator even when the query is retained elsewhere.
+ * Page navigation state for a Compose view, retained across recompositions.
+ *
+ * Equivalent queries retain the displayed page. The navigator's lifetime is limited to the
+ * composition, query, and client; re-entering the composition creates a new navigator.
+ * Requests begin only after the composition commits.
  *
  * Given an entity query and the application's client:
  * ```kotlin
@@ -60,7 +62,7 @@ public fun <T : EntityState> rememberPagedDataNavigator(
     val retained = remember(query, client) {
         object : RememberObserver {
             /**
-             * Defers requests until this composition is committed.
+             * The view's navigation state, initially idle until the composition commits.
              */
             val navigator = createPagedDataNavigator(query, client, scope)
 

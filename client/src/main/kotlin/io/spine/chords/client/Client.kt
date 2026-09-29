@@ -135,9 +135,8 @@ public interface Client {
     ): DataObservation<List<E>>
 
     /**
-     * Reads a page with one composite filter. Delegates to the
-     * `queryFilters: List<CompositeQueryFilter>` overload, which defines ordering, limits,
-     * and failures.
+     * Page data for a selection expressed by one composite filter.
+     * Ordering, limits, and failures follow the overload accepting a list of composite filters.
      */
     public fun <E : EntityState> readPage(
         entityClass: Class<E>,
@@ -155,7 +154,8 @@ public interface Client {
         )
 
     /**
-     * Reads one ordered page, applying its filters, order, and positive [limit] on the server.
+     * Bounded, ordered entity data for callers that manage page selection directly.
+     * Filters, ordering, and the positive [limit] apply on the server.
      *
      * Include an exclusive cursor condition in [queryFilters] for an adjacent page. [orderBy]
      * must define a unique, stable ordering when used for cursor pagination. This is a blocking
@@ -181,9 +181,9 @@ public interface Client {
     ): List<E>
 
     /**
-     * Observes a page with one composite query filter and an explicit observation filter.
-     * Delegates to the `queryFilters: List<CompositeQueryFilter>` overload, which defines
-     * ordering, limits, asynchronous loading, and recovery.
+     * Live page data for a selection expressed by one composite query filter.
+     * Loading, observation filtering, and recovery follow the
+     * `queryFilters: List<CompositeQueryFilter>` overload.
      */
     public fun <E : EntityState> readPageAndObserve(
         entityClass: Class<E>,
@@ -203,7 +203,8 @@ public interface Client {
         )
 
     /**
-     * Maintains one ordered page using the same lifecycle and recovery as [readAndObserve].
+     * A live, bounded page for views that must reflect changes to an ordered selection.
+     * Its lifecycle and connection recovery follow [readAndObserve].
      *
      * The server applies [queryFilters], [orderBy], [direction], and the positive [limit]. Matching
      * updates and removals cause a fresh page read so its membership and order remain correct;

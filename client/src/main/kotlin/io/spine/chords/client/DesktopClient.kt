@@ -219,8 +219,8 @@ public class DesktopClient internal constructor(
     )
 
     /**
-     * Sends filters, sort order, and limit through the standard Spine query service.
-     * Omits `where` when [queryFilters] is empty.
+     * Server-side page selection through the Spine query service.
+     * An empty [queryFilters] list selects all entities of the requested type.
      */
     @Suppress("SpreadOperator" /* Spine accepts composite query filters only through varargs. */)
     override fun <E : EntityState> readPage(
