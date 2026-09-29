@@ -29,6 +29,7 @@ package io.spine.chords.client
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot.Companion.withMutableSnapshot
 import io.grpc.Status
 import io.grpc.StatusException
 import io.grpc.StatusRuntimeException
@@ -62,11 +63,14 @@ internal fun interface ObservationSubscription {
  * A `DataObservation` is also a Compose [State], so its current [value] can be
  * read directly or with Kotlin property delegation. A newly created observation
  * is readable right away: it carries its initial or default value until the
- * first read from the server completes. An observation in
- * [DataObservationStatus.WaitingForConnection] automatically re-reads the
- * complete value and creates a new subscription when the server connection is
- * restored. An observation in [DataObservationStatus.Failed] is not retried
- * automatically and requires an explicit [refresh] call.
+ * first read from the server completes. Value and status changes notify snapshot
+ * observers, such as `snapshotFlow`, without a running composition. A refresh
+ * publishes its value and status together.
+ *
+ * An observation in [DataObservationStatus.WaitingForConnection] automatically
+ * re-reads the complete value and creates a new subscription when the server
+ * connection is restored. An observation in [DataObservationStatus.Failed] is
+ * not retried automatically and requires an explicit [refresh] call.
  *
  * The caller owns the observation lifecycle and should call [cancel] when the
  * observation is no longer needed. Instances are created by [Client]; their
@@ -267,7 +271,7 @@ public class DataObservation<out T> internal constructor(
                     val value = withContext(requestContext) { read() }
                     synchronized(stateLock) {
                         if (isCurrent(request.generation) && !request.valueUpdated) {
-                            mutableValue.value = value
+                            withMutableSnapshot { mutableValue.value = value }
                         }
                     }
                 }
@@ -410,7 +414,7 @@ public class DataObservation<out T> internal constructor(
             pendingReread = null
             previousSubscription = subscription
             subscription = null
-            mutableStatus.value = Cancelled
+            withMutableSnapshot { mutableStatus.value = Cancelled }
         }
         if (cancelSubscription) {
             previousSubscription.cancelSafely()
@@ -432,7 +436,7 @@ public class DataObservation<out T> internal constructor(
             generation++
             pendingReread = null
             subscription = null
-            mutableStatus.value = WaitingForConnection
+            withMutableSnapshot { mutableStatus.value = WaitingForConnection }
         }
     }
 
@@ -485,7 +489,7 @@ public class DataObservation<out T> internal constructor(
             subscribingGeneration = refreshGeneration
             previousSubscription = subscription
             subscription = null
-            mutableStatus.value = Refreshing
+            withMutableSnapshot { mutableStatus.value = Refreshing }
         }
         previousSubscription.cancelSafely()
         return refreshGeneration
@@ -502,7 +506,7 @@ public class DataObservation<out T> internal constructor(
             if (!isCurrent(refreshGeneration)) {
                 return false
             }
-            mutableValue.value = newValue
+            withMutableSnapshot { mutableValue.value = newValue }
             return true
         }
     }
@@ -522,7 +526,7 @@ public class DataObservation<out T> internal constructor(
             if (pendingUpdates.buffering) {
                 pendingUpdates.updates.add(update)
             } else {
-                mutableValue.value = update(mutableValue.value)
+                withMutableSnapshot { mutableValue.value = update(mutableValue.value) }
                 pendingReread
                     ?.let {
                         it.invalidated = true
@@ -601,10 +605,12 @@ public class DataObservation<out T> internal constructor(
             }
             pendingUpdates.updates.clear()
             pendingUpdates.buffering = false
-            mutableValue.value = value
             pendingFailure = pendingUpdates.failure
-            if (pendingFailure == null) {
-                mutableStatus.value = Active
+            withMutableSnapshot {
+                mutableValue.value = value
+                if (pendingFailure == null) {
+                    mutableStatus.value = Active
+                }
             }
         }
         if (pendingFailure != null) {
@@ -618,7 +624,7 @@ public class DataObservation<out T> internal constructor(
     private fun readAfterSubscriptionFailure(
         subscriptionFailure: Exception
     ): ReadValue<T>? {
-        if (isConnectionFailure(subscriptionFailure)) {
+        if (isConnectionFailure(subscriptionFailure, connectionStatus())) {
             return null
         }
         return try {
@@ -637,7 +643,7 @@ public class DataObservation<out T> internal constructor(
         cause: Throwable,
         cancelConnectedSubscription: Boolean = false
     ) {
-        val connectionFailure = isConnectionFailure(cause)
+        val connectionFailure = isConnectionFailure(cause, connectionStatus())
         val connected = connectionStatus() == ConnectionStatus.CONNECTED
         val previousSubscription: ObservationSubscription?
         synchronized(stateLock) {
@@ -648,10 +654,12 @@ public class DataObservation<out T> internal constructor(
             pendingReread = null
             previousSubscription = subscription
             subscription = null
-            mutableStatus.value = if (connectionFailure) {
-                WaitingForConnection
-            } else {
-                Failed(cause)
+            withMutableSnapshot {
+                mutableStatus.value = if (connectionFailure) {
+                    WaitingForConnection
+                } else {
+                    Failed(cause)
+                }
             }
         }
         if (!connectionFailure ||
@@ -669,21 +677,21 @@ public class DataObservation<out T> internal constructor(
      */
     private fun isCurrent(refreshGeneration: Long): Boolean =
         !cancelled && generation == refreshGeneration
-
-    /**
-     * Tells whether [cause] represents a temporary connection failure.
-     */
-    private fun isConnectionFailure(cause: Throwable): Boolean {
-        return when (Status.fromThrowable(cause).code) {
-            Status.Code.CANCELLED,
-            Status.Code.DEADLINE_EXCEEDED,
-            Status.Code.UNAVAILABLE -> true
-            Status.Code.UNKNOWN -> cause.hasGrpcStatus() &&
-                    connectionStatus() != ConnectionStatus.CONNECTED
-            else -> false
-        }
-    }
 }
+
+/**
+ * Tells whether [cause] is a temporary connection failure.
+ * `UNKNOWN` with a gRPC status counts only while [connectionStatus] is not `CONNECTED`.
+ */
+internal fun isConnectionFailure(cause: Throwable, connectionStatus: ConnectionStatus): Boolean =
+    when (Status.fromThrowable(cause).code) {
+        Status.Code.CANCELLED,
+        Status.Code.DEADLINE_EXCEEDED,
+        Status.Code.UNAVAILABLE -> true
+        Status.Code.UNKNOWN -> cause.hasGrpcStatus() &&
+                connectionStatus != ConnectionStatus.CONNECTED
+        else -> false
+    }
 
 /**
  * Tracks further query requests and direct updates that must survive the current read.

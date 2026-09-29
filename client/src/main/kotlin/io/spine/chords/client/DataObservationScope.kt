@@ -39,9 +39,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Prevents a repeatedly failing subscription stream from causing a tight retry loop.
+ * Prevents transient observation or page-read failures from causing a tight retry loop.
  */
-private const val ObservationRetryDelayMillis = 1_000L
+internal const val ConnectionRetryDelayMillis = 1_000L
 
 /**
  * Owns the lifecycle of every [DataObservation] created by one [DesktopClient].
@@ -249,7 +249,7 @@ internal class DataObservationScope(
         coroutineScope.launch {
             try {
                 while (shouldRetry(observation)) {
-                    delay(ObservationRetryDelayMillis)
+                    delay(ConnectionRetryDelayMillis)
                     if (shouldRetry(observation)) {
                         observation.refresh()
                     }

@@ -219,20 +219,22 @@ public class DesktopClient internal constructor(
     )
 
     /**
-     * Sends the page boundary, sort order, and limit through the standard Spine query service.
+     * Sends filters, sort order, and limit through the standard Spine query service.
+     * Omits `where` when [queryFilters] is empty.
      */
+    @Suppress("SpreadOperator" /* Spine accepts composite query filters only through varargs. */)
     override fun <E : EntityState> readPage(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
+        queryFilters: List<CompositeQueryFilter>,
         orderBy: EntityColumn,
         direction: Direction,
         limit: Int
     ): List<E> {
         validatePage(direction, limit)
-        return clientRequest()
+        val request = clientRequest()
             .select(entityClass)
-            .where(queryFilter)
-            .orderBy(orderBy, direction)
+        if (queryFilters.isNotEmpty()) request.where(*queryFilters.toTypedArray())
+        return request.orderBy(orderBy, direction)
             .limit(limit)
             .run()
     }
@@ -242,8 +244,8 @@ public class DesktopClient internal constructor(
      */
     override fun <E : EntityState> readPageAndObserve(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter,
+        queryFilters: List<CompositeQueryFilter>,
+        observeFilter: CompositeEntityStateFilter?,
         orderBy: EntityColumn,
         direction: Direction,
         limit: Int
@@ -254,7 +256,7 @@ public class DesktopClient internal constructor(
             read = {
                 readPage(
                     entityClass = entityClass,
-                    queryFilter = queryFilter,
+                    queryFilters = queryFilters,
                     orderBy = orderBy,
                     direction = direction,
                     limit = limit

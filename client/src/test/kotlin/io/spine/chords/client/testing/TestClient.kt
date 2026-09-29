@@ -97,7 +97,7 @@ internal object TestClient : Client {
      */
     override fun <E : EntityState> readPage(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
+        queryFilters: List<CompositeQueryFilter>,
         orderBy: EntityColumn,
         direction: Direction,
         limit: Int
@@ -108,8 +108,8 @@ internal object TestClient : Client {
      */
     override fun <E : EntityState> readPageAndObserve(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter,
+        queryFilters: List<CompositeQueryFilter>,
+        observeFilter: CompositeEntityStateFilter?,
         orderBy: EntityColumn,
         direction: Direction,
         limit: Int

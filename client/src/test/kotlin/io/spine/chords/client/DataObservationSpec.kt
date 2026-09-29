@@ -26,6 +26,7 @@
 
 package io.spine.chords.client
 
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.Snapshot
 import io.grpc.Status
 import io.kotest.assertions.throwables.shouldThrow
@@ -38,8 +39,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
@@ -51,6 +55,38 @@ import org.junit.jupiter.api.Test
 @DisplayName("`DataObservation` should")
 @Suppress("LargeClass" /* Keeps query, subscription, and recovery regressions in one suite. */)
 internal class DataObservationSpec {
+
+    /**
+     * Snapshot observers receive value and status together without a running UI composition.
+     */
+    @Test
+    fun `publish atomic snapshot changes without composition`(): Unit = runBlocking {
+        withTimeout(5_000) {
+            val source = InvalidatingObservationSource()
+            val observation = source.observation
+            val changes = Channel<Pair<DataObservationStatus, String>>(Channel.UNLIMITED)
+            val collecting = launch(start = UNDISPATCHED) {
+                snapshotFlow { observation.status.value to observation.value }
+                    .collect { changes.send(it) }
+            }
+            try {
+                changes.receive() shouldBe (DataObservationStatus.Refreshing to "")
+                observation.refresh()
+                changes.receive() shouldBe (DataObservationStatus.Active to "initial")
+                source.update("updated")
+                changes.receive() shouldBe (DataObservationStatus.Active to "updated")
+                val failure = Status.PERMISSION_DENIED.asRuntimeException()
+                source.fail(failure)
+                changes.receive() shouldBe (DataObservationStatus.Failed(failure) to "updated")
+                observation.cancel()
+                changes.receive() shouldBe (DataObservationStatus.Cancelled to "updated")
+                changes.tryReceive().isFailure shouldBe true
+            } finally {
+                observation.cancel()
+                collecting.cancelAndJoin()
+            }
+        }
+    }
 
     /**
      * Ordinary changes keep the stream and its active status through consecutive reads.

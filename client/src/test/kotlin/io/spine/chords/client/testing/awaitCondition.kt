@@ -24,7 +24,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.client.testing
+
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
+
 /**
- * The version of all Chords libraries.
+ * Polls [condition] every 10 ms while waiting for an asynchronous result or resource cleanup.
+ * Throws `TimeoutCancellationException` if the condition is not met within five seconds.
  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.133")
+internal suspend fun awaitCondition(condition: () -> Boolean) {
+    withTimeout(5_000) {
+        while (!condition()) delay(10)
+    }
+}

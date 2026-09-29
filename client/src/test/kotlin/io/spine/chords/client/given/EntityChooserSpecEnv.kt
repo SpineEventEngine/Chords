@@ -26,11 +26,7 @@
 
 package io.spine.chords.client.given
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.ui.ComposeScene
-import androidx.compose.ui.ExperimentalComposeUiApi
 import com.google.protobuf.Message
 import io.spine.base.EntityState
 import io.spine.chords.client.ConnectionStatus
@@ -38,12 +34,11 @@ import io.spine.chords.client.DataObservation
 import io.spine.chords.client.EntityChooser
 import io.spine.chords.client.ObservationSubscription
 import io.spine.chords.client.createDataObservation
+import io.spine.chords.client.testing.CompositionScene
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.proto.value.money.BankAccount
-import java.awt.EventQueue.invokeAndWait
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.skia.Surface
 
 /**
  * Supplies a real chooser and a deterministic observation source for its composition lifecycle.
@@ -130,71 +125,8 @@ internal object EntityChooserSpecEnv {
     /**
      * Runs a chooser scenario without a visible window.
      */
-    fun inScene(content: @Composable () -> Unit, test: (ChooserScene) -> Unit) {
-        ChooserScene(content).use(test)
+    fun inScene(content: @Composable () -> Unit, test: (CompositionScene) -> Unit) {
+        CompositionScene(content).use(test)
     }
 
-    /**
-     * Lets desktop snapshot notifications run between test actions and frames.
-     */
-    private fun <T> onUiThread(action: () -> T): T {
-        var result: Result<T>? = null
-        invokeAndWait { result = runCatching(action) }
-        return checkNotNull(result).getOrThrow()
-    }
-
-    /**
-     * Applies state changes to an off-screen composition of the chooser.
-     */
-    @OptIn(ExperimentalComposeUiApi::class)
-    class ChooserScene(content: @Composable () -> Unit) : AutoCloseable {
-
-        /**
-         * Provides the desktop composition locals used by message forms.
-         */
-        private val scene = onUiThread { ComposeScene() }
-
-        /**
-         * Supplies a canvas for advancing frames without showing a window.
-         */
-        private val surface = Surface.makeRasterN32Premul(1, 1)
-
-        /**
-         * Keeps frame timestamps increasing as the test applies edits.
-         */
-        private var frame = 0L
-
-        init {
-            onUiThread {
-                scene.setContent {
-                    MaterialTheme { content() }
-                }
-            }
-            render()
-        }
-
-        /**
-         * Advances frames until recomposition and its effects have settled.
-         */
-        fun render() {
-            repeat(10) {
-                onUiThread {
-                    Snapshot.sendApplyNotifications()
-                    scene.render(surface.canvas, ++frame * 16_000_000L)
-                }
-                if (!scene.hasInvalidations()) {
-                    return
-                }
-            }
-            error("The chooser composition did not settle.")
-        }
-
-        /**
-         * Releases the composition and its drawing surface.
-         */
-        override fun close(): Unit = onUiThread {
-            scene.close()
-            surface.close()
-        }
-    }
 }

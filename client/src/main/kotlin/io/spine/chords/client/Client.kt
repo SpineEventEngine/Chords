@@ -135,15 +135,37 @@ public interface Client {
     ): DataObservation<List<E>>
 
     /**
-     * Reads one ordered page, applying its filter, order, and positive [limit] on the server.
+     * Reads a page with one composite filter. Delegates to the
+     * `queryFilters: List<CompositeQueryFilter>` overload, which defines ordering, limits,
+     * and failures.
+     */
+    public fun <E : EntityState> readPage(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        orderBy: EntityColumn,
+        direction: Direction,
+        limit: Int
+    ): List<E> =
+        readPage(
+            entityClass = entityClass,
+            queryFilters = listOf(queryFilter),
+            orderBy = orderBy,
+            direction = direction,
+            limit = limit
+        )
+
+    /**
+     * Reads one ordered page, applying its filters, order, and positive [limit] on the server.
      *
-     * Include an exclusive cursor boundary in [queryFilter] for an adjacent page. [orderBy]
+     * Include an exclusive cursor condition in [queryFilters] for an adjacent page. [orderBy]
      * must define a unique, stable ordering when used for cursor pagination. This is a blocking
      * read, like [read]; call it off the UI thread. It creates no subscription.
      *
      * @param E The type of entity returned by the query.
      * @param entityClass The entity type to select on the server.
-     * @param queryFilter Selects matching entities and any exclusive cursor boundary.
+     * @param queryFilters Filters combined with AND; an empty list selects every entity.
+     *   Each composite may contain AND or OR conditions. Append a cursor condition as a separate
+     *   composite to preserve the selection's conditions.
      * @param orderBy The column that determines the result order.
      * @param direction Either [Direction.ASCENDING] or [Direction.DESCENDING].
      * @param limit The positive maximum number of entities to return.
@@ -152,21 +174,42 @@ public interface Client {
      */
     public fun <E : EntityState> readPage(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
+        queryFilters: List<CompositeQueryFilter>,
         orderBy: EntityColumn,
         direction: Direction,
         limit: Int
     ): List<E>
 
     /**
+     * Observes a page with one composite query filter and an explicit observation filter.
+     * Delegates to the `queryFilters: List<CompositeQueryFilter>` overload, which defines
+     * ordering, limits, asynchronous loading, and recovery.
+     */
+    public fun <E : EntityState> readPageAndObserve(
+        entityClass: Class<E>,
+        queryFilter: CompositeQueryFilter,
+        observeFilter: CompositeEntityStateFilter,
+        orderBy: EntityColumn,
+        direction: Direction,
+        limit: Int
+    ): DataObservation<List<E>> =
+        readPageAndObserve(
+            entityClass = entityClass,
+            queryFilters = listOf(queryFilter),
+            observeFilter = observeFilter,
+            orderBy = orderBy,
+            direction = direction,
+            limit = limit
+        )
+
+    /**
      * Maintains one ordered page using the same lifecycle and recovery as [readAndObserve].
      *
-     * The server applies [queryFilter], [orderBy], [direction], and the positive [limit]. Matching
+     * The server applies [queryFilters], [orderBy], [direction], and the positive [limit]. Matching
      * updates and removals cause a fresh page read so its membership and order remain correct;
-     * the client never accumulates entities beyond the page. [observeFilter] must include changes
-     * that can affect the query, including entries that can move into the page.
+     * the client never accumulates entities beyond the page.
      *
-     * For cursor pagination, include the boundary in [queryFilter] and use a unique, stable
+     * For cursor pagination, include a cursor condition in [queryFilters] and use a unique, stable
      * [orderBy] column. Cancel the previous observation when moving to another page. As with other
      * observations, this returns an initial empty list and reads asynchronously.
      *
@@ -178,8 +221,12 @@ public interface Client {
      *
      * @param E The type of entity read and observed.
      * @param entityClass The entity type to select and observe on the server.
-     * @param queryFilter Selects matching entities and any exclusive cursor boundary.
-     * @param observeFilter Covers all changes that can affect the page's membership or order.
+     * @param queryFilters Filters combined with AND; an empty list selects every entity.
+     *   Each composite may contain AND or OR conditions. Append a cursor condition as a separate
+     *   composite to preserve the selection's conditions.
+     * @param observeFilter When present, must cover every change that can affect the page's
+     *   membership or order, including entries that can move into the page. Defaults to `null`,
+     *   which observes all changes to this entity type.
      * @param orderBy The column that determines the page's result order.
      * @param direction Either [Direction.ASCENDING] or [Direction.DESCENDING].
      * @param limit The positive maximum number of entities retained in the page.
@@ -188,8 +235,8 @@ public interface Client {
      */
     public fun <E : EntityState> readPageAndObserve(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
-        observeFilter: CompositeEntityStateFilter,
+        queryFilters: List<CompositeQueryFilter>,
+        observeFilter: CompositeEntityStateFilter? = null,
         orderBy: EntityColumn,
         direction: Direction,
         limit: Int

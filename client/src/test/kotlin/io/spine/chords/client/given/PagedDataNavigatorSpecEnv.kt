@@ -24,7 +24,33 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.client.given
+
+import io.spine.chords.client.ConnectionStatus
+import io.spine.chords.client.ConnectionStatus.CONNECTED
+import io.spine.chords.client.PagedDataNavigator
+import io.spine.chords.client.testing.ConfigurablePagedDataSource
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+
 /**
- * The version of all Chords libraries.
+ * Arranges navigation against a configurable source without a server or entity model.
  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.133")
+internal object PagedDataNavigatorSpecEnv {
+
+    /**
+     * Starts the real navigator with a caller-owned lifetime and connection status.
+     */
+    fun navigator(
+        source: ConfigurablePagedDataSource,
+        scope: CoroutineScope,
+        connection: StateFlow<ConnectionStatus> = MutableStateFlow(CONNECTED)
+    ): PagedDataNavigator<Int> = PagedDataNavigator(
+        callerScope = scope,
+        connectionStatus = connection,
+        read = source::read,
+        observeFirstPage = source::observeFirstPage,
+        keyOf = { it }
+    ).also { it.first() }
+}

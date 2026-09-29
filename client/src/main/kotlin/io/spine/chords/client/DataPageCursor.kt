@@ -24,7 +24,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package io.spine.chords.client
+
 /**
- * The version of all Chords libraries.
+ * A position for reading a page in display order.
+ * Pages after or before an item exclude that item.
  */
-val chordsVersion: String by extra("2.0.0-SNAPSHOT.133")
+internal sealed interface DataPageCursor {
+
+    /**
+     * Selects the beginning of the ordered results.
+     */
+    object Start : DataPageCursor
+
+    /**
+     * Selects the nearest items after [key] in display order.
+     *
+     * @property key The cursor value of the item next to the requested page.
+     */
+    data class After(val key: Any) : DataPageCursor
+
+    /**
+     * Selects the nearest items before [key] in display order.
+     *
+     * @property key The cursor value of the item next to the requested page.
+     */
+    data class Before(val key: Any) : DataPageCursor
+}
