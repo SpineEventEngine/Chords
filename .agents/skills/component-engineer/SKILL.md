@@ -34,7 +34,8 @@ For published model Protobuf declarations and Kotlin model extensions under
 - Follow the class-based component pattern: rendering in `content()`,
   pre-composition state updates in `beforeComposeContent()`, configuration via
   companion-object `invoke` operators with `Props`-style lambdas.
-- Name composable functions and composable-emitting methods in `PascalCase`.
+- Name composables that emit UI and composable-emitting methods in `PascalCase`.
+  Composables that return a value, such as `remember` helpers, use `lowerCamelCase`.
 - Hold state that must trigger recomposition in `mutableStateOf`-backed
   properties (`by mutableStateOf(...)` with `getValue`/`setValue` imports).
 - Respect module layering: `core` must not depend on `proto` or `client`;
