@@ -42,7 +42,7 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.withContext
 
 /**
- * Drives ordered page responses, delayed reads, and live notifications without a connection.
+ * A controlled page source for testing navigation, connection failures, and cancellation races.
  * Integer items supply cursor values independently of any application model.
  *
  * @property pageSize The maximum number of displayed items; reads include one lookahead item.

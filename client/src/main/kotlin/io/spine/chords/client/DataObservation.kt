@@ -57,8 +57,7 @@ internal fun interface ObservationSubscription {
 }
 
 /**
- * Maintains live server data and recovers it after a temporary connection
- * failure.
+ * Live server data with loading and failure status for UI and other reactive consumers.
  *
  * A `DataObservation` is also a Compose [State], so its current [value] can be
  * read directly or with Kotlin property delegation. A newly created observation
@@ -680,7 +679,7 @@ public class DataObservation<out T> internal constructor(
 }
 
 /**
- * Tells whether [cause] is a temporary connection failure.
+ * Temporary-failure classification shared by page reads and live observations.
  * `UNKNOWN` with a gRPC status counts only while [connectionStatus] is not `CONNECTED`.
  */
 internal fun isConnectionFailure(cause: Throwable, connectionStatus: ConnectionStatus): Boolean =

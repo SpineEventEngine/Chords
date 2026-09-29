@@ -30,7 +30,7 @@ import io.spine.chords.client.DataPageCursor.Before
 import io.spine.chords.client.DataPageCursor.Start
 
 /**
- * Holds one page in the query's display order and the available navigation directions.
+ * One displayed page and the availability of adjacent pages for navigation controls.
  *
  * @param T The type of item displayed by the page.
  * @property items The displayed items, excluding the query's lookahead item.
@@ -44,13 +44,15 @@ internal data class DataPage<T>(
 ) {
 
     /**
-     * Interprets bounded query results for navigation in either direction.
+     * Page results in display order, with navigation availability derived from query lookahead.
      */
     companion object {
 
         /**
-         * Removes the lookahead item and restores display order after a backward query.
-         * The query must request at most [pageSize] plus one item.
+         * A display-ready page with enough information to enable forward and backward navigation.
+         *
+         * The result must contain at most [pageSize] plus one item. The extra item is excluded from
+         * display, and backward results are restored to display order.
          * A [DataPageCursor.Before] result always has a next page; a [DataPageCursor.After] result
          * always has a previous page. The lookahead item determines whether more items exist in the
          * requested direction.

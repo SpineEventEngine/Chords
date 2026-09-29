@@ -27,25 +27,25 @@
 package io.spine.chords.client
 
 /**
- * A position for reading a page in display order.
- * Pages after or before an item exclude that item.
+ * A cursor for locating a page within an ordered query.
+ * Pages before or after the referenced item exclude that item.
  */
 internal sealed interface DataPageCursor {
 
     /**
-     * Selects the beginning of the ordered results.
+     * The first page of the ordered results.
      */
     object Start : DataPageCursor
 
     /**
-     * Selects the nearest items after [key] in display order.
+     * The page immediately after [key] in display order.
      *
      * @property key The cursor value of the item next to the requested page.
      */
     data class After(val key: Any) : DataPageCursor
 
     /**
-     * Selects the nearest items before [key] in display order.
+     * The page immediately before [key] in display order.
      *
      * @property key The cursor value of the item next to the requested page.
      */

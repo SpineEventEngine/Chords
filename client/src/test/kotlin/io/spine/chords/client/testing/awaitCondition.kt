@@ -30,7 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 
 /**
- * Polls [condition] every 10 ms while waiting for an asynchronous result or resource cleanup.
+ * A bounded wait for asynchronous results or resource cleanup in tests.
  * Throws `TimeoutCancellationException` if the condition is not met within five seconds.
  */
 internal suspend fun awaitCondition(condition: () -> Boolean) {

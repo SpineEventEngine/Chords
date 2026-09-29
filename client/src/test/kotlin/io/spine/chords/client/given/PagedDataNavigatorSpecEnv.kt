@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Arranges navigation against a configurable source without a server or entity model.
+ * Navigator fixtures for testing loading and cancellation against a controlled data source.
  */
 internal object PagedDataNavigatorSpecEnv {
 

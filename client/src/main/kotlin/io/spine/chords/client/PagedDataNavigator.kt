@@ -59,8 +59,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Shows one page of a [PagedDataQuery] at a time and moves between pages in the caller's
- * coroutine scope.
+ * Navigation and loading state for browsing a [PagedDataQuery] one page at a time.
  *
  * `PagedDataNavigator(query, client, scope)` starts loading immediately;
  * [rememberPagedDataNavigator] starts after the composition commits. The first page follows
@@ -77,79 +76,79 @@ import kotlinx.coroutines.launch
 @Suppress("TooManyFunctions" /* Navigation and cancellation share one page lifecycle. */)
 public class PagedDataNavigator<T> internal constructor(
     /**
-     * Supplies the dispatcher and parent lifetime for this navigator's work.
+     * The caller's lifetime and dispatcher for page requests and connection monitoring.
      */
     callerScope: CoroutineScope,
     /**
-     * Signals when reads can recover and when the client closes.
+     * Connection state used to coordinate recovery and client closure.
      */
     private val connectionStatus: StateFlow<ConnectionStatus>,
     /**
-     * Reads a fixed page at the requested cursor.
+     * The source of fixed pages beyond the live first page.
      */
     private val read: suspend (DataPageCursor) -> DataPage<T>,
     /**
-     * Supplies live first-page values and their loading or recovery status.
+     * The source of live first-page data and its loading or recovery status.
      */
     private val observeFirstPage: () -> Flow<Pair<DataObservationStatus, DataPage<T>>>,
     /**
-     * Extracts an item's cursor value for navigation to an adjacent page.
+     * The item's cursor value used to locate an adjacent page.
      */
     private val keyOf: (T) -> Any
 ) : AutoCloseable {
 
     /**
-     * Serializes navigation, closure, and publication from concurrent requests.
+     * Mutual exclusion for navigation, closure, and publication from concurrent requests.
      */
     private val lock = Any()
 
     /**
-     * Cancels this navigator's work without cancelling the caller.
+     * The navigator's child job, allowing closure without cancellation of the caller.
      */
     private val lifetime = Job(callerScope.coroutineContext[Job])
 
     /**
-     * Runs page requests and connection monitoring for this navigator's lifetime.
+     * The coroutine scope shared by this navigator's requests and connection monitor.
      */
     private val scope = CoroutineScope(callerScope.coroutineContext + lifetime)
 
     /**
-     * Retains the last successful page through loading and connection recovery.
+     * The last successful page, available during loading and connection recovery.
      */
     private var page by mutableStateOf(DataPage<T>())
 
     /**
-     * Identifies the displayed page independently of pending navigation.
+     * The displayed page's cursor, independent of pending navigation.
      */
     private var cursor: DataPageCursor by mutableStateOf(Start)
 
     /**
-     * Makes status changes observable in Compose and to explicit waiters.
+     * Loading and failure state observed by Compose and explicit waiters.
      */
     private var currentStatus: DataObservationStatus by mutableStateOf(Refreshing)
 
     /**
-     * Distinguishes the latest request from cancelled work that finishes late.
+     * The request number used to reject results from cancelled work that finishes late.
      */
     private var generation = 0L
 
     /**
-     * Remembers the requested cursor so retry repeats a failed navigation.
+     * The latest requested cursor, so retry can repeat a failed navigation.
      */
     private var requestedCursor: DataPageCursor = Start
 
     /**
-     * Releases the previous page's work before starting its replacement.
+     * The current request job, retained for cancellation and completion before its replacement.
      */
     private var requestJob: Job? = null
 
     /**
-     * Wakes waiters after a state change; replacing a request does not cancel its callers.
+     * The next state-change signal for waiters, which survive replacement of a page request.
      */
     private var nextChange = CompletableDeferred<Unit>(lifetime)
 
     /**
-     * Watches client closure after the first request starts.
+     * Client-closure monitoring, active from the first request until the navigator closes.
      */
     private var connectionMonitor: Job? = null
 
@@ -266,7 +265,7 @@ public class PagedDataNavigator<T> internal constructor(
     }
 
     /**
-     * Starts a replacement request whose results are accepted only while its generation is current.
+     * The transition to a requested page, protected from late results of cancelled requests.
      * A loaded first page remains active while its new observation starts.
      */
     @Suppress("TooGenericExceptionCaught" /* Request failures must become observable statuses. */)
@@ -318,10 +317,10 @@ public class PagedDataNavigator<T> internal constructor(
     }
 
     /**
-     * Reads one fixed page, retrying transient failures as observations do.
+     * Fixed-page loading with the same connection recovery policy as live observations.
      * Before the first attempt, it waits only while the client is `UNAVAILABLE`; idle and
      * connecting clients can read.
-     * After a transient failure, uses the observation retry delay and waits until connected.
+     * After a transient failure, it uses the observation retry delay and waits until connected.
      */
     @Suppress("TooGenericExceptionCaught" /* Classifies failures from arbitrary client reads. */)
     private suspend fun readFixedPage(target: DataPageCursor, current: Long): DataPage<T> {
@@ -375,8 +374,8 @@ public class PagedDataNavigator<T> internal constructor(
     }
 
     /**
-     * Publishes a page and status together, then releases waiters.
-     * Calling this function requires holding [lock].
+     * A consistent page and status for snapshot observers and suspended callers.
+     * Both become visible before waiters resume. Calling this function requires holding [lock].
      */
     private fun publish(
         status: DataObservationStatus,
@@ -397,8 +396,10 @@ public class PagedDataNavigator<T> internal constructor(
 }
 
 /**
- * Starts a navigator that reads [query] through [client] within [scope].
- * A closed client or cancelled scope produces a cancelled navigator without issuing requests.
+ * Page navigation for callers that manage their lifetime through a coroutine [scope].
+ *
+ * Loading starts immediately. A closed client or cancelled scope produces a cancelled navigator
+ * without issuing requests.
  * Close the navigator when finished, for example with `use`. Its requests and connection monitor
  * are children of [scope], so that scope cannot complete until the navigator is closed.
  *
@@ -416,8 +417,9 @@ public fun <T : EntityState> PagedDataNavigator(
     .also { it.first() }
 
 /**
- * Creates an idle navigator; [rememberPagedDataNavigator] starts it after the composition commits.
- * The public factory starts it immediately.
+ * A navigator whose first request is deferred to its lifecycle owner.
+ * The public factory begins loading immediately; [rememberPagedDataNavigator] waits for a committed
+ * composition.
  */
 internal fun <T : EntityState> createPagedDataNavigator(
     query: PagedDataQuery<T>,

@@ -35,13 +35,13 @@ import java.awt.EventQueue.invokeAndWait
 import org.jetbrains.skia.Surface
 
 /**
- * Applies state changes to an off-screen composition for a component.
+ * An off-screen component view for testing recomposition and lifecycle effects.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 internal class CompositionScene(content: @Composable () -> Unit) : AutoCloseable {
 
     /**
-     * Runs the supplied content with desktop composition locals.
+     * The test composition with the context provided by a desktop view.
      */
     private val scene = onUiThread { ComposeScene() }
 

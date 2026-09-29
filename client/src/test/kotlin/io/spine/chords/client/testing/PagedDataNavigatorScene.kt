@@ -36,7 +36,7 @@ import io.spine.chords.client.given.ObservedItemPages.query
 import io.spine.chords.client.rememberPagedDataNavigator
 
 /**
- * Drives paging lifecycle through [CompositionScene].
+ * An off-screen consumer for testing navigation state across composition and input changes.
  */
 internal class PagedDataNavigatorScene(initialClient: Client) : AutoCloseable {
 
@@ -46,12 +46,12 @@ internal class PagedDataNavigatorScene(initialClient: Client) : AutoCloseable {
     var client: Client by mutableStateOf(initialClient)
 
     /**
-     * Replaces the query's lower bound while retaining its composition location.
+     * The query's lower bound, varied to test replacement at the same composition location.
      */
     var lowerBound: String by mutableStateOf("")
 
     /**
-     * Removes and re-enters the same query at its composition location.
+     * Whether the view containing the navigator is present in the composition.
      */
     var visible by mutableStateOf(true)
 

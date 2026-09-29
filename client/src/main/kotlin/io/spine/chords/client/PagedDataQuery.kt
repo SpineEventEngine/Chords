@@ -47,7 +47,7 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.runInterruptible
 
 /**
- * Describes an ordered entity selection that [PagedDataNavigator] reads page by page.
+ * An ordered entity selection for browsing through [PagedDataNavigator].
  *
  * [orderBy] must be unique and stable, or items can be skipped or repeated between pages.
  * [keyOf] must extract that column's value. Queries compare by their selection and paging
@@ -76,7 +76,7 @@ public class PagedDataQuery<T : EntityState>(
 ) {
 
     /**
-     * Keeps query equality independent of later changes to the caller's list.
+     * A stable selection filter, unaffected by later changes to the caller's list.
      */
     internal val queryFilters = queryFilters.toList()
 
@@ -105,7 +105,8 @@ public class PagedDataQuery<T : EntityState>(
     )
 
     /**
-     * Reads one bounded page off the calling thread without a subscription.
+     * Fixed page data for navigation away from the live first page.
+     * The blocking read runs on the IO dispatcher and creates no subscription.
      */
     internal suspend fun read(client: Client, cursor: DataPageCursor): DataPage<T> =
         runInterruptible(IO) {
@@ -120,8 +121,8 @@ public class PagedDataQuery<T : EntityState>(
         }
 
     /**
-     * Reports first-page values and observation statuses until the observation is cancelled.
-     * Stopping collection cancels the observation.
+     * Live first-page data and status for keeping the beginning of the selection current.
+     * Each collection has a separate observation; cancellation of either ends both.
      */
     internal fun observeFirstPage(client: Client): Flow<Pair<DataObservationStatus, DataPage<T>>> =
         flow {
@@ -152,7 +153,7 @@ public class PagedDataQuery<T : EntityState>(
         get() = if (direction == ASCENDING) DESCENDING else ASCENDING
 
     /**
-     * Adds a separate cursor condition without changing the selection's AND or OR structure.
+     * Page-specific filters that preserve the selection's AND or OR conditions.
      */
     private fun filters(cursor: DataPageCursor): List<CompositeQueryFilter> {
         val comparison = when (cursor) {
