@@ -94,11 +94,14 @@ observations recover automatically.
 
 ### Reading pages
 
+For page-by-page UI, use [`PagedDataNavigator`](#navigating-paged-data) below. The `Client` methods
+in this section are its lower-level building blocks.
+
 Use `readPage()` to read a bounded, ordered result without a subscription, or
 `readPageAndObserve()` to keep one page current through a standard observation.
-Both send the filter, order, and positive limit to the server. The observed page
-is reread when matching entities change or are removed, so the retained list
-stays bounded and follows the server's ordering.
+Both send any supplied filters, the order, and a positive limit to the server. The observed
+page is reread when matching entities change or are removed, so the retained list stays bounded
+and follows the server's ordering.
 
 Ordinary rereads retain the active subscription and status. Notifications received
 during a read cause another read, without opening another subscription. Each completed
@@ -106,15 +109,81 @@ page is shown while the next read catches up with ongoing changes. Explicit refr
 can proceed between reads. Read failures retain the last page and follow the observation
 failure policy described above.
 
-For adjacent pages, include an exclusive cursor boundary in the query filter
-and order by a unique, stable column. The observation filter must cover changes
-that can move entries into or out of the page. Cancel the previous observation
-when navigating away. Connection recovery and cancellation follow the same
-rules as other data observations.
+Implementations of `Client`, including test doubles and decorators, must implement the
+`queryFilters: List<CompositeQueryFilter>` overloads of both paging methods when upgrading to
+`2.0.0-SNAPSHOT.133`. The single-filter overloads delegate to them.
 
-Implementations of `Client`, including test doubles and decorators, must implement
-both paging methods when upgrading to `2.0.0-SNAPSHOT.132`. This extends the interface's
-implementation requirements; existing implementations need to be updated and recompiled.
+### Navigating paged data
+
+[`PagedDataQuery`](src/main/kotlin/io/spine/chords/client/PagedDataQuery.kt) describes a selection;
+[`PagedDataNavigator`](src/main/kotlin/io/spine/chords/client/PagedDataNavigator.kt) loads it and
+provides page navigation. The first page follows live changes. Other pages stay fixed until
+navigation or retry. Each navigator retains only its current page during loading and errors.
+
+For an entity `Item` with a unique, stable `label` column, describe the selection once:
+
+```kotlin
+val query = PagedDataQuery(
+    entityClass = Item::class.java,
+    queryFilters = emptyList(),
+    orderBy = Item.Column.label(),
+    direction = Direction.ASCENDING,
+    pageSize = 50,
+    keyOf = { it.label }
+)
+```
+
+In Compose, the helper creates and closes the navigator with the composition. Equivalent queries
+keep the displayed page; changing the query or client resets it:
+
+```kotlin
+@Composable
+fun ItemPages(query: PagedDataQuery<Item>, client: Client) {
+    val navigator = rememberPagedDataNavigator(query, client)
+    Column {
+        navigator.items.forEach { Text(it.label) }
+        when (val status = navigator.status) {
+            DataObservationStatus.Refreshing -> Text("Loading…")
+            DataObservationStatus.WaitingForConnection -> Text("Waiting for connection…")
+            is DataObservationStatus.Failed -> {
+                Text(status.error.message ?: "Could not load items.")
+                Button(onClick = navigator::retry) { Text("Retry") }
+            }
+            else -> Unit
+        }
+        Button(onClick = navigator::previous, enabled = navigator.canGoPrevious) {
+            Text("Previous")
+        }
+        Button(onClick = navigator::next, enabled = navigator.canGoNext) { Text("Next") }
+    }
+}
+```
+
+The example uses `androidx.compose.foundation.layout.Column` and Material `Button` and `Text`.
+Use the opaque `pageKey` to reset scrolling when the displayed page changes.
+
+Outside Compose, supply a coroutine scope and close the navigator when finished. Its requests
+and connection monitor are children of that scope, so leaving it open prevents the scope from
+completing. `use` closes it even when reading fails:
+
+```kotlin
+suspend fun readTwoPages(query: PagedDataQuery<Item>, client: Client): List<Item> =
+    coroutineScope {
+        PagedDataNavigator(query = query, client = client, scope = this).use { navigator ->
+            val firstPage = navigator.awaitItems()
+            if (navigator.canGoNext) {
+                navigator.next()
+                firstPage + navigator.awaitItems()
+            } else firstPage
+        }
+    }
+```
+
+`awaitItems()` follows the latest requested page and throws terminal read failures. Temporary
+connection failures recover automatically; disconnected clients wait for reconnection. Closing
+the navigator or client, or cancelling its caller's scope, cancels pending waits. Navigators
+sharing a parent coroutine scope can be cancelled together without closing their shared client.
+Navigation and result publication are synchronized for use from multithreaded dispatchers.
 
 ### Server-aware components
 

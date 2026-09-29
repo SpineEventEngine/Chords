@@ -386,7 +386,7 @@ internal class DesktopClientSpec {
             }
 
     /**
-     * Sends cursor boundaries, order, and limits to the server for bounded selection.
+     * Sends cursor conditions, order, and limits to the server for bounded selection.
      */
     @Test
     fun `send a bounded ordered query with its cursor filter`() {
@@ -415,6 +415,41 @@ internal class DesktopClientSpec {
                     listOf(gt(ObservedItem.Column.label(), "B"))
                 source.lastTopic shouldBe null
             }
+    }
+
+    /**
+     * Omitting both filters selects and subscribes to the entire entity type.
+     */
+    @Test
+    fun `observe a bounded page without query or observation filters`() = runTest {
+        ObservationChannel(StandardTestDispatcher(testScheduler)).use { source ->
+            val first = item("first", "A")
+            val second = item("second", "B")
+            source.items = listOf(first)
+            val observation = source.client.readPageAndObserve(
+                entityClass = ObservedItem::class.java,
+                queryFilters = emptyList(),
+                orderBy = ObservedItem.Column.label(),
+                direction = ASCENDING,
+                limit = 2
+            )
+            try {
+                runCurrent()
+                observation.value shouldBe listOf(first)
+                checkNotNull(source.lastQuery).target.hasFilters() shouldBe false
+                checkNotNull(source.lastTopic).target.hasFilters() shouldBe false
+
+                source.items = listOf(first, second)
+                source.update(second)
+                runCurrent()
+
+                observation.value shouldBe listOf(first, second)
+                source.readCount shouldBe 2
+                source.subscribeCount shouldBe 1
+            } finally {
+                observation.cancel()
+            }
+        }
     }
 
     /**
