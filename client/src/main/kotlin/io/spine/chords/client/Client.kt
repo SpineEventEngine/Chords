@@ -325,6 +325,29 @@ public interface Client {
     ): DataObservation<E>
 
     /**
+     * Keeps one entity current by its identifier, without reading other entities.
+     *
+     * Returns without waiting for the server. The observation initially holds `null`, with
+     * [DataObservationStatus.Refreshing] status, or [DataObservationStatus.WaitingForConnection]
+     * when the connection is already known to be unavailable. The entity value appears once
+     * the initial read and subscription complete.
+     *
+     * Later updates can make an absent, archived, or deleted entity available again.
+     * Connection recovery and failures follow [DataObservation]'s policy;
+     * call [DataObservation.cancel] when finished.
+     *
+     * @param E The entity state type.
+     * @param entityClass The entity type to read and observe.
+     * @param id The entity's `String`, `Int`, `Long`, or Protobuf message identifier.
+     * @return An observation of the entity, with a `null` value while it is absent,
+     *   archived, or deleted.
+     */
+    public fun <E : EntityState> readOneAndObserve(
+        entityClass: Class<E>,
+        id: Any
+    ): DataObservation<E?>
+
+    /**
      * Retrieves an entity of the specified class with the given ID.
      *
      * @param entityClass The class of the entity to retrieve.

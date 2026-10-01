@@ -31,7 +31,9 @@ import io.spine.base.EntityColumn
 import io.spine.base.EntityState
 import io.spine.chords.client.DataObservationStatus.Cancelled
 import io.spine.chords.client.DataPageCursor.After
+import io.spine.chords.client.DataPageCursor.At
 import io.spine.chords.client.DataPageCursor.Before
+import io.spine.chords.client.DataPageCursor.End
 import io.spine.chords.client.DataPageCursor.Start
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
@@ -106,7 +108,8 @@ public class PagedDataQuery<T : EntityState>(
 
     /**
      * Fixed page data for navigation away from the live first page.
-     * The blocking read runs on the IO dispatcher and creates no subscription.
+     * Blocking reads run on the IO dispatcher and create no subscription.
+     * Seeking also checks for preceding items with a separate bounded read.
      */
     internal suspend fun read(client: Client, cursor: DataPageCursor): DataPage<T> =
         runInterruptible(IO) {
@@ -114,10 +117,25 @@ public class PagedDataQuery<T : EntityState>(
                 entityClass = entityClass,
                 queryFilters = filters(cursor),
                 orderBy = orderBy,
-                direction = if (cursor is Before) reverseDirection else direction,
+                direction = if (cursor is Before || cursor == End) reverseDirection else direction,
                 limit = pageSize + 1
             )
-            DataPage.from(items = items, cursor = cursor, pageSize = pageSize)
+            val hasPrevious = if (cursor is At) {
+                val preceding = client.readPage(
+                    entityClass = entityClass,
+                    queryFilters = filters(Before(cursor.key)),
+                    orderBy = orderBy,
+                    direction = reverseDirection,
+                    limit = 1
+                )
+                preceding.isNotEmpty()
+            } else cursor != Start
+            DataPage.from(
+                items = items,
+                cursor = cursor,
+                pageSize = pageSize,
+                hasPrevious = hasPrevious
+            )
         }
 
     /**
@@ -138,7 +156,12 @@ public class PagedDataQuery<T : EntityState>(
                 snapshotFlow { observation.status.value to observation.value }
                     .takeWhile { (status, _) -> status != Cancelled }
                     .collect { (status, items) ->
-                        val page = DataPage.from(items = items, cursor = Start, pageSize = pageSize)
+                        val page = DataPage.from(
+                            items = items,
+                            cursor = Start,
+                            pageSize = pageSize,
+                            hasPrevious = false
+                        )
                         emit(status to page)
                     }
             } finally {
@@ -157,7 +180,9 @@ public class PagedDataQuery<T : EntityState>(
      */
     private fun filters(cursor: DataPageCursor): List<CompositeQueryFilter> {
         val comparison = when (cursor) {
-            Start -> null
+            Start, End -> null
+            is At -> if (direction == ASCENDING) QueryFilter.ge(orderBy, cursor.key)
+                else QueryFilter.le(orderBy, cursor.key)
             is After -> if (direction == ASCENDING) QueryFilter.gt(orderBy, cursor.key)
                 else QueryFilter.lt(orderBy, cursor.key)
             is Before -> if (direction == ASCENDING) QueryFilter.lt(orderBy, cursor.key)

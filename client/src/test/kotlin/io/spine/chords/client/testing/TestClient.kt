@@ -135,6 +135,14 @@ internal object TestClient : Client {
     ): DataObservation<E> = error("Unexpected single-entity observation.")
 
     /**
+     * Rejects ID observations outside the exercised chooser API.
+     */
+    override fun <E : EntityState> readOneAndObserve(
+        entityClass: Class<E>,
+        id: Any
+    ): DataObservation<E?> = error("Unexpected single-entity observation.")
+
+    /**
      * Rejects synchronous reads, which the chooser must not perform.
      */
     override fun <E : EntityState, M : Message> read(entityClass: Class<E>, id: M): E? =
