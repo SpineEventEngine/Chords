@@ -27,7 +27,7 @@
 package io.spine.chords.client
 
 import io.spine.chords.client.DataPageCursor.Before
-import io.spine.chords.client.DataPageCursor.Start
+import io.spine.chords.client.DataPageCursor.End
 
 /**
  * One displayed page and the availability of adjacent pages for navigation controls.
@@ -44,7 +44,7 @@ internal data class DataPage<T>(
 ) {
 
     /**
-     * Page results in display order, with navigation availability derived from query lookahead.
+     * Page results in display order, with flags for adjacent-page navigation.
      */
     companion object {
 
@@ -53,22 +53,26 @@ internal data class DataPage<T>(
          *
          * The result must contain at most [pageSize] plus one item. The extra item is excluded from
          * display, and backward results are restored to display order.
-         * A [DataPageCursor.Before] result always has a next page; a [DataPageCursor.After] result
-         * always has a previous page. The lookahead item determines whether more items exist in the
-         * requested direction.
+         * [hasPrevious] applies only to forward results. Backward results derive it from lookahead
+         * and have a next page unless requested from the end of the selection.
          */
         fun <T> from(
             items: List<T>,
             cursor: DataPageCursor,
-            pageSize: Int
+            pageSize: Int,
+            hasPrevious: Boolean
         ): DataPage<T> {
-            val backward = cursor is Before
+            val backward = cursor is Before || cursor == End
             val displayed = items.take(pageSize)
             val hasMore = items.size > pageSize
             return DataPage(
                 items = if (backward) displayed.reversed() else displayed,
-                hasNext = if (backward) true else hasMore,
-                hasPrevious = if (backward) hasMore else cursor != Start
+                hasNext = when (cursor) {
+                    End -> false
+                    is Before -> true
+                    else -> hasMore
+                },
+                hasPrevious = if (backward) hasMore else hasPrevious
             )
         }
     }

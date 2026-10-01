@@ -32,7 +32,9 @@ import io.spine.chords.client.DataObservationStatus.Refreshing
 import io.spine.chords.client.DataPage
 import io.spine.chords.client.DataPageCursor
 import io.spine.chords.client.DataPageCursor.After
+import io.spine.chords.client.DataPageCursor.At
 import io.spine.chords.client.DataPageCursor.Before
+import io.spine.chords.client.DataPageCursor.End
 import io.spine.chords.client.DataPageCursor.Start
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
@@ -131,17 +133,31 @@ internal class ConfigurablePagedDataSource(
         }
         val result = items.filter {
             when (cursor) {
-                Start -> true
+                Start, End -> true
+                is At -> if (ascending) it >= cursor.key as Int else it <= cursor.key as Int
                 is After -> if (ascending) it > cursor.key as Int else it < cursor.key as Int
                 is Before -> if (ascending) it < cursor.key as Int else it > cursor.key as Int
             }
         }
             .sorted()
-            .let { if (ascending != (cursor is Before)) it else it.reversed() }
+            .let { if (ascending != (cursor is Before || cursor == End)) it else it.reversed() }
             .take(pageSize + 1)
         val gate = pending
         pending = null
         if (gate != null) withContext(NonCancellable) { gate.await() }
-        return DataPage.from(items = result, cursor = cursor, pageSize = pageSize)
+        return DataPage.from(
+            items = result,
+            cursor = cursor,
+            pageSize = pageSize,
+            hasPrevious = hasPrevious(cursor)
+        )
     }
+
+    /**
+     * Reports a forward page's `hasPrevious`: whether items precede an [At] key;
+     * any other non-start cursor has a previous page.
+     */
+    private fun hasPrevious(cursor: DataPageCursor): Boolean = if (cursor is At) items.any {
+        if (ascending) it < cursor.key as Int else it > cursor.key as Int
+    } else cursor != Start
 }

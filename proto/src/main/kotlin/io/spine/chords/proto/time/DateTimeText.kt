@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import com.google.protobuf.Timestamp
 import java.time.format.DateTimeFormatter
 
@@ -52,11 +53,56 @@ public fun DateTimeText(
     color: Color = Color.Unspecified,
     fontWeight: FontWeight? = null
 ) {
+    DateTimeText(
+        dateTime = dateTime,
+        pattern = pattern,
+        modifier = modifier,
+        color = color,
+        fontWeight = fontWeight,
+        maxLines = Int.MAX_VALUE
+    )
+}
+
+/**
+ * Displays a timestamp with a line limit for constrained layouts such as table cells.
+ *
+ * The timestamp is interpreted in the system time zone. Text beyond [maxLines] uses [overflow].
+ *
+ * ```kotlin
+ * DateTimeText(
+ *     dateTime = timestamp,
+ *     maxLines = 1,
+ *     overflow = TextOverflow.Ellipsis
+ * )
+ * ```
+ *
+ * @param dateTime The timestamp to display.
+ * @param pattern The date/time formatting pattern (see [DateTimeFormatter]
+ *   for the formatting syntax).
+ * @param modifier Layout and behavior adjustments.
+ * @param color The text color.
+ * @param fontWeight The text's font weight.
+ * @param maxLines The positive maximum number of displayed lines.
+ * @param overflow How text exceeding the available space is displayed.
+ */
+@Composable
+@Suppress("LongParameterList" /* Mirrors the standard text layout and styling options. */)
+public fun DateTimeText(
+    dateTime: Timestamp,
+    pattern: String = "yyyy-MM-dd hh:mm a",
+    modifier: Modifier = Modifier,
+    color: Color = Color.Unspecified,
+    fontWeight: FontWeight? = null,
+    maxLines: Int,
+    overflow: TextOverflow = TextOverflow.Clip
+) {
     DateText(
         dateTime,
         pattern,
         modifier = modifier,
         color = color,
-        fontWeight = fontWeight
+        fontWeight = fontWeight,
+        maxLines = maxLines,
+        overflow = overflow
     )
 }

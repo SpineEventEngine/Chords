@@ -93,6 +93,9 @@ internal class DataObservationScope(
 
     /**
      * The observations currently included in this scope.
+     *
+     * Iterate this concurrent set directly. `toList()` can throw if the last observation
+     * unregisters between its size check and iteration.
      */
     private val observations =
         ConcurrentHashMap.newKeySet<DataObservation<*>>()
@@ -279,7 +282,7 @@ internal class DataObservationScope(
             return
         }
         connectionStatusChanges.close()
-        observations.toList().forEach {
+        observations.forEach {
             it.close()
         }
         observations.clear()
@@ -302,11 +305,11 @@ internal class DataObservationScope(
                 connectionWasUnavailable = false
             }
             if (connectionLost) {
-                observations.toList().forEach {
+                observations.forEach {
                     it.waitForConnection()
                 }
             } else if (status == ConnectionStatus.CONNECTED) {
-                observations.toList().forEach {
+                observations.forEach {
                     if (it.needsRecovery) {
                         refresh(it)
                     }

@@ -335,6 +335,30 @@ public class DesktopClient internal constructor(
         applyUpdate = { _, entity -> entity }
     )
 
+    override fun <E : EntityState> readOneAndObserve(
+        entityClass: Class<E>,
+        id: Any
+    ): DataObservation<E?> = createObservation(
+        initialValue = null,
+        read = {
+            clientRequest()
+                .select(entityClass)
+                .byId(listOf(id))
+                .run()
+                .firstOrNull()
+        },
+        subscribe = { onUpdate, onRemoval, onError ->
+            subscribeTo(
+                entityClass = entityClass,
+                onUpdate = onUpdate,
+                onRemoval = onRemoval,
+                onError = onError,
+                id = id
+            )
+        },
+        applyUpdate = { _, entity -> entity }
+    )
+
     override fun <E : EntityState, M : Message> read(
         entityClass: Class<E>,
         id: M
@@ -502,7 +526,8 @@ public class DesktopClient internal constructor(
         onUpdate: (E) -> Unit,
         onRemoval: (Any) -> Unit,
         onError: (Throwable) -> Unit,
-        filter: CompositeEntityStateFilter? = null
+        filter: CompositeEntityStateFilter? = null,
+        id: Any? = null
     ): ObservationSubscription {
         val request = clientRequest()
             .subscribeTo(entityClass)
@@ -512,6 +537,7 @@ public class DesktopClient internal constructor(
         filter?.let {
             request.where(it)
         }
+        id?.let { request.byId(listOf(it)) }
         val subscription = request.post()
         return ObservationSubscription {
             cancelSubscription(subscription)

@@ -34,7 +34,9 @@ import io.kotest.matchers.shouldBe
 import io.spine.chords.client.DataObservationStatus.Active
 import io.spine.chords.client.DataObservationStatus.Failed
 import io.spine.chords.client.DataPageCursor.After
+import io.spine.chords.client.DataPageCursor.At
 import io.spine.chords.client.DataPageCursor.Before
+import io.spine.chords.client.DataPageCursor.End
 import io.spine.chords.client.DataPageCursor.Start
 import io.spine.chords.client.given.ObservedItem
 import io.spine.chords.client.given.ObservedItemPages.items
@@ -43,10 +45,13 @@ import io.spine.chords.client.testing.ObservationChannel
 import io.spine.chords.client.testing.awaitCondition
 import io.spine.client.CompositeFilter.CompositeOperator.EITHER
 import io.spine.client.CompositeQueryFilter
+import io.spine.client.Filters.ge
 import io.spine.client.Filters.gt
+import io.spine.client.Filters.le
 import io.spine.client.Filters.lt
 import io.spine.client.OrderBy.Direction.ASCENDING
 import io.spine.client.OrderBy.Direction.DESCENDING
+import io.spine.client.Query
 import io.spine.client.QueryFilter
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
@@ -56,6 +61,9 @@ import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.Arguments.arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 
 /**
@@ -63,6 +71,83 @@ import org.junit.jupiter.params.provider.ValueSource
  */
 @DisplayName("`PagedDataQuery` should")
 internal class PagedDataQuerySpec {
+
+    /**
+     * Direct final-page reads preserve filters and use one bounded query in reverse order.
+     */
+    @ParameterizedTest(name = "last page with ascending={0}, items={1}")
+    @MethodSource("lastPageCases")
+    fun `read the final page directly`(ascending: Boolean, count: Int): Unit = runBlocking {
+        ObservationChannel().use { source ->
+            val direction = if (ascending) ASCENDING else DESCENDING
+            val sample = items(count)
+            val ordered = if (ascending) sample else sample.reversed()
+            source.items = ordered.reversed()
+                .take(3)
+
+            val page = query(direction = direction, pageSize = 2)
+                .read(source.client, End)
+
+            page.items shouldBe ordered.takeLast(2)
+            page.hasPrevious shouldBe (count > 2)
+            page.hasNext shouldBe false
+            val request = checkNotNull(source.lastQuery)
+            request.format.limit shouldBe 3
+            request.format.orderBy.direction shouldBe if (ascending) DESCENDING else ASCENDING
+            request.target.filters.filterList.flatMap { it.filterList } shouldBe
+                listOf(gt(ObservedItem.Column.label(), ""))
+            source.readCount shouldBe 1
+            source.subscribeCount shouldBe 0
+        }
+    }
+
+    /**
+     * Seeking uses an inclusive cursor and honors both results of its predecessor check.
+     */
+    @ParameterizedTest(name = "seek with ascending={0}, preceding items={1}")
+    @MethodSource("seekCases")
+    fun `include a requested cursor`(
+        ascending: Boolean,
+        precedingItemsExist: Boolean
+    ): Unit = runBlocking {
+        ObservationChannel().use { source ->
+            val direction = if (ascending) ASCENDING else DESCENDING
+            val sample = items(7)
+            val selected = if (ascending) sample.drop(3) else sample.take(4).reversed()
+            val requests = mutableListOf<Query>()
+            source.items = selected.take(3)
+            source.onRead = {
+                requests.add(checkNotNull(source.lastQuery))
+                source.items = if (precedingItemsExist) {
+                    listOf(if (ascending) sample.first() else sample.last())
+                } else emptyList()
+            }
+
+            val page = query(direction = direction, pageSize = 2)
+                .read(source.client, At(sample[3].label))
+
+            page.items shouldBe selected.take(2)
+            page.hasNext shouldBe true
+            page.hasPrevious shouldBe precedingItemsExist
+            requests.size shouldBe 2
+            val first = requests.first()
+            val preceding = requests.last()
+            first.format.limit shouldBe 3
+            first.format.orderBy.direction shouldBe direction
+            first.target.filters.filterList.last().filterList shouldBe listOf(
+                if (ascending) ge(ObservedItem.Column.label(), sample[3].label)
+                else le(ObservedItem.Column.label(), sample[3].label)
+            )
+            preceding.format.limit shouldBe 1
+            preceding.format.orderBy.direction shouldBe
+                if (ascending) DESCENDING else ASCENDING
+            preceding.target.filters.filterList.last().filterList shouldBe listOf(
+                if (ascending) lt(ObservedItem.Column.label(), sample[3].label)
+                else gt(ObservedItem.Column.label(), sample[3].label)
+            )
+            source.subscribeCount shouldBe 0
+        }
+    }
 
     /**
      * Page direction reverses both comparison and read order while preserving selection.
@@ -345,4 +430,29 @@ internal class PagedDataQuerySpec {
         }
     }
 
+    /**
+     * Supplies seek cases for both sort directions and predecessor outcomes.
+     */
+    companion object {
+
+        /**
+         * Covers empty, short, exact, and multiple pages in both display orders.
+         */
+        @JvmStatic
+        fun lastPageCases(): List<Arguments> = listOf(true, false)
+            .flatMap { ascending ->
+                listOf(0, 1, 2, 3, 7).map { arguments(ascending, it) }
+            }
+
+        /**
+         * Covers each combination of sort direction and predecessor presence.
+         */
+        @JvmStatic
+        fun seekCases(): List<Arguments> = listOf(
+            arguments(true, true),
+            arguments(true, false),
+            arguments(false, true),
+            arguments(false, false)
+        )
+    }
 }

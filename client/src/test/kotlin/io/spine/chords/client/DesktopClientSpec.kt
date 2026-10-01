@@ -28,6 +28,7 @@ package io.spine.chords.client
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.spine.base.Identifier
 import io.spine.chords.client.given.DesktopClientSpecEnv.awaitActive
 import io.spine.chords.client.given.DesktopClientSpecEnv.item
 import io.spine.chords.client.given.IdlessItem
@@ -60,6 +61,37 @@ import org.junit.jupiter.params.provider.ValueSource
 @DisplayName("`DesktopClient` should")
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class DesktopClientSpec {
+
+    /**
+     * A selected entity uses ID filters for reads and updates, including removal and reappearance.
+     */
+    @Test
+    fun `read and observe one entity by ID`(): Unit = runTest {
+        ObservationChannel(StandardTestDispatcher(testScheduler))
+            .use { source ->
+                val entity = item("selected")
+                source.items = listOf(entity)
+
+                val observation = source.client.readOneAndObserve(
+                    ObservedItem::class.java, entity.id
+                )
+                runCurrent()
+
+                observation.value shouldBe entity
+                val expectedIds = listOf(Identifier.pack(entity.id))
+                checkNotNull(source.lastQuery).target.filters.idFilter.idList shouldBe expectedIds
+                checkNotNull(source.lastTopic).target.filters.idFilter.idList shouldBe expectedIds
+                source.items = emptyList()
+                source.remove(entity.id)
+                runCurrent()
+                observation.value shouldBe null
+                val changed = item("selected", "updated")
+                source.update(changed)
+                observation.value shouldBe changed
+                observation.cancel()
+                observation.status.value shouldBe DataObservationStatus.Cancelled
+            }
+    }
 
     /**
      * Removing one entity preserves its neighbours, and its next matching state restores it.

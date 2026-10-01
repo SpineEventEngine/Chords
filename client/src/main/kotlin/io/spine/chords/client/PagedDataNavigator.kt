@@ -29,7 +29,8 @@ package io.spine.chords.client
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.Snapshot.Companion.withMutableSnapshot
+import androidx.compose.runtime.snapshots.Snapshot.Companion.global
+import androidx.compose.runtime.snapshots.Snapshot.Companion.sendApplyNotifications
 import io.spine.base.EntityState
 import io.spine.chords.client.ConnectionStatus.CLOSED
 import io.spine.chords.client.ConnectionStatus.CONNECTED
@@ -40,13 +41,14 @@ import io.spine.chords.client.DataObservationStatus.Failed
 import io.spine.chords.client.DataObservationStatus.Refreshing
 import io.spine.chords.client.DataObservationStatus.WaitingForConnection
 import io.spine.chords.client.DataPageCursor.After
+import io.spine.chords.client.DataPageCursor.At
 import io.spine.chords.client.DataPageCursor.Before
+import io.spine.chords.client.DataPageCursor.End
 import io.spine.chords.client.DataPageCursor.Start
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart.LAZY
-import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
@@ -113,19 +115,9 @@ public class PagedDataNavigator<T> internal constructor(
     private val scope = CoroutineScope(callerScope.coroutineContext + lifetime)
 
     /**
-     * The last successful page, available during loading and connection recovery.
+     * A consistent page, cursor, and loading status for Compose readers.
      */
-    private var page by mutableStateOf(DataPage<T>())
-
-    /**
-     * The displayed page's cursor, independent of pending navigation.
-     */
-    private var cursor: DataPageCursor by mutableStateOf(Start)
-
-    /**
-     * Loading and failure state observed by Compose and explicit waiters.
-     */
-    private var currentStatus: DataObservationStatus by mutableStateOf(Refreshing)
+    private var state by mutableStateOf(PageState<T>())
 
     /**
      * The request number used to reject results from cancelled work that finishes late.
@@ -160,7 +152,7 @@ public class PagedDataNavigator<T> internal constructor(
      * The displayed items, initially empty and retained while another request is pending.
      */
     public val items: List<T>
-        get() = synchronized(lock) { page.items }
+        get() = synchronized(lock) { state.page.items }
 
     /**
      * Loading, active data, automatic connection recovery, terminal failure, or cancellation.
@@ -168,32 +160,32 @@ public class PagedDataNavigator<T> internal constructor(
      * [WaitingForConnection] recovers automatically.
      */
     public val status: DataObservationStatus
-        get() = synchronized(lock) { if (lifetime.isActive) currentStatus else Cancelled }
+        get() = synchronized(lock) { if (lifetime.isActive) state.status else Cancelled }
 
     /**
      * Whether an adjacent page can be requested in the forward direction.
      */
     public val canGoNext: Boolean
-        get() = synchronized(lock) { status == Active && page.hasNext }
+        get() = synchronized(lock) { status == Active && state.page.hasNext }
 
     /**
      * Whether an adjacent page can be requested in the backward direction.
      */
     public val canGoPrevious: Boolean
-        get() = synchronized(lock) { status == Active && page.hasPrevious }
+        get() = synchronized(lock) { status == Active && state.page.hasPrevious }
 
     /**
      * Whether the displayed items are from the live first page.
      */
     public val isFirstPage: Boolean
-        get() = synchronized(lock) { cursor == Start }
+        get() = synchronized(lock) { state.cursor == Start }
 
     /**
      * An opaque identity for resetting scroll position when the displayed page changes.
      * It stays stable during live updates and while navigation is pending or has failed.
      */
     public val pageKey: Any
-        get() = synchronized(lock) { cursor }
+        get() = synchronized(lock) { state.cursor }
 
     /**
      * Waits for the latest requested page, following any request that replaces it while waiting.
@@ -204,16 +196,14 @@ public class PagedDataNavigator<T> internal constructor(
      */
     public suspend fun awaitItems(): List<T> {
         while (true) {
-            val signal = synchronized(lock) {
-                lifetime.ensureActive()
-                when (val value = currentStatus) {
-                    Active -> return page.items
-                    is Failed -> throw value.error
-                    Cancelled -> throw CancellationException("Page navigation is closed.")
-                    else -> nextChange
-                }
+            lifetime.ensureActive()
+            val (current, signal) = global { synchronized(lock) { state to nextChange } }
+            when (val value = current.status) {
+                Active -> return current.page.items
+                is Failed -> throw value.error
+                Cancelled -> throw CancellationException("Page navigation is closed.")
+                else -> signal.await()
             }
-            signal.await()
         }
     }
 
@@ -221,8 +211,10 @@ public class PagedDataNavigator<T> internal constructor(
      * Requests the following page when [canGoNext] is true.
      */
     public fun next() {
-        synchronized(lock) {
-            if (canGoNext && page.items.isNotEmpty()) load(After(keyOf(page.items.last())))
+        change {
+            if (canGoNext && state.page.items.isNotEmpty()) {
+                load(After(keyOf(state.page.items.last())))
+            }
         }
     }
 
@@ -231,9 +223,9 @@ public class PagedDataNavigator<T> internal constructor(
      * An empty page returns directly to the beginning.
      */
     public fun previous() {
-        synchronized(lock) {
+        change {
             if (canGoPrevious) {
-                val first = page.items.firstOrNull()
+                val first = state.page.items.firstOrNull()
                 load(if (first == null) Start else Before(keyOf(first)))
             }
         }
@@ -242,26 +234,48 @@ public class PagedDataNavigator<T> internal constructor(
     /**
      * Requests the first page and resumes live updates, replacing any pending request.
      */
-    public fun first(): Unit = load(Start)
+    public fun first(): Unit = change { load(Start) }
+
+    /**
+     * Requests the final page without reading intervening pages, replacing any pending request.
+     *
+     * The page contains up to `pageSize` items, ending with the final matching item.
+     * When the entire selection fits on one page, this becomes the live first page.
+     * Otherwise it stays fixed until navigation or retry.
+     */
+    public fun last(): Unit = change { load(End) }
+
+    /**
+     * Requests the page starting at [key], replacing any pending request, without reading
+     * intervening pages.
+     *
+     * [key] is a value of the query's `orderBy` column, as `keyOf` returns it. The matching item
+     * with that value is included; otherwise the page starts at the next matching item in display
+     * order, or is empty. A separate single-item read checks for matching items before [key].
+     * If there are none, this is the live first page; otherwise it stays fixed until navigation
+     * or retry.
+     */
+    public fun seek(key: Any): Unit = change { load(At(key)) }
 
     /**
      * Repeats the latest requested page, replacing any pending request.
      */
     public fun retry() {
-        synchronized(lock) { load(requestedCursor) }
+        change { load(requestedCursor) }
     }
 
     /**
      * Cancels requests, live updates, and pending waits. Repeated calls have no further effect.
+     * An unused navigator can close before its initial composition commits.
      */
     public override fun close() {
-        synchronized(lock) {
-            if (currentStatus != Cancelled) {
+        change {
+            if ((requestJob != null || connectionMonitor != null) && state.status != Cancelled) {
                 generation++
                 publish(Cancelled)
             }
+            add { scope.cancel() }
         }
-        scope.cancel()
     }
 
     /**
@@ -269,50 +283,74 @@ public class PagedDataNavigator<T> internal constructor(
      * A loaded first page remains active while its new observation starts.
      */
     @Suppress("TooGenericExceptionCaught" /* Request failures must become observable statuses. */)
-    private fun load(target: DataPageCursor) {
-        synchronized(lock) {
-            if (!lifetime.isActive || currentStatus == Cancelled) return
-            if (connectionMonitor == null) {
-                connectionMonitor = scope.launch(start = UNDISPATCHED) {
-                    connectionStatus.collect { if (it == CLOSED) close() }
-                }
-                if (!lifetime.isActive) return
+    private fun MutableList<() -> Unit>.load(target: DataPageCursor) {
+        if (!lifetime.isActive || state.status == Cancelled) return
+        if (connectionStatus.value == CLOSED) {
+            publish(Cancelled)
+            add { scope.cancel() }
+            return
+        }
+        if (connectionMonitor == null) {
+            val monitor = scope.launch(start = LAZY) {
+                connectionStatus.collect { if (it == CLOSED) close() }
             }
-            val previous = requestJob
-            val current = ++generation
-            requestedCursor = target
-            publish(Refreshing)
-            val request = scope.launch(start = LAZY) {
-                try {
-                    previous?.join()
-                    if (target != Start) {
-                        val result = readFixedPage(target, current)
-                        acceptIfCurrent(
-                            expected = current, status = Active, result = result, target = target
-                        )
-                        if (result.hasPrevious) return@launch
-                    }
-                    var retainFirstPage = target != Start
-                    observeFirstPage()
-                        .collect { (status, result) ->
-                            if (!retainFirstPage || status != Refreshing) {
-                                acceptIfCurrent(
-                                    expected = current, status = status, result = result
-                                )
-                            }
-                            retainFirstPage = false
+            connectionMonitor = monitor
+            add { monitor.start() }
+        }
+        val previous = requestJob
+        val current = ++generation
+        requestedCursor = target
+        publish(Refreshing)
+        val request = scope.launch(start = LAZY) {
+            try {
+                previous?.join()
+                if (target != Start) {
+                    val result = readFixedPage(target, current)
+                    acceptIfCurrent(
+                        expected = current, status = Active, result = result, target = target
+                    )
+                    if (result.hasPrevious) return@launch
+                }
+                var retainFirstPage = target != Start
+                observeFirstPage()
+                    .collect { (status, result) ->
+                        if (!retainFirstPage || status != Refreshing) {
+                            acceptIfCurrent(
+                                expected = current, status = status, result = result
+                            )
                         }
-                    acceptIfCurrent(current, Cancelled)
-                } catch (cancelled: CancellationException) {
-                    acceptIfCurrent(current, Cancelled)
-                    throw cancelled
-                } catch (error: Exception) {
-                    acceptIfCurrent(current, Failed(error))
-                }
+                        retainFirstPage = false
+                    }
+                acceptIfCurrent(current, Cancelled)
+            } catch (cancelled: CancellationException) {
+                acceptIfCurrent(current, Cancelled)
+                throw cancelled
+            } catch (error: Exception) {
+                acceptIfCurrent(current, Failed(error))
             }
-            requestJob = request
+        }
+        requestJob = request
+        add {
             previous?.cancel()
             request.start()
+        }
+    }
+
+    /**
+     * Applies a transition atomically without dispatching observers or waiters under [lock].
+     * Global snapshot writes defer apply notifications until the transition is complete.
+     */
+    private fun change(block: MutableList<() -> Unit>.() -> Unit) {
+        val actions = mutableListOf<() -> Unit>()
+        global {
+            synchronized(lock) {
+                actions.block()
+            }
+        }
+        try {
+            sendApplyNotifications()
+        } finally {
+            actions.forEach { it() }
         }
     }
 
@@ -366,33 +404,44 @@ public class PagedDataNavigator<T> internal constructor(
         result: DataPage<T>? = null,
         target: DataPageCursor = Start
     ) {
-        synchronized(lock) {
-            if (expected != generation || !lifetime.isActive) return
+        change {
+            if (expected != generation || !lifetime.isActive) return@change
             publish(status = status, result = result, target = target)
+            if (status == Cancelled) add { scope.cancel() }
         }
-        if (status == Cancelled) scope.cancel()
     }
 
     /**
      * A consistent page and status for snapshot observers and suspended callers.
      * Both become visible before waiters resume. Calling this function requires holding [lock].
      */
-    private fun publish(
+    private fun MutableList<() -> Unit>.publish(
         status: DataObservationStatus,
         result: DataPage<T>? = null,
         target: DataPageCursor = Start
     ) {
-        withMutableSnapshot {
-            if (status == Active && result != null) {
-                page = result
-                cursor = if (result.hasPrevious) target else Start
-            }
-            currentStatus = status
-        }
+        state = if (status == Active && result != null) PageState(
+            page = result,
+            cursor = if (result.hasPrevious) target else Start,
+            status = status
+        ) else state.copy(status = status)
         val previous = nextChange
         nextChange = CompletableDeferred(lifetime)
-        previous.complete(Unit)
+        add { previous.complete(Unit) }
     }
+
+    /**
+     * One published page with its navigation identity and loading state.
+     *
+     * @property page The last successfully loaded page, retained while loading another.
+     * @property cursor The displayed page's identity, independent of pending navigation.
+     * @property status Loading, recovery, failure, or cancellation of the latest request.
+     */
+    private data class PageState<T>(
+        val page: DataPage<T> = DataPage(),
+        val cursor: DataPageCursor = Start,
+        val status: DataObservationStatus = Refreshing
+    )
 }
 
 /**

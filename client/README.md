@@ -60,6 +60,11 @@ asynchronously rereads its query after a removal and uses the first remaining
 match, or `null` or its supplied default when none remain. A later matching
 update makes the entity available again.
 
+To observe one entity by ID without reading others, use
+`readOneAndObserve(Project::class.java, projectId)`. Both the initial read and
+the subscription are filtered by that ID. Custom `Client` implementations must
+implement this overload when upgrading to `2.0.0-SNAPSHOT.135`.
+
 A new observation carries the `DataObservationStatus.Refreshing` status while
 its initial read is in progress. If the connection is already known to be
 unavailable, the observation is instead returned in
@@ -161,6 +166,16 @@ fun ItemPages(query: PagedDataQuery<Item>, client: Client) {
 
 The example uses `androidx.compose.foundation.layout.Column` and Material `Button` and `Text`.
 Use the opaque `pageKey` to reset scrolling when the displayed page changes.
+
+Use `first()` and `last()` to jump to either end without reading intervening pages. The last
+page contains up to `pageSize` items ending with the final matching item. `first()` always opens
+the live first page; `last()` does too when the entire selection fits on one page.
+
+Call `seek(key)` with a value of the query's `orderBy` column, as returned by `keyOf`, to open a
+page without reading intervening pages. The matching item with that value is included; otherwise
+the page starts with the next matching item in display order or is empty. If no matching item
+precedes the key, the result is the live first page; otherwise it stays fixed like other pages.
+For example, `navigator.seek(item.label)` opens a page at an item's label.
 
 Outside Compose, supply a coroutine scope and close the navigator when finished. Its requests
 and connection monitor are children of that scope, so leaving it open prevents the scope from

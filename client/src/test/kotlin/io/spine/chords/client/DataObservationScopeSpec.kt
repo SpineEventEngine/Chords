@@ -27,9 +27,12 @@
 package io.spine.chords.client
 
 import io.grpc.Status
+import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.Executors.newSingleThreadExecutor
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.coroutines.EmptyCoroutineContext
@@ -494,6 +497,51 @@ internal class DataObservationScopeSpec {
 
         observation.cancelCalls shouldBe 0
         observation.status shouldBe DataObservationStatus.Cancelled
+    }
+
+    /**
+     * Samples disposal of the last observation while the client shuts down.
+     * Both operations can run independently when a composition leaves its page.
+     * This test can pass without the fix: it cannot force the interleaving inside `toList()`.
+     */
+    @Test
+    fun `close while the last observation unregisters`() {
+        val worker = newSingleThreadExecutor()
+        try {
+            repeat(5_000) { attempt ->
+                withClue("Disposal and shutdown attempt $attempt") {
+                    val scope = DataObservationScope({ ConnectionStatus.CONNECTED })
+                    val cancellationReady = CyclicBarrier(2)
+                    val observation = createDataObservation<String, String>(
+                        initialValue = "",
+                        read = { "value" },
+                        subscribe = { _, _ -> ObservationSubscription { } },
+                        applyUpdate = { _, update -> update },
+                        connectionStatus = { ConnectionStatus.CONNECTED },
+                        onCancelled = {
+                            cancellationReady.await(5, SECONDS)
+                            scope.unregister(it)
+                        },
+                        requestContext = EmptyCoroutineContext
+                    )
+                    scope.register(observation)
+                    val cancellation = worker.submit { observation.cancel() }
+
+                    try {
+                        cancellationReady.await(5, SECONDS)
+                        scope.close()
+                        cancellation.get(5, SECONDS)
+
+                        observation.status.value shouldBe DataObservationStatus.Cancelled
+                    } finally {
+                        scope.close()
+                    }
+                }
+            }
+        } finally {
+            worker.shutdownNow()
+            worker.awaitTermination(5, SECONDS) shouldBe true
+        }
     }
 }
 

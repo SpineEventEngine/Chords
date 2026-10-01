@@ -26,6 +26,7 @@
 
 package io.spine.chords.client
 
+import androidx.compose.runtime.snapshots.Snapshot
 import io.grpc.Status
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -39,10 +40,13 @@ import io.spine.chords.client.DataObservationStatus.Cancelled
 import io.spine.chords.client.DataObservationStatus.Failed
 import io.spine.chords.client.DataObservationStatus.Refreshing
 import io.spine.chords.client.DataObservationStatus.WaitingForConnection
+import io.spine.chords.client.DataPageCursor.End
+import io.spine.chords.client.DataPageCursor.Start
 import io.spine.chords.client.given.ObservedItemPages.items
 import io.spine.chords.client.given.ObservedItemPages.query
 import io.spine.chords.client.given.PagedDataNavigatorSpecEnv.navigator
 import io.spine.chords.client.testing.ConfigurablePagedDataSource
+import io.spine.chords.client.testing.NavigatorCallbackProbe
 import io.spine.chords.client.testing.ObservationChannel
 import io.spine.chords.client.testing.PagedDataNavigatorScene
 import io.spine.chords.client.testing.awaitCondition
@@ -68,6 +72,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -77,45 +82,167 @@ import org.junit.jupiter.params.provider.ValueSource
  * Verifies navigation, coroutine ownership, request replacement, and Compose lifetime.
  */
 @DisplayName("`PagedDataNavigator` should")
+@Suppress("LargeClass" /* One suite covers navigation, publication, and cancellation. */)
 internal class PagedDataNavigatorSpec {
 
     /**
-     * Forward and backward navigation preserve contiguous values in both display orders.
+     * Groups cursor, page-boundary, and live-update navigation checks.
      */
-    @ParameterizedTest(name = "navigate with ascending={0}")
-    @ValueSource(booleans = [true, false])
-    fun `navigate either sort direction and resume live updates`(ascending: Boolean): Unit =
-        runBlocking {
-            val source = ConfigurablePagedDataSource(pageSize = 3, ascending = ascending)
-            source.items = (1..8).toList()
-            val expected = if (ascending) source.items else source.items.reversed()
+    @Nested
+    @DisplayName("navigate")
+    inner class Navigation {
+
+        /**
+         * A direct final page permits adjacent navigation and stays fixed on source changes.
+         */
+        @ParameterizedTest(name = "last page with ascending={0}")
+        @ValueSource(booleans = [true, false])
+        fun `to the final page without loading intervening pages`(ascending: Boolean): Unit =
+            runBlocking {
+                val source = ConfigurablePagedDataSource(pageSize = 3, ascending = ascending)
+                source.items = (1..8).toList()
+                val ordered = if (ascending) source.items else source.items.reversed()
+                navigator(source, CoroutineScope(coroutineContext + Unconfined)).use { pages ->
+                    pages.last()
+
+                    pages.items shouldBe ordered.takeLast(3)
+                    pages.canGoNext shouldBe false
+                    pages.canGoPrevious shouldBe true
+                    source.cursors shouldBe listOf(Start, End)
+                    source.subscriptions shouldBe 0
+                    source.items = (0..9).toList()
+                    source.updates.tryEmit(Unit)
+                    pages.items shouldBe ordered.takeLast(3)
+
+                    pages.previous()
+                    pages.items shouldBe ordered.drop(2)
+                        .take(3)
+                    pages.next()
+                    pages.items shouldBe if (ascending) listOf(6, 7, 8) else listOf(3, 2, 1)
+                    pages.first()
+                    pages.isFirstPage shouldBe true
+                    source.subscriptions shouldBe 1
+                }
+                source.subscriptions shouldBe 0
+            }
+
+        /**
+         * A final-page request observes live data when no earlier page exists.
+         */
+        @ParameterizedTest
+        @ValueSource(ints = [0, 1, 3])
+        fun `to live data when the final page is also the first`(count: Int): Unit = runBlocking {
+            val source = ConfigurablePagedDataSource(pageSize = 3)
+            source.items = (1..count).toList()
             navigator(source, CoroutineScope(coroutineContext + Unconfined)).use { pages ->
-                val firstKey = pages.pageKey
-                pages.items shouldBe expected.take(3)
+                pages.last()
+
+                pages.items shouldBe source.items.reversed()
+                pages.isFirstPage shouldBe true
+                pages.canGoPrevious shouldBe false
+                pages.canGoNext shouldBe false
                 source.subscriptions shouldBe 1
-                pages.next()
-                pages.items shouldBe expected.drop(3)
-                    .take(3)
+                source.items = (1..4).toList()
+                source.updates.tryEmit(Unit)
+                pages.items shouldBe listOf(4, 3, 2)
+                pages.canGoNext shouldBe true
+            }
+        }
+
+        /**
+         * Direct navigation includes its target in both directions and can resume live data.
+         */
+        @ParameterizedTest(name = "seek with ascending={0}")
+        @ValueSource(booleans = [true, false])
+        fun `directly without loading intervening pages`(ascending: Boolean): Unit = runBlocking {
+            val source = ConfigurablePagedDataSource(pageSize = 3, ascending = ascending)
+            source.items = (1..9).toList()
+            navigator(source, CoroutineScope(coroutineContext + Unconfined)).use { pages ->
+                pages.seek(5)
+
+                pages.items shouldBe if (ascending) listOf(5, 6, 7) else listOf(5, 4, 3)
+                source.cursors.size shouldBe 2
                 source.subscriptions shouldBe 0
                 pages.next()
-                pages.items shouldBe expected.drop(6)
-                pages.canGoNext shouldBe false
+                pages.items shouldBe if (ascending) listOf(8, 9) else listOf(2, 1)
                 pages.previous()
-                pages.items shouldBe expected.drop(3)
-                    .take(3)
-                pages.previous()
-                pages.items shouldBe expected.take(3)
+                pages.items shouldBe if (ascending) listOf(5, 6, 7) else listOf(5, 4, 3)
+
+                source.items = (0..10).toList()
+                source.updates.tryEmit(Unit)
+                pages.items shouldBe if (ascending) listOf(5, 6, 7) else listOf(5, 4, 3)
+                pages.seek(if (ascending) 0 else 10)
+                pages.items shouldBe if (ascending) listOf(0, 1, 2) else listOf(10, 9, 8)
                 pages.isFirstPage shouldBe true
                 source.subscriptions shouldBe 1
 
-                source.items = (0..9).toList()
-                source.updates.tryEmit(Unit)
-
-                pages.items shouldBe if (ascending) listOf(0, 1, 2) else listOf(9, 8, 7)
-                pages.pageKey shouldBe firstKey
+                pages.seek(if (ascending) 100 else -1)
+                pages.items.shouldBeEmpty()
+                pages.canGoPrevious shouldBe true
+                pages.previous()
+                pages.isFirstPage shouldBe true
             }
             source.subscriptions shouldBe 0
         }
+
+        /**
+         * Forward and backward navigation preserve contiguous values in both display orders.
+         */
+        @ParameterizedTest(name = "navigate with ascending={0}")
+        @ValueSource(booleans = [true, false])
+        fun `in either sort direction and resume live updates`(ascending: Boolean): Unit =
+            runBlocking {
+                val source = ConfigurablePagedDataSource(pageSize = 3, ascending = ascending)
+                source.items = (1..8).toList()
+                val expected = if (ascending) source.items else source.items.reversed()
+                navigator(source, CoroutineScope(coroutineContext + Unconfined)).use { pages ->
+                    val firstKey = pages.pageKey
+                    pages.items shouldBe expected.take(3)
+                    source.subscriptions shouldBe 1
+                    pages.next()
+                    pages.items shouldBe expected.drop(3)
+                        .take(3)
+                    source.subscriptions shouldBe 0
+                    pages.next()
+                    pages.items shouldBe expected.drop(6)
+                    pages.canGoNext shouldBe false
+                    pages.previous()
+                    pages.items shouldBe expected.drop(3)
+                        .take(3)
+                    pages.previous()
+                    pages.items shouldBe expected.take(3)
+                    pages.isFirstPage shouldBe true
+                    source.subscriptions shouldBe 1
+
+                    source.items = (0..9).toList()
+                    source.updates.tryEmit(Unit)
+
+                    pages.items shouldBe if (ascending) listOf(0, 1, 2) else listOf(9, 8, 7)
+                    pages.pageKey shouldBe firstKey
+                }
+                source.subscriptions shouldBe 0
+            }
+
+        /**
+         * Deleting the remaining fixed-page items still leaves a route back to live data.
+         */
+        @Test
+        fun `back to the first page from an emptied page`(): Unit = runBlocking {
+            val source = ConfigurablePagedDataSource(pageSize = 3)
+            source.items = (1..5).toList()
+            navigator(source, CoroutineScope(coroutineContext + Unconfined)).use { pages ->
+                source.items = (3..5).toList()
+                pages.next()
+                pages.items.shouldBeEmpty()
+
+                pages.previous()
+
+                pages.items shouldBe listOf(5, 4, 3)
+                pages.isFirstPage shouldBe true
+                source.subscriptions shouldBe 1
+            }
+        }
+    }
 
     /**
      * An exact last page stays fixed when newer data appears.
@@ -136,26 +263,6 @@ internal class PagedDataNavigatorSpec {
             source.subscriptions shouldBe 0
             pages.first()
             pages.items shouldBe listOf(7, 6, 5)
-        }
-    }
-
-    /**
-     * Deleting the remaining fixed-page items still leaves a route back to live data.
-     */
-    @Test
-    fun `return to the first page from an emptied page`(): Unit = runBlocking {
-        val source = ConfigurablePagedDataSource(pageSize = 3)
-        source.items = (1..5).toList()
-        navigator(source, CoroutineScope(coroutineContext + Unconfined)).use { pages ->
-            source.items = (3..5).toList()
-            pages.next()
-            pages.items.shouldBeEmpty()
-
-            pages.previous()
-
-            pages.items shouldBe listOf(5, 4, 3)
-            pages.isFirstPage shouldBe true
-            source.subscriptions shouldBe 1
         }
     }
 
@@ -430,6 +537,71 @@ internal class PagedDataNavigatorSpec {
     }
 
     /**
+     * A resumed UI waiter may need another thread to inspect the page before dispatch returns.
+     */
+    @Test
+    fun `release its monitor before resuming a page waiter`(): Unit = runBlocking {
+        val scope = CoroutineScope(coroutineContext + Default)
+        val response = CompletableDeferred<Unit>()
+        val source = ConfigurablePagedDataSource(pageSize = 3)
+        source.items = (1..3).toList()
+        source.pending = response
+        try {
+            navigator(source, scope).use { pages ->
+                awaitCondition { source.pending == null }
+                NavigatorCallbackProbe {
+                    pages.status shouldBe Active
+                    pages.items shouldBe listOf(3, 2, 1)
+                }.use { callback ->
+                    val waiting = async(callback, start = UNDISPATCHED) { pages.awaitItems() }
+
+                    response.complete(Unit)
+
+                    withTimeout(5_000) { waiting.await() } shouldBe listOf(3, 2, 1)
+                    callback.awaitCallback() shouldBe true
+                }
+            }
+        } finally {
+            response.complete(Unit)
+        }
+    }
+
+    /**
+     * Snapshot observers must be able to dispatch a reader without a publication lock inversion.
+     */
+    @Test
+    fun `release its monitor before notifying snapshot observers`(): Unit = runBlocking {
+        val scope = CoroutineScope(coroutineContext + Default)
+        val response = CompletableDeferred<Unit>()
+        val source = ConfigurablePagedDataSource(pageSize = 3)
+        source.items = (1..3).toList()
+        source.pending = response
+        try {
+            navigator(source, scope).use { pages ->
+                awaitCondition { source.pending == null }
+                NavigatorCallbackProbe {
+                    pages.status shouldBe Active
+                    pages.items shouldBe listOf(3, 2, 1)
+                }.use { callback ->
+                    val observer = Snapshot.registerApplyObserver { _, _ ->
+                        if (pages.status == Active) callback.inspect()
+                    }
+                    try {
+                        response.complete(Unit)
+
+                        callback.awaitCallback() shouldBe true
+                        withTimeout(5_000) { pages.awaitItems() } shouldBe listOf(3, 2, 1)
+                    } finally {
+                        observer.dispose()
+                    }
+                }
+            }
+        } finally {
+            response.complete(Unit)
+        }
+    }
+
+    /**
      * Non-UI reading and live changes need no Compose frames or snapshot notification pump.
      */
     @Test
@@ -537,6 +709,35 @@ internal class PagedDataNavigatorSpec {
                 scene.navigator.status shouldBe Cancelled
                 scene.navigator.canGoNext shouldBe false
                 source.readCount shouldBe 1
+            }
+        }
+    }
+
+    /**
+     * An abandoned composition discards its snapshot before disposing the remembered navigator.
+     */
+    @Test
+    fun `close an idle navigator after its creation snapshot is abandoned`(): Unit = runBlocking {
+        ObservationChannel().use { source ->
+            val scope = CoroutineScope(Job())
+            val snapshot = Snapshot.takeMutableSnapshot()
+            val pages = try {
+                snapshot.enter {
+                    createPagedDataNavigator(query = query(), client = source.client, scope = scope)
+                }
+            } finally {
+                snapshot.dispose()
+            }
+            try {
+                pages.close()
+
+                pages.status shouldBe Cancelled
+                pages.canGoNext shouldBe false
+                shouldThrow<CancellationException> { pages.awaitItems() }
+                source.readCount shouldBe 0
+                source.subscribeCount shouldBe 0
+            } finally {
+                scope.cancel()
             }
         }
     }

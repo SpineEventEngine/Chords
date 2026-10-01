@@ -38,6 +38,18 @@ internal sealed interface DataPageCursor {
     object Start : DataPageCursor
 
     /**
+     * The final page of the ordered results.
+     */
+    object End : DataPageCursor
+
+    /**
+     * A page starting at [key], including the matching item when it exists.
+     *
+     * @property key The first permitted cursor value in display order.
+     */
+    data class At(val key: Any) : DataPageCursor
+
+    /**
      * The page immediately after [key] in display order.
      *
      * @property key The cursor value of the item next to the requested page.
