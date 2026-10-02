@@ -34,6 +34,12 @@ of components:
   the [`time`](src/main/kotlin/io/spine/chords/proto/time) package.
 - etc.
 
+### Date and time
+
+`DateTimeField` displays and interprets values in the system time zone, applying the offset for
+that date. Its value remains a Protobuf timestamp representing the UTC instant. `DateText` and
+`DateTimeText` display timestamps using the same local time-zone rules.
+
 ### Validating payment card numbers
 
 Set `PaymentCardNumberField.onValidate` to `PaymentCardNumberValidator::validate`

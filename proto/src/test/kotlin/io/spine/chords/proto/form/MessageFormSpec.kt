@@ -37,8 +37,8 @@ import io.spine.chords.proto.form.given.MessageFormFixtures.RenderWithinField
 import io.spine.chords.proto.form.given.MessageFormFixtures.TrimmingInputField
 import io.spine.chords.proto.form.given.MessageFormFixtures.account
 import io.spine.chords.proto.form.given.MessageFormFixtures.accountForm
-import io.spine.chords.proto.form.given.MessageFormFixtures.inScene
 import io.spine.chords.proto.form.given.MessageFormFixtures.paymentForm
+import io.spine.chords.proto.testing.inScene
 import io.spine.chords.proto.value.money.BankAccount
 import io.spine.chords.proto.value.money.BankAccountDef
 import io.spine.chords.proto.value.money.PaymentCardNumber

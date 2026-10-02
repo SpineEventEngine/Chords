@@ -95,8 +95,10 @@ import io.spine.chords.core.time.WallClock
 import io.spine.chords.proto.value.time.DefaultDatePattern
 import java.time.Instant
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.ZoneId.systemDefault
 import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatter.ofPattern
 import java.time.format.DateTimeParseException
@@ -129,7 +131,10 @@ private val NowButtonIconSize = 20.dp
 public typealias DateTimePattern = String
 
 /**
- * A field that allows specifying date and time.
+ * A field that edits timestamps in the system time zone.
+ *
+ * Values use the time-zone rules for the entered date, including its daylight-saving offset.
+ * A local time in a daylight-saving gap is shifted forward by the gap length.
  *
  * ### The "now" option
  *
@@ -142,6 +147,8 @@ public typealias DateTimePattern = String
  * Since the field always keeps its value consistent with the text it displays,
  * the filled value is truncated to the resolution of [dateTimePattern] — for
  * example, to the minute with the default pattern, which has no seconds field.
+ * If the current local time occurs twice during a daylight-saving overlap, the
+ * filled value retains the current offset.
  *
  * The affordance is available both as a button displayed within the field
  * (while it is focused or already contains a value), and as the Ctrl+N keyboard
@@ -149,6 +156,9 @@ public typealias DateTimePattern = String
  * via [nowOptionAffordance].
  */
 public class DateTimeField : InputField<Timestamp>() {
+    /**
+     * Creates and remembers date-time editors.
+     */
     public companion object : ComponentSetup<DateTimeField>()
 
     /**
@@ -188,6 +198,12 @@ public class DateTimeField : InputField<Timestamp>() {
     public var nowOptionAffordance: (@Composable (fillNow: () -> Unit) -> Unit)?
             by mutableStateOf(null)
 
+    /**
+     * Identifies the current moment's local occurrence while the now action fills the field.
+     * Ordinary input uses the system time zone without an offset preference.
+     */
+    private var fillingNowOffset: ZoneOffset? = null
+
     init {
         label = "Date/time"
     }
@@ -207,9 +223,9 @@ public class DateTimeField : InputField<Timestamp>() {
             {
                 val customAffordance = nowOptionAffordance
                 if (customAffordance != null) {
-                    customAffordance(::fillNow)
+                    customAffordance { fillNow() }
                 } else {
-                    NowButton(enabled = enabled, onClick = ::fillNow)
+                    NowButton(enabled = enabled, onClick = { fillNow() })
                 }
             }
         } else {
@@ -235,23 +251,42 @@ public class DateTimeField : InputField<Timestamp>() {
     }
 
     /**
-     * Fills the field with the current date and time, obtained through
-     * [WallClock].
+     * Fills the field with the current local date and time, preserving its occurrence
+     * when the local time is ambiguous.
      *
      * The stored value is truncated to the resolution of [dateTimePattern], so
      * that it stays consistent with the text displayed in the field.
+     *
+     * @param instant
+     *         the current moment; defaults to the wall clock.
      */
-    private fun fillNow() {
+    internal fun fillNow(instant: Instant = WallClock.now) {
         if (enabled) {
-            applyValue(WallClock.now.toTimestamp())
+            fillingNowOffset = systemDefault().rules
+                .getOffset(instant)
+            try {
+                applyValue(instant.toTimestamp())
+            } finally {
+                fillingNowOffset = null
+            }
         }
     }
 
+    /**
+     * Shows the timestamp as local date and time.
+     */
     override fun formatValue(value: Timestamp): String =
-        formatDateTime(value, dateTimePattern, WallClock.zoneOffset)
+        formatDateTime(value, dateTimePattern)
 
+    /**
+     * Converts local date and time into a UTC instant.
+     */
     override fun parseValue(rawText: String): Timestamp =
-        parseDateTime(rawText, dateTimePattern, WallClock.zoneOffset)
+        parseDateTime(
+            rawText = rawText,
+            dateTimePattern = dateTimePattern,
+            preferredOffset = fillingNowOffset
+        )
 }
 
 /**
@@ -418,26 +453,24 @@ internal fun Instant.toTimestamp(): Timestamp =
  *
  * Only the components present in [dateTimePattern] are emitted, so any finer
  * resolution of [value] (e.g. seconds or nanoseconds when the pattern has
- * minute resolution) is not represented in the resulting text. This is the
- * inverse of [parseDateTime].
+ * minute resolution) is not represented in the resulting text.
  *
  * @param value
  *         the timestamp to format.
  * @param dateTimePattern
  *         the pattern used to format the date/time.
- * @param zoneOffset
- *         the offset used to convert the instant into a local date/time.
+ * @param zone
+ *         the time zone used to display the instant; defaults to the system time zone.
  * @return the raw text representation of [value].
  */
 internal fun formatDateTime(
     value: Timestamp,
     dateTimePattern: DateTimePattern,
-    zoneOffset: ZoneOffset
+    zone: ZoneId = systemDefault()
 ): String {
     val instant = Instant.ofEpochSecond(value.seconds, value.nanos.toLong())
-    return ofPattern(purifiedPattern(dateTimePattern)).format(
-        OffsetDateTime.ofInstant(instant, zoneOffset)
-    )
+    return ofPattern(purifiedPattern(dateTimePattern))
+        .format(instant.atZone(zone))
 }
 
 /**
@@ -445,14 +478,17 @@ internal fun formatDateTime(
  *
  * The [rawText] contains only editable characters of the date/time value. The
  * separators specified by [dateTimePattern] are restored before parsing. The
- * resulting local date/time is interpreted at [zoneOffset].
+ * resulting local date/time is interpreted in [zone].
  *
  * @param rawText
  *         the editable characters entered into the input field.
  * @param dateTimePattern
  *         the pattern used to restore separators and parse the date/time.
- * @param zoneOffset
- *         the offset used to convert the local date/time into an instant.
+ * @param zone
+ *         the time zone used to interpret the input; defaults to the system time zone.
+ * @param preferredOffset
+ *         the offset to retain during an overlap, if valid for the parsed local time;
+ *         otherwise, the time zone's default overlap and gap rules apply.
  * @return the parsed date/time represented as a Protobuf timestamp.
  * @throws ParseException
  *         if the text cannot be parsed or the resulting instant is outside
@@ -461,7 +497,8 @@ internal fun formatDateTime(
 internal fun parseDateTime(
     rawText: String,
     dateTimePattern: DateTimePattern,
-    zoneOffset: ZoneOffset
+    zone: ZoneId = systemDefault(),
+    preferredOffset: ZoneOffset? = null
 ): Timestamp {
     val localDateTime = try {
         LocalDateTime.parse(
@@ -471,7 +508,8 @@ internal fun parseDateTime(
     } catch (e: DateTimeParseException) {
         throw ParseException("Enter a valid value.", e)
     }
-    val instant = localDateTime.toInstant(zoneOffset)
+    val instant = ZonedDateTime.ofLocal(localDateTime, zone, preferredOffset)
+        .toInstant()
     if (!Timestamps.isValid(instant.epochSecond, instant.nano)) {
         throw ParseException("Enter a date/time within the supported range.")
     }
