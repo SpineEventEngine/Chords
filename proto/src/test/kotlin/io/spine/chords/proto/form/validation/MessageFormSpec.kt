@@ -33,11 +33,11 @@ import io.spine.chords.proto.form.FormFieldScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.OneOfFieldsScope
 import io.spine.chords.proto.form.given.MessageFormFixtures.account
-import io.spine.chords.proto.form.given.MessageFormFixtures.inScene
 import io.spine.chords.proto.form.given.MessageFormFixtures.paymentForm
 import io.spine.chords.proto.form.invoke
 import io.spine.chords.proto.money.BankAccountField
 import io.spine.chords.proto.money.PaymentCardNumberField
+import io.spine.chords.proto.testing.inScene
 import io.spine.chords.proto.value.money.BankAccount
 import io.spine.chords.proto.value.money.BankAccountDef
 import io.spine.chords.proto.value.money.PaymentCardNumber

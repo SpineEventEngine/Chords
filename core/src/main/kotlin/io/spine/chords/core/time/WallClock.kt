@@ -36,7 +36,10 @@ import java.time.ZoneOffset
 public object WallClock {
 
     /**
-     * Local time zone offset.
+     * The system time zone's offset at the current moment.
+     *
+     * For another date, use the system time zone's rules to obtain the offset for that instant;
+     * the current offset may differ because of daylight-saving time.
      */
     public val zoneOffset: ZoneOffset
         get() = OffsetDateTime.now().offset

@@ -37,7 +37,7 @@ import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.spine.chords.proto.TestApplication
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
-import io.spine.chords.proto.form.given.MessageFormFixtures.inScene
+import io.spine.chords.proto.testing.inScene
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

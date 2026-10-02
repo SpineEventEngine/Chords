@@ -26,15 +26,9 @@
 
 package io.spine.chords.proto.form.given
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.ui.ComposeScene
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.semantics.getOrNull
 import com.google.protobuf.Message
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.InputComponent
@@ -49,11 +43,9 @@ import io.spine.chords.proto.value.money.PaymentMethod
 import io.spine.chords.proto.value.money.PaymentMethodDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
-import java.awt.EventQueue.invokeAndWait
-import org.jetbrains.skia.Surface
 
 /**
- * Supplies real message forms and a composition for change-tracking tests.
+ * Supplies real message forms for change-tracking tests.
  */
 internal object MessageFormFixtures {
 
@@ -166,103 +158,5 @@ internal object MessageFormFixtures {
             builder = BankAccount::newBuilder,
             content = content
         )
-    }
-
-    /**
-     * Runs a form scenario without a visible window.
-     */
-    fun inScene(content: @Composable () -> Unit, test: (FormScene) -> Unit) {
-        FormScene(content).use(test)
-    }
-
-    /**
-     * Lets desktop snapshot notifications run between test actions and frames.
-     */
-    private fun <T> onUiThread(action: () -> T): T {
-        var result: Result<T>? = null
-        invokeAndWait { result = runCatching(action) }
-        return checkNotNull(result).getOrThrow()
-    }
-
-    /**
-     * Applies state changes to an off-screen composition of the form.
-     */
-    @OptIn(ExperimentalComposeUiApi::class)
-    class FormScene(content: @Composable () -> Unit) : AutoCloseable {
-
-        /**
-         * Provides the desktop composition locals used by message forms.
-         */
-        private val scene = onUiThread { ComposeScene() }
-
-        /**
-         * Supplies a canvas for advancing frames without showing a window.
-         */
-        private val surface = Surface.makeRasterN32Premul(1, 1)
-
-        /**
-         * Keeps frame timestamps increasing as the test applies edits.
-         */
-        private var frame = 0L
-
-        init {
-            try {
-                onUiThread {
-                    scene.setContent {
-                        MaterialTheme { content() }
-                    }
-                }
-                render()
-            } catch (e: Exception) {
-                close()
-                throw e
-            }
-        }
-
-        /**
-         * Advances frames until recomposition and its effects have settled.
-         */
-        fun render() {
-            repeat(30) {
-                onUiThread {
-                    Snapshot.sendApplyNotifications()
-                    scene.render(surface.canvas, ++frame * 16_000_000L)
-                }
-                if (!scene.hasInvalidations()) {
-                    return
-                }
-            }
-            error("The form composition did not settle.")
-        }
-
-        /**
-         * Returns visible text so tests can observe feedback without depending on its wording.
-         */
-        fun displayedText(): Set<String> = onUiThread {
-            val pending = ArrayDeque(
-                scene.roots
-                    .map { it.semanticsOwner.rootSemanticsNode }
-            )
-            val text = mutableSetOf<String>()
-            while (pending.isNotEmpty()) {
-                val node = pending.removeFirst()
-                node.config
-                    .getOrNull(SemanticsProperties.Text)
-                    .orEmpty()
-                    .map { it.text }
-                    .filter { it.isNotBlank() }
-                    .forEach { text.add(it) }
-                pending.addAll(node.children)
-            }
-            text
-        }
-
-        /**
-         * Releases the composition and its drawing surface.
-         */
-        override fun close(): Unit = onUiThread {
-            scene.close()
-            surface.close()
-        }
     }
 }
