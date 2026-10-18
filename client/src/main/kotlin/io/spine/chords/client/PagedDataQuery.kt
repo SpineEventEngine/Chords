@@ -26,7 +26,6 @@
 
 package io.spine.chords.client
 
-import androidx.compose.runtime.snapshotFlow
 import io.spine.base.EntityColumn
 import io.spine.base.EntityState
 import io.spine.chords.client.DataObservationStatus.Cancelled
@@ -153,7 +152,7 @@ public class PagedDataQuery<T : EntityState>(
                 limit = pageSize + 1
             )
             try {
-                snapshotFlow { observation.status.value to observation.value }
+                observation.changes()
                     .takeWhile { (status, _) -> status != Cancelled }
                     .collect { (status, items) ->
                         val page = DataPage.from(

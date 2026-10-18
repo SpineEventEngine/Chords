@@ -29,6 +29,8 @@ package io.spine.chords.client
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot.Companion.registerApplyObserver
+import androidx.compose.runtime.snapshots.Snapshot.Companion.takeSnapshot
 import androidx.compose.runtime.snapshots.Snapshot.Companion.withMutableSnapshot
 import io.grpc.Status
 import io.grpc.StatusException
@@ -41,6 +43,10 @@ import io.spine.chords.client.DataObservationStatus.WaitingForConnection
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -183,6 +189,45 @@ public class DataObservation<out T> internal constructor(
      */
     public val status: State<DataObservationStatus>
         get() = mutableStatus
+
+    /**
+     * Emits the current status and value together, then again after each change to either.
+     * The flow does not complete on its own; its collector stops it, for example after
+     * [DataObservationStatus.Cancelled].
+     *
+     * Unlike `snapshotFlow`, this flow also emits a change that a refresh applies on another
+     * thread while the first value is read. Newer Compose runtimes, including 1.7 and later,
+     * skip apply notifications for state that no `snapshotFlow` has read yet, so such a
+     * change could otherwise leave a collector with the initial status indefinitely.
+     */
+    internal fun changes(): Flow<Pair<DataObservationStatus, T>> = flow {
+        val changed = Channel<Unit>(CONFLATED)
+        val observer = registerApplyObserver { objects, _ ->
+            if (mutableStatus in objects || mutableValue in objects) {
+                changed.trySend(Unit)
+            }
+        }
+        try {
+            var emitted: Pair<DataObservationStatus, T>? = null
+            while (true) {
+                val current = takeSnapshot()
+                    .run {
+                        try {
+                            enter { mutableStatus.value to mutableValue.value }
+                        } finally {
+                            dispose()
+                        }
+                    }
+                if (current != emitted) {
+                    emitted = current
+                    emit(current)
+                }
+                changed.receive()
+            }
+        } finally {
+            observer.dispose()
+        }
+    }
 
     /**
      * Re-reads the complete value and replaces the current subscription.
