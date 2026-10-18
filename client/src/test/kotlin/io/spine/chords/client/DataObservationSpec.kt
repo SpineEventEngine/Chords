@@ -34,6 +34,7 @@ import io.kotest.matchers.shouldBe
 import io.spine.chords.client.testing.InvalidatingObservationSource
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
@@ -41,6 +42,8 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -86,6 +89,74 @@ internal class DataObservationSpec {
                 collecting.cancelAndJoin()
             }
         }
+    }
+
+    /**
+     * The change flow starts with the current status and value, then emits each change once,
+     * including cancellation, so a collector can decide when to stop.
+     */
+    @Test
+    fun `emit each status and value change through its change flow`(): Unit = runBlocking {
+        withTimeout(5_000) {
+            val source = InvalidatingObservationSource()
+            val observation = source.observation
+            val changes = Channel<Pair<DataObservationStatus, String>>(Channel.UNLIMITED)
+            val collecting = launch(start = UNDISPATCHED) {
+                observation.changes()
+                    .collect { changes.send(it) }
+            }
+            try {
+                changes.receive() shouldBe (DataObservationStatus.Refreshing to "")
+                observation.refresh()
+                changes.receive() shouldBe (DataObservationStatus.Active to "initial")
+                source.update("updated")
+                changes.receive() shouldBe (DataObservationStatus.Active to "updated")
+                observation.cancel()
+                changes.receive() shouldBe (DataObservationStatus.Cancelled to "updated")
+                changes.tryReceive().isFailure shouldBe true
+            } finally {
+                observation.cancel()
+                collecting.cancelAndJoin()
+            }
+        }
+    }
+
+    /**
+     * A refresh applied on another thread after the change flow takes its first snapshot, but
+     * before it reads the status, still reaches the collector.
+     *
+     * Compose 1.7 and later drop that apply notification for `snapshotFlow` when no
+     * `snapshotFlow` has read the state yet, which left such collectors with a stale status.
+     * The read observer holds the flow's first status read until the refresh completes, so
+     * the first emission is the stale status and the second is the refreshed one.
+     */
+    @Test
+    fun `emit a refresh applied while the change flow reads its first value`() {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        val refreshPending = AtomicBoolean(true)
+        val refreshDuringFirstRead: (Any) -> Unit = { state ->
+            if (state === observation.status && refreshPending.compareAndSet(true, false)) {
+                runBlocking(IO) { observation.refresh() }
+            }
+        }
+
+        // The collector stays on this thread, so the flow's snapshots inherit the read observer.
+        val changes = Snapshot.observe(readObserver = refreshDuringFirstRead) {
+            runBlocking {
+                withTimeout(5_000) {
+                    observation.changes()
+                        .take(2)
+                        .toList()
+                }
+            }
+        }
+
+        refreshPending.get() shouldBe false
+        changes shouldBe listOf(
+            DataObservationStatus.Refreshing to "",
+            DataObservationStatus.Active to "initial"
+        )
     }
 
     /**
