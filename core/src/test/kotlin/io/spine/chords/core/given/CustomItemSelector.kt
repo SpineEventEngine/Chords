@@ -36,14 +36,18 @@ import androidx.compose.ui.unit.dp
 import io.spine.chords.core.DropdownSelector
 
 /**
- * Supplies fixed-size custom content so selector insets can be measured independently of text.
+ * Supplies searchable choices with fixed-size content for selection and layout scenarios.
+ *
+ * @param choices The labels used for selection and search, independently of item dimensions.
  */
-internal class CustomItemSelector : DropdownSelector<String>() {
+internal class CustomItemSelector(
+    choices: List<String> = listOf("Item")
+) : DropdownSelector<String>() {
 
     /**
-     * Provides a single choice for the layout fixture.
+     * Provides the choices used by layout and selection scenarios.
      */
-    override val items: State<Iterable<String>> = mutableStateOf(listOf("Item"))
+    override val items: State<Iterable<String>> = mutableStateOf(choices)
 
     /**
      * Uses the supplied choice as its searchable text.
