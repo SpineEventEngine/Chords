@@ -55,6 +55,7 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.Shape
@@ -305,10 +306,11 @@ public abstract class DropdownSelector<I> : InputComponent<I>() {
                 .onPreviewKeyEvent { handleKeyEvent(it) },
             trailingIcon = {
                 TrailingIcons(
-                    required,
-                    selectedItem != null,
-                    expanded.value,
-                    enabled
+                    valueRequired = required,
+                    containsValue = selectedItem != null,
+                    expanded = expanded.value,
+                    enabled = enabled,
+                    focusRequester = this@DropdownSelector.focusRequester
                 )
             }
         )
@@ -472,20 +474,22 @@ private fun String.annotateSubstring(
  * @param expanded `true`, if `DropdownSelector` is currently expanded, and
  *   `false` otherwise.
  * @param enabled Specifies whether the `DropdownSelector` is currently enabled.
+ * @param focusRequester Keeps keyboard input in the editor after clearing its selection.
  */
 @Composable
 private fun DropdownListBoxScope.TrailingIcons(
     valueRequired: Boolean,
     containsValue: Boolean,
     expanded: Boolean,
-    enabled: Boolean
+    enabled: Boolean,
+    focusRequester: FocusRequester
 ) {
     Row(
         horizontalArrangement = spacedBy(ChordsTheme.dimensions.spacingSmall),
         verticalAlignment = CenterVertically
     ) {
         if (!valueRequired && enabled) {
-            ClearValueIcon(containsValue)
+            ClearValueIcon(containsValue, focusRequester)
         }
         DropdownExpansionIcon(expanded, enabled)
     }
@@ -499,16 +503,27 @@ private fun DropdownListBoxScope.TrailingIcons(
  * @param containsValue
  *         `true`, if `DropdownSelector` currently contains a value, and
  *         `false` otherwise.
+ * @param focusRequester Keeps keyboard input in the editor after clearing its selection.
  */
 @Composable
 @OptIn(ExperimentalComposeUiApi::class)
-private fun DropdownListBoxScope.ClearValueIcon(containsValue: Boolean) {
+private fun DropdownListBoxScope.ClearValueIcon(
+    containsValue: Boolean,
+    focusRequester: FocusRequester
+) {
     var isClearIconHovered by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .pointerHoverIcon(if (containsValue) Hand else Text)
             .alpha(if (containsValue) 1f else 0f)
-            .onPointerEvent(Press) { handleClearSelectedItemPress() }
+            .onPointerEvent(Press) { event ->
+                if (containsValue) {
+                    focusRequester.requestFocus()
+                    handleClearSelectedItemPress()
+                    // The editor must not turn this press into a stale caret update.
+                    event.changes.forEach { it.consume() }
+                }
+            }
             .onPointerEvent(Enter) { isClearIconHovered = true }
             .onPointerEvent(Exit) { isClearIconHovered = false }
             .background(

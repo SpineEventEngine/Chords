@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,4 +154,9 @@ tasks.named("publish") {
 }
 
 PomGenerator.applyTo(project)
+tasks.named("generatePom") {
+    // The plugin declares its workspace dependency during this task, not during configuration.
+    // Include that build dependency regardless of which other tasks accompany report generation.
+    dependsOn(modulesWithChordsCodegen.map { ":$it:createCodegenWorkspace" })
+}
 LicenseReporter.mergeAllReports(project)

@@ -41,6 +41,7 @@ import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Move
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Press
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Release
+import androidx.compose.ui.platform.InfiniteAnimationPolicy
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.semantics.SemanticsNode
@@ -56,6 +57,8 @@ import java.awt.Panel
 import java.awt.event.KeyEvent.CHAR_UNDEFINED
 import java.awt.event.KeyEvent.KEY_PRESSED
 import java.awt.event.KeyEvent.KEY_RELEASED
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers.Unconfined
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Surface
 
@@ -80,6 +83,9 @@ import org.jetbrains.skia.Surface
  * snapshot, so keeping the scene there is what makes a state change that
  * a test makes reach the composition within the [render] call that follows it,
  * rather than racing with the notification that announces the change.
+ *
+ * Infinite animations, such as caret blinking, are disabled so [renderUntilIdle] can wait for
+ * finite transitions to finish. This scene does not verify continuously animated behavior.
  *
  * The scene has to be [closed][close] when a test is done with it, e.g. by
  * using the [use][kotlin.io.use] function.
@@ -111,7 +117,9 @@ internal class TestScene(
     /**
      * The scene that composes and lays out the content.
      */
-    private val scene = onUiThread { ComposeScene(density = density) }
+    private val scene = onUiThread {
+        ComposeScene(coroutineContext = Unconfined + FiniteAnimationsOnly, density = density)
+    }
 
     /**
      * The in-memory surface that the content is rendered onto.
@@ -163,6 +171,22 @@ internal class TestScene(
     fun render() = onUiThread {
         frames += 1
         scene.render(surface.canvas, frames * FrameIntervalNanos)
+    }
+
+    /**
+     * Applies pending composition, layout, and animation work before assertions or further input.
+     *
+     * Fails if the scene does not become idle within two seconds of simulated frame time.
+     * This is intended for finite transitions, not continuously animated content.
+     */
+    fun renderUntilIdle() {
+        repeat(IdleFrameLimit) {
+            render()
+            if (onUiThread { !scene.hasInvalidations() }) {
+                return
+            }
+        }
+        error("The test scene still has pending work after $IdleFrameLimit frames.")
     }
 
     /**
@@ -291,6 +315,11 @@ internal class TestScene(
          */
         const val FrameIntervalNanos = 16_000_000L
 
+        /**
+         * Bounds idle detection so an endless animation fails instead of hanging a test.
+         */
+        const val IdleFrameLimit = 125
+
     }
 }
 
@@ -304,7 +333,7 @@ internal class TestScene(
  * @param action The action to run.
  * @return The value returned by the action.
  */
-private fun <T> onUiThread(action: () -> T): T {
+internal fun <T> onUiThread(action: () -> T): T {
     if (isEventDispatchThread()) {
         return action()
     }
@@ -350,3 +379,16 @@ internal fun keyEvent(
         Panel(), eventType, EventTimestamp, modifiers, keyCode, CHAR_UNDEFINED
     )
 )
+
+/**
+ * Disables endless animations so finite UI transitions can reach an observable idle state.
+ */
+private object FiniteAnimationsOnly : InfiniteAnimationPolicy {
+
+    /**
+     * Cancels an infinite animation without cancelling other composition effects.
+     */
+    override suspend fun <R> onInfiniteOperation(block: suspend () -> R): R {
+        throw CancellationException("Infinite animations are disabled in the test scene.")
+    }
+}
