@@ -60,6 +60,16 @@ public class MainScreen(
     internal var showTopBar: Boolean = true
 
     /**
+     * Chooses the sidebar's initial state before the user operates its toggle.
+     */
+    internal var navigationInitiallyExpanded: Boolean = true
+
+    /**
+     * Allows expanded navigation to fit its destinations and footer content.
+     */
+    internal var navigationSizesToContent: Boolean = false
+
+    /**
      * Application controls displayed below the view destinations without changing navigation.
      */
     internal var navigationFooter: @Composable (Boolean) -> Unit = {}
@@ -85,6 +95,8 @@ public class MainScreen(
                 NavigationDrawer(
                     appViews = appViews,
                     topPadding = topPadding,
+                    initiallyExpanded = navigationInitiallyExpanded,
+                    sizeToContent = navigationSizesToContent,
                     footer = navigationFooter
                 )
             }

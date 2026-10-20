@@ -230,6 +230,8 @@ public open class Application(
     internal fun initializeUi(appWindow: AppWindow) {
         check(_ui == null) { "The application UI has already been initialized." }
         appWindow.mainScreen.showTopBar = showTopBar
+        appWindow.mainScreen.navigationInitiallyExpanded = navigationInitiallyExpanded
+        appWindow.mainScreen.navigationSizesToContent = navigationSizesToContent
         appWindow.mainScreen.topBar.actions = { topBarActions() }
         appWindow.mainScreen.navigationFooter = { expanded -> NavigationFooter(expanded) }
         _ui = ApplicationUI(appWindow)
@@ -261,6 +263,31 @@ public open class Application(
      * ```
      */
     protected open val showTopBar: Boolean = true
+
+    /**
+     * Chooses whether navigation labels are visible when the main screen first appears.
+     *
+     * The default is `true`. The sidebar toggle controls subsequent changes, and navigation
+     * preserves the chosen state until the main screen closes.
+     *
+     * ```kotlin
+     * override val navigationInitiallyExpanded: Boolean = false
+     * ```
+     */
+    protected open val navigationInitiallyExpanded: Boolean = true
+
+    /**
+     * Lets expanded navigation grow with its destinations and footer content.
+     *
+     * The default is `false`, which uses the theme's fixed navigation width. When enabled,
+     * that width is a minimum; drawer and window bounds still limit expansion.
+     * The collapsed icon column keeps its fixed width.
+     *
+     * ```kotlin
+     * override val navigationSizesToContent: Boolean = true
+     * ```
+     */
+    protected open val navigationSizesToContent: Boolean = false
 
     /**
      * Renders the [TopBar.actions] of the top app bar when [showTopBar] is `true`.

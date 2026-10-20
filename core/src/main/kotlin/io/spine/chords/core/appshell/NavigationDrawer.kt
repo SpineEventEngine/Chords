@@ -31,6 +31,7 @@ import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.TooltipPlacement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -39,6 +40,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
@@ -124,16 +126,66 @@ public fun NavigationDrawer(
     modifier: Modifier = Modifier,
     footer: @Composable (expanded: Boolean) -> Unit,
 ) {
+    NavigationDrawer(
+        appViews = appViews,
+        topPadding = topPadding,
+        initiallyExpanded = true,
+        modifier = modifier,
+        footer = footer
+    )
+}
+
+/**
+ * Displays navigation with a chosen initial sidebar state and application actions.
+ *
+ * [initiallyExpanded] applies when the sidebar enters composition. The toggle controls later
+ * changes, which are preserved across recomposition and navigation until the sidebar closes.
+ * [sizeToContent] fits expanded navigation to its labels and footer, using the theme's width as
+ * a minimum. Drawer and window bounds still limit expansion. Collapsed width stays fixed.
+ * With [sizeToContent], content must support intrinsic measurement or provide an explicit width.
+ * Use this within the application shell's view navigator:
+ * ```kotlin
+ * NavigationDrawer(
+ *     appViews = views,
+ *     topPadding = padding.calculateTopPadding(),
+ *     initiallyExpanded = false,
+ *     sizeToContent = true,
+ *     footer = {}
+ * )
+ * ```
+ *
+ * @param appViews The destinations available in the current view navigator.
+ * @param topPadding The space reserved for the application's top bar.
+ * @param initiallyExpanded Whether destination and action labels are initially visible.
+ * @param modifier Layout adjustments for the sidebar.
+ * @param sizeToContent Whether expanded width follows the content instead of staying fixed.
+ * @param footer Application actions that receive the current expansion state.
+ */
+@Composable
+public fun NavigationDrawer(
+    appViews: List<AppView>,
+    topPadding: Dp,
+    initiallyExpanded: Boolean,
+    modifier: Modifier = Modifier,
+    sizeToContent: Boolean = false,
+    footer: @Composable (expanded: Boolean) -> Unit,
+) {
     val navigator = LocalNavigator.currentOrThrow
-    var expanded by remember { mutableStateOf(true) }
+    var expanded by remember { mutableStateOf(initiallyExpanded) }
     val toggleIcon = if (expanded) Icons.Default.ChevronLeft else Icons.Default.ChevronRight
     // Give each 24 dp icon equal 20 dp insets within its destination.
     val collapsedWidth = ChordsTheme.dimensions.spacingSmall * 2 + CollapsedDestinationWidth
-    val width = if (expanded) ChordsTheme.dimensions.navigationWidth else collapsedWidth + 1.dp
+    val widthModifier = when {
+        !expanded -> Modifier.width(collapsedWidth + 1.dp)
+        sizeToContent -> Modifier
+            .widthIn(min = ChordsTheme.dimensions.navigationWidth)
+            .width(IntrinsicSize.Max)
+        else -> Modifier.width(ChordsTheme.dimensions.navigationWidth)
+    }
     PermanentNavigationDrawer(
         modifier = Modifier.padding(top = topPadding),
         drawerContent = {
-            Row(modifier = modifier.width(width)) {
+            Row(modifier = modifier.then(widthModifier)) {
                 PermanentDrawerSheet(
                     modifier = Modifier
                         .weight(1F)
