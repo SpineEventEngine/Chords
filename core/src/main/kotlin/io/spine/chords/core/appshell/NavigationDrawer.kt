@@ -31,6 +31,8 @@ import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.TooltipPlacement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -39,13 +41,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.DrawerDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -63,6 +67,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role.Companion.Button
 import androidx.compose.ui.semantics.Role.Companion.Tab
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
@@ -124,52 +129,96 @@ public fun NavigationDrawer(
     modifier: Modifier = Modifier,
     footer: @Composable (expanded: Boolean) -> Unit,
 ) {
+    NavigationDrawer(
+        appViews = appViews,
+        topPadding = topPadding,
+        initiallyExpanded = true,
+        modifier = modifier,
+        footer = footer
+    )
+}
+
+/**
+ * Displays navigation with a chosen initial sidebar state and application actions.
+ *
+ * [initiallyExpanded] applies when the sidebar enters composition. The toggle controls later
+ * changes, which are preserved across recomposition and navigation until the sidebar closes.
+ * [sizeToContent] fits expanded navigation to its labels and footer, using the theme's width as
+ * a minimum. Drawer and window bounds still limit expansion. Collapsed width stays fixed.
+ * With [sizeToContent], content must support intrinsic measurement or provide an explicit width.
+ * Use this within the application shell's view navigator:
+ * ```kotlin
+ * NavigationDrawer(
+ *     appViews = views,
+ *     topPadding = padding.calculateTopPadding(),
+ *     initiallyExpanded = false,
+ *     sizeToContent = true,
+ *     footer = {}
+ * )
+ * ```
+ *
+ * @param appViews The destinations available in the current view navigator.
+ * @param topPadding The space reserved for the application's top bar.
+ * @param initiallyExpanded Whether destination and action labels are initially visible.
+ * @param modifier Layout adjustments for the sidebar.
+ * @param sizeToContent Whether expanded width follows the content instead of staying fixed.
+ * @param footer Application actions that receive the current expansion state.
+ */
+@Composable
+public fun NavigationDrawer(
+    appViews: List<AppView>,
+    topPadding: Dp,
+    initiallyExpanded: Boolean,
+    modifier: Modifier = Modifier,
+    sizeToContent: Boolean = false,
+    footer: @Composable (expanded: Boolean) -> Unit,
+) {
     val navigator = LocalNavigator.currentOrThrow
-    var expanded by remember { mutableStateOf(true) }
-    val toggleIcon = if (expanded) Icons.Default.ChevronLeft else Icons.Default.ChevronRight
+    var expanded by remember { mutableStateOf(initiallyExpanded) }
     // Give each 24 dp icon equal 20 dp insets within its destination.
     val collapsedWidth = ChordsTheme.dimensions.spacingSmall * 2 + CollapsedDestinationWidth
-    val width = if (expanded) ChordsTheme.dimensions.navigationWidth else collapsedWidth + 1.dp
+    val expandedWidth = ChordsTheme.dimensions.navigationWidth
+    val widthModifier = when {
+        !expanded -> Modifier.width(collapsedWidth + 1.dp)
+        sizeToContent -> Modifier
+            .widthIn(
+                min = expandedWidth,
+                max = maxOf(expandedWidth, DrawerDefaults.MaximumDrawerWidth + 1.dp)
+            )
+            .width(IntrinsicSize.Max)
+        else -> Modifier.width(expandedWidth)
+    }
     PermanentNavigationDrawer(
         modifier = Modifier.padding(top = topPadding),
         drawerContent = {
-            Row(modifier = modifier.width(width)) {
-                PermanentDrawerSheet(
+            Row(modifier = modifier.then(widthModifier)) {
+                Surface(
                     modifier = Modifier
                         .weight(1F)
-                        .fillMaxHeight(),
-                    drawerContainerColor = MaterialTheme.colorScheme.surface
+                        .fillMaxHeight()
+                        .semantics { paneTitle = "Navigation menu" },
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = DrawerDefaults.PermanentDrawerElevation
                 ) {
-                    Spacer(modifier = Modifier.height(ChordsTheme.dimensions.spacingSmall))
-                    Box(
-                        modifier = Modifier
-                            .width(collapsedWidth)
-                            .height(48.dp),
-                        contentAlignment = Center
-                    ) {
-                        val action = if (expanded) "Collapse" else "Expand"
-                        WithTooltip(tooltip = action) {
-                            CircularIconButton(onClick = { expanded = !expanded }) {
-                                Icon(
-                                    imageVector = toggleIcon,
-                                    contentDescription = "$action sidebar"
+                    Column(Modifier.windowInsetsPadding(DrawerDefaults.windowInsets)) {
+                        Spacer(modifier = Modifier.height(ChordsTheme.dimensions.spacingSmall))
+                        NavigationToggle(expanded = expanded, width = collapsedWidth) {
+                            expanded = !expanded
+                        }
+                        appViews.forEach { view ->
+                            WithTooltip(tooltip = view.name) {
+                                NavigationDestination(
+                                    view = view,
+                                    expanded = expanded,
+                                    selected = navigator.lastItem == view,
+                                    onClick = { navigator.push(view) }
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.weight(1F))
+                        footer(expanded)
+                        Spacer(modifier = Modifier.height(ChordsTheme.dimensions.spacingSmall))
                     }
-                    appViews.forEach { view ->
-                        WithTooltip(tooltip = view.name) {
-                            NavigationDestination(
-                                view = view,
-                                expanded = expanded,
-                                selected = navigator.lastItem == view,
-                                onClick = { navigator.push(view) }
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.weight(1F))
-                    footer(expanded)
-                    Spacer(modifier = Modifier.height(ChordsTheme.dimensions.spacingSmall))
                 }
                 Box(
                     modifier = Modifier
@@ -181,6 +230,30 @@ public fun NavigationDrawer(
         },
         content = { CurrentScreen() }
     )
+}
+
+/**
+ * Offers the sidebar's expansion control with a matching tooltip and accessible name.
+ */
+@Composable
+private fun NavigationToggle(expanded: Boolean, width: Dp, onClick: () -> Unit) {
+    val icon = if (expanded) Icons.Default.ChevronLeft else Icons.Default.ChevronRight
+    Box(
+        modifier = Modifier
+            .width(width)
+            .height(48.dp),
+        contentAlignment = Center
+    ) {
+        val action = if (expanded) "Collapse" else "Expand"
+        WithTooltip(tooltip = action) {
+            CircularIconButton(onClick = onClick) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = "$action sidebar"
+                )
+            }
+        }
+    }
 }
 
 /**
@@ -347,6 +420,7 @@ private fun NavigationItemContent(
                 icon()
             }
             if (expanded) {
+                Spacer(modifier = Modifier.width(ChordsTheme.dimensions.spacingSmall))
                 Text(
                     text = label,
                     modifier = Modifier.weight(1F),

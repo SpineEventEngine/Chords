@@ -17,10 +17,14 @@ application-wide APIs from within any component.
 See the details in the [Application](Application.kt) and 
 [AppView](AppView.kt) KDocs.
 
-The navigation sidebar starts expanded and can collapse to icons using the button above the
-destinations. The button supports Tab and Enter and has an accessible name and tooltip. Collapsed
-destinations keep their tooltips and selection highlight. Resizing preserves the current view's
-state, and switching views preserves the sidebar's expansion state until the main screen closes.
+The navigation sidebar starts expanded by default. Override
+`Application.navigationInitiallyExpanded` with `false` to start with icons only. Its toggle supports
+Tab and Enter, with an accessible name and tooltip. Collapsed destinations keep their tooltips
+and selection highlight. Resizing preserves the current view's state. Navigation preserves the
+sidebar's expansion state until the main screen closes.
+Override `Application.navigationSizesToContent` with `true` to fit expanded navigation to its
+destinations and footer. The theme's navigation width becomes a minimum, subject to the drawer's
+and window's bounds. The collapsed icon column keeps its fixed width.
 Applications can place menu buttons at the bottom through `Application.NavigationFooter` and
 `NavigationDrawerAction`. These controls keep their icon position when labels are hidden and do
 not select a view.
