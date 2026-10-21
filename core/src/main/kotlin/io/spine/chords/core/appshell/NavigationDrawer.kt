@@ -79,6 +79,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import io.spine.chords.core.layout.Tooltip
 import io.spine.chords.core.layout.WithTooltip
 import io.spine.chords.core.primitive.CircularIconButton
+import io.spine.chords.core.primitive.buttonCursor
 import io.spine.chords.core.styling.ChordsTheme
 
 /**
@@ -282,6 +283,7 @@ private fun NavigationDestination(
             )
             .fillMaxWidth()
             .heightIn(min = maxOf(48.dp, ChordsTheme.dimensions.navigationItemHeight))
+            .buttonCursor()
             .semantics { role = Tab },
         shape = MaterialTheme.shapes.small,
         color = colors.containerColor(selected).value,
@@ -371,6 +373,7 @@ public fun NavigationDrawerAction(
                 )
                 .fillMaxWidth()
                 .heightIn(min = maxOf(48.dp, ChordsTheme.dimensions.navigationItemHeight))
+                .buttonCursor()
                 .semantics {
                     role = Button
                     contentDescription = label

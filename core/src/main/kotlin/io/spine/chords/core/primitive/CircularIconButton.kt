@@ -121,6 +121,7 @@ public fun CircularIconButton(
                 },
                 shape = CircleShape
             )
+            .buttonCursor(enabled)
             .clickable(
                 interactionSource = interactions,
                 indication = null,

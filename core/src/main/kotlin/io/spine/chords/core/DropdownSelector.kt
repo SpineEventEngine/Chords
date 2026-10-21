@@ -76,6 +76,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration.Companion.Underline
 import io.spine.chords.core.primitive.OutlinedField
+import io.spine.chords.core.primitive.buttonCursor
 import io.spine.chords.core.primitive.moveFocusOnTab
 import io.spine.chords.core.primitive.preventWidthAutogrowing
 import io.spine.chords.core.styling.ChordsTheme
@@ -553,7 +554,7 @@ private fun DropdownExpansionIcon(expanded: Boolean, enabled: Boolean) {
     var isTrailingIconHovered by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
-            .pointerHoverIcon(if (enabled) Hand else Text)
+            .buttonCursor(enabled)
             .padding(end = ChordsTheme.dimensions.spacingSmall)
             .onPointerEvent(Enter) { isTrailingIconHovered = true }
             .onPointerEvent(Exit) { isTrailingIconHovered = false }

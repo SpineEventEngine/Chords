@@ -72,6 +72,7 @@ public fun RadioButtonWithText(
     Row(
         modifier = modifier
             .heightIn(min = ChordsTheme.dimensions.compactControlHeight)
+            .buttonCursor(enabled)
             .focusRequestDispatcher(focusRequestDispatcher)
             .run {
                 if (enabled) {

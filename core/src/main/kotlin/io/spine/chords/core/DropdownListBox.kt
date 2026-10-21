@@ -114,6 +114,7 @@ import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.layout.PopupSurface
 import io.spine.chords.core.primitive.VerticalScrollbar
+import io.spine.chords.core.primitive.buttonCursor
 import io.spine.chords.core.styling.ChordsTheme
 import java.awt.event.KeyEvent.CHAR_UNDEFINED
 import java.lang.Character.UnicodeBlock
@@ -1226,6 +1227,7 @@ private fun DropdownListItem(
 
     Row(
         modifier = Modifier
+            .buttonCursor()
             .clickable(
                 enabled = true,
                 onClick = onClick
@@ -1304,6 +1306,7 @@ private fun DropdownListNoneItem(
 
     Row(
         modifier = Modifier
+            .buttonCursor()
             .clickable(
                 enabled = true,
                 onClick = onClick

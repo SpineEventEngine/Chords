@@ -139,6 +139,7 @@ internal fun ActionButton(
             Row(
                 modifier = Modifier
                     .defaultMinSize(ButtonDefaults.MinWidth, ButtonDefaults.MinHeight)
+                    .buttonCursor(enabled)
                     .clickable(
                         interactionSource = interactions,
                         indication = null,

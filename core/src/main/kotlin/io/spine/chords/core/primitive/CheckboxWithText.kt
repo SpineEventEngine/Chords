@@ -134,6 +134,7 @@ public fun CheckboxWithText(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = ChordsTheme.dimensions.compactControlHeight)
+            .buttonCursor(enabled)
             .clickable(
                 enabled = enabled,
                 onClick = { toggle() },

@@ -45,9 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Press
-import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
 import androidx.compose.ui.input.pointer.onPointerEvent
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
@@ -66,6 +64,7 @@ import io.spine.chords.core.exceptionBasedParser
 import io.spine.chords.core.keyboard.KeyRange.Companion.Digit
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
+import io.spine.chords.core.primitive.buttonCursor
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.proto.value.money.decimalSeparator
 import io.spine.chords.proto.value.money.formatAmount
@@ -211,7 +210,7 @@ public class MoneyField : InputField<Money>() {
 
         suffix = {
             Row(
-                modifier = Modifier.pointerHoverIcon(Hand)
+                modifier = Modifier.buttonCursor(enabled)
                     .onPointerEvent(Press) { this@MoneyField.expanded.value = true },
                 verticalAlignment = CenterVertically
             ) {
