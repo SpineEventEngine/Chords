@@ -26,12 +26,17 @@
 
 package io.spine.chords.client
 
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.Snapshot
 import io.grpc.Status
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.spine.chords.client.testing.CompositionScene
 import io.spine.chords.client.testing.InvalidatingObservationSource
+import io.spine.chords.client.testing.onUiThread
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.atomic.AtomicBoolean
@@ -39,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
@@ -46,6 +52,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -58,6 +65,113 @@ import org.junit.jupiter.api.Test
 @DisplayName("`DataObservation` should")
 @Suppress("LargeClass" /* Keeps query, subscription, and recovery regressions in one suite. */)
 internal class DataObservationSpec {
+
+    /**
+     * A result received after the initial state is read must reach the view after commit,
+     * even when no further server update occurs.
+     */
+    @Test
+    fun `collect a refresh completed during initial composition`() {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        var refreshPending = true
+        val rendered = mutableListOf<DataObservationState<String>>()
+
+        CompositionScene(TestCoroutineScheduler()) {
+            val result = observation.collectAsState().value
+            if (refreshPending) {
+                refreshPending = false
+                runBlocking(IO) { observation.refresh() }
+            }
+            SideEffect { rendered.add(result) }
+        }.use {
+            rendered.first() shouldBe DataObservationState("", DataObservationStatus.Refreshing)
+            rendered.last() shouldBe DataObservationState("initial", DataObservationStatus.Active)
+        }
+        observation.cancel()
+    }
+
+    /**
+     * The Compose consumer receives both data changes and failures without losing retained data.
+     */
+    @Test
+    fun `collect consecutive updates and terminal status in composition`() {
+        val source = InvalidatingObservationSource()
+        val observation = source.observation
+        val rendered = mutableListOf<DataObservationState<String>>()
+        CompositionScene(TestCoroutineScheduler()) {
+            val result = observation.collectAsState().value
+            SideEffect { rendered.add(result) }
+        }.use { scene ->
+            runBlocking { observation.refresh() }
+            scene.render()
+            rendered.last() shouldBe DataObservationState("initial", DataObservationStatus.Active)
+
+            source.update("second")
+            scene.render()
+            rendered.last() shouldBe DataObservationState("second", DataObservationStatus.Active)
+            source.update("third")
+            scene.render()
+            rendered.last() shouldBe DataObservationState("third", DataObservationStatus.Active)
+
+            val failure = Status.PERMISSION_DENIED.asRuntimeException()
+            source.fail(failure)
+            scene.render()
+            rendered.last() shouldBe DataObservationState(
+                "third", DataObservationStatus.Failed(failure)
+            )
+            observation.cancel()
+            scene.render()
+            rendered.last() shouldBe DataObservationState("third", DataObservationStatus.Cancelled)
+        }
+    }
+
+    /**
+     * Replacing the observation resets its displayed value in the same composition and stops
+     * the preceding collection. Disposing the view leaves both server observations available.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `reset collection on replacement and release it on disposal`() {
+        val first = InvalidatingObservationSource()
+        val second = InvalidatingObservationSource()
+        runBlocking { first.observation.refresh() }
+        val current = mutableStateOf(first.observation)
+        val rendered = mutableListOf<DataObservationState<String>>()
+        var collected: State<DataObservationState<String>>? = null
+        val scheduler = TestCoroutineScheduler()
+        CompositionScene(scheduler) {
+            val state = current.value.collectAsState()
+            val result = state.value
+            SideEffect {
+                collected = state
+                rendered.add(result)
+            }
+        }.use { scene ->
+            val previous = checkNotNull(collected)
+            rendered.clear()
+            onUiThread { current.value = second.observation }
+            scene.render()
+            rendered.first() shouldBe DataObservationState("", DataObservationStatus.Refreshing)
+
+            first.update("retained")
+            runBlocking { second.observation.refresh() }
+            scene.render()
+            previous.value shouldBe DataObservationState("initial", DataObservationStatus.Active)
+            rendered.last() shouldBe DataObservationState("initial", DataObservationStatus.Active)
+        }
+
+        second.update("after disposal")
+        onUiThread { scheduler.runCurrent() }
+        checkNotNull(collected).value shouldBe
+                DataObservationState("initial", DataObservationStatus.Active)
+        first.observation.value shouldBe "retained"
+        second.observation.value shouldBe "after disposal"
+        first.observation.status.value shouldBe DataObservationStatus.Active
+        second.observation.status.value shouldBe DataObservationStatus.Active
+        first.observation.cancel()
+        second.observation.cancel()
+    }
 
     /**
      * Snapshot observers receive value and status together without a running UI composition.

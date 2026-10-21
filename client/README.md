@@ -37,20 +37,24 @@ property, which is available globally.
 
 The `readAndObserve()` and `readOneAndObserve()` functions return a
 [`DataObservation`](src/main/kotlin/io/spine/chords/client/DataObservation.kt).
-A data observation is a Compose `State`, so it supports ordinary property delegation:
+A data observation supports direct value reads and property delegation outside a view.
+In Compose, collect its value and status together so updates received during the first
+composition also reach the UI:
 
 ```kotlin
-val projects by app.client.readAndObserve(
-    Project::class.java,
-    Project::getId
-)
+@Composable
+fun ProjectList(observation: DataObservation<List<Project>>) {
+    val result = observation.collectAsState().value
+    result.value.forEach { Text(it.name) }
+}
 ```
 
 These functions do not wait for the server. They return an observation that
 already holds its initial or default value — an empty list, `null`, or the
 supplied default — while the initial read and subscription proceed in the
 background. The value read from the server appears in the observation once they
-complete, which recomposes the Compose code that reads it. Creating an
+complete. `collectAsState()` delivers changes in the composition's coroutine context.
+Leaving the view stops collection; the caller still manages the observation's lifetime. Creating an
 observation therefore never blocks the UI thread, even when the server is
 unreachable.
 

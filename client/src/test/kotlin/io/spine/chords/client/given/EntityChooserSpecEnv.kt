@@ -126,7 +126,7 @@ internal object EntityChooserSpecEnv {
      * Runs a chooser scenario without a visible window.
      */
     fun inScene(content: @Composable () -> Unit, test: (CompositionScene) -> Unit) {
-        CompositionScene(content).use(test)
+        CompositionScene(content = content).use(test)
     }
 
 }

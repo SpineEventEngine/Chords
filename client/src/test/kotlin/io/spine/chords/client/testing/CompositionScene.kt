@@ -32,18 +32,33 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
 import java.awt.EventQueue.invokeAndWait
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import org.jetbrains.skia.Surface
+
+/**
+ * Limits settling to two seconds of simulated frame time so endless recomposition fails.
+ */
+private const val IdleFrameLimit = 125
 
 /**
  * An off-screen component view for testing recomposition and lifecycle effects.
  */
-@OptIn(ExperimentalComposeUiApi::class)
-internal class CompositionScene(content: @Composable () -> Unit) : AutoCloseable {
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalCoroutinesApi::class)
+internal class CompositionScene(
+    private val scheduler: TestCoroutineScheduler? = null,
+    content: @Composable () -> Unit
+) : AutoCloseable {
 
     /**
      * The test composition with the context provided by a desktop view.
      */
-    private val scene = onUiThread { ComposeScene() }
+    private val scene = onUiThread {
+        ComposeScene(coroutineContext = scheduler?.let { StandardTestDispatcher(it) }
+            ?: EmptyCoroutineContext)
+    }
 
     /**
      * Supplies a canvas for advancing frames without showing a window.
@@ -66,18 +81,22 @@ internal class CompositionScene(content: @Composable () -> Unit) : AutoCloseable
 
     /**
      * Advances frames until recomposition and its effects have settled.
+     *
+     * Fails if the scene still has pending work after two seconds of simulated frame time.
      */
     fun render() {
-        repeat(10) {
-            onUiThread {
+        onUiThread {
+            repeat(IdleFrameLimit) {
+                scheduler?.runCurrent()
                 Snapshot.sendApplyNotifications()
                 scene.render(surface.canvas, ++frame * 16_000_000L)
+                scheduler?.runCurrent()
+                if (!scene.hasInvalidations()) {
+                    return@onUiThread
+                }
             }
-            if (!scene.hasInvalidations()) {
-                return
-            }
+            error("The composition still has pending work after $IdleFrameLimit frames.")
         }
-        error("The composition did not settle.")
     }
 
     /**
@@ -85,6 +104,7 @@ internal class CompositionScene(content: @Composable () -> Unit) : AutoCloseable
      */
     override fun close(): Unit = onUiThread {
         scene.close()
+        scheduler?.runCurrent()
         surface.close()
     }
 }
