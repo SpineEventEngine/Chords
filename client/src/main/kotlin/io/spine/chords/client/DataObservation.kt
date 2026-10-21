@@ -26,9 +26,13 @@
 
 package io.spine.chords.client
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.Snapshot.Companion.registerApplyObserver
 import androidx.compose.runtime.snapshots.Snapshot.Companion.takeSnapshot
 import androidx.compose.runtime.snapshots.Snapshot.Companion.withMutableSnapshot
@@ -68,9 +72,9 @@ internal fun interface ObservationSubscription {
  * A `DataObservation` is also a Compose [State], so its current [value] can be
  * read directly or with Kotlin property delegation. A newly created observation
  * is readable right away: it carries its initial or default value until the
- * first read from the server completes. Value and status changes notify snapshot
- * observers, such as `snapshotFlow`, without a running composition. A refresh
- * publishes its value and status together.
+ * first read from the server completes. A refresh publishes its value and status
+ * together. Compose views should use [collectAsState] to receive updates that
+ * overlap their first composition.
  *
  * An observation in [DataObservationStatus.WaitingForConnection] automatically
  * re-reads the complete value and creates a new subscription when the server
@@ -189,6 +193,37 @@ public class DataObservation<out T> internal constructor(
      */
     public val status: State<DataObservationStatus>
         get() = mutableStatus
+
+    /**
+     * Collects the value and status together as state for a Compose view.
+     *
+     * Updates are delivered in the composition's coroutine context, including changes made
+     * while the view first reads this observation. Replacing the observation immediately
+     * resets the displayed state. Leaving the composition stops collection without cancelling
+     * the observation or its server subscription; the caller still manages that lifecycle.
+     *
+     * Given an observation retained by the caller:
+     * ```kotlin
+     * @Composable
+     * fun Result(observation: DataObservation<String>) {
+     *     val result = observation.collectAsState().value
+     *     Text(result.value)
+     *     if (result.status == DataObservationStatus.Refreshing) {
+     *         Text("Loading…")
+     *     }
+     * }
+     * ```
+     * The example uses `androidx.compose.material.Text`.
+     */
+    @Composable
+    public fun collectAsState(): State<DataObservationState<T>> = key(this) {
+        val initial = remember { DataObservationState(value, status.value) }
+        produceState(initialValue = initial, key1 = this) {
+            changes().collect { (status, observedValue) ->
+                value = DataObservationState(observedValue, status)
+            }
+        }
+    }
 
     /**
      * Emits the current status and value together, then again after each change to either.

@@ -101,6 +101,7 @@ import io.spine.chords.core.Component
 import io.spine.chords.core.layout.WithTooltip
 import io.spine.chords.core.layout.popupAppearance
 import io.spine.chords.core.primitive.CircularIconButton
+import io.spine.chords.core.primitive.buttonCursor
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.styling.defaultDimensions
 import io.spine.chords.core.table.TableSortingDirection.ASCENDING
@@ -1239,14 +1240,17 @@ private fun <E> RowActionsDropdown(
         modifier = config.modifier.popupAppearance()
     ) {
         items.forEach {
+            val enabled = it.enabled(value)
             DropdownMenuItem(
                 text = { Text(it.text) },
                 onClick = {
                     onCancel()
                     it.onClick(value)
                 },
-                enabled = it.enabled(value),
-                modifier = look.modifier.height(ChordsTheme.dimensions.dropdownItemHeight),
+                enabled = enabled,
+                modifier = look.modifier
+                    .height(ChordsTheme.dimensions.dropdownItemHeight)
+                    .buttonCursor(enabled),
                 colors = MenuDefaults.itemColors(
                     textColor = look.textColor
                 ),

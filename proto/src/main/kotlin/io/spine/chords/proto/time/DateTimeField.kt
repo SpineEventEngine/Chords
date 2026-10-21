@@ -55,10 +55,8 @@ import androidx.compose.ui.input.pointer.PointerEventType.Companion.Enter
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Exit
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Press
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Release
-import androidx.compose.ui.input.pointer.PointerIcon.Companion.Hand
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
@@ -89,6 +87,7 @@ import io.spine.chords.core.keyboard.KeyRange
 import io.spine.chords.core.keyboard.key
 import io.spine.chords.core.keyboard.matches
 import io.spine.chords.core.layout.WithTooltip
+import io.spine.chords.core.primitive.buttonCursor
 import io.spine.chords.core.styling.ChordsInteraction
 import io.spine.chords.core.styling.ChordsTheme
 import io.spine.chords.core.time.WallClock
@@ -338,7 +337,7 @@ private fun NowButton(enabled: Boolean, onClick: () -> Unit) {
                 .onFocusChanged { focused = it.isFocused }
                 .onActivationKeys(enabled, onClick)
                 .focusable(enabled)
-                .pointerHoverIcon(Hand)
+                .buttonCursor(enabled)
                 .nowButtonPointerInput(
                     enabled,
                     setHovered = { hovered = it },

@@ -57,7 +57,10 @@ outlined actions use
 [`SecondaryButton`](src/main/kotlin/io/spine/chords/core/primitive/SecondaryButton.kt).
 For actions represented by a single icon, use
 [`CircularIconButton`](src/main/kotlin/io/spine/chords/core/primitive/CircularIconButton.kt).
-These buttons provide hover and keyboard focus feedback in the active window.
+These buttons provide hover and keyboard focus feedback in the active window. Enabled buttons
+show a hand cursor; disabled buttons keep the default arrow. Custom actions can use
+[`Modifier.buttonCursor(enabled)`](src/main/kotlin/io/spine/chords/core/primitive/ButtonCursor.kt)
+with the same enabled state as their click handler.
 [`EmptyState`](src/main/kotlin/io/spine/chords/core/layout/EmptyState.kt) supplies the illustration,
 caption, and alignment for empty work areas.
 [`ScrollableColumn`](src/main/kotlin/io/spine/chords/core/layout/ScrollableColumn.kt) keeps long
