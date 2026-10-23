@@ -31,12 +31,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.platform.InfiniteAnimationPolicy
 import androidx.compose.ui.semantics.SemanticsActions.SetText
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getAllSemanticsNodes
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.IntSize
 import java.awt.EventQueue.invokeAndWait
+import java.awt.Panel
+import java.awt.event.KeyEvent.CHAR_UNDEFINED
+import java.awt.event.KeyEvent.KEY_PRESSED
+import java.awt.event.KeyEvent.KEY_RELEASED
+import kotlinx.coroutines.CancellationException
 import org.jetbrains.skia.Surface
 
 /**
@@ -59,6 +68,7 @@ internal fun <T> onUiThread(action: () -> T): T {
 
 /**
  * Applies state changes to an off-screen composition of a component.
+ * Infinite animations are disabled so focused editors can settle between test actions.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
@@ -66,7 +76,7 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
     /**
      * Provides the desktop composition locals used by the components.
      */
-    private val scene = onUiThread { ComposeScene() }
+    private val scene = onUiThread { ComposeScene(coroutineContext = FiniteAnimationsOnly) }
 
     /**
      * Supplies a canvas for advancing frames without showing a window.
@@ -106,6 +116,34 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
             }
         }
         error("The component composition did not settle.")
+    }
+
+    /**
+     * The measured content size, including any supporting content below an editor.
+     */
+    val contentSize: IntSize
+        get() = onUiThread { scene.contentSize }
+
+    /**
+     * Returns accessibility nodes for observing focus, actions, and layout.
+     */
+    fun semanticsNodes(): List<SemanticsNode> = onUiThread {
+        scene.roots
+            .flatMap { it.semanticsOwner.getAllSemanticsNodes(false) }
+    }
+
+    /**
+     * Delivers a complete keystroke to the focused component and applies its effects.
+     */
+    fun pressKey(keyCode: Int, modifiers: Int = 0) {
+        onUiThread {
+            listOf(KEY_PRESSED, KEY_RELEASED).forEach { eventType ->
+                scene.sendKeyEvent(KeyEvent(java.awt.event.KeyEvent(
+                    Panel(), eventType, 0L, modifiers, keyCode, CHAR_UNDEFINED
+                )))
+            }
+        }
+        render()
     }
 
     /**
@@ -161,5 +199,18 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
     override fun close(): Unit = onUiThread {
         scene.close()
         surface.close()
+    }
+}
+
+/**
+ * Disables endless animations so finite UI transitions can reach an observable idle state.
+ */
+private object FiniteAnimationsOnly : InfiniteAnimationPolicy {
+
+    /**
+     * Cancels an infinite animation without cancelling other composition effects.
+     */
+    override suspend fun <R> onInfiniteOperation(block: suspend () -> R): R {
+        throw CancellationException("Infinite animations are disabled in the test scene.")
     }
 }

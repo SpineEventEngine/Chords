@@ -40,6 +40,15 @@ of components:
 that date. Its value remains a Protobuf timestamp representing the UTC instant. `DateText` and
 `DateTimeText` display timestamps using the same local time-zone rules.
 
+### Supporting content for domain fields
+
+Set `InternetDomainField.supportingText` to show custom content below the field,
+such as validation feedback with a help link. The lambda receives the current
+validation message, or an empty string when there is no error. Leaving it unset
+keeps the default validation text. See
+[InternetDomainField](src/main/kotlin/io/spine/chords/proto/net/InternetDomainField.kt)
+for a keyboard-accessible link example and the supporting-space behavior.
+
 ### Validating payment card numbers
 
 Set `PaymentCardNumberField.onValidate` to `PaymentCardNumberValidator::validate`
