@@ -26,6 +26,8 @@
 
 package io.spine.chords.client
 
+import io.grpc.Status
+import io.grpc.StatusRuntimeException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.spine.base.Identifier
@@ -34,6 +36,8 @@ import io.spine.chords.client.given.DesktopClientSpecEnv.item
 import io.spine.chords.client.given.IdlessItem
 import io.spine.chords.client.given.NamedItem
 import io.spine.chords.client.given.ObservedItem
+import io.spine.chords.client.given.command.RenameObservedItem
+import io.spine.chords.client.testing.ConnectionChannel
 import io.spine.chords.client.testing.ObservationChannel
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
@@ -44,13 +48,16 @@ import io.spine.client.OrderBy.Direction
 import io.spine.client.OrderBy.Direction.ASCENDING
 import io.spine.client.OrderBy.Direction.DESCENDING
 import io.spine.client.QueryFilter
+import java.util.concurrent.TimeUnit.MINUTES
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
@@ -60,7 +67,162 @@ import org.junit.jupiter.params.provider.ValueSource
  */
 @DisplayName("`DesktopClient` should")
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LargeClass" /* Keeps request, subscription, and recovery contracts in one suite. */)
 internal class DesktopClientSpec {
+
+    /**
+     * A caller or context cancellation must not be presented as a failed network connection.
+     */
+    @Test
+    @Timeout(value = 5, unit = MINUTES)
+    fun `preserve command cancellation unrelated to reconnect`(): Unit = runTest {
+        val transport = ConnectionChannel()
+        val client = DesktopClient(
+            channel = transport,
+            user = { null },
+            observationContext = StandardTestDispatcher(testScheduler)
+        )
+        try {
+            transport.onHalfClose = { transport.calls.single().complete(Status.CANCELLED) }
+            val command = RenameObservedItem.newBuilder()
+                .setId(item("cancelled-command").id)
+                .setLabel("Renamed")
+                .vBuild()
+
+            val failure = shouldThrow<StatusRuntimeException> {
+                client.postCommand(command)
+            }
+
+            failure.status.code shouldBe Status.Code.CANCELLED
+            transport.calls.size shouldBe 1
+        } finally {
+            client.close()
+        }
+    }
+
+    /**
+     * A wake interruption must reach the usual command network-error handler without replay.
+     */
+    @Test
+    @Timeout(value = 5, unit = MINUTES)
+    fun `report an interrupted command as a network failure without replay`(): Unit = runTest {
+        val transport = ConnectionChannel()
+        val client = DesktopClient(
+            channel = transport,
+            user = { null },
+            observationContext = StandardTestDispatcher(testScheduler)
+        )
+        try {
+            transport.onHalfClose = client::reconnect
+            val command = RenameObservedItem.newBuilder()
+                .setId(item("pending-command").id)
+                .setLabel("Renamed")
+                .vBuild()
+
+            val failure = shouldThrow<ServerCommunicationException> {
+                client.postCommand(command)
+            }
+
+            Status.fromThrowable(failure).code shouldBe Status.Code.CANCELLED
+            transport.calls.size shouldBe 1
+            transport.effects shouldBe listOf("connect", "idle", "reset backoff", "connect")
+        } finally {
+            client.close()
+        }
+    }
+
+    /**
+     * Wake recovery must refresh a live page even when the old channel still reports ready.
+     */
+    @Test
+    fun `recover a live page after repeated network changes`(): Unit = runTest {
+        ObservationChannel(StandardTestDispatcher(testScheduler)).use { source ->
+            val initial = item("initial")
+            source.items = listOf(initial)
+            val query = PagedDataQuery(
+                entityClass = ObservedItem::class.java,
+                queryFilters = emptyList(),
+                orderBy = ObservedItem.Column.label(),
+                direction = ASCENDING,
+                pageSize = 5,
+                keyOf = { it.label }
+            )
+            PagedDataNavigator(query = query, client = source.client, scope = this).use { page ->
+                runCurrent()
+                page.items shouldBe listOf(initial)
+
+                val afterWake = item("after-wake")
+                source.items = listOf(afterWake)
+                source.client.reconnect()
+                source.client.hasRegisteredSubscriptions shouldBe false
+                runCurrent()
+
+                page.items shouldBe listOf(initial)
+                page.status shouldBe DataObservationStatus.WaitingForConnection
+                advanceTimeBy(ConnectionRetryDelayMillis)
+                runCurrent()
+                page.items shouldBe listOf(afterWake)
+                page.status shouldBe DataObservationStatus.Active
+                source.client.hasRegisteredSubscriptions shouldBe true
+
+                source.items = emptyList()
+                source.client.reconnect()
+                source.client.hasRegisteredSubscriptions shouldBe false
+                runCurrent()
+                advanceTimeBy(ConnectionRetryDelayMillis)
+                runCurrent()
+
+                page.items shouldBe emptyList()
+                page.status shouldBe DataObservationStatus.Active
+                source.reconnectCount shouldBe 2
+                source.subscribeCount shouldBe 3
+                source.readCount shouldBe 3
+                source.cancelCount shouldBe 0
+            }
+            runCurrent()
+            source.cancelCount shouldBe 1
+            source.client.hasRegisteredSubscriptions shouldBe false
+        }
+    }
+
+    /**
+     * Recovery must release a failed cancellation even when the old server never acknowledges it.
+     */
+    @Test
+    fun `release registrations after an offline cancellation and reconnect`(): Unit = runTest {
+        ObservationChannel(StandardTestDispatcher(testScheduler)).use { source ->
+            val observation = source.client.readAndObserve(
+                ObservedItem::class.java, ObservedItem::getId
+            )
+            runCurrent()
+            source.client.hasRegisteredSubscriptions shouldBe true
+            source.cancellationFailure = Status.UNAVAILABLE
+
+            observation.cancel()
+            runCurrent()
+            source.cancelCount shouldBe 1
+            source.client.hasRegisteredSubscriptions shouldBe true
+            source.client.reconnect()
+
+            source.client.hasRegisteredSubscriptions shouldBe false
+            source.cancelCount shouldBe 1
+        }
+    }
+
+    /**
+     * A queued wake event after application shutdown cannot revive the connection.
+     */
+    @Test
+    fun `keep a closed client closed after a network change`() {
+        ObservationChannel().use { source ->
+            source.client.close()
+
+            source.client.reconnect()
+
+            source.reconnectCount shouldBe 0
+            source.client.connectionStatus.value shouldBe ConnectionStatus.CLOSED
+        }
+    }
 
     /**
      * A selected entity uses ID filters for reads and updates, including removal and reappearance.

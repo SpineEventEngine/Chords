@@ -101,6 +101,12 @@ The status distinguishes connecting, connected, temporarily unavailable, and
 closed clients. It lets applications notify users while ordinary data
 observations recover automatically.
 
+When the operating system reports waking from sleep or changing networks, call
+`DesktopClient.reconnect()`. It starts a fresh connection and interrupts pending calls and
+subscription streams, allowing observations and page navigators to recover without waiting for
+the old transport's timeouts. Their latest data stays available. Commands are not replayed;
+an interrupted command may already have reached the server. Calling it after closure has no effect.
+
 ### Reading pages
 
 For page-by-page UI, use [`PagedDataNavigator`](#navigating-paged-data) below. The `Client` methods

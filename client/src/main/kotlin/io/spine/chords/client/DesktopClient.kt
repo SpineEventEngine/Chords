@@ -29,6 +29,7 @@ package io.spine.chords.client
 import com.google.protobuf.Message
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
+import io.grpc.Status.Code.CANCELLED
 import io.grpc.Status.Code.UNAVAILABLE
 import io.grpc.StatusRuntimeException
 import io.spine.base.CommandMessage
@@ -75,8 +76,8 @@ private const val ChannelShutdownTimeoutSeconds = 5L
  *   the `DesktopClient` should send requests to the server.
  *   If the callback return `null` the client will send requests
  *   to the server on behalf of the guest user.
- * @param observationContext Runs background observations and blocking reads; tests may supply
- *   a controlled dispatcher when their channel responds synchronously.
+ * @param observationContext Runs observations, blocking reads, and subscription cleanup.
+ *   Tests may supply a controlled dispatcher when their channel responds synchronously.
  */
 @Suppress(
     "TooManyFunctions" /* The functions implement the public Client contract. */
@@ -86,6 +87,11 @@ public class DesktopClient internal constructor(
     private val user: () -> UserId?,
     private val observationContext: CoroutineContext = IO
 ) : Client {
+
+    /**
+     * Releases calls left on an obsolete connection when the application reports a network change.
+     */
+    private val recoverableChannel = RecoverableChannel(channel)
 
     /**
      * Connects to the application server and owns the resulting channel.
@@ -106,10 +112,21 @@ public class DesktopClient internal constructor(
     )
 
     /**
-     * The underlying Spine client that performs server requests.
+     * The request client for the current connection, with its subscription registry.
+     *
+     * Spine retains failed subscriptions until a cancellation RPC succeeds. Replacing this
+     * client on reconnect releases that registry even when the old server cannot be reached.
      */
-    private val spineClient: io.spine.client.Client =
-        io.spine.client.Client.usingChannel(channel).build()
+    @Volatile
+    private var spineClient: io.spine.client.Client =
+        io.spine.client.Client.usingChannel(recoverableChannel)
+            .build()
+
+    /**
+     * Reports whether the current request client retains subscription registrations.
+     */
+    internal val hasRegisteredSubscriptions: Boolean
+        get() = !spineClient.subscriptions().isEmpty
 
     /**
      * Owns the lifecycle of the data observations created by this client:
@@ -122,7 +139,7 @@ public class DesktopClient internal constructor(
     /**
      * Runs best-effort subscription cancellation requests.
      */
-    private val cancellationScope = CoroutineScope(IO + SupervisorJob())
+    private val cancellationScope = CoroutineScope(observationContext + SupervisorJob())
 
     /**
      * Prevents the client resources from being closed more than once.
@@ -160,6 +177,21 @@ public class DesktopClient internal constructor(
         connectionMonitor.close()
         cancellationScope.cancel()
         closeChannel()
+    }
+
+    /**
+     * Restores the connection after system wake or a known network change,
+     * without waiting for transport timeouts.
+     *
+     * Pending calls and subscription streams fail with a connection error. Observations and page
+     * navigators recover automatically, retaining their latest data. Commands are never replayed;
+     * an interrupted command may already have reached the server. Closed clients remain closed.
+     */
+    public fun reconnect() {
+        if (closed.get()) return
+        spineClient = io.spine.client.Client.usingChannel(recoverableChannel)
+            .build()
+        recoverableChannel.reconnect()
     }
 
     override fun <E : EntityState> readAndObserve(
@@ -383,7 +415,9 @@ public class DesktopClient internal constructor(
                 }
                 .postAndForget()
         } catch (e: StatusRuntimeException) {
-            if (e.status.code == UNAVAILABLE) {
+            if (e.status.code == UNAVAILABLE ||
+                (e.status.code == CANCELLED && e.status.cause is ConnectionRestartedException)
+            ) {
                 throw ServerCommunicationException(e)
             } else {
                 throw e
@@ -406,9 +440,12 @@ public class DesktopClient internal constructor(
         onNetworkError: ((Throwable) -> Unit)?,
         onEvent: (E) -> Unit
     ): EventSubscription {
-        val eventSubscription = EventSubscriptionImpl(::cancelSubscription)
+        val requestClient = spineClient
+        val eventSubscription = EventSubscriptionImpl { subscription ->
+            cancelSubscription(subscription, requestClient)
+        }
         try {
-            val subscription = clientRequest()
+            val subscription = clientRequest(requestClient)
                 .subscribeToEvent(event)
                 .where(eq(field, fieldValue))
                 .observe { evt ->
@@ -434,11 +471,11 @@ public class DesktopClient internal constructor(
      * A [ClientRequest] instance that can be used for building client's
      * requests to the server.
      */
-    private fun clientRequest(): ClientRequest {
+    private fun clientRequest(requestClient: io.spine.client.Client = spineClient): ClientRequest {
         if (userId != null) {
-            return spineClient.onBehalfOf(userId!!)
+            return requestClient.onBehalfOf(userId!!)
         }
-        return spineClient.asGuest()
+        return requestClient.asGuest()
     }
 
     /**
@@ -529,7 +566,8 @@ public class DesktopClient internal constructor(
         filter: CompositeEntityStateFilter? = null,
         id: Any? = null
     ): ObservationSubscription {
-        val request = clientRequest()
+        val requestClient = spineClient
+        val request = clientRequest(requestClient)
             .subscribeTo(entityClass)
             .observe(onUpdate)
             .whenNoLongerMatching(Any::class.java, onRemoval)
@@ -540,17 +578,20 @@ public class DesktopClient internal constructor(
         id?.let { request.byId(listOf(it)) }
         val subscription = request.post()
         return ObservationSubscription {
-            cancelSubscription(subscription)
+            cancelSubscription(subscription, requestClient)
         }
     }
 
     /**
      * Sends a best-effort cancellation request without blocking the caller.
      */
-    private fun cancelSubscription(subscription: Subscription) {
+    private fun cancelSubscription(
+        subscription: Subscription,
+        requestClient: io.spine.client.Client
+    ) {
         cancellationScope.launch {
             try {
-                spineClient.subscriptions().cancel(subscription)
+                requestClient.subscriptions().cancel(subscription)
             } catch (_: Exception) {
                 // The stream or channel may have failed before cancellation.
             }
@@ -597,8 +638,13 @@ public class DesktopClient internal constructor(
  *   request to the server.
  */
 internal open class EventSubscriptionImpl(
-    private val cancelSubscriptionRequest: (Subscription) -> Unit
+    cancelSubscriptionRequest: (Subscription) -> Unit
 ) : EventSubscription {
+
+    /**
+     * Releases the originating registry after this handle no longer needs to send cancellation.
+     */
+    private var cancellationRequest: ((Subscription) -> Unit)? = cancelSubscriptionRequest
 
     /**
      * Guards the mutable subscription state.
@@ -719,6 +765,7 @@ internal open class EventSubscriptionImpl(
                 isCancelled = true
                 cancelWhenInstalled = false
                 subscription = null
+                cancellationRequest = null
                 true
             }
         }
@@ -756,8 +803,11 @@ internal open class EventSubscriptionImpl(
      * Sends a best-effort cancellation request for the given [subscription].
      */
     private fun sendCancellationSafely(subscription: Subscription) {
+        val request = synchronized(stateLock) {
+            cancellationRequest.also { cancellationRequest = null }
+        }
         try {
-            cancelSubscriptionRequest(subscription)
+            request?.invoke(subscription)
         } catch (_: Exception) {
             // The server may already have removed a failed subscription.
         }
