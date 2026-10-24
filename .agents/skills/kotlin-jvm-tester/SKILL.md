@@ -123,6 +123,36 @@ its `given/AppWindowSpecEnv.kt` as the flat-suite reference.
 - Do not depend on real external services, production resources, credentials,
   signing material, or local absolute paths.
 
+## Deterministic Asynchronous Tests
+
+- Assume CI can be arbitrarily slower than a local run. Establish completion through controlled
+  collaborators, explicit completion signals, and test schedulers before asserting results.
+- Do not use sleeps, polling deadlines, or fixed frame counts to make asynchronous work finish.
+  A timeout may stop a hung test; it must not establish ordering or readiness. Increasing a timeout,
+  retrying a failed test, or accepting one successful rerun does not fix instability.
+  When removing per-operation deadlines, retain a generous test-level guard against hangs.
+  Expiry must fail the test, never count as successful completion or proof of an absent effect.
+  Include blocking setup and teardown: JUnit's class-level `@Timeout` does not cover lifecycle
+  methods, so guard them separately.
+- Use virtual time for delays and deadlines. Keep coroutine work on a test-controlled scheduler
+  when the subject permits it, and explicitly complete pending responses in the required order.
+  Verify that stubs and transport engines share that scheduler; `runTest` alone does not control
+  their background dispatchers.
+- Register completion listeners before checking current state or triggering work. Retain signals
+  that arrive before the waiter suspends, and cover completion before and after waiting starts
+  when repairing lost notifications.
+- Before asserting that an asynchronous side effect is absent, drive the initiating action to a
+  defined completion point through controlled scheduling or a completion signal. An empty queue
+  or a quiet interval alone does not prove that no work was started.
+- Use real transports and subprocesses only when their integration is the subject. Logic and
+  component tests must not depend on socket setup, background pools, or application startup speed.
+- Close test resources and await their termination before the test ends. Restore shared state and
+  ensure no work survives into another test.
+- When fixing instability, identify the uncontrolled dependency and verify the relevant completion
+  orders, then run the affected suites together. Repeated green runs support this evidence but
+  cannot replace it. If stable coverage is impractical, report the gap and remove the test only
+  when the user authorizes removal; do not silently disable it.
+
 ## `testlib` Bases and Helpers
 
 `spine-testlib` and Guava testlib are available in every module. All bases are

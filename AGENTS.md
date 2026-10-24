@@ -149,6 +149,10 @@ for titles, descriptions, resolved-issue links, and stacked-review notes.
 
 ## Verification and Quality
 
+Tests must remain reliable on slow CI runners. Follow the
+[asynchronous test rules](.agents/skills/kotlin-jvm-tester/SKILL.md#deterministic-asynchronous-tests);
+timeouts and retries are not synchronization or fixes for unstable tests.
+
 Never mark a non-trivial change done without the smallest verification that
 proves it. Broaden when shared behavior or contracts change, and report why any
 required verification could not run.
