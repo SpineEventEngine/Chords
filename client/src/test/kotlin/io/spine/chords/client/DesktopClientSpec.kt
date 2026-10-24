@@ -186,6 +186,43 @@ internal class DesktopClientSpec {
     }
 
     /**
+     * An observation resumed during transport reset must belong to the discarded registry.
+     */
+    @Test
+    @Timeout(value = 5, unit = MINUTES)
+    fun `release subscriptions started during a connection reset`(): Unit = runTest {
+        ObservationChannel(StandardTestDispatcher(testScheduler)).use { source ->
+            val entity = item("resumed-during-wake")
+            source.items = listOf(entity)
+            val observation = source.client.readAndObserve(
+                ObservedItem::class.java, ObservedItem::getId
+            )
+            source.onReconnect = {
+                runCurrent()
+                observation.status.value shouldBe DataObservationStatus.Active
+                source.subscribeCount shouldBe 1
+            }
+
+            source.client.reconnect()
+
+            source.client.hasRegisteredSubscriptions shouldBe false
+            observation.value shouldBe listOf(entity)
+            observation.status.value shouldBe DataObservationStatus.WaitingForConnection
+            runCurrent()
+            advanceTimeBy(ConnectionRetryDelayMillis)
+            runCurrent()
+            observation.status.value shouldBe DataObservationStatus.Active
+            source.subscribeCount shouldBe 2
+            source.client.hasRegisteredSubscriptions shouldBe true
+
+            observation.cancel()
+            runCurrent()
+            source.cancelCount shouldBe 1
+            source.client.hasRegisteredSubscriptions shouldBe false
+        }
+    }
+
+    /**
      * Recovery must release a failed cancellation even when the old server never acknowledges it.
      */
     @Test

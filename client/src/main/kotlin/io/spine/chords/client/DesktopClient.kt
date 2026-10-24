@@ -189,9 +189,10 @@ public class DesktopClient internal constructor(
      */
     public fun reconnect() {
         if (closed.get()) return
-        spineClient = io.spine.client.Client.usingChannel(recoverableChannel)
-            .build()
-        recoverableChannel.reconnect()
+        recoverableChannel.reconnect {
+            spineClient = io.spine.client.Client.usingChannel(recoverableChannel)
+                .build()
+        }
     }
 
     override fun <E : EntityState> readAndObserve(

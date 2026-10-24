@@ -89,6 +89,11 @@ internal class ObservationChannel(
     var onRead: () -> Unit = {}
 
     /**
+     * Runs during transport reset before the pending calls are interrupted.
+     */
+    var onReconnect: () -> Unit = {}
+
+    /**
      * Fails cancellation requests while simulating an unreachable server.
      */
     var cancellationFailure: Status? = null
@@ -359,6 +364,7 @@ internal class ObservationChannel(
      */
     override fun enterIdle() {
         reconnectCount++
+        onReconnect()
     }
 
     /**

@@ -29,6 +29,7 @@ package io.spine.chords.client
 import io.grpc.CallOptions
 import io.grpc.Metadata
 import io.grpc.Status
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.spine.chords.client.testing.CallStatusRecorder
 import io.spine.chords.client.testing.ConnectionChannel
@@ -113,7 +114,7 @@ internal class RecoverableChannelSpec {
     fun `interrupt a call when recovery arrives during startup`() {
         val transport = ConnectionChannel()
         val channel = RecoverableChannel(transport)
-        transport.onStart = channel::reconnect
+        transport.onStart = { channel.reconnect() }
         val result = CallStatusRecorder<QueryResponse>()
 
         channel.newCall(getReadMethod(), CallOptions.DEFAULT)
@@ -121,6 +122,33 @@ internal class RecoverableChannelSpec {
 
         result.statuses shouldBe listOf(Status.Code.CANCELLED)
         transport.calls.single().cancelCount shouldBe 1
+        channel.shutdownNow()
+    }
+
+    /**
+     * Calls using newly published connection state must survive the current interruption.
+     */
+    @Test
+    fun `publish connection state between old and new calls`() {
+        val transport = ConnectionChannel()
+        val channel = RecoverableChannel(transport)
+        val previousResult = CallStatusRecorder<QueryResponse>()
+        val previous = channel.newCall(getReadMethod(), CallOptions.DEFAULT)
+        previous.start(previousResult, Metadata())
+        val nextResult = CallStatusRecorder<QueryResponse>()
+
+        channel.reconnect {
+            previousResult.statuses.shouldBeEmpty()
+            channel.newCall(getReadMethod(), CallOptions.DEFAULT)
+                .start(nextResult, Metadata())
+        }
+
+        previousResult.statuses shouldBe listOf(Status.Code.CANCELLED)
+        nextResult.statuses.shouldBeEmpty()
+        transport.calls[1].cancelCount shouldBe 0
+        channel.reconnect()
+        nextResult.statuses shouldBe listOf(Status.Code.CANCELLED)
+        transport.calls[1].cancelCount shouldBe 1
         channel.shutdownNow()
     }
 

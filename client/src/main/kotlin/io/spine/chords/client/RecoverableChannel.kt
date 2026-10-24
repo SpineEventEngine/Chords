@@ -58,14 +58,21 @@ internal class RecoverableChannel(private val channel: ManagedChannel) : Managed
 
     /**
      * Starts a fresh connection and interrupts outstanding calls without replaying them.
+     *
+     * [onReconnect] publishes state for the new connection after the interrupted calls are
+     * selected, before cancellation callbacks run. Publication shares the call-registration
+     * lock, so the callback must not wait for RPC completion.
      */
-    fun reconnect() {
+    fun reconnect(onReconnect: () -> Unit = {}) {
         val interrupted = synchronized(lock) {
             if (channel.isShutdown) return
             channel.enterIdle()
             channel.resetConnectBackoff()
             calls.toList()
-                .also { calls.clear() }
+                .also {
+                    calls.clear()
+                    onReconnect()
+                }
         }
         interrupted.forEach {
             it.cancel("The network connection was restarted.", ConnectionRestartedException())
