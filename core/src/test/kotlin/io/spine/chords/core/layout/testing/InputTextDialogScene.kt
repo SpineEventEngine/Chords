@@ -132,9 +132,7 @@ internal class InputTextDialogScene(private val dialog: InputTextDialog) : AutoC
      * Applies pending input and dialog changes.
      */
     fun render() {
-        repeat(4) {
-            scene.render()
-        }
+        scene.renderUntilIdle()
     }
 
     /**

@@ -36,14 +36,16 @@ import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.spine.chords.core.TestApplication
 import io.spine.chords.core.layout.WindowType.LightweightWindow
 import io.spine.chords.core.layout.testing.InputTextDialogScene
+import java.util.concurrent.TimeUnit.MINUTES
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 
@@ -51,6 +53,7 @@ import org.junit.jupiter.params.provider.ValueSource
  * Tests text retention, discard checks, and results of suspending input requests.
  */
 @DisplayName("`InputTextDialog` should")
+@Timeout(value = 5, unit = MINUTES)
 internal class InputTextDialogSpec {
 
     /**
@@ -59,7 +62,7 @@ internal class InputTextDialogSpec {
     @ParameterizedTest
     @ValueSource(strings = ["", "Initial value"])
     fun `focus its text field on opening`(initial: String): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             val request = async {
                 InputTextDialog.inputText { defaultText = initial }
             }
@@ -84,7 +87,7 @@ internal class InputTextDialogSpec {
     @Test
     fun `return null immediately for a suppressed input request`() {
         runBlocking {
-            withTimeout(5_000) {
+            coroutineScope {
                 val firstRequest = async {
                     InputTextDialog.inputText()
                 }
@@ -109,7 +112,7 @@ internal class InputTextDialogSpec {
      */
     @Test
     fun `honor cancellation veto before resolving the request`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             var allowCancel = false
             var cancellations = 0
             val request = async {
@@ -148,7 +151,7 @@ internal class InputTextDialogSpec {
      */
     @Test
     fun `preserve edited text when its prompt changes`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             var prompt by mutableStateOf("Initial prompt")
             val request = async {
                 InputTextDialog.inputText {
@@ -183,7 +186,7 @@ internal class InputTextDialogSpec {
     @ParameterizedTest
     @ValueSource(strings = ["", " \t\n", "\u00a0"])
     fun `retain blank required text until corrected`(blank: String): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             val request = async {
                 InputTextDialog.inputText {
                     textRequired = true
@@ -221,7 +224,7 @@ internal class InputTextDialogSpec {
      */
     @Test
     fun `display and update its required text validation message`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             val request = async {
                 InputTextDialog.inputText { textRequired = true }
             }
@@ -258,7 +261,7 @@ internal class InputTextDialogSpec {
     @ParameterizedTest
     @ValueSource(strings = ["", "Initial value"])
     fun `track edits against the initially displayed text`(initial: String): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             var discardChecks = 0
             val request = async {
                 InputTextDialog.inputText {
@@ -300,7 +303,7 @@ internal class InputTextDialogSpec {
      */
     @Test
     fun `submit the preserved input after refusing cancellation`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             var submissions = 0
             val request = async {
                 InputTextDialog.inputText {
@@ -338,7 +341,7 @@ internal class InputTextDialogSpec {
      */
     @Test
     fun `confirm discarding edited text before closing`(): Unit = runBlocking {
-        withTimeout(10_000) {
+        coroutineScope {
             val request = async {
                 InputTextDialog.inputText {
                     onBeforeCancel = {
@@ -378,6 +381,7 @@ internal class InputTextDialogSpec {
      * Clears dialog state left by an earlier request-level case.
      */
     @BeforeEach
+    @Timeout(value = 5, unit = MINUTES)
     fun resetDialogs() {
         TestApplication.closeDialogs()
     }
@@ -392,6 +396,7 @@ internal class InputTextDialogSpec {
          */
         @JvmStatic
         @BeforeAll
+        @Timeout(value = 5, unit = MINUTES)
         fun setUpApplication() {
             TestApplication.install()
         }

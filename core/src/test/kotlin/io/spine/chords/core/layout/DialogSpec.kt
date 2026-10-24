@@ -249,7 +249,7 @@ internal class DialogSpec {
             .apply { allowSubmission = false }
 
         submittableDialogScene(dialog).use { scene ->
-            repeat(4) { scene.render() }
+            scene.renderUntilIdle()
             dialog.submitShortcutEnabled shouldBe false
             button(scene, "OK").config.contains(SemanticsProperties.Disabled) shouldBe true
             button(scene, "Cancel").config.contains(SemanticsProperties.Disabled) shouldBe false

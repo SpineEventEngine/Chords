@@ -108,7 +108,7 @@ internal class ScrollableColumnSpec {
                         scene.render()
                     }
                     val firstFrame = bodyBounds
-                    repeat(5) { scene.render() }
+                    scene.renderUntilIdle()
 
                     withClue("Selected item $item; starts with overflow: $startsWithOverflow") {
                         bodyBounds shouldBe firstFrame

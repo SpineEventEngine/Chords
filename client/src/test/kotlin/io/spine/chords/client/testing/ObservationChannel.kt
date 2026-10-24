@@ -53,6 +53,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.channels.Channel
 
 /**
  * Supplies protocol responses to the real Spine client without network or transport threads.
@@ -117,6 +118,26 @@ internal class ObservationChannel(
      * Counts cancellation RPCs sent by the client.
      */
     private val cancellations = AtomicInteger()
+
+    /**
+     * Retains completed cancellation responses even when a test starts waiting afterwards.
+     */
+    private val cancellationResponses = Channel<Unit>(Channel.UNLIMITED)
+
+    /**
+     * Counts responses consumed by this channel's single test driver.
+     */
+    private var awaitedCancellations = 0
+
+    /**
+     * Waits for the requested number of cancellation RPCs to finish responding.
+     */
+    suspend fun awaitCancellations(count: Int) {
+        while (awaitedCancellations < count) {
+            cancellationResponses.receive()
+            awaitedCancellations++
+        }
+    }
 
     /**
      * The number of subscription requests observed by this channel.
@@ -280,6 +301,7 @@ internal class ObservationChannel(
                 cancellations.incrementAndGet()
                 streams.remove(request as Subscription)
                 reply(Responses.ok())
+                cancellationResponses.trySend(Unit)
             }
             else -> error("Unexpected gRPC method: $method")
         }

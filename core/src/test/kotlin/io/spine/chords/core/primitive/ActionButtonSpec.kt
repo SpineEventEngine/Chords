@@ -65,10 +65,10 @@ internal class ActionButtonSpec {
             }.use { scene ->
                 val resting = scene.pixelAt(80.dp, 20.dp)
                 scene.movePointerTo(Offset(80F, 20F))
-                repeat(30) { scene.render() }
+                scene.renderUntilIdle()
                 scene.pixelAt(80.dp, 20.dp) shouldNotBe resting
                 scene.setWindowFocused(false)
-                repeat(30) { scene.render() }
+                scene.renderUntilIdle()
                 scene.pixelAt(80.dp, 20.dp) shouldBe resting
             }
         }
@@ -89,7 +89,7 @@ internal class ActionButtonSpec {
             val resting = scene.pixelAt(80.dp, 20.dp)
             scene.click(80.dp, 20.dp)
             scene.movePointerTo(Offset(160F, 60F))
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
             scene.pixelAt(80.dp, 20.dp) shouldBe resting
         }
     }

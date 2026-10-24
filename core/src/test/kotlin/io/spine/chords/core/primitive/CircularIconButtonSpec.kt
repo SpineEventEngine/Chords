@@ -66,7 +66,7 @@ internal class CircularIconButtonSpec {
             scene.movePointerTo(Offset(20f, 20f))
             scene.click(20.dp, 20.dp)
             scene.movePointerTo(Offset(80f, 80f))
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
 
             clicks shouldBe 1
             scene.pixelAt(20.dp, 20.dp) shouldBe scheme.surface.toArgb()
@@ -85,7 +85,7 @@ internal class CircularIconButtonSpec {
             }
         }.use { scene ->
             scene.movePointerTo(Offset(20f, 20f))
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
             scene.pixelAt(20.dp, 20.dp) shouldBe scheme.primaryContainer.toArgb()
             scene.setWindowFocused(false)
             scene.render()
@@ -108,7 +108,7 @@ internal class CircularIconButtonSpec {
         }.use { scene ->
             scene.pressKey(VK_TAB)
             scene.releaseKey(VK_TAB)
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
 
             scene.pixelAt(20.dp, 20.dp) shouldNotBe scheme.surface.toArgb()
         }

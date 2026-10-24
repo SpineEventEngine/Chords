@@ -68,6 +68,7 @@ import org.junit.jupiter.params.provider.ValueSource
 @DisplayName("`DesktopClient` should")
 @OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("LargeClass" /* Keeps request, subscription, and recovery contracts in one suite. */)
+@Timeout(value = 5, unit = MINUTES)
 internal class DesktopClientSpec {
 
     /**

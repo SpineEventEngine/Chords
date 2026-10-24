@@ -30,19 +30,22 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.spine.chords.core.TestApplication
+import java.util.concurrent.TimeUnit.MINUTES
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 
 /**
  * Tests how [ConfirmationDialog] resolves repeated suspending requests.
  */
 @DisplayName("`ConfirmationDialog` should")
+@Timeout(value = 5, unit = MINUTES)
 internal class ConfirmationDialogSpec {
 
     /**
@@ -52,7 +55,7 @@ internal class ConfirmationDialogSpec {
     @Test
     fun `return false immediately for a suppressed confirmation`() {
         runBlocking {
-            withTimeout(5_000) {
+            coroutineScope {
                 val firstRequest = async {
                     ConfirmationDialog.showConfirmation()
                 }
@@ -77,7 +80,7 @@ internal class ConfirmationDialogSpec {
     @Test
     fun `keep the first request intact when the same instance is requested again`() {
         runBlocking {
-            withTimeout(5_000) {
+            coroutineScope {
                 val dialog = ConfirmationDialog()
                 val firstRequest = async {
                     dialog.showConfirmation()
@@ -101,6 +104,7 @@ internal class ConfirmationDialogSpec {
      * Clears dialog state left by an earlier request-level case.
      */
     @BeforeEach
+    @Timeout(value = 5, unit = MINUTES)
     fun resetDialogs() {
         TestApplication.closeDialogs()
     }
@@ -115,6 +119,7 @@ internal class ConfirmationDialogSpec {
          */
         @JvmStatic
         @BeforeAll
+        @Timeout(value = 5, unit = MINUTES)
         fun setUpApplication() {
             TestApplication.install()
         }

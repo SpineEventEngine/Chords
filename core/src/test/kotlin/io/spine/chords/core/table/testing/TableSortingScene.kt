@@ -156,7 +156,7 @@ internal class TableSortingScene(
      * Applies state changes and selection visibility effects before reading rows.
      */
     private fun render() {
-        repeat(4) { scene.render() }
+        scene.renderUntilIdle()
     }
 
     /**
