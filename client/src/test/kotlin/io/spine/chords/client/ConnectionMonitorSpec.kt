@@ -34,9 +34,6 @@ import io.grpc.ConnectivityState.SHUTDOWN
 import io.grpc.ConnectivityState.TRANSIENT_FAILURE
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit.SECONDS
-import kotlin.concurrent.thread
 import org.junit.jupiter.api.Test
 
 internal class ConnectionMonitorSpec {
@@ -100,30 +97,21 @@ internal class ConnectionMonitorSpec {
         monitor.status.value shouldBe ConnectionStatus.CLOSED
     }
 
+    /**
+     * Closing during the connectivity read must win over that callback's later publication.
+     */
     @Test
     fun `keep closed status when connectivity callback is already running`() {
         val channel = FakeConnectivityChannel()
-        val stateReadStarted = CountDownLatch(1)
-        val allowStateRead = CountDownLatch(1)
         val monitor = ConnectionMonitor(
             channel::getState,
             channel::notifyWhenStateChanged
         ) { }
         monitor.start()
-        channel.beforeGetState = {
-            stateReadStarted.countDown()
-            allowStateRead.await(5, SECONDS)
-        }
-        val transition = thread {
-            channel.moveTo(READY)
-        }
-        stateReadStarted.await(5, SECONDS) shouldBe true
+        channel.beforeGetState = { monitor.close() }
 
-        monitor.close()
-        allowStateRead.countDown()
-        transition.join(5_000)
+        channel.moveTo(READY)
 
-        transition.isAlive shouldBe false
         monitor.status.value shouldBe ConnectionStatus.CLOSED
     }
 }

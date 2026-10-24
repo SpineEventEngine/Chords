@@ -89,20 +89,18 @@ internal class TableSpec {
         }.use { scene ->
             repeat(4) {
                 scene.click(x = 280.dp, y = 270.dp)
-                scene.render()
+                scene.renderUntilIdle()
             }
             val selectedEntityId = EntityCount - 3
             visibleEntityIds shouldContain selectedEntityId
             selectedEntity.value = initialEntities[selectedEntityId]
-            scene.render()
+            scene.renderUntilIdle()
 
             entities = initialEntities.map { entity ->
                 if (entity.id == selectedEntityId) entity.copy(sortingPosition = -1)
                 else entity
             }
-            repeat(60) {
-                scene.render()
-            }
+            scene.renderUntilIdle()
 
             visibleEntityIds shouldContain selectedEntityId
         }
@@ -144,7 +142,7 @@ internal class TableSpec {
             firstCellBounds.right shouldBe (300 - scrollbarWidth - 48).toFloat()
             val buttonCenter = Offset((300 - scrollbarWidth - 24).toFloat(), 60f)
             scene.movePointerTo(buttonCenter)
-            scene.render()
+            scene.renderUntilIdle()
 
             scene.pixelAt((buttonCenter.x - 8).dp, 60.dp) shouldBe
                     scheme.primaryContainer.toArgb()

@@ -105,13 +105,13 @@ internal class NavigationDrawerSpec {
                                 .count { it == "Account" } shouldBe occurrences
 
                             scene.click(action.boundsInRoot.center)
-                            repeat(12) { scene.render() }
+                            scene.renderUntilIdle()
 
                             menu.opened shouldBe true
                             text(scene) shouldContain menu.menuLabel
                             scene.pressKey(VK_ESCAPE)
                             scene.releaseKey(VK_ESCAPE)
-                            repeat(12) { scene.render() }
+                            scene.renderUntilIdle()
                             menu.opened shouldBe false
                             scene.movePointerTo(Offset(400f, 400f))
                             scene.render()
@@ -179,7 +179,7 @@ internal class NavigationDrawerSpec {
             scene(views = views, height = height.dp, footer = { menu.Content(it) })
                 .use { scene ->
                     scene.click(views[0].editButtonBounds.center)
-                    repeat(3) { scene.render() }
+                    scene.renderUntilIdle()
                     views[0].edits shouldBe 1
                     val originalIcon = menu.iconBounds
                     val originalAction = footerAction(scene).boundsInRoot
@@ -199,7 +199,7 @@ internal class NavigationDrawerSpec {
                             val viewBounds = views[0].bounds
 
                             scene.click(action.boundsInRoot.center)
-                            repeat(12) { scene.render() }
+                            scene.renderUntilIdle()
 
                             menu.opened shouldBe true
                             text(scene) shouldContain menu.menuLabel
@@ -210,7 +210,7 @@ internal class NavigationDrawerSpec {
 
                             scene.pressKey(VK_ESCAPE)
                             scene.releaseKey(VK_ESCAPE)
-                            repeat(12) { scene.render() }
+                            scene.renderUntilIdle()
                             menu.opened shouldBe false
                             scene.click(toggle(scene).boundsInRoot.center)
                             scene.render()
@@ -235,7 +235,7 @@ internal class NavigationDrawerSpec {
                     }
                     scene.pressKey(VK_ENTER)
                     scene.releaseKey(VK_ENTER)
-                    repeat(12) { scene.render() }
+                    scene.renderUntilIdle()
 
                     menu.opened shouldBe true
                     text(scene) shouldContain menu.menuLabel
@@ -267,7 +267,7 @@ internal class NavigationDrawerSpec {
                 scene.movePointerTo(view.editButtonBounds.center)
                 scene.render()
                 scene.click(view.editButtonBounds.center)
-                repeat(3) { scene.render() }
+                scene.renderUntilIdle()
                 view.edits shouldBe 1
 
                 repeat(2) { cycle ->
@@ -416,7 +416,7 @@ internal class NavigationDrawerSpec {
 
                 scene.click(destination.boundsInRoot.center)
                 scene.movePointerTo(Offset(799f, 799f))
-                repeat(30) { scene.render() }
+                scene.renderUntilIdle()
 
                 views[index].bounds.left shouldBe collapsedLeft
                 destinations(scene)

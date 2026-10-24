@@ -35,6 +35,16 @@ description: >
   rendering does not prove native window behavior or visual quality across
   platforms; report those limits and any remaining manual check. Do not add
   another UI harness when the existing one covers the requirement.
+- Follow the [asynchronous test rules](../kotlin-jvm-tester/SKILL.md#deterministic-asynchronous-tests).
+  Drive Compose effects and frames with a test scheduler on the scene's UI thread. Wait for explicit
+  response completion and scene idleness before inspecting state or sending input. Do not assume
+  that one render, a fixed number of frames, or an elapsed delay means the UI is ready.
+  Keep unrelated session observations and network requests out of focused component scenes.
+- Apply test-driven Compose state changes explicitly on the UI thread, independently of global
+  snapshot notification timing. Scene waiters must wake for queued continuations as well as
+  snapshot changes; a resumed effect may not have changed state yet.
+- Pause decorative infinite animations when animation is outside the test's scope, so they do not
+  prevent scene idleness. Keep relevant animations and delays on the controlled clock.
 - For each remaining manual check, give a concrete action and falsifiable
   expected result. Request only the user interaction needed to resolve a gap;
   do not use a manual check as a substitute for available automated coverage.

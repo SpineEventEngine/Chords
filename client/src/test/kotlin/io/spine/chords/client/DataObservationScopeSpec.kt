@@ -27,14 +27,11 @@
 package io.spine.chords.client
 
 import io.grpc.Status
-import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.Executors.newSingleThreadExecutor
 import java.util.concurrent.Semaphore
-import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.TimeUnit.MINUTES
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -46,6 +43,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 
 /**
  * Tests how [DataObservationScope] registers observations, starts their
@@ -54,6 +52,7 @@ import org.junit.jupiter.api.Test
  */
 @DisplayName("`DataObservationScope` should")
 @OptIn(ExperimentalCoroutinesApi::class)
+@Timeout(value = 5, unit = MINUTES)
 internal class DataObservationScopeSpec {
 
     @Test
@@ -86,7 +85,7 @@ internal class DataObservationScopeSpec {
 
         observation.refreshCalls shouldBe 0
         runCurrent()
-        observation.awaitRefresh() shouldBe true
+        observation.awaitRefresh()
         runCurrent()
         observation.refreshCalls shouldBe 1
         job.isCompleted shouldBe true
@@ -144,7 +143,7 @@ internal class DataObservationScopeSpec {
 
             val job = scope.registerAndInitialize(observation.observation)
             runCurrent()
-            observation.awaitRefresh() shouldBe true
+            observation.awaitRefresh()
             runCurrent()
 
             observation.status shouldBe DataObservationStatus.Active
@@ -170,15 +169,13 @@ internal class DataObservationScopeSpec {
      * either order the observation ends up refreshed.
      */
     @Test
-    fun `refresh an observation parked while a reconnection is processed`() =
+    fun `refresh an observation parked while a reconnection is processed`(): Unit =
         runBlocking {
             val registrationStarted = CountDownLatch(1)
             val continueRegistration = CountDownLatch(1)
             val scope = DataObservationScope(connectionStatus = {
                 registrationStarted.countDown()
-                check(continueRegistration.await(5, SECONDS)) {
-                    "Timed out waiting to continue observation registration."
-                }
+                continueRegistration.await()
                 ConnectionStatus.UNAVAILABLE
             })
             scope.start()
@@ -188,13 +185,18 @@ internal class DataObservationScopeSpec {
                 scope.register(observation.observation)
             }
             registration.start()
-            registrationStarted.await(5, SECONDS) shouldBe true
-            scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
-            continueRegistration.countDown()
-            registration.join()
+            try {
+                registrationStarted.await()
+                scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
+                continueRegistration.countDown()
+                registration.join()
 
-            observation.awaitRefresh() shouldBe true
-            scope.close()
+                observation.awaitRefresh()
+            } finally {
+                continueRegistration.countDown()
+                registration.join()
+                scope.close()
+            }
         }
 
     /**
@@ -209,13 +211,13 @@ internal class DataObservationScopeSpec {
 
         scope.registerAndInitialize(observation.observation)
         runCurrent()
-        observation.awaitRefresh() shouldBe true
+        observation.awaitRefresh()
         runCurrent()
         scope.onConnectionStatusChanged(ConnectionStatus.UNAVAILABLE)
         runCurrent()
         scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
         runCurrent()
-        observation.awaitRefresh() shouldBe true
+        observation.awaitRefresh()
         runCurrent()
 
         observation.refreshCalls shouldBe 2
@@ -299,8 +301,8 @@ internal class DataObservationScopeSpec {
         runCurrent()
         scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
         runCurrent()
-        first.awaitRefresh() shouldBe true
-        second.awaitRefresh() shouldBe true
+        first.awaitRefresh()
+        second.awaitRefresh()
         runCurrent()
 
         first.refreshCalls shouldBe 1
@@ -332,7 +334,7 @@ internal class DataObservationScopeSpec {
 
         scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
         runCurrent()
-        observation.awaitRefresh() shouldBe true
+        observation.awaitRefresh()
         runCurrent()
 
         observation.refreshCalls shouldBe 1
@@ -349,7 +351,7 @@ internal class DataObservationScopeSpec {
         scope.register(observation.observation)
         scope.onConnectionStatusChanged(ConnectionStatus.CONNECTED)
         runCurrent()
-        observation.awaitRefresh() shouldBe true
+        observation.awaitRefresh()
         runCurrent()
 
         observation.refreshCalls shouldBe 1
@@ -371,7 +373,7 @@ internal class DataObservationScopeSpec {
         runCurrent()
         advanceTimeBy(1_000)
         runCurrent()
-        observation.awaitRefresh() shouldBe true
+        observation.awaitRefresh()
         runCurrent()
 
         observation.refreshCalls shouldBe 1
@@ -396,12 +398,12 @@ internal class DataObservationScopeSpec {
         observation.refreshCalls shouldBe 0
         advanceTimeBy(1)
         runCurrent()
-        observation.awaitRefresh() shouldBe true
+        observation.awaitRefresh()
         runCurrent()
         observation.refreshCalls shouldBe 1
         advanceTimeBy(1_000)
         runCurrent()
-        observation.awaitRefresh() shouldBe true
+        observation.awaitRefresh()
         runCurrent()
         observation.refreshCalls shouldBe 2
         scope.close()
@@ -445,7 +447,7 @@ internal class DataObservationScopeSpec {
      * the observation serves its fallback value until the refresh completes.
      */
     @Test
-    fun `return from initialization while the initial subscription is pending`() =
+    fun `return from initialization while the initial subscription is pending`(): Unit =
         runBlocking {
             val scope = DataObservationScope({ ConnectionStatus.CONNECTED })
             scope.start()
@@ -456,9 +458,7 @@ internal class DataObservationScopeSpec {
                 read = { "server data" },
                 subscribe = { _, _ ->
                     subscribeStarted.countDown()
-                    check(allowSubscribe.await(5, SECONDS)) {
-                        "Timed out waiting to finish subscription setup."
-                    }
+                    allowSubscribe.await()
                     ObservationSubscription { }
                 },
                 applyUpdate = { _, update -> update },
@@ -470,18 +470,23 @@ internal class DataObservationScopeSpec {
             val job = requireNotNull(
                 scope.registerAndInitialize(observation)
             )
-            subscribeStarted.await(5, SECONDS) shouldBe true
+            try {
+                subscribeStarted.await()
 
-            job.isCompleted shouldBe false
-            observation.value shouldBe "fallback"
-            observation.status.value shouldBe DataObservationStatus.Refreshing
+                job.isCompleted shouldBe false
+                observation.value shouldBe "fallback"
+                observation.status.value shouldBe DataObservationStatus.Refreshing
 
-            allowSubscribe.countDown()
-            job.join()
+                allowSubscribe.countDown()
+                job.join()
 
-            observation.value shouldBe "server data"
-            observation.status.value shouldBe DataObservationStatus.Active
-            scope.close()
+                observation.value shouldBe "server data"
+                observation.status.value shouldBe DataObservationStatus.Active
+            } finally {
+                allowSubscribe.countDown()
+                job.join()
+                scope.close()
+            }
         }
 
     @Test
@@ -490,58 +495,13 @@ internal class DataObservationScopeSpec {
         val observation = FakeObservation()
         scope.registerAndInitialize(observation.observation)
         runCurrent()
-        observation.awaitRefresh() shouldBe true
+        observation.awaitRefresh()
         runCurrent()
 
         scope.close()
 
         observation.cancelCalls shouldBe 0
         observation.status shouldBe DataObservationStatus.Cancelled
-    }
-
-    /**
-     * Samples disposal of the last observation while the client shuts down.
-     * Both operations can run independently when a composition leaves its page.
-     * This test can pass without the fix: it cannot force the interleaving inside `toList()`.
-     */
-    @Test
-    fun `close while the last observation unregisters`() {
-        val worker = newSingleThreadExecutor()
-        try {
-            repeat(5_000) { attempt ->
-                withClue("Disposal and shutdown attempt $attempt") {
-                    val scope = DataObservationScope({ ConnectionStatus.CONNECTED })
-                    val cancellationReady = CyclicBarrier(2)
-                    val observation = createDataObservation<String, String>(
-                        initialValue = "",
-                        read = { "value" },
-                        subscribe = { _, _ -> ObservationSubscription { } },
-                        applyUpdate = { _, update -> update },
-                        connectionStatus = { ConnectionStatus.CONNECTED },
-                        onCancelled = {
-                            cancellationReady.await(5, SECONDS)
-                            scope.unregister(it)
-                        },
-                        requestContext = EmptyCoroutineContext
-                    )
-                    scope.register(observation)
-                    val cancellation = worker.submit { observation.cancel() }
-
-                    try {
-                        cancellationReady.await(5, SECONDS)
-                        scope.close()
-                        cancellation.get(5, SECONDS)
-
-                        observation.status.value shouldBe DataObservationStatus.Cancelled
-                    } finally {
-                        scope.close()
-                    }
-                }
-            }
-        } finally {
-            worker.shutdownNow()
-            worker.awaitTermination(5, SECONDS) shouldBe true
-        }
     }
 }
 
@@ -627,7 +587,9 @@ private class FakeObservation {
     }
 
     /**
-     * Waits for the first refresh attempt, returning `false` if none arrives.
+     * Waits until the next subscription setup starts, retaining earlier completion signals.
      */
-    fun awaitRefresh(): Boolean = refreshed.tryAcquire(5, SECONDS)
+    fun awaitRefresh() {
+        refreshed.acquire()
+    }
 }

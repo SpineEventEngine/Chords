@@ -37,8 +37,7 @@ import io.kotest.matchers.shouldBe
 import io.spine.chords.client.testing.CompositionScene
 import io.spine.chords.client.testing.InvalidatingObservationSource
 import io.spine.chords.client.testing.onUiThread
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.TimeUnit.MINUTES
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
@@ -48,14 +47,15 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScheduler
-import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 
 /**
  * Tests how [DataObservation] publishes data, tracks its status, and
@@ -64,6 +64,7 @@ import org.junit.jupiter.api.Test
  */
 @DisplayName("`DataObservation` should")
 @Suppress("LargeClass" /* Keeps query, subscription, and recovery regressions in one suite. */)
+@Timeout(value = 5, unit = MINUTES)
 internal class DataObservationSpec {
 
     /**
@@ -178,7 +179,7 @@ internal class DataObservationSpec {
      */
     @Test
     fun `publish atomic snapshot changes without composition`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             val source = InvalidatingObservationSource()
             val observation = source.observation
             val changes = Channel<Pair<DataObservationStatus, String>>(Channel.UNLIMITED)
@@ -211,7 +212,7 @@ internal class DataObservationSpec {
      */
     @Test
     fun `emit each status and value change through its change flow`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             val source = InvalidatingObservationSource()
             val observation = source.observation
             val changes = Channel<Pair<DataObservationStatus, String>>(Channel.UNLIMITED)
@@ -258,7 +259,7 @@ internal class DataObservationSpec {
         // The collector stays on this thread, so the flow's snapshots inherit the read observer.
         val changes = Snapshot.observe(readObserver = refreshDuringFirstRead) {
             runBlocking {
-                withTimeout(5_000) {
+                coroutineScope {
                     observation.changes()
                         .take(2)
                         .toList()
@@ -941,51 +942,36 @@ internal class DataObservationSpec {
         closed shouldBe true
     }
 
+    /**
+     * Cancellation during subscription setup must release the subscription when it arrives.
+     */
     @Test
-    fun `cancel subscription created after concurrent cancellation`(): Unit = runBlocking {
-        val subscribeStarted = CountDownLatch(1)
-        val allowSubscribe = CountDownLatch(1)
-        val cancelCalls = AtomicInteger()
-        val observation = blockingObservation(
-            subscribeStarted,
-            allowSubscribe,
-            cancelCalls
-        )
+    fun `cancel subscription created after concurrent cancellation`() {
+        val source = FakeObservationSource("value")
+        val observation = source.createObservation()
+        source.onSubscribe = { observation.cancel() }
 
-        val refresh = launch(IO) {
-            observation.refresh()
-        }
-        subscribeStarted.await(5, SECONDS) shouldBe true
-        observation.cancel()
-        allowSubscribe.countDown()
-        refresh.join()
+        observation.initialize()
 
         observation.status.value shouldBe DataObservationStatus.Cancelled
-        cancelCalls.get() shouldBe 1
+        source.cancelCalls shouldBe 1
     }
 
+    /**
+     * Losing the connection during setup must retain recovery without sending a cancellation.
+     */
     @Test
-    fun `not cancel subscription created after connection is lost`(): Unit = runBlocking {
-        val subscribeStarted = CountDownLatch(1)
-        val allowSubscribe = CountDownLatch(1)
-        val cancelCalls = AtomicInteger()
-        val observation = blockingObservation(
-            subscribeStarted,
-            allowSubscribe,
-            cancelCalls
-        )
+    fun `not cancel subscription created after connection is lost`() {
+        val source = FakeObservationSource("value")
+        val observation = source.createObservation()
+        source.onSubscribe = { observation.waitForConnection() }
 
-        val refresh = launch(IO) {
-            observation.refresh()
-        }
-        subscribeStarted.await(5, SECONDS) shouldBe true
-        observation.waitForConnection()
-        allowSubscribe.countDown()
-        refresh.join()
+        observation.initialize()
 
         observation.status.value shouldBe DataObservationStatus.WaitingForConnection
         observation.needsRecovery shouldBe true
-        cancelCalls.get() shouldBe 0
+        source.cancelCalls shouldBe 0
+        observation.close()
     }
 
     /**
@@ -994,30 +980,22 @@ internal class DataObservationSpec {
      * waiting for the server.
      */
     @Test
-    fun `expose the initial value while the first refresh is pending`(): Unit = runBlocking {
-        val subscribeStarted = CountDownLatch(1)
-        val allowSubscribe = CountDownLatch(1)
-        val cancelCalls = AtomicInteger()
-        val observation = blockingObservation(
-            subscribeStarted,
-            allowSubscribe,
-            cancelCalls,
-            initialValue = "fallback"
-        )
-
-        val refresh = launch(IO) {
-            observation.refresh()
+    fun `expose the initial value while the first refresh is pending`() {
+        val source = FakeObservationSource("value")
+        val observation = source.createObservation(initialValue = "fallback")
+        var checkedPending = false
+        source.onSubscribe = {
+            observation.value shouldBe "fallback"
+            observation.status.value shouldBe DataObservationStatus.Refreshing
+            checkedPending = true
         }
-        subscribeStarted.await(5, SECONDS) shouldBe true
 
-        observation.value shouldBe "fallback"
-        observation.status.value shouldBe DataObservationStatus.Refreshing
+        observation.initialize()
 
-        allowSubscribe.countDown()
-        refresh.join()
-
+        checkedPending shouldBe true
         observation.value shouldBe "value"
         observation.status.value shouldBe DataObservationStatus.Active
+        observation.close()
     }
 
     /**
@@ -1026,26 +1004,15 @@ internal class DataObservationSpec {
      * individually would be a pointless call on a dying connection.
      */
     @Test
-    fun `not cancel subscription created after the client is closed`(): Unit = runBlocking {
-        val subscribeStarted = CountDownLatch(1)
-        val allowSubscribe = CountDownLatch(1)
-        val cancelCalls = AtomicInteger()
-        val observation = blockingObservation(
-            subscribeStarted,
-            allowSubscribe,
-            cancelCalls
-        )
+    fun `not cancel subscription created after the client is closed`() {
+        val source = FakeObservationSource("value")
+        val observation = source.createObservation()
+        source.onSubscribe = { observation.close() }
 
-        val refresh = launch(IO) {
-            observation.refresh()
-        }
-        subscribeStarted.await(5, SECONDS) shouldBe true
-        observation.close()
-        allowSubscribe.countDown()
-        refresh.join()
+        observation.initialize()
 
         observation.status.value shouldBe DataObservationStatus.Cancelled
-        cancelCalls.get() shouldBe 0
+        source.cancelCalls shouldBe 0
     }
 
     @Test
@@ -1081,28 +1048,6 @@ internal class DataObservationSpec {
 private fun DataObservation<*>.initialize() = runBlocking {
     refresh()
 }
-
-private fun blockingObservation(
-    subscribeStarted: CountDownLatch,
-    allowSubscribe: CountDownLatch,
-    cancelCalls: AtomicInteger,
-    initialValue: String = ""
-): DataObservation<String> = createDataObservation<String, String>(
-    initialValue,
-    { "value" },
-    { _, _ ->
-        subscribeStarted.countDown()
-        check(allowSubscribe.await(5, SECONDS)) {
-            "Timed out waiting to finish subscription setup."
-        }
-        ObservationSubscription {
-            cancelCalls.incrementAndGet()
-        }
-    },
-    { _, update -> update },
-    { ConnectionStatus.CONNECTED },
-    {}
-)
 
 private class FakeObservationSource(
     var readValue: String

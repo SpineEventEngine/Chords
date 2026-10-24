@@ -72,6 +72,11 @@ internal class ConfigurablePagedDataSource(
     var pending: CompletableDeferred<Unit>? = null
 
     /**
+     * Signals when a read has captured its response gate and the requested items.
+     */
+    var onReadStarted: () -> Unit = {}
+
+    /**
      * The exception returned by the next read, if configured.
      */
     var failure: Exception? = null
@@ -144,6 +149,7 @@ internal class ConfigurablePagedDataSource(
             .take(pageSize + 1)
         val gate = pending
         pending = null
+        onReadStarted()
         if (gate != null) withContext(NonCancellable) { gate.await() }
         return DataPage.from(
             items = result,

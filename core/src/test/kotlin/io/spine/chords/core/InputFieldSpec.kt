@@ -87,7 +87,7 @@ internal class InputFieldSpec {
             val initialHeight = scene.contentSize.height
 
             validation.value = "A value must be set."
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
 
             val errorHeight = scene.contentSize.height
             if (reserveSpace) {
@@ -97,7 +97,7 @@ internal class InputFieldSpec {
             }
 
             validation.value = null
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
 
             scene.contentSize.height shouldBe initialHeight
         }

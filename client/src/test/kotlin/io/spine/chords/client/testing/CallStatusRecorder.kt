@@ -26,15 +26,24 @@
 
 package io.spine.chords.client.testing
 
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withTimeout
+import io.grpc.ClientCall
+import io.grpc.Metadata
+import io.grpc.Status
 
 /**
- * A bounded wait for asynchronous results or resource cleanup in tests.
- * Throws `TimeoutCancellationException` if the condition is not met within five seconds.
+ * Records RPC completion, including any duplicate terminal callbacks.
  */
-internal suspend fun awaitCondition(condition: () -> Boolean) {
-    withTimeout(5_000) {
-        while (!condition()) delay(10)
+internal class CallStatusRecorder<T> : ClientCall.Listener<T>() {
+
+    /**
+     * Terminal statuses delivered to the caller.
+     */
+    val statuses = mutableListOf<Status.Code>()
+
+    /**
+     * Retains each terminal code for lifecycle assertions.
+     */
+    override fun onClose(status: Status, trailers: Metadata) {
+        statuses.add(status.code)
     }
 }

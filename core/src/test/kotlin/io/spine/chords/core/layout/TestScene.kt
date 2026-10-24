@@ -32,6 +32,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
@@ -58,7 +59,9 @@ import java.awt.event.KeyEvent.CHAR_UNDEFINED
 import java.awt.event.KeyEvent.KEY_PRESSED
 import java.awt.event.KeyEvent.KEY_RELEASED
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers.Unconfined
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Surface
 
@@ -72,7 +75,7 @@ import org.jetbrains.skia.Surface
  * the content was laid out with.
  *
  * The content is wrapped into a [MaterialTheme], which the components under
- * test require, and is rendered once before this constructor returns, so it is
+ * test require, and is rendered until idle before this constructor returns, so it is
  * ready to be interacted with. Note that a state change made by a test is
  * applied to the content only upon the subsequent [render] call, just like it
  * is applied only in the next frame of a running application.
@@ -94,7 +97,7 @@ import org.jetbrains.skia.Surface
  * @param height The height available to the content.
  * @param content The content to be displayed in this scene.
  */
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalCoroutinesApi::class)
 @Suppress("TooManyFunctions") // Rendering and input controls share one scene and its UI thread.
 internal class TestScene(
     private val width: Dp = DefaultSceneWidth,
@@ -115,10 +118,18 @@ internal class TestScene(
     }
 
     /**
+     * Controls composition effects and delays on the scene's UI thread.
+     */
+    private val scheduler = TestCoroutineScheduler()
+
+    /**
      * The scene that composes and lays out the content.
      */
     private val scene = onUiThread {
-        ComposeScene(coroutineContext = Unconfined + FiniteAnimationsOnly, density = density)
+        ComposeScene(
+            coroutineContext = StandardTestDispatcher(scheduler) + FiniteAnimationsOnly,
+            density = density
+        )
     }
 
     /**
@@ -128,11 +139,6 @@ internal class TestScene(
         width.value.toInt(),
         height.value.toInt()
     )
-
-    /**
-     * The number of frames that have been rendered so far.
-     */
-    private var frames = 0L
 
     init {
         onUiThread {
@@ -147,7 +153,7 @@ internal class TestScene(
                 }
             }
         }
-        render()
+        renderUntilIdle()
     }
 
     /**
@@ -169,8 +175,12 @@ internal class TestScene(
      * been made since the previous one.
      */
     fun render() = onUiThread {
-        frames += 1
-        scene.render(surface.canvas, frames * FrameIntervalNanos)
+        scheduler.advanceTimeBy(16)
+        scheduler.runCurrent()
+        Snapshot.sendApplyNotifications()
+        scene.render(surface.canvas, scheduler.currentTime * 1_000_000L)
+        scheduler.runCurrent()
+        Snapshot.sendApplyNotifications()
     }
 
     /**
@@ -190,6 +200,17 @@ internal class TestScene(
     }
 
     /**
+     * Advances delayed effects on the virtual clock, then settles their visible changes.
+     */
+    fun advanceTimeBy(milliseconds: Long) {
+        onUiThread {
+            scheduler.advanceTimeBy(milliseconds)
+            scheduler.runCurrent()
+        }
+        renderUntilIdle()
+    }
+
+    /**
      * Clicks at the given coordinates within the scene.
      *
      * @param x The horizontal coordinate to click at.
@@ -200,13 +221,15 @@ internal class TestScene(
     }
 
     /**
-     * Clicks at the given position within the scene.
+     * Clicks at the given position after letting the press handler run before release.
      *
      * @param position The position to click at, in pixels.
      */
     fun click(position: Offset) = onUiThread {
         scene.sendPointerEvent(Press, position, button = PointerButton.Primary)
+        scheduler.runCurrent()
         scene.sendPointerEvent(Release, position, button = PointerButton.Primary)
+        scheduler.runCurrent()
     }
 
     /**
@@ -291,6 +314,7 @@ internal class TestScene(
      */
     override fun close() = onUiThread {
         scene.close()
+        scheduler.runCurrent()
         surface.close()
     }
 
@@ -308,12 +332,6 @@ internal class TestScene(
          * The height available to the scene's content by default.
          */
         val DefaultSceneHeight = 800.dp
-
-        /**
-         * The time between the frames that the scene renders, which imitates
-         * the frame rate of a running application.
-         */
-        const val FrameIntervalNanos = 16_000_000L
 
         /**
          * Bounds idle detection so an endless animation fails instead of hanging a test.

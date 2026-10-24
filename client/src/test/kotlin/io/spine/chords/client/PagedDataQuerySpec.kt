@@ -42,7 +42,6 @@ import io.spine.chords.client.given.ObservedItem
 import io.spine.chords.client.given.ObservedItemPages.items
 import io.spine.chords.client.given.ObservedItemPages.query
 import io.spine.chords.client.testing.ObservationChannel
-import io.spine.chords.client.testing.awaitCondition
 import io.spine.client.CompositeFilter.CompositeOperator.EITHER
 import io.spine.client.CompositeQueryFilter
 import io.spine.client.Filters.ge
@@ -53,13 +52,15 @@ import io.spine.client.OrderBy.Direction.ASCENDING
 import io.spine.client.OrderBy.Direction.DESCENDING
 import io.spine.client.Query
 import io.spine.client.QueryFilter
+import java.util.concurrent.TimeUnit.MINUTES
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.Arguments.arguments
@@ -70,6 +71,7 @@ import org.junit.jupiter.params.provider.ValueSource
  * Verifies bounded server queries and independently collected first-page observations.
  */
 @DisplayName("`PagedDataQuery` should")
+@Timeout(value = 5, unit = MINUTES)
 internal class PagedDataQuerySpec {
 
     /**
@@ -155,7 +157,7 @@ internal class PagedDataQuerySpec {
     @ParameterizedTest(name = "read adjacent pages with ascending={0}")
     @ValueSource(booleans = [true, false])
     fun `read adjacent pages in either display order`(ascending: Boolean): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             ObservationChannel().use { source ->
                 val direction = if (ascending) ASCENDING else DESCENDING
                 val query = query(direction = direction, pageSize = 2)
@@ -218,7 +220,7 @@ internal class PagedDataQuerySpec {
      */
     @Test
     fun `reread the first page on updates and cancel its observation`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             ObservationChannel().use { source ->
                 val sample = items(5)
                     .reversed()
@@ -243,7 +245,7 @@ internal class PagedDataQuerySpec {
                 source.readCount shouldBe 2
                 source.subscribeCount shouldBe 1
                 collection.cancelAndJoin()
-                awaitCondition { source.cancelCount == 1 }
+                source.awaitCancellations(1)
                 source.client.isOpen shouldBe true
             }
         }
@@ -254,7 +256,7 @@ internal class PagedDataQuerySpec {
      */
     @Test
     fun `report a terminal first-page observation failure as status`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             ObservationChannel().use { source ->
                 source.items = items(4)
                     .reversed()
@@ -281,7 +283,7 @@ internal class PagedDataQuerySpec {
                 failure.status.code shouldBe PERMISSION_DENIED
                 change.second.items shouldBe source.items.take(3)
                 collection.cancelAndJoin()
-                awaitCondition { source.cancelCount == 1 }
+                source.awaitCancellations(1)
             }
         }
     }
@@ -291,7 +293,7 @@ internal class PagedDataQuerySpec {
      */
     @Test
     fun `keep observations independent for the same query`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             ObservationChannel().use { source ->
                 source.items = items(4)
                     .reversed()
@@ -316,7 +318,7 @@ internal class PagedDataQuerySpec {
 
                 first.cancelAndJoin()
 
-                awaitCondition { source.cancelCount == 1 }
+                source.awaitCancellations(1)
                 second.isActive shouldBe true
                 val updated = items(5)
                     .reversed()
@@ -325,7 +327,7 @@ internal class PagedDataQuerySpec {
                 secondPages.receive().items shouldBe updated.take(3)
                 source.client.isOpen shouldBe true
                 second.cancelAndJoin()
-                awaitCondition { source.cancelCount == 2 }
+                source.awaitCancellations(2)
             }
         }
     }
@@ -392,7 +394,7 @@ internal class PagedDataQuerySpec {
      */
     @Test
     fun `observe an unfiltered first page and its updates`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             ObservationChannel().use { source ->
                 val sample = items(5)
                     .reversed()
@@ -425,7 +427,7 @@ internal class PagedDataQuerySpec {
                 } finally {
                     collecting.cancelAndJoin()
                 }
-                awaitCondition { source.cancelCount == 1 }
+                source.awaitCancellations(1)
             }
         }
     }

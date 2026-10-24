@@ -26,12 +26,12 @@
 
 package io.spine.chords.client.given
 
+import androidx.compose.runtime.snapshotFlow
 import io.spine.chords.client.DataObservation
 import io.spine.chords.client.DataObservationStatus
 import io.spine.core.UserId
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 
 /**
  * Supplies entities and waits for asynchronous observation initialization.
@@ -51,12 +51,12 @@ internal object DesktopClientSpecEnv {
      * Waits for the read to complete, surfacing failures instead of timing them out.
      */
     fun DataObservation<*>.awaitActive() = runBlocking {
-        withTimeout(5_000) {
-            while (status.value != DataObservationStatus.Active) {
-                val currentStatus = status.value
-                check(currentStatus !is DataObservationStatus.Failed) { currentStatus }
-                delay(10)
-            }
+        val completed = snapshotFlow { status.value }.first {
+            it == DataObservationStatus.Active || it is DataObservationStatus.Failed ||
+                    it == DataObservationStatus.Cancelled
+        }
+        check(completed == DataObservationStatus.Active) {
+            "The observation ended before becoming active: $completed"
         }
     }
 }

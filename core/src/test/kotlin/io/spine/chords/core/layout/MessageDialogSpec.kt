@@ -30,19 +30,22 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.spine.chords.core.TestApplication
+import java.util.concurrent.TimeUnit.MINUTES
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 
 /**
  * Tests how [MessageDialog] resolves repeated suspending requests.
  */
 @DisplayName("`MessageDialog` should")
+@Timeout(value = 5, unit = MINUTES)
 internal class MessageDialogSpec {
 
     /**
@@ -52,7 +55,7 @@ internal class MessageDialogSpec {
     @Test
     fun `await the displayed dialog after discarding a repeated message`() {
         runBlocking {
-            withTimeout(5_000) {
+            coroutineScope {
                 val firstRequest = async {
                     MessageDialog.showMessage("first")
                 }
@@ -81,7 +84,7 @@ internal class MessageDialogSpec {
     @Test
     fun `keep the first request waiting when the same instance is requested again`() {
         runBlocking {
-            withTimeout(5_000) {
+            coroutineScope {
                 val dialog = MessageDialog()
                 val firstRequest = async {
                     dialog.showMessage()
@@ -107,7 +110,7 @@ internal class MessageDialogSpec {
     @Test
     fun `await the same instance again after it closes`() {
         runBlocking {
-            withTimeout(5_000) {
+            coroutineScope {
                 val dialog = MessageDialog()
                 val firstRequest = async {
                     dialog.showMessage()
@@ -132,6 +135,7 @@ internal class MessageDialogSpec {
      * Clears dialog state left by an earlier request-level case.
      */
     @BeforeEach
+    @Timeout(value = 5, unit = MINUTES)
     fun resetDialogs() {
         TestApplication.closeDialogs()
     }
@@ -146,6 +150,7 @@ internal class MessageDialogSpec {
          */
         @JvmStatic
         @BeforeAll
+        @Timeout(value = 5, unit = MINUTES)
         fun setUpApplication() {
             TestApplication.install()
         }

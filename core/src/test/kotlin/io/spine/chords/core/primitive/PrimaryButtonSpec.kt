@@ -93,10 +93,10 @@ internal class PrimaryButtonSpec {
                     }
                 }
             }.use { scene ->
-                repeat(30) { scene.render() }
+                scene.renderUntilIdle()
                 val resting = scene.pixelAt(80.dp, 20.dp)
                 scene.movePointerTo(Offset(80F, 20F))
-                repeat(30) { scene.render() }
+                scene.renderUntilIdle()
                 val hovered = scene.pixelAt(80.dp, 20.dp)
                 val luminanceChange = kotlin.math.abs(
                     Color(hovered).luminance() - Color(resting).luminance()
@@ -108,7 +108,7 @@ internal class PrimaryButtonSpec {
 
                 scene.click(80.dp, 20.dp)
                 scene.movePointerTo(Offset(160F, 60F))
-                repeat(30) { scene.render() }
+                scene.renderUntilIdle()
                 clicks shouldBe 1
                 scene.pixelAt(80.dp, 20.dp) shouldBe resting
             }
@@ -132,12 +132,12 @@ internal class PrimaryButtonSpec {
             val resting = scene.pixelAt(80.dp, 20.dp)
             scene.pressKey(VK_TAB)
             scene.releaseKey(VK_TAB)
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
             scene.pixelAt(80.dp, 20.dp) shouldNotBe resting
 
             scene.pressKey(VK_ENTER)
             scene.releaseKey(VK_ENTER)
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
             clicks shouldBe 1
         }
     }
@@ -163,7 +163,7 @@ internal class PrimaryButtonSpec {
             val resting = scene.pixelAt(80.dp, 20.dp)
             scene.movePointerTo(Offset(80F, 20F))
             scene.click(80.dp, 20.dp)
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
             clicks shouldBe 0
             scene.pixelAt(80.dp, 20.dp) shouldBe resting
         }

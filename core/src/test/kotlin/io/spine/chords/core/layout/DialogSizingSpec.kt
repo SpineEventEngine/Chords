@@ -58,6 +58,9 @@ import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.spine.chords.core.TestApplication
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -417,12 +420,16 @@ internal class DialogSizingSpec {
      * @param content The content to measure.
      * @return The measured width of the content.
      */
-    @OptIn(ExperimentalComposeUiApi::class)
+    @OptIn(ExperimentalComposeUiApi::class, ExperimentalCoroutinesApi::class)
     private fun measureWidth(
         availableWidth: Dp = AvailableWidth,
         content: @Composable () -> Unit
-    ): Int {
-        val scene = ComposeScene(density = density)
+    ): Int = onUiThread {
+        val scheduler = TestCoroutineScheduler()
+        val scene = ComposeScene(
+            coroutineContext = StandardTestDispatcher(scheduler),
+            density = density
+        )
         try {
             scene.constraints = with(density) {
                 Constraints(
@@ -431,9 +438,11 @@ internal class DialogSizingSpec {
                 )
             }
             scene.setContent(content)
-            return scene.contentSize.width
+            scheduler.runCurrent()
+            scene.contentSize.width
         } finally {
             scene.close()
+            scheduler.runCurrent()
         }
     }
 

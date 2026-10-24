@@ -53,6 +53,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.channels.Channel
 
 /**
  * Supplies protocol responses to the real Spine client without network or transport threads.
@@ -89,6 +90,16 @@ internal class ObservationChannel(
     var onRead: () -> Unit = {}
 
     /**
+     * Runs during transport reset before the pending calls are interrupted.
+     */
+    var onReconnect: () -> Unit = {}
+
+    /**
+     * Fails cancellation requests while simulating an unreachable server.
+     */
+    var cancellationFailure: Status? = null
+
+    /**
      * Counts reads across the request thread and test thread.
      */
     private val reads = AtomicInteger()
@@ -107,6 +118,26 @@ internal class ObservationChannel(
      * Counts cancellation RPCs sent by the client.
      */
     private val cancellations = AtomicInteger()
+
+    /**
+     * Retains completed cancellation responses even when a test starts waiting afterwards.
+     */
+    private val cancellationResponses = Channel<Unit>(Channel.UNLIMITED)
+
+    /**
+     * Counts responses consumed by this channel's single test driver.
+     */
+    private var awaitedCancellations = 0
+
+    /**
+     * Waits for the requested number of cancellation RPCs to finish responding.
+     */
+    suspend fun awaitCancellations(count: Int) {
+        while (awaitedCancellations < count) {
+            cancellationResponses.receive()
+            awaitedCancellations++
+        }
+    }
 
     /**
      * The number of subscription requests observed by this channel.
@@ -139,6 +170,12 @@ internal class ObservationChannel(
     private var closed = false
 
     /**
+     * Counts explicit connection replacements while the channel still reports itself ready.
+     */
+    var reconnectCount: Int = 0
+        private set
+
+    /**
      * Exercises the public observation methods with the production subscription adapter.
      */
     val client = DesktopClient(
@@ -166,6 +203,11 @@ internal class ObservationChannel(
         private var request: ReqT? = null
 
         /**
+         * Prevents a completed unary call from receiving a second terminal response.
+         */
+        private var finished = false
+
+        /**
          * Installs the listener before any response is delivered.
          */
         override fun start(listener: Listener<RespT>, headers: Metadata) {
@@ -185,9 +227,18 @@ internal class ObservationChannel(
         override fun request(numMessages: Int): Unit = Unit
 
         /**
-         * Leaves captured callbacks callable after cancellation to simulate late delivery.
+         * Releases a pending RPC while captured update callbacks remain usable for late delivery.
          */
-        override fun cancel(message: String?, cause: Throwable?): Unit = Unit
+        override fun cancel(message: String?, cause: Throwable?) {
+            if (!finished) {
+                finished = true
+                (request as? Subscription)?.let { streams.remove(it) }
+                val status = Status.CANCELLED
+                    .withDescription(message)
+                    .withCause(cause)
+                responseListener?.onClose(status, Metadata())
+            }
+        }
 
         /**
          * Delivers the unary result or retains an active subscription stream.
@@ -195,12 +246,20 @@ internal class ObservationChannel(
         override fun halfClose() {
             check(!closed)
             val listener = checkNotNull(responseListener)
+            val failure = cancellationFailure
+            if (method.bareMethodName == "Cancel" && failure != null) {
+                cancellations.incrementAndGet()
+                finished = true
+                listener.onClose(failure, Metadata())
+                return
+            }
             respond(method = method.bareMethodName, request = checkNotNull(request)) { response ->
                 // Each method below supplies the response type declared by its gRPC descriptor.
                 @Suppress("UNCHECKED_CAST")
                 listener.onMessage(response as RespT)
             }
             if (method.bareMethodName != "Activate") {
+                finished = true
                 listener.onClose(Status.OK, Metadata())
             }
         }
@@ -242,6 +301,7 @@ internal class ObservationChannel(
                 cancellations.incrementAndGet()
                 streams.remove(request as Subscription)
                 reply(Responses.ok())
+                cancellationResponses.trySend(Unit)
             }
             else -> error("Unexpected gRPC method: $method")
         }
@@ -320,6 +380,14 @@ internal class ObservationChannel(
      * Keeps connection changes outside these subscription tests.
      */
     override fun notifyWhenStateChanged(source: ConnectivityState, callback: Runnable): Unit = Unit
+
+    /**
+     * Records recovery without manufacturing a connection-status transition.
+     */
+    override fun enterIdle() {
+        reconnectCount++
+        onReconnect()
+    }
 
     /**
      * Reports whether the owning client has closed the channel.

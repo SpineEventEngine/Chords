@@ -74,13 +74,13 @@ internal class OutlinedFieldSpec {
                 }
             }
         }.use { scene ->
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
             val unfocusedColor = if (error) scheme.error else scheme.outline
             scene.pixelAt(200.dp, 8.dp) shouldBe unfocusedColor.toArgb()
             scene.pixelAt(200.dp, 9.dp) shouldBe scheme.surface.toArgb()
             scene.pixelAt(200.dp, 20.dp) shouldBe scheme.surface.toArgb()
             scene.click(120.dp, 32.dp)
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
             val borderColor = if (error) scheme.error else scheme.primary
             scene.pixelAt(200.dp, 8.dp) shouldBe borderColor.toArgb()
             scene.pixelAt(200.dp, 9.dp) shouldBe scheme.surface.toArgb()
@@ -109,7 +109,7 @@ internal class OutlinedFieldSpec {
             scene.releaseKey(VK_END)
             scene.pressKey(VK_BACK_SPACE)
             scene.releaseKey(VK_BACK_SPACE)
-            repeat(30) { scene.render() }
+            scene.renderUntilIdle()
             value.value.text shouldBe "ab"
             scene.pressKey(VK_BACK_SPACE)
             scene.releaseKey(VK_BACK_SPACE)

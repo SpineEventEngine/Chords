@@ -46,6 +46,9 @@ import java.awt.event.KeyEvent.CHAR_UNDEFINED
 import java.awt.event.KeyEvent.KEY_PRESSED
 import java.awt.event.KeyEvent.KEY_RELEASED
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import org.jetbrains.skia.Surface
 
 /**
@@ -70,13 +73,20 @@ internal fun <T> onUiThread(action: () -> T): T {
  * Applies state changes to an off-screen composition of a component.
  * Infinite animations are disabled so focused editors can settle between test actions.
  */
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalCoroutinesApi::class)
 internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
 
     /**
-     * Provides the desktop composition locals used by the components.
+     * Controls effect execution and delays without depending on background threads.
      */
-    private val scene = onUiThread { ComposeScene(coroutineContext = FiniteAnimationsOnly) }
+    private val scheduler = TestCoroutineScheduler()
+
+    /**
+     * Keeps effects and recomposition on the scene's UI thread under test control.
+     */
+    private val scene = onUiThread {
+        ComposeScene(coroutineContext = StandardTestDispatcher(scheduler) + FiniteAnimationsOnly)
+    }
 
     /**
      * Supplies a canvas for advancing frames without showing a window.
@@ -105,14 +115,16 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
     /**
      * Advances frames until recomposition and its effects have settled.
      */
-    fun render() {
+    fun render(): Unit = onUiThread {
         repeat(30) {
-            onUiThread {
-                Snapshot.sendApplyNotifications()
-                scene.render(surface.canvas, ++frame * 16_000_000L)
-            }
+            scheduler.advanceTimeBy(16)
+            scheduler.runCurrent()
+            Snapshot.sendApplyNotifications()
+            scene.render(surface.canvas, ++frame * 16_000_000L)
+            scheduler.runCurrent()
+            Snapshot.sendApplyNotifications()
             if (!scene.hasInvalidations()) {
-                return
+                return@onUiThread
             }
         }
         error("The component composition did not settle.")
@@ -198,6 +210,7 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
      */
     override fun close(): Unit = onUiThread {
         scene.close()
+        scheduler.runCurrent()
         surface.close()
     }
 }

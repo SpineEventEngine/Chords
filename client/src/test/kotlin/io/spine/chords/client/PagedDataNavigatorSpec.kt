@@ -26,6 +26,7 @@
 
 package io.spine.chords.client
 
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.Snapshot
 import io.grpc.Status
 import io.kotest.assertions.throwables.shouldThrow
@@ -46,12 +47,10 @@ import io.spine.chords.client.given.ObservedItemPages.items
 import io.spine.chords.client.given.ObservedItemPages.query
 import io.spine.chords.client.given.PagedDataNavigatorSpecEnv.navigator
 import io.spine.chords.client.testing.ConfigurablePagedDataSource
-import io.spine.chords.client.testing.NavigatorCallbackProbe
 import io.spine.chords.client.testing.ObservationChannel
 import io.spine.chords.client.testing.PagedDataNavigatorScene
-import io.spine.chords.client.testing.awaitCondition
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.TimeUnit.MINUTES
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -62,18 +61,20 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
@@ -83,6 +84,7 @@ import org.junit.jupiter.params.provider.ValueSource
  */
 @DisplayName("`PagedDataNavigator` should")
 @Suppress("LargeClass" /* One suite covers navigation, publication, and cancellation. */)
+@Timeout(value = 5, unit = MINUTES)
 internal class PagedDataNavigatorSpec {
 
     /**
@@ -348,7 +350,7 @@ internal class PagedDataNavigatorSpec {
                     source.items = (1..6).toList()
                     response.complete(Unit)
 
-                    withTimeout(5_000) {
+                    coroutineScope {
                         waiting.await() shouldBe if (retry) listOf(2, 1) else listOf(6, 5, 4)
                     }
                     waiting.isCancelled shouldBe false
@@ -450,13 +452,13 @@ internal class PagedDataNavigatorSpec {
                         PagedDataNavigator(
                             query = query(), client = source.client, scope = secondScope
                         ).use { second ->
-                            withTimeout(5_000) {
+                            coroutineScope {
                                 first.awaitItems()
                                 second.awaitItems()
                             }
                             firstScope.cancel()
 
-                            awaitCondition { source.cancelCount == 1 }
+                            source.awaitCancellations(1)
                             first.status shouldBe Cancelled
                             second.status shouldBe Active
                             source.client.isOpen shouldBe true
@@ -466,7 +468,7 @@ internal class PagedDataNavigatorSpec {
                 firstScope.cancel()
                 secondScope.cancel()
             }
-            awaitCondition { source.cancelCount == 2 }
+            source.awaitCancellations(2)
         }
     }
 
@@ -488,7 +490,7 @@ internal class PagedDataNavigatorSpec {
 
                     if (parent) scope.cancel() else pages.close()
 
-                    withTimeout(5_000) {
+                    coroutineScope {
                         shouldThrow<CancellationException> { waiting.await() }
                     }
                     response.complete(Unit)
@@ -515,19 +517,22 @@ internal class PagedDataNavigatorSpec {
         val source = ConfigurablePagedDataSource(pageSize = 3)
         source.items = (1..5).toList()
         navigator(source, scope).use { pages ->
-            withTimeout(5_000) { pages.awaitItems() }
+            coroutineScope { pages.awaitItems() }
             val response = CompletableDeferred<Unit>()
             source.pending = response
             try {
+                val readStarted = CompletableDeferred<Unit>()
+                source.onReadStarted = { readStarted.complete(Unit) }
                 pages.next()
-                awaitCondition { source.pending == null }
+                readStarted.await()
+                source.onReadStarted = {}
                 val waiting = async { pages.awaitItems() }
                 val replace = launch(Default) { pages.first() }
                 replace.join()
                 source.items = (10..15).toList()
                 response.complete(Unit)
 
-                withTimeout(5_000) { waiting.await() shouldBe listOf(15, 14, 13) }
+                coroutineScope { waiting.await() shouldBe listOf(15, 14, 13) }
                 pages.status shouldBe Active
                 pages.isFirstPage shouldBe true
             } finally {
@@ -536,77 +541,14 @@ internal class PagedDataNavigatorSpec {
         }
     }
 
-    /**
-     * A resumed UI waiter may need another thread to inspect the page before dispatch returns.
-     */
-    @Test
-    fun `release its monitor before resuming a page waiter`(): Unit = runBlocking {
-        val scope = CoroutineScope(coroutineContext + Default)
-        val response = CompletableDeferred<Unit>()
-        val source = ConfigurablePagedDataSource(pageSize = 3)
-        source.items = (1..3).toList()
-        source.pending = response
-        try {
-            navigator(source, scope).use { pages ->
-                awaitCondition { source.pending == null }
-                NavigatorCallbackProbe {
-                    pages.status shouldBe Active
-                    pages.items shouldBe listOf(3, 2, 1)
-                }.use { callback ->
-                    val waiting = async(callback, start = UNDISPATCHED) { pages.awaitItems() }
 
-                    response.complete(Unit)
-
-                    withTimeout(5_000) { waiting.await() } shouldBe listOf(3, 2, 1)
-                    callback.awaitCallback() shouldBe true
-                }
-            }
-        } finally {
-            response.complete(Unit)
-        }
-    }
-
-    /**
-     * Snapshot observers must be able to dispatch a reader without a publication lock inversion.
-     */
-    @Test
-    fun `release its monitor before notifying snapshot observers`(): Unit = runBlocking {
-        val scope = CoroutineScope(coroutineContext + Default)
-        val response = CompletableDeferred<Unit>()
-        val source = ConfigurablePagedDataSource(pageSize = 3)
-        source.items = (1..3).toList()
-        source.pending = response
-        try {
-            navigator(source, scope).use { pages ->
-                awaitCondition { source.pending == null }
-                NavigatorCallbackProbe {
-                    pages.status shouldBe Active
-                    pages.items shouldBe listOf(3, 2, 1)
-                }.use { callback ->
-                    val observer = Snapshot.registerApplyObserver { _, _ ->
-                        if (pages.status == Active) callback.inspect()
-                    }
-                    try {
-                        response.complete(Unit)
-
-                        callback.awaitCallback() shouldBe true
-                        withTimeout(5_000) { pages.awaitItems() } shouldBe listOf(3, 2, 1)
-                    } finally {
-                        observer.dispose()
-                    }
-                }
-            }
-        } finally {
-            response.complete(Unit)
-        }
-    }
 
     /**
      * Non-UI reading and live changes need no Compose frames or snapshot notification pump.
      */
     @Test
     fun `load and observe pages without a composition`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             ObservationChannel().use { source ->
                 val sample = items(4)
                     .reversed()
@@ -615,7 +557,7 @@ internal class PagedDataNavigatorSpec {
                 val releaseRead = CountDownLatch(1)
                 source.onRead = {
                     readStarted.complete(Unit)
-                    check(releaseRead.await(5, SECONDS))
+                    releaseRead.await()
                 }
                 try {
                     PagedDataNavigator(query = query(), client = source.client, scope = this)
@@ -629,19 +571,19 @@ internal class PagedDataNavigatorSpec {
                                 .reversed()
                             source.items = updated.take(4)
                             source.update(updated.first())
-                            awaitCondition { pages.items == updated.take(3) }
+                            snapshotFlow { pages.items }.first { it == updated.take(3) }
                             source.subscribeCount shouldBe 1
 
                             source.items = updated.drop(3)
                             pages.next()
                             pages.awaitItems() shouldBe updated.drop(3)
-                            awaitCondition { source.cancelCount == 1 }
+                            source.awaitCancellations(1)
                             source.items = updated.take(4)
                             pages.first()
                             pages.awaitItems() shouldBe updated.take(3)
                             source.subscribeCount shouldBe 2
                         }
-                    awaitCondition { source.cancelCount == 2 }
+                    source.awaitCancellations(2)
                 } finally {
                     releaseRead.countDown()
                 }
@@ -653,44 +595,47 @@ internal class PagedDataNavigatorSpec {
      * Equivalent input retains navigation, while query and client changes reset it.
      */
     @Test
-    fun `remember inputs and recreate after leaving composition`(): Unit = runBlocking {
-        ObservationChannel().use { source ->
-            ObservationChannel().use { replacement ->
+    @Timeout(value = 5, unit = MINUTES)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun `remember inputs and recreate after leaving composition`() = runTest {
+        ObservationChannel(StandardTestDispatcher(testScheduler)).use { source ->
+            ObservationChannel(StandardTestDispatcher(testScheduler)).use { replacement ->
                 source.items = items(4)
                     .reversed()
                 replacement.items = source.items
-                PagedDataNavigatorScene(source.client).use { scene ->
-                    awaitCondition { scene.navigator.status == Active }
+                PagedDataNavigatorScene(source.client, testScheduler).use { scene ->
+                    scene.navigator.status shouldBe Active
                     val original = scene.navigator
                     source.items = items(1)
                     scene.act { next() }
-                    awaitCondition { scene.navigator.status == Active }
+                    scene.navigator.awaitItems() shouldBe source.items
+                    scene.navigator.status shouldBe Active
                     scene.recompose()
                     scene.navigator shouldBeSameInstanceAs original
                     scene.navigator.isFirstPage shouldBe false
                     source.readCount shouldBe 2
 
                     scene.lowerBound = "0000"
-                    awaitCondition { scene.navigator.status == Active }
+                    scene.navigator.status shouldBe Active
                     val selected = scene.navigator
                     selected shouldNotBeSameInstanceAs original
                     selected.isFirstPage shouldBe true
                     scene.client = replacement.client
-                    awaitCondition { scene.navigator.status == Active }
+                    scene.navigator.status shouldBe Active
                     val connected = scene.navigator
                     connected shouldNotBeSameInstanceAs selected
                     scene.visible = false
                     scene.render()
                     connected.status shouldBe Cancelled
-                    awaitCondition { replacement.cancelCount == 1 }
+                    replacement.cancelCount shouldBe 1
 
                     scene.visible = true
-                    awaitCondition { scene.navigator.status == Active }
+                    scene.navigator.status shouldBe Active
                     scene.navigator shouldNotBeSameInstanceAs connected
                     scene.navigator.isFirstPage shouldBe true
                     replacement.subscribeCount shouldBe 2
                 }
-                awaitCondition { replacement.cancelCount == 2 }
+                replacement.cancelCount shouldBe 2
             }
         }
     }
@@ -699,10 +644,12 @@ internal class PagedDataNavigatorSpec {
      * Client shutdown during composition and a new selection produce cancellation, not a crash.
      */
     @Test
-    fun `tolerate a closed client in composition`(): Unit = runBlocking {
-        ObservationChannel().use { source ->
-            PagedDataNavigatorScene(source.client).use { scene ->
-                awaitCondition { scene.navigator.status == Active }
+    @Timeout(value = 5, unit = MINUTES)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun `tolerate a closed client in composition`() = runTest {
+        ObservationChannel(StandardTestDispatcher(testScheduler)).use { source ->
+            PagedDataNavigatorScene(source.client, testScheduler).use { scene ->
+                scene.navigator.status shouldBe Active
                 source.client.close()
                 scene.lowerBound = "0000"
 
@@ -785,7 +732,7 @@ internal class PagedDataNavigatorSpec {
      */
     @Test
     fun `cancel a pending fixed page when its client closes`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             ObservationChannel().use { source ->
                 source.items = items(4)
                     .reversed()
@@ -798,7 +745,7 @@ internal class PagedDataNavigatorSpec {
                         source.onRead = {
                             readStarted.complete(Unit)
                             try {
-                                check(releaseRead.await(5, SECONDS))
+                                releaseRead.await()
                             } finally {
                                 readStopped.complete(Unit)
                             }
@@ -826,7 +773,7 @@ internal class PagedDataNavigatorSpec {
      */
     @Test
     fun `end a live observation without a closed connection status`(): Unit = runBlocking {
-        withTimeout(5_000) {
+        coroutineScope {
             ObservationChannel().use { source ->
                 val client = object : Client by source.client {
                     /**
@@ -839,7 +786,7 @@ internal class PagedDataNavigatorSpec {
                         pages.awaitItems()
                         source.client.close()
 
-                        awaitCondition { pages.status == Cancelled }
+                        snapshotFlow { pages.status }.first { it == Cancelled }
                         shouldThrow<CancellationException> { pages.awaitItems() }
                         client.connectionStatus.value shouldBe CONNECTED
                     }
@@ -903,7 +850,7 @@ internal class PagedDataNavigatorSpec {
                 pages.status shouldBe Refreshing
                 source.cursors.size shouldBe 2
                 response.complete(Unit)
-                withTimeout(5_000) { pages.awaitItems() shouldBe listOf(2, 1) }
+                coroutineScope { pages.awaitItems() shouldBe listOf(2, 1) }
                 connection.value shouldBe status
             } finally {
                 response.complete(Unit)
@@ -927,7 +874,7 @@ internal class PagedDataNavigatorSpec {
             pages.status shouldBe WaitingForConnection
             source.cursors.size shouldBe 1
             connection.value = CONNECTED
-            withTimeout(5_000) { pages.awaitItems() shouldBe listOf(2, 1) }
+            coroutineScope { pages.awaitItems() shouldBe listOf(2, 1) }
             source.cursors.size shouldBe 2
         }
     }

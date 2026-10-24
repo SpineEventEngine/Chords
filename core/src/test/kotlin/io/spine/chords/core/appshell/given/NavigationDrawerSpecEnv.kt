@@ -128,14 +128,9 @@ internal object NavigationDrawerSpecEnv {
         occurrences: Int = 1
     ) {
         scene.movePointerTo(node.boundsInRoot.center)
-        repeat(100) {
-            Thread.sleep(20)
-            scene.render()
-            val matches = text(scene)
-                .count { it == tooltip }
-            if (matches >= occurrences) {
-                return
-            }
+        scene.advanceTimeBy(500)
+        check(text(scene).count { it == tooltip } >= occurrences) {
+            "The hovered control did not show its tooltip."
         }
     }
 }
