@@ -51,6 +51,7 @@ import io.spine.chords.client.testing.ObservationChannel
 import io.spine.chords.client.testing.PagedDataNavigatorScene
 import io.spine.chords.client.testing.awaitCondition
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.MINUTES
 import java.util.concurrent.TimeUnit.SECONDS
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -74,6 +75,7 @@ import kotlinx.coroutines.yield
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
@@ -653,44 +655,47 @@ internal class PagedDataNavigatorSpec {
      * Equivalent input retains navigation, while query and client changes reset it.
      */
     @Test
-    fun `remember inputs and recreate after leaving composition`(): Unit = runBlocking {
-        ObservationChannel().use { source ->
-            ObservationChannel().use { replacement ->
+    @Timeout(value = 5, unit = MINUTES)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun `remember inputs and recreate after leaving composition`() = runTest {
+        ObservationChannel(StandardTestDispatcher(testScheduler)).use { source ->
+            ObservationChannel(StandardTestDispatcher(testScheduler)).use { replacement ->
                 source.items = items(4)
                     .reversed()
                 replacement.items = source.items
-                PagedDataNavigatorScene(source.client).use { scene ->
-                    awaitCondition { scene.navigator.status == Active }
+                PagedDataNavigatorScene(source.client, testScheduler).use { scene ->
+                    scene.navigator.status shouldBe Active
                     val original = scene.navigator
                     source.items = items(1)
                     scene.act { next() }
-                    awaitCondition { scene.navigator.status == Active }
+                    scene.navigator.awaitItems() shouldBe source.items
+                    scene.navigator.status shouldBe Active
                     scene.recompose()
                     scene.navigator shouldBeSameInstanceAs original
                     scene.navigator.isFirstPage shouldBe false
                     source.readCount shouldBe 2
 
                     scene.lowerBound = "0000"
-                    awaitCondition { scene.navigator.status == Active }
+                    scene.navigator.status shouldBe Active
                     val selected = scene.navigator
                     selected shouldNotBeSameInstanceAs original
                     selected.isFirstPage shouldBe true
                     scene.client = replacement.client
-                    awaitCondition { scene.navigator.status == Active }
+                    scene.navigator.status shouldBe Active
                     val connected = scene.navigator
                     connected shouldNotBeSameInstanceAs selected
                     scene.visible = false
                     scene.render()
                     connected.status shouldBe Cancelled
-                    awaitCondition { replacement.cancelCount == 1 }
+                    replacement.cancelCount shouldBe 1
 
                     scene.visible = true
-                    awaitCondition { scene.navigator.status == Active }
+                    scene.navigator.status shouldBe Active
                     scene.navigator shouldNotBeSameInstanceAs connected
                     scene.navigator.isFirstPage shouldBe true
                     replacement.subscribeCount shouldBe 2
                 }
-                awaitCondition { replacement.cancelCount == 2 }
+                replacement.cancelCount shouldBe 2
             }
         }
     }
@@ -699,10 +704,12 @@ internal class PagedDataNavigatorSpec {
      * Client shutdown during composition and a new selection produce cancellation, not a crash.
      */
     @Test
-    fun `tolerate a closed client in composition`(): Unit = runBlocking {
-        ObservationChannel().use { source ->
-            PagedDataNavigatorScene(source.client).use { scene ->
-                awaitCondition { scene.navigator.status == Active }
+    @Timeout(value = 5, unit = MINUTES)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun `tolerate a closed client in composition`() = runTest {
+        ObservationChannel(StandardTestDispatcher(testScheduler)).use { source ->
+            PagedDataNavigatorScene(source.client, testScheduler).use { scene ->
+                scene.navigator.status shouldBe Active
                 source.client.close()
                 scene.lowerBound = "0000"
 

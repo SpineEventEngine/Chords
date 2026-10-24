@@ -34,11 +34,17 @@ import io.spine.chords.client.PagedDataNavigator
 import io.spine.chords.client.given.ObservedItem
 import io.spine.chords.client.given.ObservedItemPages.query
 import io.spine.chords.client.rememberPagedDataNavigator
+import kotlinx.coroutines.test.TestCoroutineScheduler
 
 /**
  * An off-screen consumer for testing navigation state across composition and input changes.
+ *
+ * Share [scheduler] with the client's observation and cancellation work.
  */
-internal class PagedDataNavigatorScene(initialClient: Client) : AutoCloseable {
+internal class PagedDataNavigatorScene(
+    initialClient: Client,
+    scheduler: TestCoroutineScheduler
+) : AutoCloseable {
 
     /**
      * Simulates a consumer replacing its server connection.
@@ -68,7 +74,7 @@ internal class PagedDataNavigatorScene(initialClient: Client) : AutoCloseable {
     /**
      * Runs the production Compose effects without an application shell or native window.
      */
-    private val scene = CompositionScene {
+    private val scene = CompositionScene(scheduler) {
         revision
         if (visible) displayed = rememberPagedDataNavigator(query(lowerBound), client)
     }

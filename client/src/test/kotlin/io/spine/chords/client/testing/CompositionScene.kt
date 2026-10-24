@@ -32,7 +32,6 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
 import java.awt.EventQueue.invokeAndWait
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -44,20 +43,21 @@ import org.jetbrains.skia.Surface
 private const val IdleFrameLimit = 125
 
 /**
- * An off-screen component view for testing recomposition and lifecycle effects.
+ * An off-screen component view with controlled recomposition and lifecycle effects.
+ *
+ * Share [scheduler] with asynchronous collaborators so rendering also drains their pending work.
  */
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalCoroutinesApi::class)
 internal class CompositionScene(
-    private val scheduler: TestCoroutineScheduler? = null,
+    private val scheduler: TestCoroutineScheduler = TestCoroutineScheduler(),
     content: @Composable () -> Unit
 ) : AutoCloseable {
 
     /**
-     * The test composition with the context provided by a desktop view.
+     * Keeps composition work on the test scheduler instead of a background pool.
      */
     private val scene = onUiThread {
-        ComposeScene(coroutineContext = scheduler?.let { StandardTestDispatcher(it) }
-            ?: EmptyCoroutineContext)
+        ComposeScene(coroutineContext = StandardTestDispatcher(scheduler))
     }
 
     /**
@@ -87,10 +87,10 @@ internal class CompositionScene(
     fun render() {
         onUiThread {
             repeat(IdleFrameLimit) {
-                scheduler?.runCurrent()
+                scheduler.runCurrent()
                 Snapshot.sendApplyNotifications()
                 scene.render(surface.canvas, ++frame * 16_000_000L)
-                scheduler?.runCurrent()
+                scheduler.runCurrent()
                 if (!scene.hasInvalidations()) {
                     return@onUiThread
                 }
@@ -104,7 +104,7 @@ internal class CompositionScene(
      */
     override fun close(): Unit = onUiThread {
         scene.close()
-        scheduler?.runCurrent()
+        scheduler.runCurrent()
         surface.close()
     }
 }
