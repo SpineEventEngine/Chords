@@ -27,7 +27,9 @@
 package io.spine.chords.core.primitive
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -75,6 +77,7 @@ import io.spine.chords.core.styling.ChordsTheme
  *
  * With [colors] left `null`, the editor uses Chords colors and a 1 dp outline in every state.
  * An explicit [textStyle] color takes precedence over the default text color.
+ * Supporting content sits close to the outline without reducing its reserved layout space.
  * Supplying [colors] switches to the native Material `OutlinedTextField`: this preserves its
  * editor and cursor colors on supported Compose versions, but also restores its border thickness.
  *
@@ -125,6 +128,13 @@ internal fun OutlinedField(
     shape: Shape = MaterialTheme.shapes.small,
     colors: TextFieldColors? = null
 ) {
+    val alignedSupportingText: (@Composable () -> Unit)? = supportingText?.let { content ->
+        {
+            Box(Modifier.offset(y = SupportingTextOffset)) {
+                content()
+            }
+        }
+    }
     if (colors != null) {
         OutlinedTextField(
             value = value,
@@ -137,7 +147,7 @@ internal fun OutlinedField(
             trailingIcon = trailingIcon,
             prefix = prefix,
             suffix = suffix,
-            supportingText = supportingText,
+            supportingText = alignedSupportingText,
             isError = isError,
             visualTransformation = visualTransformation,
             singleLine = singleLine,
@@ -186,7 +196,7 @@ internal fun OutlinedField(
                 trailingIcon = trailingIcon,
                 prefix = prefix,
                 suffix = suffix,
-                supportingText = supportingText,
+                supportingText = alignedSupportingText,
                 colors = fieldColors,
                 container = {
                     OutlinedTextFieldDefaults.ContainerBox(
@@ -208,3 +218,8 @@ internal fun OutlinedField(
  * Reserves the same space above a floating label as the native outlined field.
  */
 private val FloatingLabelPadding = 8.dp
+
+/**
+ * Brings feedback closer to its field while preserving space reserved for validation messages.
+ */
+private val SupportingTextOffset = (-2).dp
