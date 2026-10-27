@@ -25,16 +25,10 @@
  */
 
 import io.spine.dependency.local.CoreJvm
-import io.spine.gradle.standardToSpineSdk
 
 // Apply ProtoData directly, without Spine's Model Compiler.
 plugins {
     id("io.spine.protodata")
-}
-
-repositories {
-    standardToSpineSdk()
-    mavenLocal()
 }
 
 /**

@@ -52,10 +52,11 @@ plugins {
 }
 
 allprojects {
-    // Define the repositories universally for all modules, including the root.
-    repositories.standardToSpineSdk()
-
     repositories {
+        // Generation must see freshly published consumer dependencies before remote artifacts.
+        mavenLocal()
+        standardToSpineSdk()
+
         // To access Spine 1.9.x.
         maven {
             url = uri("https://spine.mycloudrepo.io/public/repositories/releases")
