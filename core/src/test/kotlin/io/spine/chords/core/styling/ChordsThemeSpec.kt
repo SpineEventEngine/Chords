@@ -30,22 +30,32 @@ import androidx.compose.foundation.LocalScrollbarStyle
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Typography
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.font.FontWeight.Companion.Medium
+import androidx.compose.ui.text.font.FontWeight.Companion.Normal
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import io.kotest.assertions.withClue
 import io.kotest.matchers.floats.shouldBeGreaterThan
 import io.kotest.matchers.floats.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.spine.chords.core.layout.TestScene
+import java.util.concurrent.TimeUnit.MINUTES
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 /**
  * Tests the public Chords theme contract.
  */
 @DisplayName("`ChordsTheme` should")
+@Timeout(value = 5, unit = MINUTES)
 internal class ChordsThemeSpec {
 
     /**
@@ -59,25 +69,71 @@ internal class ChordsThemeSpec {
         )
         val expectedInteraction = ChordsInteraction(hoveredStateAlpha = 0.12f)
         val expectedScheme = chordsDarkColorScheme()
+        val base = chordsLightTypography()
+        val typography = base.copy(
+            labelLarge = base.labelLarge.copy(fontSize = 15.sp)
+        )
         lateinit var observedDimensions: ChordsDimensions
         lateinit var observedInteraction: ChordsInteraction
         var observedPrimary = Color.Unspecified
+        var observedTypography: Typography? = null
 
         TestScene {
             ChordsTheme(
                 colorScheme = expectedScheme,
+                typography = typography,
                 dimensions = expectedDimensions,
                 interaction = expectedInteraction
             ) {
                 observedDimensions = ChordsTheme.dimensions
                 observedInteraction = ChordsTheme.interaction
                 observedPrimary = MaterialTheme.colorScheme.primary
+                observedTypography = MaterialTheme.typography
             }
-        }.use { }
+        }
+            .use { }
 
         observedDimensions shouldBe expectedDimensions
         observedInteraction shouldBe expectedInteraction
         observedPrimary shouldBe expectedScheme.primary
+        observedTypography shouldBe typography
+    }
+
+    /**
+     * Appearance selects both the palette and title emphasis while body text stays regular.
+     */
+    @ParameterizedTest(name = "select defaults for darkTheme={0}")
+    @ValueSource(booleans = [false, true])
+    fun `select palette and text emphasis for the appearance`(darkTheme: Boolean) {
+        var observedTypography: Typography? = null
+        var observedPrimary = Color.Unspecified
+
+        TestScene {
+            ChordsTheme(darkTheme = darkTheme) {
+                observedTypography = MaterialTheme.typography
+                observedPrimary = MaterialTheme.colorScheme.primary
+            }
+        }
+            .use { }
+
+        val scheme = if (darkTheme) chordsDarkColorScheme() else chordsLightColorScheme()
+        observedPrimary shouldBe scheme.primary
+        val typography = checkNotNull(observedTypography)
+        val emphasized = listOf(
+            typography.titleLarge, typography.titleMedium, typography.titleSmall,
+            typography.labelLarge, typography.labelMedium, typography.labelSmall
+        )
+        emphasized.forEach { style ->
+            withClue("Emphasized style: $style") {
+                style.fontWeight shouldBe if (darkTheme) Normal else Medium
+            }
+        }
+        listOf(typography.bodyLarge, typography.bodyMedium, typography.bodySmall)
+            .forEach { style ->
+                withClue("Body style: $style") {
+                    style.fontWeight shouldBe Normal
+                }
+            }
     }
 
     /**

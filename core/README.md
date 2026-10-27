@@ -7,8 +7,10 @@ the [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/)
 
 Chords applications use a compact Material 3 desktop theme by default. It
 provides neutral work surfaces, semantic light and dark color schemes,
-restrained corner radii, regular-weight typography, and shared dimensions for common
-controls, navigation, tables, dialogs, and supporting panes. The dark scheme is
+restrained corner radii and shared dimensions for common controls, navigation, tables,
+dialogs, and supporting panes. The light theme uses distinct outlines and selection backgrounds,
+with medium-weight titles and labels; body text and dark-theme typography use regular weight.
+The dark scheme is
 selected from the operating system appearance observed at application startup.
 Changes to the system appearance while the application is running are not
 observed automatically; override `ApplicationTheme` when the application needs
@@ -61,6 +63,7 @@ These buttons provide hover and keyboard focus feedback in the active window. En
 show a hand cursor; disabled buttons keep the default arrow. Custom actions can use
 [`Modifier.buttonCursor(enabled)`](src/main/kotlin/io/spine/chords/core/primitive/ButtonCursor.kt)
 with the same enabled state as their click handler.
+Text buttons have taller surfaces in the light theme, with equal vertical padding around content.
 [`EmptyState`](src/main/kotlin/io/spine/chords/core/layout/EmptyState.kt) supplies the illustration,
 caption, and alignment for empty work areas.
 [`ScrollableColumn`](src/main/kotlin/io/spine/chords/core/layout/ScrollableColumn.kt) keeps long
