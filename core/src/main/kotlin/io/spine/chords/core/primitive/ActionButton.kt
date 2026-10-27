@@ -171,9 +171,14 @@ private fun actionContainerColor(filled: Boolean, darkSurface: Boolean, stateAlp
     val base = if (darkSurface) {
         colorScheme.primary
     } else {
-        colorScheme.onPrimary
+        val tinted = colorScheme.onPrimary
             .copy(alpha = LightFilledContainerTintAlpha)
             .compositeOver(colorScheme.primary)
+        val foreground = colorScheme.onPrimary.luminance()
+        val background = tinted.luminance()
+        val contrast = (maxOf(foreground, background) + ContrastLuminanceOffset) /
+                (minOf(foreground, background) + ContrastLuminanceOffset)
+        if (contrast >= MinimumLabelContrast) tinted else colorScheme.primary
     }
     val emphasis = if (darkSurface) FilledStateEmphasis else LightFilledStateEmphasis
     return colorScheme.onSurface
@@ -206,6 +211,16 @@ private const val FilledStateEmphasis = 3F
  * Light surfaces use a brighter action fill while retaining readable foreground contrast.
  */
 private const val LightFilledContainerTintAlpha = 0.16F
+
+/**
+ * The minimum contrast that a decorative fill tint must retain for ordinary button labels.
+ */
+private const val MinimumLabelContrast = 4.5F
+
+/**
+ * Accounts for reflected ambient light in the text contrast ratio.
+ */
+private const val ContrastLuminanceOffset = 0.05F
 
 /**
  * Light-theme actions retain distinct feedback without making the active fill too dark.

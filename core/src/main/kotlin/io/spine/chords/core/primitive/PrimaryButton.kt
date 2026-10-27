@@ -34,7 +34,8 @@ import androidx.compose.ui.Modifier
  * A filled button for the main action in a form, dialog, or toolbar.
  *
  * Uses the active Material `primary` and `onPrimary` colors and `labelLarge` typography.
- * Light surfaces soften the fill with a small foreground tint.
+ * On light surfaces, the resting fill adds a small foreground tint only when label contrast remains
+ * at least 4.5:1; otherwise, the original `primary` color is used.
  * Hover, press, and keyboard focus have distinct feedback in the active window. Set [enabled]
  * to `false` while an operation is running; the button does not track asynchronous work itself.
  *
