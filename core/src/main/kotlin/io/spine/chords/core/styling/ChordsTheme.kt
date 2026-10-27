@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontWeight.Companion.Medium
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -155,7 +156,8 @@ public data class ChordsInteraction(
  * }
  * ```
  *
- * [darkTheme] selects the default palette only; an explicit [colorScheme] takes precedence.
+ * [darkTheme] selects the default palette and typography. Explicit [colorScheme] and [typography]
+ * values take precedence. Light themes emphasize titles and labels with medium weight.
  * The default theme also supplies compact typography, shapes, and scrollbar colors. It preserves
  * the current scrollbar dimensions from `LocalScrollbarStyle`.
  *
@@ -179,7 +181,7 @@ public data class ChordsInteraction(
  * component defaults, and instance properties for individual exceptions. Plain composable
  * functions use their parameters and the current theme; `sharedDefaults` does not configure them.
  *
- * @param darkTheme Whether the dark color scheme should be used.
+ * @param darkTheme Whether the dark palette and typography should be used.
  * @param colorScheme The Material color scheme applied to all components.
  * @param typography The Material typography applied to all components.
  * @param shapes The Material shape scale applied to all components.
@@ -196,7 +198,7 @@ public fun ChordsTheme(
     } else {
         defaultLightColorScheme
     },
-    typography: Typography = defaultTypography,
+    typography: Typography = if (darkTheme) defaultTypography else defaultLightTypography,
     shapes: Shapes = defaultShapes,
     dimensions: ChordsDimensions = defaultDimensions,
     interaction: ChordsInteraction = defaultInteraction,
@@ -337,10 +339,10 @@ public object ChordsTheme {
  */
 @Suppress("MagicNumber") // Hex literals make the complete role-based palette auditable.
 public fun chordsLightColorScheme(): ColorScheme = lightColorScheme(
-    primary = Color(0xFF3E68B2),
+    primary = Color(0xFF28569E),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFE7EFFF),
-    onPrimaryContainer = Color(0xFF153E75),
+    primaryContainer = Color(0xFFDCE7FA),
+    onPrimaryContainer = Color(0xFF123762),
     inversePrimary = Color(0xFFAFC6FF),
     secondary = Color(0xFF475569),
     onSecondary = Color(0xFFFFFFFF),
@@ -350,21 +352,21 @@ public fun chordsLightColorScheme(): ColorScheme = lightColorScheme(
     onTertiary = Color(0xFFFFFFFF),
     tertiaryContainer = Color(0xFFD8F3E7),
     onTertiaryContainer = Color(0xFF0B3B2B),
-    background = Color(0xFFF3F5F8),
-    onBackground = Color(0xFF1F2937),
+    background = Color(0xFFEFF2F6),
+    onBackground = Color(0xFF182230),
     surface = Color(0xFFFAFBFC),
-    onSurface = Color(0xFF1F2937),
-    surfaceVariant = Color(0xFFEEF2F6),
-    onSurfaceVariant = Color(0xFF536172),
-    surfaceTint = Color(0xFF3E68B2),
+    onSurface = Color(0xFF182230),
+    surfaceVariant = Color(0xFFE4E9F0),
+    onSurfaceVariant = Color(0xFF3F4C5E),
+    surfaceTint = Color(0xFF28569E),
     inverseSurface = Color(0xFF2B3038),
     inverseOnSurface = Color(0xFFF4F6F8),
     error = Color(0xFFBA1A1A),
     onError = Color(0xFFFFFFFF),
     errorContainer = Color(0xFFFEE4E2),
     onErrorContainer = Color(0xFF7A271A),
-    outline = Color(0xFF818E9F),
-    outlineVariant = Color(0xFFCFD6DF),
+    outline = Color(0xFF69788B),
+    outlineVariant = Color(0xFFB9C4D2),
     scrim = Color(0xFF000000)
 )
 
@@ -512,6 +514,33 @@ public fun chordsTypography(): Typography = Typography(
 )
 
 /**
+ * Creates light-theme typography with medium-weight titles and labels for clear visual hierarchy.
+ *
+ * Body, headline, and display text retain the regular weight and sizes from [chordsTypography].
+ * [ChordsTheme] uses this scale by default when `darkTheme` is `false`. Applications can customize
+ * individual roles before supplying the result as the theme's `typography` argument:
+ * ```kotlin
+ * val base = chordsLightTypography()
+ * val typography = base.copy(
+ *     labelLarge = base.labelLarge.copy(fontSize = 15.sp)
+ * )
+ * ```
+ *
+ * @return A new Material typography scale for light surfaces.
+ */
+public fun chordsLightTypography(): Typography {
+    val base = chordsTypography()
+    return base.copy(
+        titleLarge = base.titleLarge.copy(fontWeight = Medium),
+        titleMedium = base.titleMedium.copy(fontWeight = Medium),
+        titleSmall = base.titleSmall.copy(fontWeight = Medium),
+        labelLarge = base.labelLarge.copy(fontWeight = Medium),
+        labelMedium = base.labelMedium.copy(fontWeight = Medium),
+        labelSmall = base.labelSmall.copy(fontWeight = Medium)
+    )
+}
+
+/**
  * Creates the restrained corner-radius scale used by Chords.
  *
  * The Material roles run from 4 dp for `extraSmall` to 16 dp for `extraLarge`. Components that
@@ -542,9 +571,14 @@ private val defaultLightColorScheme: ColorScheme = chordsLightColorScheme()
 private val defaultDarkColorScheme: ColorScheme = chordsDarkColorScheme()
 
 /**
- * The typography reused by the default theme.
+ * The regular-weight typography reused by the default dark theme.
  */
 private val defaultTypography: Typography = chordsTypography()
+
+/**
+ * The emphasized typography reused by the default light theme.
+ */
+private val defaultLightTypography: Typography = chordsLightTypography()
 
 /**
  * The shape scale reused by the default theme.

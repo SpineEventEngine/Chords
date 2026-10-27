@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -46,13 +47,20 @@ import io.spine.chords.core.styling.chordsDarkColorScheme
 import io.spine.chords.core.styling.chordsLightColorScheme
 import java.awt.event.KeyEvent.VK_ENTER
 import java.awt.event.KeyEvent.VK_TAB
+import java.util.concurrent.TimeUnit.MINUTES
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Named
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 
 /**
  * Verifies filled-button feedback, readable labels, and keyboard activation.
  */
 @DisplayName("`PrimaryButton` should")
+@Timeout(value = 5, unit = MINUTES)
 internal class PrimaryButtonSpec {
 
     /**
@@ -77,42 +85,44 @@ internal class PrimaryButtonSpec {
     }
 
     /**
-     * Hover must visibly change the surface without dimming its label or retaining mouse focus.
+     * Default and custom palettes retain readable labels at rest and on hover, without keeping
+     * mouse focus after activation.
      */
-    @Test
-    fun `show a clear hover surface and restore it after the pointer leaves`() {
-        listOf(chordsLightColorScheme(), chordsDarkColorScheme()).forEach { scheme ->
-            var clicks = 0
-            TestScene {
-                ChordsTheme(colorScheme = scheme) {
-                    Box(Modifier.size(200.dp, 80.dp)) {
-                        PrimaryButton(
-                            onClick = { clicks++ },
-                            modifier = Modifier.size(120.dp, 40.dp)
-                        ) { }
-                    }
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("colorSchemes")
+    fun `keep labels readable through hover and pointer exit`(scheme: ColorScheme) {
+        var clicks = 0
+        TestScene {
+            ChordsTheme(colorScheme = scheme) {
+                Box(Modifier.size(200.dp, 80.dp)) {
+                    PrimaryButton(
+                        onClick = { clicks++ },
+                        modifier = Modifier.size(120.dp, 40.dp)
+                    ) { }
                 }
-            }.use { scene ->
-                scene.renderUntilIdle()
+            }
+        }
+            .use { scene ->
                 val resting = scene.pixelAt(80.dp, 20.dp)
+                assertLabelContrast(scheme.onPrimary, Color(resting))
+
                 scene.movePointerTo(Offset(80F, 20F))
                 scene.renderUntilIdle()
+
                 val hovered = scene.pixelAt(80.dp, 20.dp)
                 val luminanceChange = kotlin.math.abs(
                     Color(hovered).luminance() - Color(resting).luminance()
                 )
                 luminanceChange shouldBeGreaterThanOrEqual 0.045F
-                val bright = maxOf(Color(hovered).luminance(), scheme.onPrimary.luminance())
-                val dark = minOf(Color(hovered).luminance(), scheme.onPrimary.luminance())
-                (bright + 0.05F) / (dark + 0.05F) shouldBeGreaterThanOrEqual 4.5F
+                assertLabelContrast(scheme.onPrimary, Color(hovered))
 
                 scene.click(80.dp, 20.dp)
                 scene.movePointerTo(Offset(160F, 60F))
                 scene.renderUntilIdle()
+
                 clicks shouldBe 1
                 scene.pixelAt(80.dp, 20.dp) shouldBe resting
             }
-        }
     }
 
     /**
@@ -167,5 +177,34 @@ internal class PrimaryButtonSpec {
             clicks shouldBe 0
             scene.pixelAt(80.dp, 20.dp) shouldBe resting
         }
+    }
+
+    /**
+     * Normal-sized button labels retain the minimum text contrast against their rendered fill.
+     */
+    private fun assertLabelContrast(foreground: Color, background: Color) {
+        val bright = maxOf(foreground.luminance(), background.luminance())
+        val dark = minOf(foreground.luminance(), background.luminance())
+        (bright + 0.05F) / (dark + 0.05F) shouldBeGreaterThanOrEqual 4.5F
+    }
+
+    /**
+     * Supplies palettes with different contrast margins for button interaction cases.
+     */
+    private companion object {
+
+        /**
+         * Includes a custom primary whose untinted label is readable, but loses contrast if tinted.
+         */
+        @JvmStatic
+        fun colorSchemes(): List<Arguments> = listOf(
+            Arguments.of(Named.of("default light", chordsLightColorScheme())),
+            Arguments.of(Named.of("default dark", chordsDarkColorScheme())),
+            Arguments.of(Named.of(
+                "custom light",
+                chordsLightColorScheme()
+                    .copy(primary = Color(0xFF3E68B2), onPrimary = Color.White)
+            ))
+        )
     }
 }

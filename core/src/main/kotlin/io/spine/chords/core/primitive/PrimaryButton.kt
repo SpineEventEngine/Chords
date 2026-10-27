@@ -34,6 +34,8 @@ import androidx.compose.ui.Modifier
  * A filled button for the main action in a form, dialog, or toolbar.
  *
  * Uses the active Material `primary` and `onPrimary` colors and `labelLarge` typography.
+ * On light surfaces, the resting fill adds a small foreground tint only when label contrast remains
+ * at least 4.5:1; otherwise, the original `primary` color is used.
  * Hover, press, and keyboard focus have distinct feedback in the active window. Set [enabled]
  * to `false` while an operation is running; the button does not track asynchronous work itself.
  *
@@ -51,7 +53,8 @@ import androidx.compose.ui.Modifier
  * ```
  *
  * Use [SecondaryButton] for adjacent alternatives. Both buttons use the same sizing and content
- * padding. Align them by their component bounds; Material's minimum interaction area can be taller
+ * padding. Light surfaces use at least Material's button height for more room around the label.
+ * Align them by their component bounds; Material's minimum interaction area can be taller
  * than the visible button. Supply spacing explicitly when [content] includes both an icon and text.
  * Import this function from `io.spine.chords.core.primitive` rather than using Material's `Button`.
  *

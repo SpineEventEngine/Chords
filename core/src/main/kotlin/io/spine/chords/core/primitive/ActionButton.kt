@@ -50,7 +50,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.InputMode.Companion.Keyboard
 import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -107,6 +109,10 @@ internal fun ActionButton(
     val keyboardFocus = focused && windowFocused &&
             LocalInputModeManager.current.inputMode == Keyboard
     val states = ChordsTheme.interaction
+    val darkSurface = colorScheme.surface.luminance() < colorScheme.onSurface.luminance()
+    val compactHeight = ChordsTheme.dimensions.compactControlHeight
+    val minimumHeight =
+        if (darkSurface) compactHeight else maxOf(compactHeight, ButtonDefaults.MinHeight)
     val stateAlpha = when {
         !enabled || !windowFocused -> 0F
         pressed -> states.pressedStateAlpha
@@ -114,17 +120,15 @@ internal fun ActionButton(
         hovered -> states.hoveredStateAlpha
         else -> 0F
     }
-    val container = if (filled) {
-        colorScheme.onSurface
-            .copy(alpha = (stateAlpha * FilledStateEmphasis).coerceIn(0F, 1F))
-            .compositeOver(colorScheme.primary)
-    } else {
-        colorScheme.onSurface.copy(alpha = stateAlpha)
-    }
+    val container = actionContainerColor(
+        filled = filled,
+        darkSurface = darkSurface,
+        stateAlpha = stateAlpha
+    )
     val foreground = if (filled) colorScheme.onPrimary else colorScheme.onSurface
     Surface(
         modifier = modifier
-            .heightIn(min = ChordsTheme.dimensions.compactControlHeight)
+            .heightIn(min = minimumHeight)
             .minimumInteractiveComponentSize(),
         shape = ButtonDefaults.shape,
         color = if (enabled) {
@@ -133,7 +137,7 @@ internal fun ActionButton(
             colorScheme.onSurface.copy(alpha = if (filled) DisabledContainerAlpha else 0F)
         },
         contentColor = if (enabled) foreground else ChordsTheme.disabledContentColor,
-        border = actionBorder(filled, enabled, keyboardFocus)
+        border = actionBorder(filled = filled, enabled = enabled, keyboardFocus = keyboardFocus)
     ) {
         ProvideTextStyle(typography.labelLarge) {
             Row(
@@ -157,6 +161,32 @@ internal fun ActionButton(
 }
 
 /**
+ * Gives each action variant distinct interaction feedback and softens filled light surfaces.
+ */
+@Composable
+private fun actionContainerColor(filled: Boolean, darkSurface: Boolean, stateAlpha: Float): Color {
+    if (!filled) {
+        return colorScheme.onSurface.copy(alpha = stateAlpha)
+    }
+    val base = if (darkSurface) {
+        colorScheme.primary
+    } else {
+        val tinted = colorScheme.onPrimary
+            .copy(alpha = LightFilledContainerTintAlpha)
+            .compositeOver(colorScheme.primary)
+        val foreground = colorScheme.onPrimary.luminance()
+        val background = tinted.luminance()
+        val contrast = (maxOf(foreground, background) + ContrastLuminanceOffset) /
+                (minOf(foreground, background) + ContrastLuminanceOffset)
+        if (contrast >= MinimumLabelContrast) tinted else colorScheme.primary
+    }
+    val emphasis = if (darkSurface) FilledStateEmphasis else LightFilledStateEmphasis
+    return colorScheme.onSurface
+        .copy(alpha = (stateAlpha * emphasis).coerceIn(0F, 1F))
+        .compositeOver(base)
+}
+
+/**
  * Uses a clear keyboard outline while keeping ordinary filled actions borderless.
  */
 @Composable
@@ -176,6 +206,26 @@ private fun actionBorder(filled: Boolean, enabled: Boolean, keyboardFocus: Boole
  * Filled actions need a stronger surface shift than outlined controls.
  */
 private const val FilledStateEmphasis = 3F
+
+/**
+ * Light surfaces use a brighter action fill while retaining readable foreground contrast.
+ */
+private const val LightFilledContainerTintAlpha = 0.16F
+
+/**
+ * The minimum contrast that a decorative fill tint must retain for ordinary button labels.
+ */
+private const val MinimumLabelContrast = 4.5F
+
+/**
+ * Accounts for reflected ambient light in the text contrast ratio.
+ */
+private const val ContrastLuminanceOffset = 0.05F
+
+/**
+ * Light-theme actions retain distinct feedback without making the active fill too dark.
+ */
+private const val LightFilledStateEmphasis = 2.5F
 
 /**
  * Matches the subdued Material filled-button surface while an action is disabled.

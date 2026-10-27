@@ -41,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -49,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.floats.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.TestApplication
 import io.spine.chords.core.layout.TestScene
@@ -108,6 +108,7 @@ internal class TableSpec {
 
     /**
      * A scrollbar must have its own space even when an application increases its thickness.
+     * The gutter retains the row background outside the highlighted action button.
      */
     @ParameterizedTest
     @ValueSource(ints = [8, 24])
@@ -146,8 +147,9 @@ internal class TableSpec {
 
             scene.pixelAt((buttonCenter.x - 8).dp, 60.dp) shouldBe
                     scheme.primaryContainer.toArgb()
-            scene.pixelAt((300 - scrollbarWidth - 4).dp, 60.dp) shouldBe
-                    scheme.primary.copy(alpha = 0.1f).compositeOver(scheme.surface).toArgb()
+            val rowBackground = scene.pixelAt(8.dp, 60.dp)
+            rowBackground shouldNotBe scheme.surface.toArgb()
+            scene.pixelAt((300 - scrollbarWidth - 4).dp, 60.dp) shouldBe rowBackground
         }
     }
 
