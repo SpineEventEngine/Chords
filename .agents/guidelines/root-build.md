@@ -11,9 +11,12 @@ when no registered JDK 11 exists, macOS may select a newer ARM JDK.
 
 ## Wrapper
 
-The wrapper enters the repository root, resolves JDK 11 from
-`CHORDS_JDK11_HOME`, jEnv, or `JAVA_HOME`, and verifies its version and
-architecture. It accepts only routine verification, report generation, and
+The wrapper enters the repository root and uses `CHORDS_JDK11_HOME` when set.
+Otherwise, jEnv resolves the repository's `.java-version`, or alias `11` when
+that file is absent. An empty or unregistered project selection fails; `JAVA_HOME`
+is the fallback when jEnv is unavailable or alias `11` cannot be resolved.
+The wrapper verifies Java 11 and the required architecture.
+It accepts only routine verification, report generation, and
 Maven-local publication; it rejects remote publishing, deployment, signed
 packaging, task abbreviations, and arbitrary Gradle inputs.
 
@@ -61,10 +64,11 @@ java -XshowSettings:properties -version 2>&1 |
     rg 'java.home|java.version|os.arch'
 ```
 
-If jEnv provides the required JDK:
+For direct-invocation diagnosis, select the repository's `.java-version` entry
+from the repository root:
 
 ```bash
-jenv shell 11
+jenv shell "$(jenv version-file-read .java-version)"
 JAVA_HOME="$(jenv prefix)" ./gradlew :<module>:check
 ```
 
