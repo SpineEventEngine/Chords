@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@
  */
 
 import BuildSettings.javaVersion
-import kotlinx.kover.KoverPlugin
 import io.spine.internal.dependency.CheckerFramework
 import io.spine.internal.dependency.Dokka
 import io.spine.internal.dependency.ErrorProne
@@ -46,9 +45,11 @@ import io.spine.internal.gradle.publish.IncrementGuard
 import io.spine.internal.gradle.report.license.LicenseReporter
 import io.spine.internal.gradle.testing.configureLogging
 import io.spine.internal.gradle.testing.registerTestTasks
+import kotlinx.kover.KoverPlugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.getValue
@@ -185,9 +186,16 @@ fun Module.forceConfigurations() {
     }
 }
 
+/**
+ * Runs tests on Gradle's JVM so their architecture matches Compose's native dependencies.
+ */
 fun Module.setupTests() {
     tasks {
         registerTestTasks()
+        withType<Test>().configureEach {
+            // An unconfigured toolchain uses the JVM running Gradle.
+            javaLauncher.set(javaToolchains.launcherFor { })
+        }
         test.configure {
             useJUnitPlatform {
                 includeEngines("junit-jupiter")

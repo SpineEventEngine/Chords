@@ -75,7 +75,14 @@ done
 
 java_home="${CHORDS_JDK11_HOME:-}"
 if [[ -z "$java_home" && -n "$jenv_bin" ]]; then
-    java_home="$("$jenv_bin" prefix 11 2>/dev/null || true)"
+    if [[ -f "$REPO_ROOT/.java-version" ]]; then
+        java_version="$("$jenv_bin" version-file-read "$REPO_ROOT/.java-version")" \
+            || die "cannot read a Java version from ${REPO_ROOT}/.java-version"
+        java_home="$("$jenv_bin" prefix "$java_version" 2>/dev/null)" \
+            || die "JDK '${java_version}' from .java-version is not registered with jEnv"
+    else
+        java_home="$("$jenv_bin" prefix 11 2>/dev/null || true)"
+    fi
 fi
 [[ -n "$java_home" ]] || java_home="${JAVA_HOME:-}"
 [[ -n "$java_home" ]] \
