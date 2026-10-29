@@ -64,12 +64,19 @@ java -XshowSettings:properties -version 2>&1 |
     rg 'java.home|java.version|os.arch'
 ```
 
-For direct-invocation diagnosis, select the repository's `.java-version` entry
-from the repository root:
+For direct-invocation diagnosis, run from the repository root. Use `.java-version`
+when present, or jEnv alias `11` when absent:
 
 ```bash
-jenv shell "$(jenv version-file-read .java-version)"
-JAVA_HOME="$(jenv prefix)" ./gradlew :<module>:check
+(
+    java_version=11
+    if [[ -f .java-version ]]; then
+        java_version="$(jenv version-file-read .java-version)" || {
+            echo "Cannot read a Java version from .java-version" >&2
+            exit 1
+        }
+    fi
+    java_home="$(jenv prefix "$java_version")" || exit 1
+    JAVA_HOME="$java_home" ./gradlew :<module>:check
+)
 ```
-
-`jenv shell` does not persist across tool calls; ordinary work uses the wrapper.
