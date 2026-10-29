@@ -17,7 +17,7 @@ jobs:
       cancel-in-progress: true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Configure the checkout of all branches, so that it is possible to run the comparison.
           fetch-depth: 0
