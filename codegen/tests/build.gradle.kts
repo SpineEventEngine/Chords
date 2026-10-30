@@ -28,7 +28,6 @@ import com.google.protobuf.gradle.generateProtoTasks
 import com.google.protobuf.gradle.id
 import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
-import io.spine.chords.gradle.ApplyCodegenPlugins
 import io.spine.internal.dependency.Kotest
 import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
@@ -65,37 +64,4 @@ dependencies {
     implementation(Spine.CoreJvm.core)
     implementation(project(":runtime"))
     testImplementation(Kotest.runnerJUnit5)
-}
-
-/**
- * Protobuf dependencies declared here apply to generation and its export verification.
- */
-val codegenProtoDependencies = emptySet<String>()
-
-chordsGradlePlugin {
-    protoDependencies(*codegenProtoDependencies.toTypedArray())
-}
-
-/**
- * Verifies that an up-to-date compiler result restores deleted consumer definitions.
- */
-val verifyCodegenExport by tasks.registering(ApplyCodegenPlugins::class) {
-    val generation = tasks.named<ApplyCodegenPlugins>("applyCodegenPlugins").get()
-    dependsOn(generation)
-    workspaceDir = generation.workspaceDir
-    sourceModuleDir = generation.sourceModuleDir
-    codegenPluginsArtifact = generation.codegenPluginsArtifact
-    includeGradleProperties = generation.includeGradleProperties.toMutableSet()
-    dependencies(codegenProtoDependencies)
-    // Root `clean` also reaches nested builds; preserve the compiler output for this check.
-    task("build", "--exclude-task=clean")
-    doFirst {
-        delete(fileTree("generated") {
-            include("**/*Def.kt")
-        })
-    }
-}
-
-tasks.matching { it.name == "compileKotlin" || it.name == "compileTestKotlin" }.configureEach {
-    dependsOn(verifyCodegenExport)
 }

@@ -72,12 +72,10 @@ spine {
  */
 tasks.named("compileKotlin") {
     enabled = false
-    dependsOn("exportMessageDefinitions")
 }
 
 tasks.named("compileTestKotlin") {
     enabled = false
-    dependsOn("exportTestMessageDefinitions")
 }
 
 /**
@@ -135,25 +133,31 @@ tasks.named("generateTestProto") {
 /**
  * Exports Chords message definitions; consumers generate their own Protobuf Kotlin DSL.
  */
-tasks.register<Copy>("exportMessageDefinitions") {
-    dependsOn("launchSpineCompiler")
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from("generated/main/kotlin") {
-        include("**/*Def.kt")
+tasks.named("launchSpineCompiler") {
+    doLast {
+        copy {
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+            from("generated/main/kotlin") {
+                include("**/*Def.kt")
+            }
+            into("${sourceModuleDir}/generated/main/kotlin")
+        }
     }
-    into("${sourceModuleDir}/generated/main/kotlin")
 }
 
 /**
  * Exports test message definitions without replacing the consumer's Protobuf Kotlin DSL.
  */
-tasks.register<Copy>("exportTestMessageDefinitions") {
-    dependsOn("launchTestSpineCompiler")
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from("generated/test/kotlin") {
-        include("**/*Def.kt")
+tasks.named("launchTestSpineCompiler") {
+    doLast {
+        copy {
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+            from("generated/test/kotlin") {
+                include("**/*Def.kt")
+            }
+            into("${sourceModuleDir}/generated/test/kotlin")
+        }
     }
-    into("${sourceModuleDir}/generated/test/kotlin")
 }
 
 /**

@@ -24,8 +24,7 @@ The [Chords Gradle plugin](https://github.com/SpineEventEngine/Chords-Gradle-plu
 should be used to apply `codegen-plugins` to a project.
 
 The workspace exports only Chords `*Def.kt` files. Consumers generate Protobuf Java and
-Kotlin DSL files with their configured Protobuf compiler. Export tasks restore missing
-definitions even when Spine Compiler is up to date.
+Kotlin DSL files with their configured Protobuf compiler.
 
 ### Resources for the Gradle plugin
 
