@@ -24,13 +24,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.dependency.lib
+package io.spine.dependency.local
 
-@Suppress("unused", "ConstPropertyName")
-object JavaX {
-    // This artifact that used to be a part of J2EE moved under Eclipse EE4J project.
-    // https://github.com/eclipse-ee4j/common-annotations-api
-    const val annotations = "javax.annotation:javax.annotation-api:1.3.2"
+/**
+ * Generates Spine entity and validation APIs for the plugin model.
+ */
+@Suppress("ConstPropertyName")
+object CoreJvmCompiler {
+    /**
+     * The Core JVM compiler release used for the plugin's internal model.
+     */
+    private const val version = "2.0.0-SNAPSHOT.101"
 
-    const val servletApi = "javax.servlet:javax.servlet-api:3.1.0"
+    /**
+     * Adds entity, routing, and validation generation to the internal model build.
+     */
+    const val gradlePlugin = "${Spine.toolsGroup}:core-jvm-gradle-plugin:$version"
 }

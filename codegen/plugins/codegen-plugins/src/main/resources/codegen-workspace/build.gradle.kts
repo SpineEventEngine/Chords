@@ -40,14 +40,13 @@ buildscript {
     doForceVersions(configurations)
 
     dependencies {
-        classpath(io.spine.dependency.local.McJava.pluginLib)
+        classpath(io.spine.dependency.local.Compiler.pluginLib)
     }
 }
 
 plugins {
     kotlin("jvm")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.96.4"
     idea
 }
 
@@ -89,7 +88,8 @@ subprojects {
     }
 
     dependencies {
-        Protobuf.libs.forEach { implementation(it) }
+        // Protobuf definitions are needed as input; this workspace does not compile Kotlin.
+        implementation(Protobuf.java)
     }
 
     protobuf {

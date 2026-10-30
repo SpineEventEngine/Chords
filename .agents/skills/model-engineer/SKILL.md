@@ -5,7 +5,7 @@ description: >
   reviewing, or removing project-owned `.proto` declarations and Kotlin model
   extensions located in `proto-values`, organizing Protobuf packages, imports,
   and files, or evaluating schema-driven generated-accessor effects. Do not
-  use for ProtoData plugin, generator, or codegen-runtime implementation; use
+  use for Spine Compiler plugin, generator, or codegen-runtime implementation; use
   `codegen-engineer` for those concerns.
 ---
 
@@ -18,7 +18,7 @@ description: >
   `proto-values/src/main/kotlin/**`.
 - Keep schema declarations, Kotlin extensions, and schema-driven generated
   accessors consistent.
-- Use `.agents/skills/codegen-engineer/SKILL.md` for ProtoData plugins,
+- Use `.agents/skills/codegen-engineer/SKILL.md` for Spine Compiler plugins,
   including plugin-internal Protobuf declarations under
   `codegen/plugins/codegen-plugins/src/main/proto/**`, and for generator
   behavior, codegen-runtime contracts, and test Protobuf files that exist only

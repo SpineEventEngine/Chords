@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,6 @@ object AutoCommon {
 object AutoService {
     private const val version = "1.1.1"
     const val annotations = "com.google.auto.service:auto-service-annotations:${version}"
-    @Suppress("unused")
-    const val processor   = "com.google.auto.service:auto-service:${version}"
 }
 
 // https://github.com/google/auto

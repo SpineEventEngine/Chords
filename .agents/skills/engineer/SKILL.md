@@ -24,7 +24,7 @@ the code being changed:
   declarations and Kotlin model extensions under `proto-values`, including
   schema evolution and package and file organization.
 - `.agents/skills/codegen-engineer/SKILL.md` for the `codegen/plugins`
-  ProtoData project, the codegen runtime (`codegen/runtime`), codegen
+  Spine Compiler project, the codegen runtime (`codegen/runtime`), codegen
   correctness tests (`codegen/tests`), plugin-internal Protobuf declarations,
   generated `MessageField`/`MessageOneof`/`MessageDef` contracts, and codegen
   Gradle wiring.

@@ -27,14 +27,17 @@
 package io.spine.dependency.local
 
 /**
- * Spine Reflect library.
- *
- * @see <a href="https://github.com/SpineEventEngine/reflect">spine-reflect</a>
+ * Pins reflection utilities used by the Spine event engine.
  */
 @Suppress("ConstPropertyName")
 object Reflect {
-    const val version = "2.0.0-SNAPSHOT.200"
-    const val group = Spine.group
-    const val artifact = "spine-reflect"
-    const val lib = "$group:$artifact:$version"
+    /**
+     * Aligns the artifacts used by this build.
+     */
+    private const val version = "2.0.0-SNAPSHOT.203"
+
+    /**
+     * Keeps transitive reflection requests compatible with the event engine.
+     */
+    const val lib = "${Spine.group}:spine-reflect:$version"
 }

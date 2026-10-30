@@ -91,7 +91,7 @@ claims against the nearest README, build file, workflow, or source file.
 - Keep examples small enough to verify and copy; follow class-based KDoc,
   including the `Table` and `EntityChooser` examples.
 - Use consistent terminology: Chords, Compose Multiplatform, Spine Event
-  Engine, Protobuf, ProtoData, codegen plugins, codegen runtime, application
+  Engine, Protobuf, Spine Compiler, codegen plugins, codegen runtime, application
   shell, class-based components.
 - Name the precise relationship instead of using vague ownership language.
   Keep literal API terms and state or resource ownership when that is the contract.

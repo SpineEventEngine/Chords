@@ -31,39 +31,20 @@ package io.spine.dependency.local
  *
  * @see <a href="https://github.com/SpineEventEngine/tool-base">tool-base</a>
  */
-@Suppress("ConstPropertyName", "unused")
+@Suppress("ConstPropertyName")
 object ToolBase {
-    const val group = Spine.toolsGroup
-    const val version = "2.0.0-SNAPSHOT.376"
-    const val dogfoodingVersion = "2.0.0-SNAPSHOT.376"
-    const val intellijPlatformVersion = "2.0.0-SNAPSHOT.360"
+    /**
+     * Aligns the tools shared by the Compiler and its Gradle plugin.
+     */
+    private const val version = "2.0.0-SNAPSHOT.440"
 
-    const val lib = "$group:tool-base:$version"
-    const val oldLib = "$group:spine-tool-base:2.0.0-SNAPSHOT.332"
-    const val classicCodegen = "$group:classic-codegen:$version"
-    const val pluginBase = "$group:plugin-base:$version"
-    const val pluginTestlib = "$group:plugin-testlib:$version"
-
-    const val intellijPlatform = "$group:intellij-platform:$intellijPlatformVersion"
-    const val intellijPlatformJava = "$group:intellij-platform-java:$intellijPlatformVersion"
-
-    const val psi = "$group:psi:$version"
-    const val psiJavaArtifactName = "psi-java"
-    const val psiJava = "$group:$psiJavaArtifactName:$version"
-
-    const val rootGradlePlugins = "$group:root-gradle-plugins:$version"
-    const val gradlePluginApi = "$group:gradle-plugin-api:$version"
-    const val gradlePluginApiTestFixtures = "$group:gradle-plugin-api-test-fixtures:$version"
-
-    const val jvmTools = "$group:jvm-tools:$version"
-    const val jvmToolPluginDogfooding = "$group:jvm-tool-plugins-all:$dogfoodingVersion"
-    const val jvmToolPlugins = "$group:jvm-tool-plugins-all:$version"
-
-    const val protobufSetupPlugins = "$group:protobuf-setup-plugins:$version"
-
-    object JavadocFilter {
-        const val group = ToolBase.group
-        const val version = "2.0.0-SNAPSHOT.75"
-        const val artifact = "$group:spine-javadoc-filter:$version"
-    }
+    /**
+     * Split tool-base artifacts that share APIs across the compiler's classpath.
+     */
+    val libs = listOf(
+        "code", "kotlin-code", "java-code", "fs", "psi", "psi-java",
+        "plugin-base", "root-gradle-plugins", "gradle-plugin-api", "jvm-tools",
+        "protobuf-setup-plugins", "intellij-platform", "intellij-platform-java"
+    )
+        .map { "${Spine.toolsGroup}:$it:$version" }
 }

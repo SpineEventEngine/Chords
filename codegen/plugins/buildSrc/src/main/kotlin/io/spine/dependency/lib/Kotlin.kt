@@ -35,7 +35,7 @@ object Kotlin {
      * When changing the version, also change the version used in the `buildSrc/build.gradle.kts`.
      */
     @Suppress("MemberVisibilityCanBePrivate") // used directly from the outside.
-    const val version = "2.3.20"
+    const val version = "2.4.10"
 
     /**
      * The version of the JetBrains annotations library, which is a transitive
@@ -58,10 +58,6 @@ object Kotlin {
 
     const val bom    = "${group}:kotlin-bom:${version}"
     const val reflect    = "${group}:kotlin-reflect:${version}"
-    const val testJUnit5 = "${group}:kotlin-test-junit5:${version}"
-
-    const val gradlePluginApi = "${group}:kotlin-gradle-plugin-api:${version}"
-    const val gradlePluginLib = "${group}:kotlin-gradle-plugin:${version}"
 
     const val jetbrainsAnnotations = "org.jetbrains:annotations:${annotationsVersion}"
 }
