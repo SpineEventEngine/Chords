@@ -1,7 +1,7 @@
 ---
 name: codegen-engineer
 description: >
-  Chords code generation policy. Use for the ProtoData codegen plugins project,
+  Chords code generation policy. Use for the Spine Compiler plugins project,
   the codegen runtime library, generated MessageField/MessageOneof/MessageDef
   contracts, plugin-internal Protobuf declarations, codegen correctness tests,
   and codegen Gradle wiring.
@@ -13,7 +13,7 @@ description: >
 
 Use this skill for code generation work:
 
-- ProtoData plugins under `codegen/plugins/` (a separate Gradle project).
+- Spine Compiler plugins under `codegen/plugins/` (a separate Gradle project).
 - Plugin-internal schemas: `codegen/plugins/codegen-plugins/src/main/proto/**`.
 - The codegen runtime under `codegen/runtime/` (Gradle path `:runtime`):
   `MessageField`, `MessageOneof`, `MessageDef`, and related runtime types.
@@ -29,7 +29,7 @@ that merely consume generated metadata, prefer
 
 ## Policy
 
-- `codegen/plugins` targets JDK 17, Gradle 9.4.x, and Kotlin 2.3.20; the root
+- `codegen/plugins` targets JDK 17, Gradle 9.4.x, and Kotlin 2.4.10; the root
   build targets JDK 11 and Gradle 6.9.4, with the Kotlin version split described
   in `.agents/skills/kotlin-engineer/SKILL.md`. Never mix the two toolchains in
   one command or assume APIs from one are available in the other.
@@ -40,7 +40,7 @@ that merely consume generated metadata, prefer
 - Treat `.proto` files under `codegen/tests/src/test/proto/**` as generator
   fixtures. Change them only to express a code-generation scenario; published
   model declarations under `proto-values` belong to `model-engineer`.
-- Keep `codegen/plugins/src/main/resources/codegen-workspace` resources
+- Keep `codegen/plugins/codegen-plugins/src/main/resources/codegen-workspace` resources
   consistent with the build logic that copies `buildSrc` and wrapper files
   into them; that workspace is what the Chords Gradle plugin unpacks in
   consumer projects.
@@ -51,7 +51,7 @@ that merely consume generated metadata, prefer
 
 ## Generation Flow
 
-The separate `codegen/plugins` build produces ProtoData plugins. The root
+The separate `codegen/plugins` build produces Spine Compiler plugins. The root
 `publishCodegenPluginsToMavenLocal` task publishes them to Maven local before
 the `io.spine.chords` Gradle plugin applies them in a generated workspace.
 `modulesWithChordsCodegen` selects the consumers (`proto-values` and

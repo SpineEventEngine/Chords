@@ -29,7 +29,7 @@ Each of these owns its area; this skill stays out of them:
   KDoc style, and the Compose 1.5.12 ceiling.
 - `.agents/skills/model-engineer/SKILL.md` — published model Protobuf
   declarations and Kotlin model extensions under `proto-values`.
-- `.agents/skills/codegen-engineer/SKILL.md` — ProtoData plugins and generated
+- `.agents/skills/codegen-engineer/SKILL.md` — Spine Compiler plugins and generated
   runtime contracts.
 - `.agents/skills/build-engineer/SKILL.md` — Gradle Kotlin DSL, `buildSrc`
   coordinates, and publishing.
@@ -54,7 +54,7 @@ root toolchain covers every module in
 `settings.gradle.kts`: `core`, `proto`, `proto-values`, `client`, `runtime`
 (at `codegen/runtime`), and `codegen-tests` (at `codegen/tests`) — note that
 both `codegen/` subprojects belong to the *root* build. Only
-`codegen/plugins` is separate, using **Kotlin 2.3.20** on JDK 17 (its own
+`codegen/plugins` is separate, using **Kotlin 2.4.10** on JDK 17 (its own
 `kotlinVersion` in `codegen/plugins/buildSrc/build.gradle.kts`).
 
 Everything below about the Kotlin 1.8 language ceiling applies to the root

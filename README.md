@@ -100,7 +100,7 @@ See [codegen/plugins](codegen/plugins/README.md) for more details.
 Besides the modules for each of the library mentioned above, this repo contains
 the following key parts:
 
-- [codegen-plugins](codegen/plugins) — separate Gradle project with ProtoData
+- [codegen-plugins](codegen/plugins) — separate Gradle project with Spine Compiler
   plugins that generate Kotlin extensions for Proto messages.
   
   See [codegen/plugins/README.md](codegen/plugins/README.md) for detail.

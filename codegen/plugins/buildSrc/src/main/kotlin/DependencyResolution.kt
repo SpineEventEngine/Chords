@@ -27,17 +27,17 @@
 import io.spine.dependency.build.CheckerFramework
 import io.spine.dependency.build.ErrorProne
 import io.spine.dependency.build.FindBugs
-import io.spine.dependency.lib.Asm
 import io.spine.dependency.lib.AutoCommon
 import io.spine.dependency.lib.AutoService
 import io.spine.dependency.lib.AutoValue
-import io.spine.dependency.lib.CommonsCli
+import io.spine.dependency.lib.Caffeine
 import io.spine.dependency.lib.CommonsCodec
 import io.spine.dependency.lib.CommonsLogging
 import io.spine.dependency.lib.Grpc
 import io.spine.dependency.lib.Gson
 import io.spine.dependency.lib.Guava
 import io.spine.dependency.lib.J2ObjC
+import io.spine.dependency.lib.JSpecify
 import io.spine.dependency.lib.Jackson
 import io.spine.dependency.lib.JavaDiffUtils
 import io.spine.dependency.lib.Kotlin
@@ -45,16 +45,10 @@ import io.spine.dependency.lib.KotlinPoet
 import io.spine.dependency.lib.KotlinX
 import io.spine.dependency.lib.Protobuf
 import io.spine.dependency.lib.Slf4J
-import io.spine.dependency.test.Hamcrest
-import io.spine.dependency.test.JUnit
-import io.spine.dependency.test.Kotest
-import io.spine.dependency.test.OpenTest4J
-import io.spine.dependency.test.Truth
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ResolutionStrategy
-import org.gradle.kotlin.dsl.exclude
 import org.gradle.kotlin.dsl.invoke
 
 /**
@@ -65,7 +59,7 @@ fun doForceVersions(configurations: ConfigurationContainer) {
     configurations.forceVersions()
 
     val validation = io.spine.dependency.local.Validation
-    val protoData = io.spine.dependency.local.ProtoData
+    val compiler = io.spine.dependency.local.Compiler
     val logging = io.spine.dependency.local.Logging
     val reflect = io.spine.dependency.local.Reflect
     val base = io.spine.dependency.local.Base
@@ -75,24 +69,23 @@ fun doForceVersions(configurations: ConfigurationContainer) {
 
     configurations {
         all {
-            exclude(group = "io.spine", module = "spine-logging-backend")
-
             resolutionStrategy {
+                dependencySubstitution {
+                    substitute(module(compiler.bundledCliModule))
+                        .using(module(compiler.cli))
+                        .because("Keep bundled Spine classes out of the Compiler runtime.")
+                }
                 force(
                     reflect.lib,
                     base.lib,
                     base.annotations,
-                    toolBase.lib,
-                    toolBase.intellijPlatform,
-                    toolBase.intellijPlatformJava,
+                    toolBase.libs,
                     coreJvm.server,
-                    protoData.pluginLib,
+                    compiler.libs,
                     logging.lib,
-                    logging.middleware,
                     time.lib,
-                    toolBase.oldLib,
+                    time.javaExtensions,
                     validation.runtime,
-                    validation.oldRuntime,
                     validation.javaBundle
                 )
             }
@@ -109,7 +102,6 @@ fun NamedDomainObjectContainer<Configuration>.forceVersions() {
             failOnVersionConflict()
             cacheChangingModulesFor(0, "seconds")
             forceProductionDependencies()
-            forceTestDependencies()
             forceTransitiveDependencies()
         }
     }
@@ -137,23 +129,9 @@ private fun ResolutionStrategy.forceProductionDependencies() {
         KotlinX.Coroutines.jvm,
         KotlinX.Coroutines.jdk8,
         KotlinX.Coroutines.bom,
-        KotlinX.Coroutines.slf4j,
         Protobuf.GradlePlugin.lib,
         Protobuf.libs,
         Slf4J.lib
-    )
-}
-
-private fun ResolutionStrategy.forceTestDependencies() {
-    force(
-        Guava.testLib,
-        JUnit.api,
-        JUnit.bom,
-        JUnit.Platform.commons,
-        JUnit.Platform.launcher,
-        JUnit.legacy,
-        Truth.libs,
-        Kotest.assertions,
     )
 }
 
@@ -162,45 +140,23 @@ private fun ResolutionStrategy.forceTestDependencies() {
  */
 private fun ResolutionStrategy.forceTransitiveDependencies() {
     force(
-        Asm.lib,
         AutoValue.annotations,
-        CommonsCli.lib,
+        Caffeine.lib,
         CommonsCodec.lib,
         CommonsLogging.lib,
         Grpc.api,
         Grpc.bom,
         Grpc.stub,
-        Gson.lib,
-        Hamcrest.core,
         J2ObjC.annotations,
-        JUnit.Platform.engine,
-        JUnit.Platform.suiteApi,
-        JUnit.runner,
+        JSpecify.lib,
         Jackson.annotations,
         Jackson.bom,
         Jackson.core,
         Jackson.databind,
-        Jackson.dataformatXml,
         Jackson.dataformatYaml,
         Jackson.moduleKotlin,
+        Jackson.otherModules,
         JavaDiffUtils.lib,
         Kotlin.jetbrainsAnnotations,
-        OpenTest4J.lib,
     )
-}
-
-@Suppress("unused")
-fun NamedDomainObjectContainer<Configuration>.excludeProtobufLite() {
-
-    fun excludeProtoLite(configurationName: String) {
-        named(configurationName).get().exclude(
-            mapOf(
-                "group" to "com.google.protobuf",
-                "module" to "protobuf-lite"
-            )
-        )
-    }
-
-    excludeProtoLite("runtimeOnly")
-    excludeProtoLite("testRuntimeOnly")
 }

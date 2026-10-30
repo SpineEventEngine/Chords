@@ -26,9 +26,9 @@
 
 import io.spine.dependency.local.CoreJvm
 
-// Apply ProtoData directly, without Spine's Model Compiler.
+// Apply Spine Compiler directly, without Spine's Model Compiler.
 plugins {
-    id("io.spine.protodata")
+    id("io.spine.compiler")
 }
 
 /**
@@ -42,9 +42,9 @@ val codegenPluginsArtifact = project.properties["codegenPluginsArtifact"] as Str
 val sourceModuleDir = project.properties["sourceModuleDir"] as String
 
 dependencies {
-    // The generated code relies onto `ValidatingBuilder` from Spine `1.9.x`.
-    implementation(CoreJvm.server_1_9)
-    protoData(codegenPluginsArtifact)
+    // Supplies the Spine Protobuf imports used by consumer schemas.
+    implementation(CoreJvm.server)
+    spineCompiler(codegenPluginsArtifact)
 }
 
 /**
@@ -59,10 +59,11 @@ if (project.hasProperty("dependencyItems")) {
         }
 }
 
-protoData {
-    plugins(
-        "io.spine.chords.codegen.plugins.MessageFieldsPlugin"
-    )
+spine {
+    compiler {
+        subDirs = listOf("java", "kotlin")
+        plugins("io.spine.chords.codegen.plugins.MessageFieldsPlugin")
+    }
 }
 
 /**
@@ -71,10 +72,12 @@ protoData {
  */
 tasks.named("compileKotlin") {
     enabled = false
+    dependsOn("exportMessageDefinitions")
 }
 
 tasks.named("compileTestKotlin") {
     enabled = false
+    dependsOn("exportTestMessageDefinitions")
 }
 
 /**
@@ -130,29 +133,27 @@ tasks.named("generateTestProto") {
 }
 
 /**
- * Copy generated sources back to the source module.
+ * Exports Chords message definitions; consumers generate their own Protobuf Kotlin DSL.
  */
-tasks.named("launchProtoData") {
-    doLast {
-        copy {
-            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-            from("generated/main/kotlin")
-            into("${sourceModuleDir}/generated/main/kotlin")
-        }
+tasks.register<Copy>("exportMessageDefinitions") {
+    dependsOn("launchSpineCompiler")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from("generated/main/kotlin") {
+        include("**/*Def.kt")
     }
+    into("${sourceModuleDir}/generated/main/kotlin")
 }
 
 /**
- * Copy generated test sources back to the source module.
+ * Exports test message definitions without replacing the consumer's Protobuf Kotlin DSL.
  */
-tasks.named("launchTestProtoData") {
-    doLast {
-        copy {
-            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-            from("generated/test/kotlin")
-            into("${sourceModuleDir}/generated/test/kotlin")
-        }
+tasks.register<Copy>("exportTestMessageDefinitions") {
+    dependsOn("launchTestSpineCompiler")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from("generated/test/kotlin") {
+        include("**/*Def.kt")
     }
+    into("${sourceModuleDir}/generated/test/kotlin")
 }
 
 /**

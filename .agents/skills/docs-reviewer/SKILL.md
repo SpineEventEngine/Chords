@@ -71,7 +71,7 @@ because the task asks for a review.
   inline links are acceptable when the surrounding file already uses them.
 - **Terminology is consistent.** Use one term for the same concept within a
   change set: Chords, Compose Multiplatform, Spine Event Engine, Protobuf,
-  ProtoData, codegen plugins, codegen runtime, application shell.
+  Spine Compiler, codegen plugins, codegen runtime, application shell.
 - **No new orphans.** Added or rewritten paragraphs, list items, and table
   cells must not end with a one-word line. Do not require unrelated prose to be
   reflowed solely to repair legacy wrapping.

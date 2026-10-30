@@ -27,40 +27,27 @@
 package io.spine.dependency.local
 
 /**
- * Spine Time library.
- *
- * @see <a href="https://github.com/SpineEventEngine/time">spine-time</a>
+ * Provides time types and their compiler integration.
  */
-@Suppress(
-    "unused" /* Some subprojects do not use all Time artifacts. */,
-    "ConstPropertyName" /* We use custom convention for artifact properties. */,
-    "MemberVisibilityCanBePrivate" /* The properties are used directly by other subprojects. */,
-)
+@Suppress("ConstPropertyName")
 object Time {
-    const val group = Spine.group
-    const val version = "2.0.0-SNAPSHOT.235"
-    private const val infix = "spine-time"
+    /**
+     * Aligns the artifacts used by this build.
+     */
+    private const val version = "2.0.0-SNAPSHOT.253"
 
-    fun lib(version: String): String = "$group:$infix:$version"
-    val lib get() = lib(version)
-    const val libArtifact: String = infix
+    /**
+     * Configures time validation for the internal model.
+     */
+    const val gradlePlugin = "${Spine.toolsGroup}:time-gradle-plugin:$version"
 
-    fun javaExtensions(version: String): String = "$group:$infix-java:$version"
-    val javaExtensions get() = javaExtensions(version)
+    /**
+     * Aligns time types used by the Compiler and its plugins.
+     */
+    const val lib = "${Spine.group}:spine-time:$version"
 
-    fun kotlinExtensions(version: String): String = "$group:$infix-kotlin:$version"
-    val kotlinExtensions get() = kotlinExtensions(version)
-
-    fun testLib(version: String): String = "${Spine.toolsGroup}:time-testlib:$version"
-    val testLib get() = testLib(version)
-
-    val modules: List<String>
-        get() = listOf(
-            lib,
-            javaExtensions,
-            kotlinExtensions,
-            testLib
-        ).map {
-            it.split(":").let { (g, artifact) -> "$g:$artifact" }
-        }
+    /**
+     * Aligns the Java helpers used by generated validation code.
+     */
+    const val javaExtensions = "${Spine.group}:spine-time-java:$version"
 }

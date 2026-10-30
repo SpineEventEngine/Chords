@@ -38,20 +38,12 @@ repositories {
 }
 
 /**
- * The version of Jackson used by `buildSrc`.
- *
- * Please keep this value in sync. with `io.spine.internal.dependency.Jackson.version`.
- * It's not a requirement, but would be good in terms of consistency.
- */
-val jacksonVersion = "2.17.2"
-
-/**
  * The version of the Kotlin Gradle plugin.
  *
  * Please check that this value matches one defined in
  *  [i o.spine.internal.dependency.Kotlin.version].
  */
-val kotlinVersion = "2.3.20"
+val kotlinVersion = "2.4.10"
 
 /**
  * The version of Guava used in `buildSrc`.
@@ -63,8 +55,6 @@ val guavaVersion = "33.5.0-jre"
 
 /**
  * The version of ErrorProne Gradle plugin.
- *
- * Please keep in sync. with [io.spine.dependency.build.ErrorProne.GradlePlugin.version].
  *
  * @see <a href="https://github.com/tbroyer/gradle-errorprone-plugin/releases">
  *     Error Prone Gradle Plugin Releases</a>
@@ -79,7 +69,7 @@ val errorPronePluginVersion = "4.2.0"
  * @see <a href="https://github.com/google/protobuf-gradle-plugin/releases">
  *     Protobuf Gradle Plugins Releases</a>
  */
-val protobufPluginVersion = "0.9.6"
+val protobufPluginVersion = "0.10.0"
 
 /**
  * The version of Detekt Gradle Plugin.
@@ -89,22 +79,9 @@ val protobufPluginVersion = "0.9.6"
 val detektVersion = "2.0.0-alpha.1"
 
 /**
- * @see [io.spine.dependency.test.Kotest]
- */
-val kotestJvmPluginVersion = "0.4.10"
-
-/**
- * @see [io.spine.dependency.test.Kover]
- */
-val koverVersion = "0.9.1"
-
-/**
  * The version of Google Artifact Registry used by `buildSrc`.
  *
  * The version `2.1.5` is the latest before `2.2.0`, which introduces breaking changes.
- *
- * @see <a href="https://mvnrepository.com/artifact/com.google.cloud.artifactregistry/artifactregistry-auth-common">
- *     Google Artifact Registry at Maven</a>
  */
 val googleAuthToolVersion = "2.1.5"
 
@@ -135,9 +112,6 @@ kotlin {
 dependencies {
     dependOnAuthCommon()
 
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
-
     implementation("com.google.guava:guava:$guavaVersion")
     implementation("net.ltgt.gradle:gradle-errorprone-plugin:${errorPronePluginVersion}")
 
@@ -150,9 +124,6 @@ dependencies {
 
     // https://github.com/srikanth-lingala/zip4j
     implementation("net.lingala.zip4j:zip4j:2.10.0")
-
-    implementation("io.kotest:kotest-gradle-plugin:$kotestJvmPluginVersion")
-    implementation("org.jetbrains.kotlinx:kover-gradle-plugin:$koverVersion")
 }
 
 /**
@@ -178,25 +149,5 @@ fun DependencyHandlerScope.dependOnAuthCommon() {
         "com.google.cloud.artifactregistry:artifactregistry-auth-common:$googleAuthToolVersion"
     ) {
         exclude(group = "com.google.guava")
-    }
-}
-
-dependOnBuildSrcJar()
-
-/**
- * Adds a dependency on a `buildSrc.jar`, iff:
- *  1) the `src` folder is missing, and
- *  2) `buildSrc.jar` is present in `buildSrc/` folder instead.
- *
- * This approach is used in the scope of integration testing.
- */
-fun Project.dependOnBuildSrcJar() {
-    val srcFolder = this.rootDir.resolve("src")
-    val buildSrcJar = rootDir.resolve("buildSrc.jar")
-    if (!srcFolder.exists() && buildSrcJar.exists()) {
-        logger.info("Adding the pre-compiled 'buildSrc.jar' to 'implementation' dependencies.")
-        dependencies {
-            implementation(files("buildSrc.jar"))
-        }
     }
 }

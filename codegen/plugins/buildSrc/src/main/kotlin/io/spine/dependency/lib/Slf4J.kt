@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,21 +27,17 @@
 package io.spine.dependency.lib
 
 /**
- * Spine used to log with SLF4J. Now we use Flogger. Whenever a choice comes up, we recommend to
- * use the latter.
- *
- * The primary purpose of having this dependency object is working in combination with
- * [Flogger.Runtime.slf4JBackend].
- *
- * Some third-party libraries may clash with different versions of the library.
- * Thus, we specify this version and force it via [forceVersions].
- * Please see `DependencyResolution.kt` for details.
+ * Aligns the logging API used by transitive Compiler libraries.
  */
-@Suppress("unused", "ConstPropertyName")
+@Suppress("ConstPropertyName")
 object Slf4J {
+    /**
+     * Aligns the artifacts used by this build.
+     */
     private const val version = "2.0.7"
-    const val lib = "org.slf4j:slf4j-api:${version}"
-    const val jdk14 = "org.slf4j:slf4j-jdk14:${version}"
-    const val reload4j = "org.slf4j:slf4j-reload4j:${version}"
-    const val simple = "org.slf4j:slf4j-simple:${version}"
+
+    /**
+     * Pins the shared logging interfaces.
+     */
+    const val lib = "org.slf4j:slf4j-api:$version"
 }

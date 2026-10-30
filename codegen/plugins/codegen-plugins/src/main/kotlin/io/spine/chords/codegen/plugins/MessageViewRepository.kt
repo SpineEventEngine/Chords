@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@
 package io.spine.chords.codegen.plugins
 
 import io.spine.core.EventContext
-import io.spine.protodata.ast.event.TypeDiscovered
-import io.spine.protodata.plugin.ViewRepository
 import io.spine.server.route.EventRoute
 import io.spine.server.route.EventRouting
+import io.spine.tools.compiler.ast.event.TypeDiscovered
+import io.spine.tools.compiler.plugin.ViewRepository
 
 /**
  * The repository for [MessageView].
