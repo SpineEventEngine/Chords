@@ -39,6 +39,7 @@ import io.spine.chords.client.given.ObservedItem
 import io.spine.chords.client.given.command.RenameObservedItem
 import io.spine.chords.client.testing.ConnectionChannel
 import io.spine.chords.client.testing.ObservationChannel
+import io.spine.chords.client.testing.SubscriptionCancellationLog
 import io.spine.client.CompositeEntityStateFilter
 import io.spine.client.CompositeQueryFilter
 import io.spine.client.EntityStateFilter
@@ -236,8 +237,11 @@ internal class DesktopClientSpec {
             source.client.hasRegisteredSubscriptions shouldBe true
             source.cancellationFailure = Status.UNAVAILABLE
 
-            observation.cancel()
-            runCurrent()
+            SubscriptionCancellationLog().use { log ->
+                observation.cancel()
+                runCurrent()
+                log.failures.map { it.status.code } shouldBe listOf(Status.Code.UNAVAILABLE)
+            }
             source.cancelCount shouldBe 1
             source.client.hasRegisteredSubscriptions shouldBe true
             source.client.reconnect()

@@ -125,6 +125,12 @@ its `given/AppWindowSpecEnv.kt` as the flat-suite reference.
 
 ## Deterministic Asynchronous Tests
 
+- Never implement an unstable test. A test that breaks these rules is unstable even when it passes.
+  If stable coverage is impractical, report the gap instead of adding the test.
+- Trigger and complete every event a test waits for: time, scheduling, responses, input, and
+  callbacks. Do not depend on events outside the test's control, such as wall-clock time, thread
+  or process scheduling, a child process exiting, or toolkit or global notifications it does not
+  send. A subprocess used only to isolate global state does not make its integration the subject.
 - Assume CI can be arbitrarily slower than a local run. Establish completion through controlled
   collaborators, explicit completion signals, and test schedulers before asserting results.
 - Do not use sleeps, polling deadlines, or fixed frame counts to make asynchronous work finish.

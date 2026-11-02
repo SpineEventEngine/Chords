@@ -106,6 +106,10 @@ duplicate its steps.
 - Missing or weak tests for changed logic, extensions, or codegen behavior.
   Test and test-support naming, structure, and package placement follow
   `.agents/skills/kotlin-jvm-tester/SKILL.md`.
+- Tests that depend on a timeout or on an event the test does not control, under the
+  [asynchronous test rules](../kotlin-jvm-tester/SKILL.md#deterministic-asynchronous-tests).
+  Judge stability from what each test controls; passing or repeated runs do not prove it. Report
+  an added or changed unstable test as Must fix.
 - Version-policy misses: apply
   [Versioning and Reports](../build-engineer/SKILL.md#versioning-and-reports)
   to the increment and generated reports.
