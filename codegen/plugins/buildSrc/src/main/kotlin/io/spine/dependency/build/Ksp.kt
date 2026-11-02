@@ -27,30 +27,17 @@
 package io.spine.dependency.build
 
 /**
- * Kotlin Symbol Processing API.
- *
- * @see <a href="https://github.com/google/ksp">KSP GitHub repository</a>
+ * Loads Kotlin symbol processing for the internal model.
  */
-@Suppress("unused")
+@Suppress("ConstPropertyName")
 object Ksp {
-    const val version = "2.3.6"
-    const val dogfoodingVersion = version
-    const val group = "com.google.devtools.ksp"
+    /**
+     * Aligns the artifacts used by this build.
+     */
+    private const val version = "2.3.12"
 
-    const val id = "com.google.devtools.ksp"
-    const val gradlePluginArtifactName = "com.google.devtools.ksp.gradle.plugin"
-
-    const val symbolProcessingApi = "$group:symbol-processing-api"
-    const val symbolProcessing = "$group:symbol-processing"
-    const val symbolProcessingAaEmb = "$group:symbol-processing-aa-embeddable"
-    const val symbolProcessingCommonDeps = "$group:symbol-processing-common-deps"
-    const val gradlePlugin = "$group:symbol-processing-gradle-plugin"
-
-    val modules = listOf(
-        symbolProcessingApi,
-        symbolProcessing,
-        symbolProcessingAaEmb,
-        symbolProcessingCommonDeps,
-        gradlePlugin,
-    )
+    /**
+     * Provides the Gradle plugin required by the Core JVM compiler.
+     */
+    const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
 }

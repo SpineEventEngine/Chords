@@ -46,7 +46,11 @@ buildscript {
     doForceVersions(configurations)
 
     dependencies {
-        classpath(io.spine.dependency.local.McJava.pluginLib)
+        classpath(io.spine.dependency.local.Compiler.pluginLib)
+        classpath(io.spine.dependency.local.CoreJvmCompiler.gradlePlugin)
+        classpath(io.spine.dependency.local.Validation.gradlePluginLib)
+        classpath(io.spine.dependency.local.Time.gradlePlugin)
+        classpath(io.spine.dependency.build.Ksp.gradlePlugin)
     }
 }
 
@@ -55,7 +59,6 @@ plugins {
     id("net.ltgt.errorprone")
     id("detekt-code-analysis")
     id("com.google.protobuf")
-    id("io.spine.protodata") version "0.96.4"
     idea
 }
 
@@ -79,11 +82,12 @@ subprojects {
         plugin("detekt-code-analysis")
         plugin("com.google.protobuf")
         plugin("idea")
-        plugin("io.spine.mc-java")
+        plugin("io.spine.core-jvm")
     }
 
     dependencies {
-        Protobuf.libs.forEach { implementation(it) }
+        implementation(Protobuf.java)
+        implementation(Protobuf.kotlin)
 
         ErrorProne.apply {
             errorprone(core)

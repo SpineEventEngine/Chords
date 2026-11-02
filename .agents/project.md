@@ -53,7 +53,7 @@ and GitHub Packages.
   `MessageDef` implementations.
 - `codegen/tests/` (Gradle path `:codegen-tests`): tests that check the
   correctness of code generation; uses Chords code generation.
-- `codegen/plugins/`: **separate Gradle project** with ProtoData plugins that
+- `codegen/plugins/`: **separate Gradle project** with Spine Compiler plugins that
   generate Kotlin extensions for Protobuf messages. It uses a different
   toolchain from the root build; see [Build Engineering](skills/build-engineer/SKILL.md).
   It is applied to consuming projects through the
@@ -108,7 +108,7 @@ Gradle dependency chain and its configuration.
 | `proto-values/README.md` | Supplementary Protobuf messages and extensions |
 | `client/README.md` | Server connectivity facilities |
 | `codegen/runtime/README.md` | Codegen runtime ownership |
-| `codegen/plugins/README.md` | ProtoData plugin project, requirements, and layout |
+| `codegen/plugins/README.md` | Spine Compiler plugin project, requirements, and layout |
 | `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` | Contribution policy, distributed by `config/pull` |
 
 Keep usage instructions in the nearest library README and API contracts in

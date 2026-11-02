@@ -24,20 +24,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-@file:Suppress("UnusedReceiverParameter", "unused", "TopLevelPropertyNaming", "ObjectPropertyName")
-
-import io.spine.dependency.build.ErrorProne
-import io.spine.dependency.build.Ksp
-import io.spine.dependency.lib.Protobuf
-import io.spine.dependency.local.McJava
-import io.spine.dependency.local.ProtoData
-import io.spine.dependency.test.Kotest
 import io.spine.gradle.standardToSpineSdk
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.kotlin.dsl.ScriptHandlerScope
-import org.gradle.plugin.use.PluginDependenciesSpec
-import org.gradle.plugin.use.PluginDependencySpec
 
 /**
  * Applies [standard][standardToSpineSdk] repositories to this `buildscript`.
@@ -47,91 +37,12 @@ fun ScriptHandlerScope.standardSpineSdkRepositories() {
 }
 
 /**
- * Provides shortcuts to reference our dependency objects.
- *
- * Dependency objects cannot be used under `plugins` section because `io` is a value
- * declared in auto-generated `org.gradle.kotlin.dsl.PluginAccessors.kt` file.
- * It conflicts with our own declarations.
- *
- * In such cases, a shortcut to apply a plugin can be created:
- *
- * ```
- * val PluginDependenciesSpec.`gradle-doctor`: PluginDependencySpec
- *     get() = id(GradleDoctor.pluginId).version(GradleDoctor.version)
- * ```
- *
- * But for some plugins, it's impossible to apply them directly to a project.
- * For example, when a plugin is not published to Gradle Portal, it can only be
- * applied with the buildscript's classpath. Thus, it's needed to leave some freedom
- * upon how to apply them. In such cases, just a shortcut to a dependency object
- * can be declared without applying the plugin in-place.
- */
-private const val ABOUT_DEPENDENCY_EXTENSIONS = ""
-
-/**
- * Shortcut to [McJava] dependency object.
- *
- * This plugin is not published to Gradle Portal and cannot be applied directly to a project.
- * Firstly, it should be put to buildscript's classpath and then applied by ID only.
- */
-val PluginDependenciesSpec.mcJava: McJava
-    get() = McJava
-
-/**
- * Shortcut to [ProtoData] dependency object.
- *
- * This plugin is published at Gradle Portal. But when used in a pair with [mcJava],
- * it cannot be applied directly to a project.
- * It is so, because [mcJava] uses [protoData] as its dependency.
- * And buildscript's classpath ends up with both of them.
- */
-val PluginDependenciesSpec.protoData: ProtoData
-    get() = ProtoData
-
-/**
- * Provides shortcuts for applying plugins from our dependency objects.
- *
- * Dependency objects cannot be used under `plugins` section because `io` is a value
- * declared in auto-generated `org.gradle.kotlin.dsl.PluginAccessors.kt` file.
- * It conflicts with our own declarations.
- *
- * Declaring of top-level shortcuts eliminates the need in applying plugins
- * using fully qualified name of dependency objects.
- *
- * It is still possible to apply a plugin with a custom version, if needed.
- * Just declare a version again on the returned [PluginDependencySpec].
- *
- * For example:
- *
- * ```
- * plugins {
- *     protobuf version("0.8.19-custom")
- * }
- * ```
- */
-private const val ABOUT_PLUGIN_ACCESSORS = ""
-
-val PluginDependenciesSpec.errorprone: PluginDependencySpec
-    get() = id(ErrorProne.GradlePlugin.id)
-
-val PluginDependenciesSpec.protobuf: PluginDependencySpec
-    get() = id(Protobuf.GradlePlugin.id)
-
-val PluginDependenciesSpec.kotest: PluginDependencySpec
-    get() = Kotest.MultiplatformGradlePlugin.let {
-        return id(it.id).version(it.version)
-    }
-
-val PluginDependenciesSpec.ksp: PluginDependencySpec
-    get() = id(Ksp.id).version(Ksp.version)
-
-/**
  * Configures the dependencies between third-party Gradle tasks
- * and those defined via ProtoData and Spine Model Compiler.
+ * and those defined by the Spine Compiler.
  *
  * It is required to avoid warnings in build logs, detecting the undeclared
  * usage of Spine-specific task output by other tasks,
- * e.g., the output of `launchProtoData` is used by `compileKotlin`.
+ * e.g., the output of `launchSpineCompiler` is used by `compileKotlin`.
  */
 @Suppress("unused")
 fun Project.configureTaskDependencies() {
@@ -155,15 +66,15 @@ fun Project.configureTaskDependencies() {
     }
 
     afterEvaluate {
-        val launchProtoData = "launchProtoData"
-        val launchTestProtoData = "launchTestProtoData"
+        val launchSpineCompiler = "launchSpineCompiler"
+        val launchTestSpineCompiler = "launchTestSpineCompiler"
         val generateProto = "generateProto"
         val createVersionFile = "createVersionFile"
-        "compileKotlin".dependOn(launchProtoData)
-        "compileTestKotlin".dependOn(launchTestProtoData)
+        "compileKotlin".dependOn(launchSpineCompiler)
+        "compileTestKotlin".dependOn(launchTestSpineCompiler)
         val sourcesJar = "sourcesJar"
         sourcesJar.dependOn(generateProto)
-        sourcesJar.dependOn(launchProtoData)
+        sourcesJar.dependOn(launchSpineCompiler)
         sourcesJar.dependOn(createVersionFile)
         sourcesJar.dependOn("prepareProtocConfigVersions")
     }

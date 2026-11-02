@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,20 +27,22 @@
 package io.spine.dependency.local
 
 /**
- * Spine Base module.
- *
- * @see <a href="https://github.com/SpineEventEngine/base-libraries">spine-base-libraries</a>
+ * Pins the base APIs shared by Compiler plugins.
  */
-@Suppress("ConstPropertyName", "unused")
+@Suppress("ConstPropertyName")
 object Base {
-    const val version = "2.0.0-SNAPSHOT.387"
-    const val versionForBuildScript = "2.0.0-SNAPSHOT.387"
-    const val group = Spine.group
-    private const val prefix = "spine"
-    const val libModule = "$prefix-base"
-    const val lib = "$group:$libModule:$version"
-    const val libForBuildScript = "$group:$libModule:$versionForBuildScript"
-    const val annotations = "$group:$prefix-annotations:$version"
-    const val environment = "$group:$prefix-environment:$version"
-    const val format = "$group:$prefix-format:$version"
+    /**
+     * Aligns the artifacts used by this build.
+     */
+    private const val version = "2.0.0-SNAPSHOT.462"
+
+    /**
+     * Provides message types and Protobuf utilities.
+     */
+    const val lib = "${Spine.group}:spine-base:$version"
+
+    /**
+     * Keeps annotations compatible with the base APIs.
+     */
+    const val annotations = "${Spine.group}:spine-annotations:$version"
 }

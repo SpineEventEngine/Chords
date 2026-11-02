@@ -14,7 +14,7 @@ review also uses `kotlin-engineer` with the area skill.
   `core`, `proto`, and `client`, including the shell, forms, and server-backed UI.
 - `model-engineer`: change published model Protobuf declarations and Kotlin
   extensions in `proto-values`; `.proto` edits require `AGENTS.md` authorization.
-- `codegen-engineer`: implement ProtoData codegen plugins, the codegen runtime,
+- `codegen-engineer`: implement Spine Compiler plugins, the codegen runtime,
   their generated contracts, internal schemas, and correctness tests.
 - `build-engineer`: change root and `codegen/plugins` Gradle builds, `buildSrc`
   dependencies, publishing, versions, and generated reports.

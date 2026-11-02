@@ -35,10 +35,10 @@ import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageOneof
-import io.spine.protodata.ast.Field
-import io.spine.protodata.ast.TypeName
-import io.spine.protodata.type.TypeSystem
 import io.spine.string.camelCase
+import io.spine.tools.compiler.ast.Field
+import io.spine.tools.compiler.ast.TypeName
+import io.spine.tools.compiler.type.TypeSystem
 import javax.annotation.Generated
 
 /**

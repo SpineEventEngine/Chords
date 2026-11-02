@@ -31,24 +31,24 @@ import com.squareup.kotlinpoet.FileSpec
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageOneof
-import io.spine.protodata.ast.Field
-import io.spine.protodata.ast.TypeName
-import io.spine.protodata.java.javaPackage
-import io.spine.protodata.render.Renderer
-import io.spine.protodata.render.SourceFileSet
-import io.spine.protodata.type.TypeSystem
 import io.spine.string.Indent
 import io.spine.tools.code.Kotlin
+import io.spine.tools.compiler.ast.Field
+import io.spine.tools.compiler.ast.TypeName
+import io.spine.tools.compiler.jvm.javaPackage
+import io.spine.tools.compiler.render.Renderer
+import io.spine.tools.compiler.render.SourceFileSet
+import io.spine.tools.compiler.type.TypeSystem
 import java.nio.file.Path
 
 /**
- * ProtoData [Renderer] that generates [MessageDef], [MessageField],
+ * Spine Compiler [Renderer] that generates [MessageDef], [MessageField],
  * and [MessageOneof] implementations for Proto messages.
  *
  * The renderer prepares all the required data for code generation
  * and runs [MessageDefFileGenerator] to generate Kotlin files.
  */
-public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin.lang()) {
+public class MessageFieldsRenderer : Renderer<Kotlin>(Kotlin) {
 
     private companion object {
         private const val KOTLIN_SOURCE_ROOT = "kotlin"

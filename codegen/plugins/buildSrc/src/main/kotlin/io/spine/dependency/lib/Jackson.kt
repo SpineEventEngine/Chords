@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ package io.spine.dependency.lib
 // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
 @Suppress("unused", "ConstPropertyName")
 object Jackson {
-    const val version = "2.15.2"
-    private const val databindVersion = "2.15.2"
+    const val version = "2.22.3"
+    private const val databindVersion = "2.22.3"
 
     private const val coreGroup = "com.fasterxml.jackson.core"
     private const val dataformatGroup = "com.fasterxml.jackson.dataformat"
@@ -41,15 +41,23 @@ object Jackson {
     // https://github.com/FasterXML/jackson-databind
     const val databind = "$coreGroup:jackson-databind:${databindVersion}"
     // https://github.com/FasterXML/jackson-annotations
-    const val annotations = "$coreGroup:jackson-annotations:${version}"
+    const val annotations = "$coreGroup:jackson-annotations:2.22"
 
-    // https://github.com/FasterXML/jackson-dataformat-xml/releases
-    const val dataformatXml = "$dataformatGroup:jackson-dataformat-xml:${version}"
     // https://github.com/FasterXML/jackson-dataformats-text/releases
     const val dataformatYaml = "$dataformatGroup:jackson-dataformat-yaml:${version}"
 
     // https://github.com/FasterXML/jackson-module-kotlin/releases
     const val moduleKotlin = "$moduleGroup:jackson-module-kotlin:${version}"
+
+    /**
+     * Jackson 2 modules used by the Java formatter and IntelliJ dependencies.
+     */
+    val otherModules = listOf(
+        "com.fasterxml.jackson.datatype:jackson-datatype-guava:$version",
+        "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$version",
+        "$moduleGroup:jackson-module-parameter-names:$version",
+        "com.fasterxml.jackson.jr:jackson-jr-objects:$version"
+    )
 
     // https://github.com/FasterXML/jackson-bom
     const val bom = "com.fasterxml.jackson:jackson-bom:${version}"

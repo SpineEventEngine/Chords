@@ -26,26 +26,28 @@
 
 package io.spine.dependency.lib
 
-// https://github.com/grpc/grpc-java
-@Suppress("unused", "ConstPropertyName")
+/**
+ * Aligns gRPC APIs used by the Spine event engine.
+ */
+@Suppress("ConstPropertyName")
 object Grpc {
-    @Suppress("MemberVisibilityCanBePrivate")
-    const val version        = "1.76.0"
-    const val api            = "io.grpc:grpc-api:${version}"
-    const val auth           = "io.grpc:grpc-auth:${version}"
-    const val bom           = "io.grpc:grpc-bom:${version}"
-    const val core           = "io.grpc:grpc-core:${version}"
-    const val context        = "io.grpc:grpc-context:${version}"
-    const val inProcess      = "io.grpc:grpc-inprocess:${version}"
-    const val stub           = "io.grpc:grpc-stub:${version}"
-    const val okHttp         = "io.grpc:grpc-okhttp:${version}"
-    const val protobuf       = "io.grpc:grpc-protobuf:${version}"
-    const val protobufLite   = "io.grpc:grpc-protobuf-lite:${version}"
-    const val netty          = "io.grpc:grpc-netty:${version}"
-    const val nettyShaded    = "io.grpc:grpc-netty-shaded:${version}"
+    /**
+     * Aligns the artifacts used by this build.
+     */
+    private const val version = "1.76.0"
 
-    object ProtocPlugin {
-        const val id = "grpc"
-        const val artifact = "io.grpc:protoc-gen-grpc-java:${version}"
-    }
+    /**
+     * Pins the shared gRPC interfaces.
+     */
+    const val api = "io.grpc:grpc-api:$version"
+
+    /**
+     * Aligns transitive gRPC modules.
+     */
+    const val bom = "io.grpc:grpc-bom:$version"
+
+    /**
+     * Pins client and server stub support.
+     */
+    const val stub = "io.grpc:grpc-stub:$version"
 }

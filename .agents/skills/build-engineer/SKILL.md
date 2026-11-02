@@ -29,7 +29,7 @@ For `.github/workflows` YAML, use `.agents/skills/ci-engineer/SKILL.md`.
 
 - Two toolchains coexist: the root project uses JDK 11 / Gradle 6.9.4 and the
   compiler/library version split documented in `kotlin-engineer`;
-  `codegen/plugins` uses JDK 17 / Gradle 9.4.x / Kotlin 2.3.20. Keep build
+  `codegen/plugins` uses JDK 17 / Gradle 9.4.x / Kotlin 2.4.10. Keep build
   logic compatible with the owning toolchain.
 - Dependency coordinates belong in
   `buildSrc/src/main/kotlin/io/spine/internal/dependency/`, one object per

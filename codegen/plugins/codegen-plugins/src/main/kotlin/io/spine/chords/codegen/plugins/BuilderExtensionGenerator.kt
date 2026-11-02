@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@ import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageDef
-import io.spine.protodata.ast.TypeName
-import io.spine.protodata.type.TypeSystem
+import io.spine.tools.compiler.ast.TypeName
+import io.spine.tools.compiler.type.TypeSystem
 
 /**
  * Implementation of [FileFragmentGenerator] that generates extension

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,12 @@
 
 package io.spine.dependency.lib
 
-// https://asm.ow2.io/
-@Suppress("unused", "ConstPropertyName")
-object Asm {
-    private const val version = "9.2"
-    const val lib = "org.ow2.asm:asm:$version"
+/**
+ * Nullability annotations used by Spine 2 APIs.
+ */
+object JSpecify {
+    /**
+     * Aligns transitive requests with the Compiler runtime.
+     */
+    const val lib = "org.jspecify:jspecify:1.0.1"
 }

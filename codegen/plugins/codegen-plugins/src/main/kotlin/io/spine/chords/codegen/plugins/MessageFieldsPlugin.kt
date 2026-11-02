@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,10 @@ package io.spine.chords.codegen.plugins
 import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageOneof
-import io.spine.protodata.plugin.Plugin
+import io.spine.tools.compiler.plugin.Plugin
 
 /**
- * The ProtoData [Plugin] that generates [MessageDef], [MessageField],
+ * The Spine Compiler [Plugin] that generates [MessageDef], [MessageField],
  * and [MessageOneof] implementations for Proto messages.
  *
  * See the [MessageFieldsRenderer] for detail on code generation.

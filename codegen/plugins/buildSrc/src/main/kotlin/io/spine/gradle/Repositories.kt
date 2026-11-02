@@ -237,10 +237,10 @@ val RepositoryHandler.jetBrainsCacheRedirector: MavenArtifactRepository
  */
 fun RepositoryHandler.standardToSpineSdk() {
     val spineRepos = listOf(
-        Repos.spine,
-        Repos.spineSnapshots,
         Repos.artifactRegistry,
-        Repos.artifactRegistrySnapshots
+        Repos.artifactRegistrySnapshots,
+        Repos.spine,
+        Repos.spineSnapshots
     )
 
     spineRepos

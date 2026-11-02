@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,13 @@ object KotlinX {
     object Coroutines {
 
         // https://github.com/Kotlin/kotlinx.coroutines
-        const val version = "1.7.3"
+        /**
+         * Matches the Compiler runtime so coroutine calls link during generation.
+         */
+        const val version = "1.11.0"
         const val core = "$group:kotlinx-coroutines-core:$version"
         const val jvm = "$group:kotlinx-coroutines-core-jvm:$version"
         const val jdk8 = "$group:kotlinx-coroutines-jdk8:$version"
         const val bom = "$group:kotlinx-coroutines-bom:$version"
-        const val slf4j = "$group:kotlinx-coroutines-slf4j:$version"
     }
 }

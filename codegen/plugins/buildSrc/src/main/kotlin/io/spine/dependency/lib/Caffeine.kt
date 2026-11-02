@@ -24,28 +24,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.google.protobuf;
+package io.spine.dependency.lib
 
 /**
- * Compatibility shim for protobuf-generated classes compiled against an older
- * protobuf Java runtime.
- *
- * <p>Some transitive Spine artifacts on this module's compile classpath still
- * contain generated classes such as {@code io.spine.option.OptionsProto} that
- * extend {@code com.google.protobuf.GeneratedFile}. That base class existed in
- * older protobuf Java runtimes, but it is no longer present in protobuf 4.x,
- * which this module uses.
- *
- * <p>As a result, javac fails while resolving those generated Spine classes,
- * even though they do not rely on any behavior from {@code GeneratedFile}
- * itself. In practice, it is only a marker superclass in this build.
- *
- * <p>This shim keeps the compile classpath compatible until the upstream Spine
- * artifacts are regenerated against a protobuf runtime that no longer emits
- * references to {@code GeneratedFile}. Once those dependencies are updated,
- * this class should be removed.
+ * Cache runtime required by the Compiler type system.
  */
-public abstract class GeneratedFile {
-    protected GeneratedFile() {
-    }
+object Caffeine {
+    /**
+     * Aligns transitive requests with the Compiler runtime.
+     */
+    const val lib = "com.github.ben-manes.caffeine:caffeine:3.2.4"
 }

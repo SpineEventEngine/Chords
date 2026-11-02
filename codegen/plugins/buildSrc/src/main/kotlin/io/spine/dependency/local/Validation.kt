@@ -27,46 +27,27 @@
 package io.spine.dependency.local
 
 /**
- * Dependencies on Spine Validation SDK.
- *
- * See [`SpineEventEngine/validation`](https://github.com/SpineEventEngine/validation/).
+ * Provides validation generation and its runtime.
  */
-@Suppress("ConstPropertyName", "unused")
+@Suppress("ConstPropertyName")
 object Validation {
     /**
-     * The version of the Validation library artifacts.
+     * Aligns the artifacts used by this build.
      */
-    const val version = "2.0.0-SNAPSHOT.409"
+    private const val version = "2.0.0-SNAPSHOT.469"
 
     /**
-     * The last version of Validation compatible with ProtoData.
+     * Configures validation generation for the internal model.
      */
-    const val pdCompatibleVersion = "2.0.0-SNAPSHOT.342"
+    const val gradlePluginLib = "${Spine.toolsGroup}:validation-gradle-plugin:$version"
 
-    const val group = Spine.toolsGroup
-    private const val prefix = "validation"
+    /**
+     * Runs validation in the internal model and Compiler APIs.
+     */
+    const val runtime = "${Spine.group}:spine-validation-jvm-runtime:$version"
 
-    const val gradlePluginLib = "$group:$prefix-gradle-plugin:$version"
-
-    const val runtimeModule = "${Spine.group}:spine-$prefix-jvm-runtime"
-
-    fun runtime(version: String) = "$runtimeModule:$version"
-    val runtime = runtime(version)
-
-    @Deprecated("Use `runtime` instead.", ReplaceWith("runtime"))
-    const val oldRuntime = "io.spine.validation:spine-validation-java-runtime:2.0.0-SNAPSHOT.354"
-
-    const val javaModule = "$group:$prefix-java"
-    const val java = "$javaModule:$version"
-    const val javaBundleModule = "$group:$prefix-java-bundle"
-
-    /** Obtains the artifact for the `java-bundle` artifact of the given version. */
-    fun javaBundle(version: String) = "$javaBundleModule:$version"
-
-    val javaBundle = javaBundle(version)
-
-    const val model = "$group:$prefix-model:$version"
-
-    const val configModule = "$group:$prefix-configuration"
-    const val context = "$group:$prefix-context:$version"
+    /**
+     * Provides the validation generator loaded by the Compiler.
+     */
+    const val javaBundle = "${Spine.toolsGroup}:validation-java-bundle:$version"
 }

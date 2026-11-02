@@ -26,13 +26,13 @@
 
 import io.spine.dependency.lib.KotlinPoet
 import io.spine.dependency.local.Chords
-import io.spine.dependency.local.ProtoData
+import io.spine.dependency.local.Compiler
 
 dependencies {
-    // To use ProtoData API in code generation plugin.
-    implementation(ProtoData.backend)
+    // To use Spine Compiler API in code generation plugin.
+    implementation(Compiler.api)
     // To use `PrimitiveType` extensions.
-    implementation(ProtoData.java)
+    implementation(Compiler.jvm)
     // To generate Kotlin sources.
     implementation(KotlinPoet.lib)
     // To use `spine-chords-runtime` published to Maven local.
@@ -64,6 +64,7 @@ val copyWorkspaceResources = tasks.register("copyWorkspaceResources") {
                 )
                 exclude(
                     "buildSrc/.gradle",
+                    "buildSrc/.kotlin",
                     "buildSrc/build",
                     "buildSrc/aus.weis"
                 )
@@ -73,8 +74,11 @@ val copyWorkspaceResources = tasks.register("copyWorkspaceResources") {
     }
 }
 
-tasks.named("compileKotlin") {
+tasks.matching { it.name == "processResources" || it.name == "sourcesJar" }.configureEach {
     dependsOn(copyWorkspaceResources)
+}
+
+tasks.named("compileKotlin") {
     dependsOn("kspKotlin")
 }
 
@@ -83,11 +87,11 @@ tasks.named("compileTestKotlin") {
 }
 
 tasks.matching { it.name == "kspKotlin" }.configureEach {
-    dependsOn("launchProtoData")
+    dependsOn("launchSpineCompiler")
 }
 
 tasks.matching { it.name == "kspTestKotlin" }.configureEach {
-    dependsOn("launchTestProtoData")
+    dependsOn("launchTestSpineCompiler")
 }
 
 /**
@@ -101,6 +105,10 @@ val cleanWorkspaceResources = tasks.register("cleanWorkspaceResources") {
         delete("$workspaceDir/gradlew.bat")
         delete("$workspaceDir/gradle.properties")
     }
+}
+
+copyWorkspaceResources.configure {
+    dependsOn(cleanWorkspaceResources)
 }
 
 tasks.named("clean") {

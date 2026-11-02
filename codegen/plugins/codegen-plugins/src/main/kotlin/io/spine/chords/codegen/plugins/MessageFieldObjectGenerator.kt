@@ -40,30 +40,30 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageField
 import io.spine.protobuf.AnyPacker.unpack
-import io.spine.protodata.ast.Field
-import io.spine.protodata.ast.FieldType
-import io.spine.protodata.ast.FieldType.KindCase.ENUMERATION
-import io.spine.protodata.ast.FieldType.KindCase.LIST
-import io.spine.protodata.ast.FieldType.KindCase.MAP
-import io.spine.protodata.ast.FieldType.KindCase.MESSAGE
-import io.spine.protodata.ast.FieldType.KindCase.PRIMITIVE
-import io.spine.protodata.ast.Type
-import io.spine.protodata.ast.TypeName
-import io.spine.protodata.ast.isSingular
-import io.spine.protodata.ast.toType
-import io.spine.protodata.ast.typeName
-import io.spine.protodata.java.getterName
-import io.spine.protodata.java.javaPackage
-import io.spine.protodata.java.primarySetterName
-import io.spine.protodata.java.primitiveClass
-import io.spine.protodata.type.TypeSystem
-import io.spine.protodata.type.findHeader
 import io.spine.string.camelCase
+import io.spine.tools.compiler.ast.Field
+import io.spine.tools.compiler.ast.FieldType
+import io.spine.tools.compiler.ast.FieldType.KindCase.ENUMERATION
+import io.spine.tools.compiler.ast.FieldType.KindCase.LIST
+import io.spine.tools.compiler.ast.FieldType.KindCase.MAP
+import io.spine.tools.compiler.ast.FieldType.KindCase.MESSAGE
+import io.spine.tools.compiler.ast.FieldType.KindCase.PRIMITIVE
+import io.spine.tools.compiler.ast.Type
+import io.spine.tools.compiler.ast.TypeName
+import io.spine.tools.compiler.ast.isSingular
+import io.spine.tools.compiler.ast.toType
+import io.spine.tools.compiler.ast.typeName
+import io.spine.tools.compiler.jvm.getterName
+import io.spine.tools.compiler.jvm.javaPackage
+import io.spine.tools.compiler.jvm.primarySetterName
+import io.spine.tools.compiler.jvm.primitiveClass
+import io.spine.tools.compiler.type.TypeSystem
+import io.spine.tools.compiler.type.findHeader
 
 /**
  * Package and class name of the `io.spine.protobuf.ValidatingBuilder`.
  *
- * It is not in the classpath of this ProtoData plugin and cannot be used directly.
+ * It is not in the classpath of this Spine Compiler plugin and cannot be used directly.
  */
 private object ValidatingBuilder {
     const val PACKAGE = "io.spine.protobuf"

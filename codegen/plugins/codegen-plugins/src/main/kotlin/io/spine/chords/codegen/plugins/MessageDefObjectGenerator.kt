@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,10 +40,10 @@ import io.spine.chords.runtime.MessageDef
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
-import io.spine.protodata.ast.Field
-import io.spine.protodata.ast.TypeName
-import io.spine.protodata.ast.isPartOfOneof
-import io.spine.protodata.type.TypeSystem
+import io.spine.tools.compiler.ast.Field
+import io.spine.tools.compiler.ast.TypeName
+import io.spine.tools.compiler.ast.isPartOfOneof
+import io.spine.tools.compiler.type.TypeSystem
 import java.lang.System.lineSeparator
 
 /**

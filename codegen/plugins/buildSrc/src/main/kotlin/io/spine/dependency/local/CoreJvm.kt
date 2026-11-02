@@ -27,29 +27,17 @@
 package io.spine.dependency.local
 
 /**
- * Dependencies on `core-jvm` modules.
- *
- * See [`SpineEventEngine/core-jvm`](https://github.com/SpineEventEngine/core-jvm/).
+ * Pins the event engine used to run Compiler plugins.
  */
-@Suppress("ConstPropertyName", "unused")
+@Suppress("ConstPropertyName")
 object CoreJvm {
-    const val group = Spine.group
-    const val version = "2.0.0-SNAPSHOT.400"
+    /**
+     * Aligns the artifacts used by this build.
+     */
+    private const val version = "2.0.0-SNAPSHOT.611"
 
-    const val coreArtifact = "spine-core"
-    const val clientArtifact = "spine-client"
-    const val serverArtifact = "spine-server"
-
-    const val core = "$group:$coreArtifact:$version"
-    const val client = "$group:$clientArtifact:$version"
-    const val server = "$group:$serverArtifact:$version"
-
-    const val server_1_9 = "$group:$serverArtifact:1.9.0"
-
-    @Deprecated("Use `serverTestLib` instead.", ReplaceWith("serverTestLib"))
-    const val testUtilServer = "${Spine.toolsGroup}:spine-server-testlib:$version"
-
-    const val coreTestLib = "${Spine.toolsGroup}:spine-core-testlib:$version"
-    const val clientTestLib = "${Spine.toolsGroup}:spine-client-testlib:$version"
-    const val serverTestLib = "${Spine.toolsGroup}:spine-server-testlib:$version"
+    /**
+     * Provides the views and event routing used during generation.
+     */
+    const val server = "${Spine.group}:spine-server:$version"
 }
