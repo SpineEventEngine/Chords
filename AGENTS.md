@@ -149,7 +149,8 @@ for titles, descriptions, resolved-issue links, and stacked-review notes.
 
 ## Verification and Quality
 
-Tests must remain reliable on slow CI runners. Follow the
+Never implement an unstable test. Tests must remain reliable on slow CI runners:
+a test may depend only on events it controls and never on a timeout. Follow the
 [asynchronous test rules](.agents/skills/kotlin-jvm-tester/SKILL.md#deterministic-asynchronous-tests);
 timeouts and retries are not synchronization or fixes for unstable tests.
 
