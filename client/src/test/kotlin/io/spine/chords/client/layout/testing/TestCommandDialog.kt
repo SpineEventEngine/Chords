@@ -31,7 +31,7 @@ import io.spine.base.CommandMessage
 import io.spine.chords.client.layout.CommandDialog
 import io.spine.chords.client.layout.ModalCommandConsequencesScope
 import io.spine.chords.proto.form.FormPartScope
-import io.spine.protobuf.ValidatingBuilder
+import io.spine.validation.ValidatingBuilder
 
 /**
  * Exposes submission eligibility without rendering a form or posting commands.

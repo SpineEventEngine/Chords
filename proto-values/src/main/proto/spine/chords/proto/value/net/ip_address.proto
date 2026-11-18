@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 TeamDev. All rights reserved.
+ * Copyright (c) 2026 TeamDev. All rights reserved.
  * TeamDev PROPRIETARY and CONFIDENTIAL.
  * Use is subject to license terms.
  */
@@ -19,7 +19,7 @@ import "spine/options.proto";
 // (IPv4, or IPv6).
 message IpAddress {
   oneof value {
-    option (is_required) = true;
+    option (choice).required = true;
 
     Ipv4Address ipv4 = 1;
     Ipv6Address ipv6 = 2;

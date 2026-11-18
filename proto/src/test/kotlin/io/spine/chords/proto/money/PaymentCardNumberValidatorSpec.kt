@@ -48,7 +48,7 @@ internal class PaymentCardNumberValidatorSpec {
     fun `accept supported card numbers with a valid checksum`(number: String) {
         val card = PaymentCardNumber.newBuilder()
             .setValue(number)
-            .vBuild()
+            .build()
 
         val feedback = PaymentCardNumberValidator.validate(card)
 
@@ -64,7 +64,7 @@ internal class PaymentCardNumberValidatorSpec {
         val incorrectCheckDigit = (number.last() - '0' + 1) % 10
         val card = PaymentCardNumber.newBuilder()
             .setValue(number.dropLast(1) + incorrectCheckDigit)
-            .vBuild()
+            .build()
 
         val feedback = PaymentCardNumberValidator.validate(card)
 

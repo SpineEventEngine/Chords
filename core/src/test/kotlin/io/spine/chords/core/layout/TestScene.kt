@@ -26,22 +26,30 @@
 
 package io.spine.chords.core.layout
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.InternalComposeUiApi
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Move
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Press
 import androidx.compose.ui.input.pointer.PointerEventType.Companion.Release
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.InfiniteAnimationPolicy
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.WindowInfo
@@ -50,14 +58,18 @@ import androidx.compose.ui.semantics.getAllSemanticsNodes
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.navigationevent.NavigationEventInput
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import java.awt.EventQueue.invokeAndWait
 import java.awt.EventQueue.isDispatchThread as isEventDispatchThread
 import java.awt.Panel
 import java.awt.event.KeyEvent.CHAR_UNDEFINED
 import java.awt.event.KeyEvent.KEY_PRESSED
 import java.awt.event.KeyEvent.KEY_RELEASED
+import java.awt.event.KeyEvent.VK_ESCAPE
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -115,6 +127,10 @@ internal class TestScene(
      */
     private val windowInfo = object : WindowInfo {
         override var isWindowFocused: Boolean by mutableStateOf(true)
+
+        override val containerSize: IntSize = IntSize(width.value.toInt(), height.value.toInt())
+
+        override val containerDpSize: DpSize = DpSize(width, height)
     }
 
     /**
@@ -123,10 +139,22 @@ internal class TestScene(
     private val scheduler = TestCoroutineScheduler()
 
     /**
+     * Delivers Escape through the same navigation API used by a desktop window.
+     */
+    private val backInput = DesktopBackInput()
+
+    /**
+     * Records the content measured within the simulated window's bounds.
+     */
+    private var measuredContentSize = IntSize.Zero
+
+    /**
      * The scene that composes and lays out the content.
      */
     private val scene = onUiThread {
-        ComposeScene(
+        ImageComposeScene(
+            width = width.value.toInt(),
+            height = height.value.toInt(),
             coroutineContext = StandardTestDispatcher(scheduler) + FiniteAnimationsOnly,
             density = density
         )
@@ -146,9 +174,19 @@ internal class TestScene(
                 Constraints(maxWidth = width.roundToPx(), maxHeight = height.roundToPx())
             }
             scene.setContent {
+                val navigationOwner = checkNotNull(LocalNavigationEventDispatcherOwner.current)
+                DisposableEffect(navigationOwner) {
+                    val dispatcher = navigationOwner.navigationEventDispatcher
+                    dispatcher.addInput(backInput)
+                    onDispose { dispatcher.removeInput(backInput) }
+                }
                 CompositionLocalProvider(LocalWindowInfo provides windowInfo) {
                     MaterialTheme {
-                        content()
+                        Box(Modifier.fillMaxSize()) {
+                            Box(Modifier.onSizeChanged { measuredContentSize = it }) {
+                                content()
+                            }
+                        }
                     }
                 }
             }
@@ -160,14 +198,14 @@ internal class TestScene(
      * The size that the content occupies.
      */
     val contentSize: IntSize
-        get() = onUiThread { scene.contentSize }
+        get() = onUiThread { measuredContentSize }
 
     /**
      * Returns accessibility nodes, optionally unmerged to measure individual labels and icons.
      */
     fun semanticsNodes(mergingEnabled: Boolean = true): List<SemanticsNode> = onUiThread {
-        scene.roots
-            .flatMap { it.semanticsOwner.getAllSemanticsNodes(mergingEnabled) }
+        scene.semanticsOwners
+            .flatMap { it.getAllSemanticsNodes(mergingEnabled) }
     }
 
     /**
@@ -178,7 +216,9 @@ internal class TestScene(
         scheduler.advanceTimeBy(16)
         scheduler.runCurrent()
         Snapshot.sendApplyNotifications()
-        scene.render(surface.canvas, scheduler.currentTime * 1_000_000L)
+        scene.render(scheduler.currentTime * 1_000_000L).use {
+            surface.canvas.drawImage(it, 0f, 0f)
+        }
         scheduler.runCurrent()
         Snapshot.sendApplyNotifications()
     }
@@ -227,9 +267,9 @@ internal class TestScene(
      */
     fun click(position: Offset) = onUiThread {
         scene.sendPointerEvent(Press, position, button = PointerButton.Primary)
-        scheduler.runCurrent()
+        renderUntilIdle()
         scene.sendPointerEvent(Release, position, button = PointerButton.Primary)
-        scheduler.runCurrent()
+        renderUntilIdle()
     }
 
     /**
@@ -249,7 +289,10 @@ internal class TestScene(
      *   key is pressed, as defined by [java.awt.event.KeyEvent].
      */
     fun pressKey(keyCode: Int, modifiers: Int = NoModifierKeys) = onUiThread {
-        scene.sendKeyEvent(keyEvent(KEY_PRESSED, keyCode, modifiers))
+        val consumed = scene.sendKeyEvent(keyEvent(KEY_PRESSED, keyCode, modifiers))
+        if (!consumed && keyCode == VK_ESCAPE) {
+            backInput.back()
+        }
     }
 
     /**
@@ -388,15 +431,27 @@ private const val EventTimestamp: Long = 0L
  *   defined by [java.awt.event.KeyEvent].
  * @return The created event.
  */
+// Compose's factory preserves the native event for key matching.
+@OptIn(InternalComposeUiApi::class)
 internal fun keyEvent(
     eventType: Int,
     keyCode: Int,
     modifiers: Int = NoModifierKeys
-): KeyEvent = KeyEvent(
-    java.awt.event.KeyEvent(
+): KeyEvent {
+    val native = java.awt.event.KeyEvent(
         Panel(), eventType, EventTimestamp, modifiers, keyCode, CHAR_UNDEFINED
     )
-)
+    return KeyEvent(
+        key = Key(nativeKeyCode = keyCode),
+        type = if (eventType == KEY_PRESSED) KeyEventType.KeyDown else KeyEventType.KeyUp,
+        codePoint = CHAR_UNDEFINED.code,
+        isCtrlPressed = native.isControlDown,
+        isMetaPressed = native.isMetaDown,
+        isAltPressed = native.isAltDown,
+        isShiftPressed = native.isShiftDown,
+        nativeEvent = native
+    )
+}
 
 /**
  * Disables endless animations so finite UI transitions can reach an observable idle state.
@@ -408,5 +463,18 @@ private object FiniteAnimationsOnly : InfiniteAnimationPolicy {
      */
     override suspend fun <R> onInfiniteOperation(block: suspend () -> R): R {
         throw CancellationException("Infinite animations are disabled in the test scene.")
+    }
+}
+
+/**
+ * Supplies completed back gestures for the off-screen desktop host.
+ */
+private class DesktopBackInput : NavigationEventInput() {
+
+    /**
+     * Dispatches the back action after the focused content has declined Escape.
+     */
+    fun back() {
+        dispatchOnBackCompleted()
     }
 }

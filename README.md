@@ -29,11 +29,12 @@ contents and usage:
 
 The libraries have been tested to work in the following environment:
 
-- JDK 11
-- Kotlin 1.8.20
-- Compose Multiplatform 1.5.12
-- Spine Event Engine 1.9.0
-- Gradle 6.9.4
+- JDK 25
+- Kotlin 2.4.21
+- Compose Multiplatform 1.12.2
+- Spine Event Engine 2.0 snapshots
+- Gradle 9.8.2
+- Spine Compiler `2.0.0-SNAPSHOT.083`
 
 # Using libraries in a Gradle project
 
@@ -59,7 +60,7 @@ each respective library (referred to in the section above).
   ```
   git submodule update --init --recursive
   ```
-- Use JDK 11 for developing and running the project.
+- Use JDK 25 for developing and running the project.
 - Install the "detekt" addon for IntelliJ IDEA, and add the
   `quality/detekt-config.yml` file to the "Configuration files" section in
   on the IDEA's Settings > Tools > detekt page.

@@ -55,7 +55,7 @@ object Protobuf {
          * Matches the Protobuf plugin loaded by `buildSrc/build.gradle.kts`.
          * Apply `com.google.protobuf` without a version in project build scripts.
          */
-        const val version = "0.10.0"
+        const val version = "0.10.1"
         const val lib = "${group}:protobuf-gradle-plugin:${version}"
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
 
 dependencies {
-    // This dependency is declared as transitive,
-    // since the generated code depends on Spine Base in version 1.9.x.
-    api(Spine.base_1_9)
+    api(Protobuf.javaLib)
+    api(Spine.base)
+    api(io.spine.internal.dependency.Validation.runtime)
 }

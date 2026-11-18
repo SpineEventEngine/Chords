@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 TeamDev. All rights reserved.
+ * Copyright (c) 2026 TeamDev. All rights reserved.
  * TeamDev PROPRIETARY and CONFIDENTIAL.
  * Use is subject to license terms.
  */
@@ -34,7 +34,7 @@ message BankAccount {
 // The way how a purchaser provides money to a seller.
 message PaymentMethod {
   oneof method {
-    option (is_required) = true;
+    option (choice).required = true;
 
     // Money is provided from a payment card that has this number.
     PaymentCardNumber payment_card = 1 [(validate) = true];

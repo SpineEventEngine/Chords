@@ -152,11 +152,13 @@ internal class WizardSpec {
         val wizard = TestWizard()
 
         wizardScene(wizard).use { scene ->
+            scene.pressKey(VK_RIGHT, ALT_DOWN_MASK)
             scene.releaseKey(VK_RIGHT, ALT_DOWN_MASK)
             scene.render()
 
             wizard.pageIndex shouldBe 1
 
+            scene.pressKey(VK_LEFT, ALT_DOWN_MASK)
             scene.releaseKey(VK_LEFT, ALT_DOWN_MASK)
             scene.render()
 
@@ -226,16 +228,19 @@ internal class WizardSpec {
         val wizard = TestWizard()
 
         wizardScene(wizard).use { scene ->
+            scene.pressKey(VK_RIGHT, ALT_DOWN_MASK)
             scene.releaseKey(VK_RIGHT, ALT_DOWN_MASK)
             scene.render()
             wizard.submittingInternal = true
             scene.render()
 
+            scene.pressKey(VK_LEFT, ALT_DOWN_MASK)
             scene.releaseKey(VK_LEFT, ALT_DOWN_MASK)
             scene.render()
 
             wizard.pageIndex shouldBe 1
 
+            scene.pressKey(VK_RIGHT, ALT_DOWN_MASK)
             scene.releaseKey(VK_RIGHT, ALT_DOWN_MASK)
             scene.render()
 
@@ -252,11 +257,13 @@ internal class WizardSpec {
         val wizard = TestWizard()
 
         wizardScene(wizard).use { scene ->
+            scene.pressKey(VK_RIGHT, ALT_DOWN_MASK)
             scene.releaseKey(VK_RIGHT, ALT_DOWN_MASK)
             scene.render()
             wizard.submittingInternal = true
             scene.render()
 
+            scene.pressKey(VK_ENTER, CTRL_DOWN_MASK)
             scene.releaseKey(VK_ENTER, CTRL_DOWN_MASK)
             scene.render()
 
@@ -264,6 +271,7 @@ internal class WizardSpec {
 
             wizard.submittingInternal = false
             scene.render()
+            scene.pressKey(VK_ENTER, CTRL_DOWN_MASK)
             scene.releaseKey(VK_ENTER, CTRL_DOWN_MASK)
             scene.render()
 
@@ -282,6 +290,7 @@ internal class WizardSpec {
         val wizard = TestWizard()
 
         wizardScene(wizard).use { scene ->
+            scene.pressKey(VK_RIGHT, ALT_DOWN_MASK)
             scene.releaseKey(VK_RIGHT, ALT_DOWN_MASK)
             scene.render()
 

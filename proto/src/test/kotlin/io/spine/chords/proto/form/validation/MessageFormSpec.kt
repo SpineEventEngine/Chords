@@ -95,7 +95,7 @@ internal class MessageFormSpec {
             if (selectedIndex == 0) {
                 card.fieldValue.value = PaymentCardNumber.newBuilder()
                     .setValue("4242424242424242")
-                    .vBuild()
+                    .build()
             } else {
                 bank.fieldValue.value = account("12345678")
             }
@@ -154,7 +154,7 @@ internal class MessageFormSpec {
             if (selectedIndex == 0) {
                 card.fieldValue.value = PaymentCardNumber.newBuilder()
                     .setValue("4242424242424242")
-                    .vBuild()
+                    .build()
             } else {
                 bank.fieldValue.value = account("12345678")
             }

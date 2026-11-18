@@ -43,4 +43,17 @@ object KotlinX {
         const val jdk8 = "$group:kotlinx-coroutines-jdk8:$version"
         const val bom = "$group:kotlinx-coroutines-bom:$version"
     }
+
+    /**
+     * Aligns serialization libraries used by Gradle plugins and static analysis.
+     */
+    object Serialization {
+        private const val version = "1.12.0"
+        val libs = listOf(
+            "kotlinx-serialization-bom", "kotlinx-serialization-core",
+            "kotlinx-serialization-core-jvm", "kotlinx-serialization-json",
+            "kotlinx-serialization-json-jvm"
+        )
+            .map { "$group:$it:$version" }
+    }
 }

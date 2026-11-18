@@ -33,7 +33,6 @@ import io.kotest.matchers.shouldBe
 import io.spine.base.Identifier
 import io.spine.chords.client.given.DesktopClientSpecEnv.awaitActive
 import io.spine.chords.client.given.DesktopClientSpecEnv.item
-import io.spine.chords.client.given.IdlessItem
 import io.spine.chords.client.given.NamedItem
 import io.spine.chords.client.given.ObservedItem
 import io.spine.chords.client.given.command.RenameObservedItem
@@ -41,14 +40,13 @@ import io.spine.chords.client.testing.ConnectionChannel
 import io.spine.chords.client.testing.ObservationChannel
 import io.spine.chords.client.testing.SubscriptionCancellationLog
 import io.spine.client.CompositeEntityStateFilter
-import io.spine.client.CompositeQueryFilter
 import io.spine.client.EntityStateFilter
+import io.spine.client.Filters
 import io.spine.client.Filters.gt
 import io.spine.client.Filters.lt
 import io.spine.client.OrderBy.Direction
 import io.spine.client.OrderBy.Direction.ASCENDING
 import io.spine.client.OrderBy.Direction.DESCENDING
-import io.spine.client.QueryFilter
 import java.util.concurrent.TimeUnit.MINUTES
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -89,7 +87,7 @@ internal class DesktopClientSpec {
             val command = RenameObservedItem.newBuilder()
                 .setId(item("cancelled-command").id)
                 .setLabel("Renamed")
-                .vBuild()
+                .build()
 
             val failure = shouldThrow<StatusRuntimeException> {
                 client.postCommand(command)
@@ -119,7 +117,7 @@ internal class DesktopClientSpec {
             val command = RenameObservedItem.newBuilder()
                 .setId(item("pending-command").id)
                 .setLabel("Renamed")
-                .vBuild()
+                .build()
 
             val failure = shouldThrow<ServerCommunicationException> {
                 client.postCommand(command)
@@ -338,8 +336,8 @@ internal class DesktopClientSpec {
                 val observation = source.client.readAndObserve(
                     entityClass = ObservedItem::class.java,
                     extractId = ObservedItem::getId,
-                    queryFilter = CompositeQueryFilter.all(
-                        QueryFilter.eq(ObservedItem.Column.label(), "first")
+                    queryFilter = Filters.all(
+                        Filters.eq(ObservedItem.Column.label(), "first")
                     ),
                     observeFilter = CompositeEntityStateFilter.all(
                         EntityStateFilter.eq(ObservedItem.Field.label(), "first")
@@ -364,8 +362,8 @@ internal class DesktopClientSpec {
                 source.items = listOf(entity)
                 val observation = source.client.readOneAndObserve(
                     entityClass = ObservedItem::class.java,
-                    queryFilter = CompositeQueryFilter.all(
-                        QueryFilter.eq(ObservedItem.Column.label(), "first")
+                    queryFilter = Filters.all(
+                        Filters.eq(ObservedItem.Column.label(), "first")
                     ),
                     observeFilter = CompositeEntityStateFilter.all(
                         EntityStateFilter.eq(ObservedItem.Field.label(), "first")
@@ -403,8 +401,8 @@ internal class DesktopClientSpec {
                 source.items = listOf(entity)
                 val observation = source.client.readOneAndObserve(
                     entityClass = ObservedItem::class.java,
-                    queryFilter = CompositeQueryFilter.all(
-                        QueryFilter.eq(ObservedItem.Column.label(), "first")
+                    queryFilter = Filters.all(
+                        Filters.eq(ObservedItem.Column.label(), "first")
                     ),
                     observeFilter = CompositeEntityStateFilter.all(
                         EntityStateFilter.eq(ObservedItem.Field.label(), "first")
@@ -432,23 +430,21 @@ internal class DesktopClientSpec {
     }
 
     /**
-     * Single observations cannot assume that the first state field stores the entity ID.
+     * Filtered single observations reread the query when a subscribed entity is removed.
      */
     @Test
-    fun `remove a single entity whose ID is outside its state`(): Unit = runTest {
+    fun `reread a filtered single entity after removal`(): Unit = runTest {
         ObservationChannel(StandardTestDispatcher(testScheduler))
             .use { source ->
-                val entity = IdlessItem.newBuilder()
-                    .setLabel("visible")
-                    .build()
+                val entity = item("visible-id", "visible")
                 source.items = listOf(entity)
                 val observation = source.client.readOneAndObserve(
-                    entityClass = IdlessItem::class.java,
-                    queryFilter = CompositeQueryFilter.all(
-                        QueryFilter.eq(IdlessItem.Column.label(), "visible")
+                    entityClass = ObservedItem::class.java,
+                    queryFilter = Filters.all(
+                        Filters.eq(ObservedItem.Column.label(), "visible")
                     ),
                     observeFilter = CompositeEntityStateFilter.all(
-                        EntityStateFilter.eq(IdlessItem.Field.label(), "visible")
+                        EntityStateFilter.eq(ObservedItem.Field.label(), "visible")
                     )
                 )
                 runCurrent()
@@ -467,26 +463,22 @@ internal class DesktopClientSpec {
      * A single observation may still have another matching entity after a removal.
      */
     @Test
-    fun `reread a defaulted entity whose ID is outside its state`(): Unit = runTest {
+    fun `reread a defaulted filtered entity after removal`(): Unit = runTest {
         ObservationChannel(StandardTestDispatcher(testScheduler))
             .use { source ->
-                val first = IdlessItem.newBuilder()
-                    .setLabel("first")
-                    .build()
-                val second = IdlessItem.newBuilder()
-                    .setLabel("second")
-                    .build()
-                val fallback = IdlessItem.getDefaultInstance()
+                val first = item("first-id", "first")
+                val second = item("second-id", "second")
+                val fallback = ObservedItem.getDefaultInstance()
                 source.items = listOf(first, second)
                 val observation = source.client.readOneAndObserve(
-                    entityClass = IdlessItem::class.java,
-                    queryFilter = CompositeQueryFilter.either(
-                        QueryFilter.eq(IdlessItem.Column.label(), "first"),
-                        QueryFilter.eq(IdlessItem.Column.label(), "second")
+                    entityClass = ObservedItem::class.java,
+                    queryFilter = Filters.either(
+                        Filters.eq(ObservedItem.Column.label(), "first"),
+                        Filters.eq(ObservedItem.Column.label(), "second")
                     ),
                     observeFilter = CompositeEntityStateFilter.either(
-                        EntityStateFilter.eq(IdlessItem.Field.label(), "first"),
-                        EntityStateFilter.eq(IdlessItem.Field.label(), "second")
+                        EntityStateFilter.eq(ObservedItem.Field.label(), "first"),
+                        EntityStateFilter.eq(ObservedItem.Field.label(), "second")
                     ),
                     defaultValue = fallback
                 )
@@ -529,9 +521,9 @@ internal class DesktopClientSpec {
                 }
                 val observation = source.client.readOneAndObserve(
                     entityClass = ObservedItem::class.java,
-                    queryFilter = CompositeQueryFilter.either(
-                        QueryFilter.eq(ObservedItem.Column.label(), "initial"),
-                        QueryFilter.eq(ObservedItem.Column.label(), "replacement")
+                    queryFilter = Filters.either(
+                        Filters.eq(ObservedItem.Column.label(), "initial"),
+                        Filters.eq(ObservedItem.Column.label(), "replacement")
                     ),
                     observeFilter = CompositeEntityStateFilter.either(
                         EntityStateFilter.eq(ObservedItem.Field.label(), "initial"),
@@ -628,8 +620,8 @@ internal class DesktopClientSpec {
     fun `send a bounded ordered query with its cursor filter`() {
         ObservationChannel()
             .use { source ->
-                val filter = CompositeQueryFilter.all(
-                    QueryFilter.gt(ObservedItem.Column.label(), "B")
+                val filter = Filters.all(
+                    Filters.gt(ObservedItem.Column.label(), "B")
                 )
                 val expected = listOf(item("third", "C"), item("fourth", "D"))
                 source.items = expected
@@ -645,8 +637,8 @@ internal class DesktopClientSpec {
                 actual shouldBe expected
                 val query = checkNotNull(source.lastQuery)
                 query.format.limit shouldBe 2
-                query.format.orderBy.direction shouldBe ASCENDING
-                query.format.orderBy.column shouldBe "label"
+                query.format.orderByList.single().direction shouldBe ASCENDING
+                query.format.orderByList.single().column shouldBe "label"
                 query.target.filters.filterList.flatMap { it.filterList } shouldBe
                     listOf(gt(ObservedItem.Column.label(), "B"))
                 source.lastTopic shouldBe null
@@ -702,9 +694,9 @@ internal class DesktopClientSpec {
                 source.items = listOf(second, first)
                 val observation = source.client.readPageAndObserve(
                     entityClass = ObservedItem::class.java,
-                    queryFilter = CompositeQueryFilter.all(
-                        QueryFilter.gt(ObservedItem.Column.label(), ""),
-                        QueryFilter.lt(ObservedItem.Column.label(), "D")
+                    queryFilter = Filters.all(
+                        Filters.gt(ObservedItem.Column.label(), ""),
+                        Filters.lt(ObservedItem.Column.label(), "D")
                     ),
                     observeFilter = CompositeEntityStateFilter.all(
                         EntityStateFilter.gt(ObservedItem.Field.label(), "")
@@ -732,7 +724,7 @@ internal class DesktopClientSpec {
                 observation.value shouldBe listOf(third, first)
                 val query = checkNotNull(source.lastQuery)
                 query.format.limit shouldBe 2
-                query.format.orderBy.direction shouldBe DESCENDING
+                query.format.orderByList.single().direction shouldBe DESCENDING
                 query.target.filters.filterList.flatMap { it.filterList } shouldBe
                     listOf(
                         gt(ObservedItem.Column.label(), ""),
@@ -763,8 +755,8 @@ internal class DesktopClientSpec {
     fun `reject invalid ordering before making a request`(direction: Direction) {
         ObservationChannel()
             .use { source ->
-                val queryFilter = CompositeQueryFilter.all(
-                    QueryFilter.gt(ObservedItem.Column.label(), "")
+                val queryFilter = Filters.all(
+                    Filters.gt(ObservedItem.Column.label(), "")
                 )
                 val observeFilter = CompositeEntityStateFilter.all(
                     EntityStateFilter.gt(ObservedItem.Field.label(), "")
@@ -805,8 +797,8 @@ internal class DesktopClientSpec {
                 shouldThrow<IllegalArgumentException> {
                     source.client.readPage(
                         entityClass = ObservedItem::class.java,
-                        queryFilter = CompositeQueryFilter.all(
-                            QueryFilter.gt(ObservedItem.Column.label(), "")
+                        queryFilter = Filters.all(
+                            Filters.gt(ObservedItem.Column.label(), "")
                         ),
                         orderBy = ObservedItem.Column.label(),
                         direction = ASCENDING,
@@ -816,8 +808,8 @@ internal class DesktopClientSpec {
                 shouldThrow<IllegalArgumentException> {
                     source.client.readPageAndObserve(
                         entityClass = ObservedItem::class.java,
-                        queryFilter = CompositeQueryFilter.all(
-                            QueryFilter.gt(ObservedItem.Column.label(), "")
+                        queryFilter = Filters.all(
+                            Filters.gt(ObservedItem.Column.label(), "")
                         ),
                         observeFilter = CompositeEntityStateFilter.all(
                             EntityStateFilter.gt(ObservedItem.Field.label(), "")

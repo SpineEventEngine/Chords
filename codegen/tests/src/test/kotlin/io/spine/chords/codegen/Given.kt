@@ -47,7 +47,7 @@ object Given {
         InternetDomain.newBuilder().setValue(value).build()
 
     internal fun primitives(value: Boolean) =
-        primitivesBuilder().setBool(value).build()
+        primitivesBuilder().setBool(value).buildPartial()
 
     internal fun byteString(value: String) =
         ByteString.copyFromUtf8(value)

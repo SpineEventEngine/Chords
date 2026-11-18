@@ -8,39 +8,35 @@ implementations for Proto messages. Also, some other useful Kotlin extensions ar
 e.g. `ValidatingBuilder.messageDef()` that returns the instance of `MessageDef` implementation
 for the current message builder.
 
-The separate Gradle project is needed because the `Spine Compiler` plugins,
-which generate the code, require the newer version of Gradle, `9.4.x` at the moment,
-and Java 17, comparing to Chords-based projects, which require Gradle version `6.9.x` and Java 11.
+The root consumes the generator through a composite build. Both builds use the same toolchain;
+standalone generator builds also resolve the runtime from this checkout.
 
 ### Requirements
 
-- Java 17
-- Gradle `9.4.x`
-- Kotlin `2.4.10`
+- Java 25
+- Gradle `9.8.2`
+- Kotlin `2.4.21`
+- Spine Compiler `2.0.0-SNAPSHOT.083`
 
 ### How to use
 
-The [Chords Gradle plugin](https://github.com/SpineEventEngine/Chords-Gradle-plugin) 
-should be used to apply `codegen-plugins` to a project.
+Apply `io.spine.core-jvm`, then add the generator to the Compiler classpath:
 
-The workspace exports only Chords `*Def.kt` files. Consumers generate Protobuf Java and
-Kotlin DSL files with their configured Protobuf compiler.
+```kotlin
+dependencies {
+    add("spineCompiler", "io.spine.chords:spine-chords-codegen-plugins:$chordsVersion")
+}
 
-### Resources for the Gradle plugin
+spine {
+    compiler {
+        plugins("io.spine.chords.codegen.plugins.MessageFieldsPlugin")
+    }
+}
+```
 
-The following files are copied to the
-[resources/codegen-workspace](codegen-plugins/src/main/resources/codegen-workspace)
-folder during the build:
-* `buildSrc` folder.
-* Gradle wrapper files.
-
-These resources will be packaged into the resulting jar and then used by 
-the Gradle plugin to create a placeholder module for code generation.
-
-This is necessary for the following reasons:
-* The Gradle plugin may not keep another copy of these files.
-* There is no need to synchronize dependencies between `codegen-plugins` project
-and the Gradle plugin.
+Chords definitions and Spine validation code are generated in the same Compiler invocation.
+For external consumers, publish the runtime and generator with
+`publishCodegenPluginsToMavenLocal`.
 
 ### Modules
 

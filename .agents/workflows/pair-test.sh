@@ -2162,8 +2162,10 @@ for skill in build-engineer codegen-engineer component-engineer tester kotlin-en
         "$(grep -qF -- '.agents/workflows/gradle-root.sh' \
             "${REPO}/.agents/skills/${skill}/SKILL.md" && echo 0 || echo 1)"
 done
-for file in AGENTS.md \
-    .agents/skills/build-engineer/SKILL.md \
+check "AGENTS.md routes Gradle through the root build policy" \
+    "$(grep -qF -- '.agents/guidelines/root-build.md' \
+        "${REPO}/AGENTS.md" && echo 0 || echo 1)"
+for file in .agents/skills/build-engineer/SKILL.md \
     .agents/skills/ci-engineer/SKILL.md \
     .agents/skills/codegen-engineer/SKILL.md \
     .agents/skills/tester/SKILL.md; do
@@ -2172,9 +2174,9 @@ for file in AGENTS.md \
             "${REPO}/${file}" && echo 0 || echo 1)"
 done
 
-# The root project's JDK 11 selection cannot be expressed as a permission rule:
+# The root project's JDK 25 selection cannot be expressed as a permission rule:
 # `JAVA_HOME="$(jenv prefix)" ./gradlew …` is an environment assignment with a
-# command substitution, and `jenv shell 11` does not survive into the next
+# command substitution, and `jenv shell 25` does not survive into the next
 # command. The wrapper is that flow behind one allowlistable path, so an
 # unattended implementation can compile before it is reviewed.
 check "the root Gradle wrapper script is executable" \
@@ -2214,7 +2216,7 @@ mkdir -p "${fake_root}/.agents/workflows" "${fake_root}/codegen/plugins" \
 cp "$codegen_wrapper" "${fake_root}/.agents/workflows/gradle-codegen.sh"
 cat > "${fake_root}/jdk/bin/java" <<'JAVA'
 #!/usr/bin/env bash
-printf '    java.specification.version = 17\n'
+printf '    java.specification.version = 25\n'
 JAVA
 cat > "${fake_root}/codegen/plugins/gradlew" <<'GRADLE'
 #!/usr/bin/env bash
@@ -2224,10 +2226,10 @@ GRADLE
 chmod +x "${fake_root}/jdk/bin/java" "${fake_root}/codegen/plugins/gradlew"
 GRADLE_PWD_RECORD="${fake_root}/gradle.pwd" \
     GRADLE_ARGS_RECORD="${fake_root}/gradle.args" \
-    CHORDS_JDK17_HOME="${fake_root}/jdk" \
+    CHORDS_JDK25_HOME="${fake_root}/jdk" \
     "${fake_root}/.agents/workflows/gradle-codegen.sh" build >/dev/null 2>&1
 wrapper_rc=$?
-check "the codegen wrapper accepts JDK 17" "$wrapper_rc"
+check "the codegen wrapper accepts JDK 25" "$wrapper_rc"
 check "the codegen wrapper enters the plugin build" \
     "$(grep -Fqx "${fake_root}/codegen/plugins" "${fake_root}/gradle.pwd" \
         && echo 0 || echo 1)"
@@ -2241,11 +2243,11 @@ cat > "${fake_root}/jdk/bin/java" <<'JAVA'
 #!/usr/bin/env bash
 printf '    java.specification.version = 11\n'
 JAVA
-wrapper_output="$(CHORDS_JDK17_HOME="${fake_root}/jdk" \
+wrapper_output="$(CHORDS_JDK25_HOME="${fake_root}/jdk" \
     "${fake_root}/.agents/workflows/gradle-codegen.sh" build 2>&1)"
 wrapper_rc=$?
 check "the codegen wrapper refuses the wrong JDK" \
-    "$([[ "$wrapper_rc" -eq 1 && "$wrapper_output" == *"need JDK 17"* ]] \
+    "$([[ "$wrapper_rc" -eq 1 && "$wrapper_output" == *"need JDK 25"* ]] \
         && echo 0 || echo 1)"
 rm -rf "$fake_root"
 
@@ -2255,7 +2257,7 @@ mkdir -p "${fake_root}/.agents/workflows" "${fake_root}/jdk/bin"
 cp "$wrapper" "${fake_root}/.agents/workflows/gradle-root.sh"
 cat > "${fake_root}/jdk/bin/java" <<'JAVA'
 #!/usr/bin/env bash
-printf '    java.specification.version = 11\n'
+printf '    java.specification.version = 25\n'
 printf '    os.arch = x86_64\n'
 JAVA
 cat > "${fake_root}/gradlew" <<'GRADLE'
@@ -2264,7 +2266,7 @@ printf '<%s>\n' "$@" > "$GRADLE_ARGS_RECORD"
 GRADLE
 chmod +x "${fake_root}/jdk/bin/java" "${fake_root}/gradlew"
 GRADLE_ARGS_RECORD="${fake_root}/gradle.args" \
-    CHORDS_JDK11_HOME="${fake_root}/jdk" CHORDS_NO_GRADLE_DAEMON=1 \
+    CHORDS_JDK25_HOME="${fake_root}/jdk" CHORDS_NO_GRADLE_DAEMON=1 \
     "${fake_root}/.agents/workflows/gradle-root.sh" :core:test >/dev/null 2>&1
 wrapper_rc=$?
 check "the root wrapper accepts forced daemon isolation" "$wrapper_rc"
@@ -2275,8 +2277,7 @@ check "the root wrapper passes both daemon controls" \
         && echo 0 || echo 1)"
 rm -rf "$fake_root"
 
-# A fake Java 11 proves that the architecture guard fires before the real
-# Gradle wrapper starts. The fake uname confines the macOS branch to this test.
+# An outdated Java 11 is rejected before Gradle starts, including on macOS ARM.
 fake_root="$(mktemp -d)"
 mkdir -p "${fake_root}/jdk/bin" "${fake_root}/bin"
 cat > "${fake_root}/jdk/bin/java" <<'JAVA'
@@ -2290,10 +2291,10 @@ printf 'Darwin\n'
 UNAME
 chmod +x "${fake_root}/jdk/bin/java" "${fake_root}/bin/uname"
 wrapper_output="$(PATH="${fake_root}/bin:${ORIGINAL_PATH}" \
-    CHORDS_JDK11_HOME="${fake_root}/jdk" "$wrapper" :core:test 2>&1)"
+    CHORDS_JDK25_HOME="${fake_root}/jdk" "$wrapper" :core:test 2>&1)"
 wrapper_rc=$?
-check "the root wrapper refuses a macOS ARM JDK" \
-    "$([[ "$wrapper_rc" -eq 1 && "$wrapper_output" == *"must use an x86_64"* ]] \
+check "the root wrapper refuses an outdated macOS ARM JDK" \
+    "$([[ "$wrapper_rc" -eq 1 && "$wrapper_output" == *"needs JDK 25"* ]] \
         && echo 0 || echo 1)"
 rm -rf "$fake_root"
 

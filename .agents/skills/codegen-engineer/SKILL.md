@@ -19,7 +19,7 @@ Use this skill for code generation work:
   `MessageField`, `MessageOneof`, `MessageDef`, and related runtime types.
 - Codegen correctness tests under `codegen/tests/` (Gradle path `:codegen-tests`).
 - Root codegen wiring: `modulesWithChordsCodegen`,
-  `publishCodegenPluginsToMavenLocal`, and the `io.spine.chords` plugin.
+  `publishCodegenPluginsToMavenLocal`, and the `spineCompiler` configuration.
 
 For published model Protobuf declarations and Kotlin model extensions under
 `proto-values`, prefer `.agents/skills/model-engineer/SKILL.md`. For components
@@ -29,10 +29,8 @@ that merely consume generated metadata, prefer
 
 ## Policy
 
-- `codegen/plugins` targets JDK 17, Gradle 9.4.x, and Kotlin 2.4.10; the root
-  build targets JDK 11 and Gradle 6.9.4, with the Kotlin version split described
-  in `.agents/skills/kotlin-engineer/SKILL.md`. Never mix the two toolchains in
-  one command or assume APIs from one are available in the other.
+- Both builds target JDK 25, Gradle 9.8.2, and Kotlin 2.4.21. `codegen/plugins`
+  remains a separate build; always invoke its own verification wrapper.
 - The generated-code contract is consumed by `proto` and `client` and by
   external projects: changes to `MessageField`/`MessageOneof`/`MessageDef`
   shapes are public API changes on both the generator and runtime sides and
@@ -40,10 +38,6 @@ that merely consume generated metadata, prefer
 - Treat `.proto` files under `codegen/tests/src/test/proto/**` as generator
   fixtures. Change them only to express a code-generation scenario; published
   model declarations under `proto-values` belong to `model-engineer`.
-- Keep `codegen/plugins/codegen-plugins/src/main/resources/codegen-workspace` resources
-  consistent with the build logic that copies `buildSrc` and wrapper files
-  into them; that workspace is what the Chords Gradle plugin unpacks in
-  consumer projects.
 - Do not manually edit generated outputs (`generated/`, `_out/`); change the
   generator and regenerate instead.
 - Cover generator behavior changes with tests in `codegen/tests`, which
@@ -51,12 +45,13 @@ that merely consume generated metadata, prefer
 
 ## Generation Flow
 
-The separate `codegen/plugins` build produces Spine Compiler plugins. The root
-`publishCodegenPluginsToMavenLocal` task publishes them to Maven local before
-the `io.spine.chords` Gradle plugin applies them in a generated workspace.
-`modulesWithChordsCodegen` selects the consumers (`proto-values` and
-`codegen-tests`). This dependency chain is automatic; changes to it belong in
-the root `build.gradle.kts` or `buildSrc`.
+The separate `codegen/plugins` build produces Spine Compiler plugins. The root includes
+that build and substitutes the generator and runtime with their checkout projects, so a
+new version compiles before publication. The Chords generator runs alongside Spine's
+validation generator in the same Compiler invocation. `modulesWithChordsCodegen` selects
+`proto-values` and `codegen-tests`; their `spineCompiler` dependencies carry the generator's
+build dependencies. `publishCodegenPluginsToMavenLocal` publishes the included generator
+and root runtime for external consumers.
 
 ## Verification
 
@@ -77,6 +72,5 @@ Runtime and end-to-end verification, following
 .agents/workflows/gradle-root.sh clean build
 ```
 
-The root build republishes codegen plugins to Maven local automatically before
-generating; a stale local plugin usually means the `codegen/plugins` build was
-not rerun.
+Generation builds the checkout's generator and runtime through composite dependencies.
+Use `publishCodegenPluginsToMavenLocal` when verifying an external consumer.

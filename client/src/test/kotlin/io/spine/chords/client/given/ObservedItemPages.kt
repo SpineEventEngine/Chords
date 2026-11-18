@@ -29,11 +29,10 @@ package io.spine.chords.client.given
 import io.spine.chords.client.PagedDataQuery
 import io.spine.chords.client.given.DesktopClientSpecEnv.item
 import io.spine.client.CompositeEntityStateFilter
-import io.spine.client.CompositeQueryFilter
 import io.spine.client.EntityStateFilter
+import io.spine.client.Filters
 import io.spine.client.OrderBy.Direction
 import io.spine.client.OrderBy.Direction.DESCENDING
-import io.spine.client.QueryFilter
 
 /**
  * Ordered selections for testing page boundaries and navigator lifetimes.
@@ -59,7 +58,7 @@ internal object ObservedItemPages {
     ): PagedDataQuery<ObservedItem> = PagedDataQuery(
         entityClass = ObservedItem::class.java,
         queryFilters = listOf(
-            CompositeQueryFilter.all(QueryFilter.gt(ObservedItem.Column.label(), lowerBound))
+            Filters.all(Filters.gt(ObservedItem.Column.label(), lowerBound))
         ),
         observeFilter = CompositeEntityStateFilter.all(
             EntityStateFilter.gt(ObservedItem.Field.label(), lowerBound)

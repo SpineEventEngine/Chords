@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,31 +29,40 @@ import io.spine.internal.dependency.Asm
 import io.spine.internal.dependency.AutoCommon
 import io.spine.internal.dependency.AutoService
 import io.spine.internal.dependency.AutoValue
+import io.spine.internal.dependency.Base
+import io.spine.internal.dependency.Caffeine
 import io.spine.internal.dependency.CheckerFramework
-import io.spine.internal.dependency.CommonsCli
 import io.spine.internal.dependency.CommonsCodec
 import io.spine.internal.dependency.CommonsLogging
+import io.spine.internal.dependency.Compiler
+import io.spine.internal.dependency.Compose
 import io.spine.internal.dependency.Dokka
 import io.spine.internal.dependency.ErrorProne
 import io.spine.internal.dependency.FindBugs
-import io.spine.internal.dependency.Flogger
 import io.spine.internal.dependency.Grpc
 import io.spine.internal.dependency.Gson
 import io.spine.internal.dependency.Guava
 import io.spine.internal.dependency.Hamcrest
 import io.spine.internal.dependency.J2ObjC
+import io.spine.internal.dependency.JSpecify
 import io.spine.internal.dependency.JUnit
 import io.spine.internal.dependency.Jackson
 import io.spine.internal.dependency.JavaDiffUtils
 import io.spine.internal.dependency.Kotest
 import io.spine.internal.dependency.Kotlin
+import io.spine.internal.dependency.KotlinPoet
+import io.spine.internal.dependency.KotlinX
+import io.spine.internal.dependency.Ksp
+import io.spine.internal.dependency.Logging
+import io.spine.internal.dependency.Material3
 import io.spine.internal.dependency.Okio
 import io.spine.internal.dependency.OpenTest4J
-import io.spine.internal.dependency.Plexus
 import io.spine.internal.dependency.Protobuf
+import io.spine.internal.dependency.Reflect
 import io.spine.internal.dependency.Slf4J
 import io.spine.internal.dependency.Spine
-import io.spine.internal.dependency.Truth
+import io.spine.internal.dependency.Time
+import io.spine.internal.dependency.ToolBase
 import io.spine.internal.dependency.Validation
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.artifacts.Configuration
@@ -79,6 +88,19 @@ fun NamedDomainObjectContainer<Configuration>.forceVersions() {
             forceProductionDependencies()
             forceTestDependencies()
             forceTransitiveDependencies()
+            dependencySubstitution {
+                substitute(module(Compiler.bundledCliModule))
+                    .using(module(Compiler.cli))
+                    .because("Keep bundled Spine classes out of the Compiler runtime.")
+            }
+            force(
+                Base.libs, Spine.change, Reflect.lib, Logging.libs,
+                Time.lib, Time.javaExtensions, ToolBase.libs, Compiler.libs,
+                Validation.runtime, Validation.javaBundle, Validation.gradlePluginLib,
+                "com.google.devtools.ksp:symbol-processing-gradle-plugin:${Ksp.version}",
+                Spine.baseTypes, Spine.CoreJvm.core, Spine.CoreJvm.client,
+                Spine.CoreJvm.server
+            )
         }
     }
 }
@@ -90,12 +112,20 @@ private fun ResolutionStrategy.forceProductionDependencies() {
         AutoCommon.lib,
         AutoService.annotations,
         CheckerFramework.annotations,
+        Caffeine.lib,
+        Compose.libs,
+        Compose.androidX,
+        Compose.lifecycle,
+        Compose.skiko,
+        Material3.Desktop.lib,
         Dokka.BasePlugin.lib,
         ErrorProne.annotations,
         ErrorProne.core,
         FindBugs.annotations,
         Gson.lib,
         Guava.lib,
+        KotlinPoet.libs,
+        Kotlin.bom,
         Kotlin.reflect,
         Kotlin.stdLib,
         Kotlin.stdLibCommon,
@@ -107,8 +137,13 @@ private fun ResolutionStrategy.forceProductionDependencies() {
         Spine.reflect,
         Validation.runtime,
         Spine.base,
-        Spine.Logging.lib,
-        Grpc.api
+        Logging.libs,
+        Grpc.libs,
+        KotlinX.Coroutines.bom,
+        KotlinX.Serialization.libs,
+        KotlinX.Coroutines.core,
+        KotlinX.Coroutines.jvm,
+        KotlinX.Coroutines.jdk8
     )
 }
 
@@ -120,7 +155,6 @@ private fun ResolutionStrategy.forceTestDependencies() {
         JUnit.Platform.commons,
         JUnit.Platform.launcher,
         JUnit.legacy,
-        Truth.libs,
         Kotest.assertions
     )
 }
@@ -129,7 +163,6 @@ private fun ResolutionStrategy.forceTestDependencies() {
  * Forces transitive dependencies of 3rd party components that we don't use directly.
  */
 private fun ResolutionStrategy.forceTransitiveDependencies() {
-    @Suppress("DEPRECATION") // Force version of Flogger lib.
     force(
         Asm.lib,
         Asm.tree,
@@ -137,14 +170,12 @@ private fun ResolutionStrategy.forceTransitiveDependencies() {
         Asm.util,
         Asm.commons,
         AutoValue.annotations,
-        CommonsCli.lib,
         CommonsCodec.lib,
         CommonsLogging.lib,
-        Flogger.lib,
-        Flogger.Runtime.systemBackend,
         Gson.lib,
         Hamcrest.core,
         J2ObjC.annotations,
+        JSpecify.lib,
         JUnit.Platform.engine,
         JUnit.Platform.suiteApi,
         JUnit.runner,
@@ -155,11 +186,11 @@ private fun ResolutionStrategy.forceTransitiveDependencies() {
         Jackson.dataformatXml,
         Jackson.dataformatYaml,
         Jackson.moduleKotlin,
+        Jackson.otherModules,
         JavaDiffUtils.lib,
         Kotlin.jetbrainsAnnotations,
         Okio.lib,
         OpenTest4J.lib,
-        Plexus.utils
     )
 }
 

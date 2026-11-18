@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ package io.spine.internal.dependency
 @Suppress("unused", "ConstPropertyName")
 object Grpc {
     @Suppress("MemberVisibilityCanBePrivate")
-    const val version        = "1.59.0"
+    const val version        = "1.85.1"
     const val api            = "io.grpc:grpc-api:${version}"
     const val auth           = "io.grpc:grpc-auth:${version}"
     const val core           = "io.grpc:grpc-core:${version}"
@@ -42,6 +42,16 @@ object Grpc {
     const val protobufLite   = "io.grpc:grpc-protobuf-lite:${version}"
     const val netty          = "io.grpc:grpc-netty:${version}"
     const val nettyShaded    = "io.grpc:grpc-netty-shaded:${version}"
+
+    /**
+     * Aligns the gRPC transports and protocol libraries pulled in by Spine.
+     */
+    val libs = listOf(
+        "grpc-bom", "grpc-api", "grpc-auth", "grpc-core", "grpc-context", "grpc-inprocess",
+        "grpc-stub", "grpc-okhttp", "grpc-protobuf", "grpc-protobuf-lite", "grpc-netty",
+        "grpc-netty-shaded", "grpc-util", "grpc-services", "grpc-xds"
+    )
+        .map { "io.grpc:$it:$version" }
 
     object ProtocPlugin {
         const val id = "grpc"

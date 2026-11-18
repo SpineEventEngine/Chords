@@ -237,7 +237,7 @@ internal class InputComponentExtSpec {
 
             oneof.selectedField.value = card
             scene.render()
-            val cardNumber = PaymentCardNumber.newBuilder().setValue("1234").vBuild()
+            val cardNumber = PaymentCardNumber.newBuilder().setValue("1234").build()
             cardField.fieldValue.value = cardNumber
             scene.render()
 

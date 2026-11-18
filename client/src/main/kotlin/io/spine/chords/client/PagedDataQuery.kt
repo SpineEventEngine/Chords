@@ -26,7 +26,6 @@
 
 package io.spine.chords.client
 
-import io.spine.base.EntityColumn
 import io.spine.base.EntityState
 import io.spine.chords.client.DataObservationStatus.Cancelled
 import io.spine.chords.client.DataPageCursor.After
@@ -35,11 +34,12 @@ import io.spine.chords.client.DataPageCursor.Before
 import io.spine.chords.client.DataPageCursor.End
 import io.spine.chords.client.DataPageCursor.Start
 import io.spine.client.CompositeEntityStateFilter
-import io.spine.client.CompositeQueryFilter
+import io.spine.client.CompositeFilter
+import io.spine.client.Filters
 import io.spine.client.OrderBy.Direction
 import io.spine.client.OrderBy.Direction.ASCENDING
 import io.spine.client.OrderBy.Direction.DESCENDING
-import io.spine.client.QueryFilter
+import io.spine.query.EntityColumn
 import java.util.Objects
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
@@ -66,11 +66,11 @@ import kotlinx.coroutines.runInterruptible
  * @param pageSize The maximum displayed items; each read includes one extra item for navigation.
  * @param keyOf Extracts the item's cursor value, which is its [orderBy] column value.
  */
-public class PagedDataQuery<T : EntityState>(
+public class PagedDataQuery<T : EntityState<*>>(
     internal val entityClass: Class<T>,
-    queryFilters: List<CompositeQueryFilter>,
+    queryFilters: List<CompositeFilter>,
     internal val observeFilter: CompositeEntityStateFilter? = null,
-    internal val orderBy: EntityColumn,
+    internal val orderBy: EntityColumn<*, *>,
     internal val direction: Direction,
     internal val pageSize: Int,
     internal val keyOf: (T) -> Any
@@ -177,17 +177,17 @@ public class PagedDataQuery<T : EntityState>(
     /**
      * Page-specific filters that preserve the selection's AND or OR conditions.
      */
-    private fun filters(cursor: DataPageCursor): List<CompositeQueryFilter> {
+    private fun filters(cursor: DataPageCursor): List<CompositeFilter> {
         val comparison = when (cursor) {
             Start, End -> null
-            is At -> if (direction == ASCENDING) QueryFilter.ge(orderBy, cursor.key)
-                else QueryFilter.le(orderBy, cursor.key)
-            is After -> if (direction == ASCENDING) QueryFilter.gt(orderBy, cursor.key)
-                else QueryFilter.lt(orderBy, cursor.key)
-            is Before -> if (direction == ASCENDING) QueryFilter.lt(orderBy, cursor.key)
-                else QueryFilter.gt(orderBy, cursor.key)
+            is At -> if (direction == ASCENDING) Filters.ge(orderBy.name().value, cursor.key)
+                else Filters.le(orderBy.name().value, cursor.key)
+            is After -> if (direction == ASCENDING) Filters.gt(orderBy.name().value, cursor.key)
+                else Filters.lt(orderBy.name().value, cursor.key)
+            is Before -> if (direction == ASCENDING) Filters.lt(orderBy.name().value, cursor.key)
+                else Filters.gt(orderBy.name().value, cursor.key)
         }
         return if (comparison == null) queryFilters
-            else queryFilters + CompositeQueryFilter.all(comparison)
+            else queryFilters + Filters.all(comparison)
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,13 +27,27 @@
 package io.spine.internal.dependency
 
 /**
- * Commons CLI is a transitive dependency which we don't use directly.
- * We `force` it in [forceVersions].
- *
- * [Commons CLI](https://commons.apache.org/proper/commons-cli/)
+ * Pins the base APIs shared by Compiler plugins.
  */
-@Suppress("unused", "ConstPropertyName")
-object CommonsCli {
-    private const val version = "1.5.0"
-    const val lib = "commons-cli:commons-cli:${version}"
+@Suppress("ConstPropertyName")
+object Base {
+    /**
+     * Aligns the artifacts used by this build.
+     */
+    private const val version = "2.0.0-SNAPSHOT.463"
+
+    /**
+     * Provides message types and Protobuf utilities.
+     */
+    const val lib = "${Spine.group}:spine-base:$version"
+
+    /**
+     * Keeps annotations compatible with the base APIs.
+     */
+    const val annotations = "${Spine.group}:spine-annotations:$version"
+    /**
+     * Keeps the base model, formatting, and environment APIs on one release.
+     */
+    val libs = listOf("spine-base", "spine-annotations", "spine-format", "spine-environment")
+        .map { "${Spine.group}:$it:$version" }
 }

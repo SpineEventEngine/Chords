@@ -70,10 +70,9 @@ import io.spine.chords.proto.value.money.decimalSeparator
 import io.spine.chords.proto.value.money.formatAmount
 import io.spine.chords.proto.value.money.options
 import io.spine.chords.proto.value.money.parseAmount
+import io.spine.money.Currencies
+import io.spine.money.Currencies.USD
 import io.spine.money.Currency
-import io.spine.money.Currency.CURRENCY_UNDEFINED
-import io.spine.money.Currency.UNRECOGNIZED
-import io.spine.money.Currency.USD
 import io.spine.money.Money
 import kotlin.math.abs
 
@@ -83,7 +82,20 @@ import kotlin.math.abs
 private val defaultCurrency = USD
 
 /**
- * A field that allows entering [Money] values.
+ * The precision of Spine Money's fractional amount, in atto (10^-18) units.
+ */
+private const val AttoDigits = 18
+
+/**
+ * Edits Spine Money 2 amounts and selects currencies known to the JDK.
+ * Currency information comes from Spine's currency providers. Fractional amounts use attos.
+ *
+ * ```kotlin
+ * @Composable
+ * fun AmountEditor(amount: MutableState<Money?>) {
+ *     MoneyField { value = amount }
+ * }
+ * ```
  */
 public class MoneyField : InputField<Money>() {
     public companion object : ComponentSetup<MoneyField>()
@@ -91,9 +103,9 @@ public class MoneyField : InputField<Money>() {
     /**
      * A list of item values to choose from.
      */
-    private val currencies: Iterable<Currency> = Currency.values().filter {
-        it != UNRECOGNIZED && it != CURRENCY_UNDEFINED
-    }
+    private val currencies: Iterable<Currency> = java.util.Currency.getAvailableCurrencies()
+        .sortedBy { it.currencyCode }
+        .map { Currencies.of(it.currencyCode) }
 
     /**
      * List of currency items filtered by the current search substring.
@@ -170,7 +182,7 @@ public class MoneyField : InputField<Money>() {
                     verticalAlignment = CenterVertically
                 ) {
                     Text(
-                        text = it.name,
+                        text = it.code,
                         modifier = Modifier.width(currencyCodeWidth)
                     )
                     Text(
@@ -196,7 +208,7 @@ public class MoneyField : InputField<Money>() {
     @Composable
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
     private fun DropdownListBoxScope.FieldContent() {
-        val exponentDigits = selectedCurrency.options.exponentDigits
+        val exponentDigits = selectedCurrency.options.fractionDigits.coerceAtLeast(0)
 
         promptText = if (exponentDigits > 0) {
             "0$decimalSeparator${"0".repeat(exponentDigits)}"
@@ -214,7 +226,7 @@ public class MoneyField : InputField<Money>() {
                     .onPointerEvent(Press) { this@MoneyField.expanded.value = true },
                 verticalAlignment = CenterVertically
             ) {
-                Text(selectedCurrency.name)
+                Text(selectedCurrency.code)
                 TrailingIcon(this@MoneyField.expanded.value)
             }
         }
@@ -244,7 +256,7 @@ public class MoneyField : InputField<Money>() {
             return currencies.toList()
         }
         return currencies.filter {
-            it.name.contains(trimmedSearchString, true) ||
+            it.code.contains(trimmedSearchString, true) ||
             it.options.name.contains(trimmedSearchString, true)
         }
     }
@@ -268,17 +280,24 @@ public class MoneyField : InputField<Money>() {
         }
 
         try {
-            var nanos = ""
-            val exponentDigits = selectedCurrency.options.exponentDigits
+            var fraction = ""
+            val exponentDigits = selectedCurrency.options.fractionDigits.coerceAtLeast(0)
             if (exponentDigits > 0) {
-                nanos = abs(value.value?.nanos ?: 0).toString()
+                fraction = abs(value.value?.attos ?: 0L)
+                    .toString()
+                    .padStart(AttoDigits, '0')
 
-                if (nanos.length > exponentDigits) {
-                    nanos = nanos.substring(0, exponentDigits)
+                if (fraction.length > exponentDigits) {
+                    fraction = fraction.substring(0, exponentDigits)
                 }
             }
+            val sign = if (value.value?.units == 0L && (value.value?.attos ?: 0L) < 0L) {
+                "-"
+            } else {
+                ""
+            }
             val moneyWithSelectedCurrency = Money::class.parseAmount(
-                "${value.value?.units}$decimalSeparator${nanos}",
+                "$sign${value.value?.units}$decimalSeparator$fraction",
                 selectedCurrency
             )
 
@@ -327,7 +346,7 @@ internal class MoneyFieldReviser(
     }
 
     override fun filterKeyEvent(keyEvent: KeyEvent): Boolean =
-        if (currency.options.exponentDigits == 0) {
+        if (currency.options.fractionDigits.coerceAtLeast(0) == 0) {
             keyEvent matches (!Digit).typed
         } else {
             keyEvent matches (!Digit and !decimalSeparator.key and !'.'.key).typed
@@ -532,7 +551,7 @@ internal class MoneyFieldReviser(
             return RawTextContent("")
         }
 
-        val exponentDigits = currency.options.exponentDigits
+        val exponentDigits = currency.options.fractionDigits.coerceAtLeast(0)
 
         val (sanitizedAmount, inputCursorOffset) = sanitizeAmount(
             current,

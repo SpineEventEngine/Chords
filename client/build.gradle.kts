@@ -25,7 +25,8 @@
  */
 
 import com.google.protobuf.gradle.protobuf
-import com.google.protobuf.gradle.protoc
+import io.spine.internal.dependency.Compose
+import io.spine.internal.dependency.Guava
 import io.spine.internal.dependency.Kotlin
 import io.spine.internal.dependency.KotlinX
 import io.spine.internal.dependency.Material3
@@ -33,16 +34,13 @@ import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
 
 plugins {
-    id("io.spine.tools.gradle.bootstrap")
+    id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("io.spine.core-jvm")
     id("com.google.protobuf")
-    id("org.jetbrains.compose") version "1.5.12"
 }
 
 // Generates entity fixtures for the client protocol tests.
-spine {
-    assembleModel()
-    enableJava()
-}
 
 protobuf {
     protoc {
@@ -51,9 +49,11 @@ protobuf {
 }
 
 dependencies {
+    testImplementation(Guava.testLib)
     implementation(Kotlin.reflect)
     implementation(KotlinX.Coroutines.swing)
-    implementation(compose.desktop.currentOs)
+    implementation(Compose.ui)
+    implementation(Compose.foundation)
     implementation(Material3.Desktop.lib)
     implementation(Spine.CoreJvm.core)
     implementation(Spine.CoreJvm.client)

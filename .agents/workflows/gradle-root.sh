@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
-# Runs permitted root Gradle tasks under a verified JDK 11.
+# Runs permitted root Gradle tasks under a verified JDK 25.
 #
 #   .agents/workflows/gradle-root.sh :core:check
 #   .agents/workflows/gradle-root.sh :proto:test --tests "…"
 #
-# `codegen/plugins` uses `.agents/workflows/gradle-codegen.sh` on JDK 17.
+# `codegen/plugins` uses `.agents/workflows/gradle-codegen.sh` on JDK 25.
 #
 # Environment:
-#   CHORDS_JDK11_HOME   use this JDK instead of asking jEnv for one
+#   CHORDS_JDK25_HOME   use this JDK instead of asking jEnv for one
 #   CHORDS_NO_GRADLE_DAEMON
 #                       force the daemonless build described below, whatever
 #                       the sandbox probe concludes
@@ -33,8 +33,8 @@ validate_arguments() {
             case "$expect" in
                 tests)   [[ -n "$argument" && "$argument" != -* ]] \
                              || die "--tests needs a non-option test filter" ;;
-                exclude) [[ "$argument" == "applyCodegenPlugins" ]] \
-                             || die "only applyCodegenPlugins may be excluded" ;;
+                configuration) [[ "$argument" =~ ^[A-Za-z][A-Za-z0-9_]*$ ]] \
+                             || die "--configuration needs a configuration name" ;;
             esac
             expect=""
             continue
@@ -43,15 +43,15 @@ validate_arguments() {
         case "$argument" in
             clean|build|check|test|detekt|publishToMavenLocal|\
             publishCodegenPluginsToMavenLocal|generatePom|\
-            mergeAllLicenseReports|checkVersionIncrement) ;;
+            mergeAllLicenseReports|checkVersionIncrement|dependencies|buildEnvironment) ;;
             --tests) expect=tests ;;
-            -x|--exclude-task) expect=exclude ;;
-            --exclude-task=applyCodegenPlugins|--rerun-tasks|--stacktrace|\
+            --configuration) expect=configuration ;;
+            --rerun-tasks|--stacktrace|\
             --info|--warn|--quiet|--no-daemon|--continue) ;;
             *)
                 local task_pattern
                 task_pattern='^(:[A-Za-z0-9_-]+)+:'
-                task_pattern+='(test|check|compileKotlin|compileTestKotlin)$'
+                task_pattern+='(test|check|compileKotlin|compileTestKotlin|dependencies|buildEnvironment)$'
                 [[ "$argument" =~ $task_pattern ]] \
                     || die "argument '${argument}' is not permitted for "\
 "unattended root verification"
@@ -73,7 +73,7 @@ for candidate in "$(command -v jenv 2>/dev/null || true)" \
     break
 done
 
-java_home="${CHORDS_JDK11_HOME:-}"
+java_home="${CHORDS_JDK25_HOME:-}"
 if [[ -z "$java_home" && -n "$jenv_bin" ]]; then
     if [[ -f "$REPO_ROOT/.java-version" ]]; then
         java_version="$("$jenv_bin" version-file-read "$REPO_ROOT/.java-version")" \
@@ -81,13 +81,13 @@ if [[ -z "$java_home" && -n "$jenv_bin" ]]; then
         java_home="$("$jenv_bin" prefix "$java_version" 2>/dev/null)" \
             || die "JDK '${java_version}' from .java-version is not registered with jEnv"
     else
-        java_home="$("$jenv_bin" prefix 11 2>/dev/null || true)"
+        java_home="$("$jenv_bin" prefix 25 2>/dev/null || true)"
     fi
 fi
 [[ -n "$java_home" ]] || java_home="${JAVA_HOME:-}"
 [[ -n "$java_home" ]] \
-    || die "no JDK 11 found. Install one, register it with jEnv ('jenv add …'), "\
-"or set CHORDS_JDK11_HOME"
+    || die "no JDK 25 found. Install one, register it with jEnv ('jenv add …'), "\
+"or set CHORDS_JDK25_HOME"
 [[ -x "${java_home}/bin/java" ]] \
     || die "'${java_home}' has no bin/java; it is not a JDK home"
 
@@ -98,18 +98,9 @@ settings="$("${java_home}/bin/java" -XshowSettings:properties -version 2>&1)"
 property() { printf '%s\n' "$settings" | awk -F'= ' -v k="$1" '$0 ~ k { print $2; exit }'; }
 
 version="$(property 'java\.specification\.version')"
-[[ "$version" == "11" ]] \
+[[ "$version" == "25" ]] \
     || die "'${java_home}' reports Java ${version:-unknown}; the root build needs "\
-"JDK 11 (see .agents/guidelines/root-build.md)"
-
-arch="$(property 'os\.arch')"
-if [[ "$(uname -s)" == "Darwin" && "$arch" != "x86_64" ]]; then
-    die "'${java_home}' reports os.arch=${arch:-unknown}; Apple Silicon root "\
-"verification must use an x86_64 JDK 11"
-elif [[ "$arch" != "x86_64" && "$arch" != "amd64" ]]; then
-    info "warning: this JDK reports os.arch=${arch}; the root build pins "\
-"platform-specific Protobuf and gRPC tooling that may have no macOS ARM build"
-fi
+"JDK 25 (see .agents/guidelines/root-build.md)"
 
 # A daemon inherits its launcher's sandbox and may poison later terminal builds.
 # Disable reusable Gradle and Kotlin daemons when the Kotlin daemon directory is

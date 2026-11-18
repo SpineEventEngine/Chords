@@ -82,7 +82,7 @@ while iterating, from the repository root:
 
 Module Gradle paths: `core`, `proto`, `proto-values`, `client`, `runtime`,
 `codegen-tests`. The separate `codegen/plugins` project verifies with
-`.agents/workflows/gradle-codegen.sh build`, which selects JDK 17.
+`.agents/workflows/gradle-codegen.sh build`, which selects JDK 25.
 Use [Codegen Engineering](../codegen-engineer/SKILL.md#verification) when
 verification also requires rebuilding and publishing the plugins to Maven local.
 
@@ -101,7 +101,7 @@ input remain up to date. Check that the command used the wrapper for the owning
 build and that the task declares the changed input. Fix the invocation before
 rerunning; a rerun of the wrong build is still the wrong build.
 
-Where a rerun is genuinely required, the root build's Gradle 6.9.4 supports the
+Where a rerun is genuinely required, the root build's Gradle 9.8.2 supports the
 whole-graph flag:
 
 ```bash

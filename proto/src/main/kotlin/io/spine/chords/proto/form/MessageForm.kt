@@ -66,9 +66,9 @@ import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
 import io.spine.chords.runtime.messageDef
-import io.spine.protobuf.ValidatingBuilder
-import io.spine.validate.ConstraintViolation
-import io.spine.validate.ValidationException
+import io.spine.validation.ConstraintViolation
+import io.spine.validation.ValidatingBuilder
+import io.spine.validation.ValidationException
 
 /**
  * A kind of input component, which allows creating a field-wise editor UI
@@ -149,7 +149,7 @@ import io.spine.validate.ValidationException
  * errors (see [FormFieldScope.fieldValueValid]), or if any validation
  * failures are identified by the form when building a message based from the
  * currently entered field values (when invoking the [builder]'s
- * [vBuild][ValidatingBuilder.vBuild] method), this prevents the form from a
+ * [build][ValidatingBuilder.build] method), this prevents the form from a
  * successful creation of the resulting value [M], and results in `null` to be
  * stored in [value], and `false` to be stored in [valid].
  *
@@ -175,7 +175,7 @@ import io.spine.validate.ValidationException
  *
  * If any validation failures occur when creating a message from values
  * specified in form's fields (as reported by the respective message builder's
- * `vBuild()` method), the respective validation error messages are propagated
+ * `build()` method), the respective validation error messages are propagated
  * to all corresponding field editor components as the
  * `externalValidationMessage` variable that can be found in the
  * [FormFieldScope] context introduced by the [Field][FormFieldsScope.Field]
@@ -507,7 +507,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          *   layout along with field editor declarations.
          * @return The form instance registered for the parent field.
          */
-        context(FormFieldsScope<PM>)
+        context(_: FormFieldsScope<PM>)
         @Composable
         @Suppress(
             // Explicit casts are needed since we cannot parameterize
@@ -611,7 +611,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
          *   layout along with field editor declarations.
          * @return The form instance registered for the parent field.
          */
-        context(FormFieldsScope<PM>)
+        context(_: FormFieldsScope<PM>)
         @Composable
         @Suppress(
             // Explicit casts are needed since we cannot parameterize
@@ -1160,7 +1160,6 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      */
     internal var multipartContent: (@Composable MultipartFormScope<M>.() -> Unit)? = null
 
-
     /**
      * A lambda that should create and return a new builder for a message
      * of type [M].
@@ -1663,7 +1662,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      * the [valid] state's value is set to `false`.
      *
      * The validation is performed using whatever rules are built in with
-     * the standard Spine's `vBuild()` functionality of [ValidatingBuilder].
+     * the standard Spine's `build()` functionality of [ValidatingBuilder].
      * The fields that are reported as having validation failures in this
      * process are marked as having errors in the UI, and respective error
      * messages propagated to the editor components.
@@ -1675,7 +1674,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
      *
      * This method states a validation error (sets [valid] to `true`, and
      * [value] to `null`), if any of the validation constraints fail during
-     * `vBuild()`, or if any fields have their internal validation errors.
+     * `build()`, or if any fields have their internal validation errors.
      * The form's status is updated to reflect the validation failures before
      * the exception is thrown, which can include focusing the respective field
      * whose entered data has caused the validation failure, and displaying
@@ -1713,7 +1712,7 @@ public open class MessageForm<M : Message> : InputComponent<M>(), InputContext {
         val validatedMessage = try {
             val builder = builderWithCurrentFields()
             beforeBuild(builder)
-            builder.vBuild()
+            builder.build()
         } catch (e: ValidationException) {
             if (updateValidationErrors) {
                 showConstraintViolations(e.constraintViolations)

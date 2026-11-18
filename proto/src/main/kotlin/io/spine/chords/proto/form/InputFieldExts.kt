@@ -30,8 +30,8 @@ import com.google.protobuf.Message
 import io.spine.chords.core.InputField
 import io.spine.chords.core.ParseException
 import io.spine.chords.core.exceptionBasedParser
-import io.spine.protobuf.ValidatingBuilder
-import io.spine.validate.ValidationException
+import io.spine.validation.ValidatingBuilder
+import io.spine.validation.ValidationException
 
 /**
  * A helper method designed to be used within [InputField.parseValue] to help
@@ -41,8 +41,8 @@ import io.spine.validate.ValidationException
  * More precisely, it runs the provided [builder] to obtain
  * a [ValidatingBuilder] message that corresponds to the `rawText` argument
  * of [InputField.formatValue], which invokes this function. Then it invokes
- * [vBuild][ValidatingBuilder.vBuild()] on that builder instance and returns
- * its value if it completes successfully. If `vBuild` fails with
+ * [build][ValidatingBuilder.build] on that builder instance and returns
+ * its value if it completes successfully. If `build` fails with
  * [ValidationException] then this method throws [ParseException] with
  * the given [failureMessage].
  *
@@ -53,9 +53,9 @@ import io.spine.validate.ValidationException
  *   [ValidatingBuilder] instance based on the
  *   [parseValue][InputField.parseValue]'s `rawText` argument.
  * @return The message value that has been successfully parsed (built by
- *   invoking [vBuild][ValidatingBuilder.vBuild] on [ValidatingBuilder]
+ *   invoking [build][ValidatingBuilder.build] on [ValidatingBuilder]
  *   returned by [builder]).
- * @throws ParseException If [vBuild][ValidatingBuilder.vBuild()] on the
+ * @throws ParseException If [build][ValidatingBuilder.build] on the
  *   prepared builder throws [ValidationException].
  * @see [InputField.formatValue]
  * @see vBuildBasedParser
@@ -67,5 +67,5 @@ public fun <V : Message> vBuildBasedParser(
     ValidationException::class,
     failureMessage
 ) {
-    builder().vBuild() as V
+    builder().build()
 }

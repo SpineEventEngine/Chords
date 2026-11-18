@@ -16,8 +16,7 @@ Use this skill for build, dependency, and release-plumbing work:
 - Root `build.gradle.kts`, `settings.gradle.kts`, `version.gradle.kts`, and `gradle.properties`.
 - `buildSrc/` dependency coordinates, repository helpers, and convention
   plugins (`jvm-module`, publishing, reports).
-- The `codegen/plugins` Gradle project's own build logic and its
-  `codegen-workspace` resource packaging.
+- The `codegen/plugins` Gradle project's own build logic and generator publication.
 - Publishing configuration: `spinePublishing`, artifact prefix, destination
   repositories, and the `publishCodegenPlugins*` tasks.
 - Version policy and the generated `pom.xml` / `dependencies.md` reports.
@@ -27,26 +26,23 @@ For `.github/workflows` YAML, use `.agents/skills/ci-engineer/SKILL.md`.
 
 ## Policy
 
-- Two toolchains coexist: the root project uses JDK 11 / Gradle 6.9.4 and the
-  compiler/library version split documented in `kotlin-engineer`;
-  `codegen/plugins` uses JDK 17 / Gradle 9.4.x / Kotlin 2.4.10. Keep build
-  logic compatible with the owning toolchain.
+- Both the root build and `codegen/plugins` use JDK 25 / Gradle 9.8.2 /
+  Kotlin 2.4.21. Use the wrapper for the owning build.
 - Dependency coordinates belong in
   `buildSrc/src/main/kotlin/io/spine/internal/dependency/`, one object per
   library, following the existing pattern. Do not inline version strings into
   module build files.
 - Do not auto-update external dependencies or toolchain versions outside
-  dedicated upgrade tasks; the pins match the Spine 1.9.x consumer ecosystem.
+  dedicated upgrade tasks; the pins match the Spine 2 consumer ecosystem.
 - The `config/` submodule is owned by `SpineEventEngine/config`; do not edit
   its contents here. If shared build logic must change, describe the upstream
   change instead.
 - Do not run `publish` or `publishCodegenPlugins` against remote repositories;
   publishing is CI-owned on `master`. Verify locally with `publishToMavenLocal`.
-- Preserve the codegen wiring contract: `modulesWithChordsCodegen` lists the
-  modules that get the `io.spine.chords` Gradle plugin, and
-  `createCodegenWorkspace` depends on `publishCodegenPluginsToMavenLocal`.
-- Keep the Gradle plugin version (`io.spine.chords` in `build.gradle.kts` and
-  `Spine.kt` in `buildSrc`) consistent in both places when bumping it.
+- `modulesWithChordsCodegen` selects modules that load the Chords generator through
+  `spineCompiler`. Composite substitutions build the generator and runtime from the checkout.
+  `publishCodegenPluginsToMavenLocal` publishes both for external consumers.
+- Keep the root and codegen builds' Compiler and Spine dependency coordinates aligned.
 
 ## Versioning and Reports
 
@@ -109,7 +105,7 @@ From the repository root, follow `.agents/guidelines/root-build.md`:
 .agents/workflows/gradle-root.sh checkVersionIncrement
 ```
 
-Codegen plugins build, using the verified JDK 17 wrapper from the repository root:
+Codegen plugins build, using the verified JDK 25 wrapper from the repository root:
 
 ```bash
 .agents/workflows/gradle-codegen.sh build

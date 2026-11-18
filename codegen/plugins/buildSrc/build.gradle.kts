@@ -43,7 +43,7 @@ repositories {
  * Please check that this value matches one defined in
  *  [i o.spine.internal.dependency.Kotlin.version].
  */
-val kotlinVersion = "2.4.10"
+val kotlinVersion = "2.4.21"
 
 /**
  * The version of Guava used in `buildSrc`.
@@ -51,7 +51,7 @@ val kotlinVersion = "2.4.10"
  * Always use the same version as the one specified in [io.spine.dependency.lib.Guava].
  * Otherwise, when testing Gradle plugins, clashes may occur.
  */
-val guavaVersion = "33.5.0-jre"
+val guavaVersion = "33.8.0-jre"
 
 /**
  * The version of ErrorProne Gradle plugin.
@@ -59,7 +59,7 @@ val guavaVersion = "33.5.0-jre"
  * @see <a href="https://github.com/tbroyer/gradle-errorprone-plugin/releases">
  *     Error Prone Gradle Plugin Releases</a>
  */
-val errorPronePluginVersion = "4.2.0"
+val errorPronePluginVersion = "5.2.0"
 
 /**
  * The version of Protobuf Gradle Plugin.
@@ -69,21 +69,19 @@ val errorPronePluginVersion = "4.2.0"
  * @see <a href="https://github.com/google/protobuf-gradle-plugin/releases">
  *     Protobuf Gradle Plugins Releases</a>
  */
-val protobufPluginVersion = "0.10.0"
+val protobufPluginVersion = "0.10.1"
 
 /**
  * The version of Detekt Gradle Plugin.
  *
  * @see <a href="https://github.com/detekt/detekt/releases">Detekt Releases</a>
  */
-val detektVersion = "2.0.0-alpha.1"
+val detektVersion = "2.0.0-alpha.6"
 
 /**
  * The version of Google Artifact Registry used by `buildSrc`.
- *
- * The version `2.1.5` is the latest before `2.2.0`, which introduces breaking changes.
  */
-val googleAuthToolVersion = "2.1.5"
+val googleAuthToolVersion = "2.2.5"
 
 configurations.all {
     resolutionStrategy {
@@ -99,17 +97,18 @@ configurations.all {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
+        jvmTarget.set(JvmTarget.JVM_25)
     }
 }
 
 dependencies {
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.55.0")
     dependOnAuthCommon()
 
     implementation("com.google.guava:guava:$guavaVersion")
@@ -123,25 +122,11 @@ dependencies {
     implementation("com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion")
 
     // https://github.com/srikanth-lingala/zip4j
-    implementation("net.lingala.zip4j:zip4j:2.10.0")
+    implementation("net.lingala.zip4j:zip4j:2.11.6")
 }
 
 /**
- * Includes the `implementation` dependency on `artifactregistry-auth-common`,
- * with the version defined in [googleAuthToolVersion].
- *
- * `artifactregistry-auth-common` has transitive dependency on Gson and Apache `commons-codec`.
- * Gson from version `2.8.6` until `2.8.9` is vulnerable to Deserialization of Untrusted Data
- * (https://devhub.checkmarx.com/cve-details/CVE-2022-25647/).
- *
- *  Apache `commons-codec` before 1.13 is vulnerable to information exposure
- * (https://devhub.checkmarx.com/cve-details/Cxeb68d52e-5509/).
- *
- * We use Gson `2.10.1` and we force it in `forceProductionDependencies()`.
- * We use `commons-code` with version `1.16.0`, forcing it in `forceProductionDependencies()`.
- *
- * So, we should be safe with the current version `artifactregistry-auth-common` until
- * we migrate to a later version.
+ * Adds Artifact Registry authentication without introducing another Guava version.
  */
 fun DependencyHandlerScope.dependOnAuthCommon() {
     @Suppress("VulnerableLibrariesLocal", "RedundantSuppression")

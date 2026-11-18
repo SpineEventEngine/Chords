@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,13 +71,13 @@ public fun IpAddressKt.parse(str: String): IpAddress {
             .setIpv4(
                 Ipv4AddressKt.of(addressBytes)
             )
-            .vBuild()
+            .build()
 
         Ipv6ByteLength -> IpAddress.newBuilder()
             .setIpv6(
                 Ipv6AddressKt.of(addressBytes)
             )
-            .vBuild()
+            .build()
 
         else -> throw IllegalArgumentException("Couldn't parse an IP address: $str")
     }
@@ -131,7 +131,7 @@ public fun IpAddress.format(): String {
 public fun Ipv4AddressKt.of(bytes: ByteArray): Ipv4Address {
     return Ipv4Address.newBuilder()
         .setValue(ByteString.copyFrom(bytes))
-        .vBuild()
+        .build()
 }
 
 /**
@@ -146,5 +146,5 @@ public fun Ipv4AddressKt.of(bytes: ByteArray): Ipv4Address {
 public fun Ipv6AddressKt.of(bytes: ByteArray): Ipv6Address {
     return Ipv6Address.newBuilder()
         .setValue(ByteString.copyFrom(bytes))
-        .vBuild()
+        .build()
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,7 +150,7 @@ class JacocoConfig(
         val humanProducedCompiledFiles = filter.humanProducedCompiledFiles()
 
         val rootReport = tasks.register(jacocoRootReport.name, JacocoReport::class.java) {
-            dependsOn(copyReports)
+            copyReports?.let { dependsOn(it) }
 
             additionalSourceDirs.from(humanProducedSourceFolders)
             sourceDirectories.from(humanProducedSourceFolders)

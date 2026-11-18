@@ -16,9 +16,9 @@ skill authors and reviews workflow definitions, it does not trigger them.
 
 ## Scope
 
-- `.github/workflows/build-on-ubuntu.yml`: JDK 11 build on every push using
+- `.github/workflows/build-on-ubuntu.yml`: JDK 25 build on every push using
   `./gradlew build --stacktrace`.
-- `.github/workflows/build-on-windows.yml`: JDK 11 build on `master` pushes
+- `.github/workflows/build-on-windows.yml`: JDK 25 build on `master` pushes
   using `gradlew.bat build --stacktrace --no-daemon`.
 - `.github/workflows/ensure-reports-updated.yml`: via
   `config/scripts/ensure-reports-updated.sh`, requires `pom.xml` plus either
@@ -47,8 +47,8 @@ workflows invoke, use `.agents/skills/build-engineer/SKILL.md`.
   tokens, or credentials into a workflow.
 - Do not add steps that publish artifacts or rotate credentials as routine
   changes. Describe the required human action instead.
-- Keep in mind the two-toolchain layout: root builds need JDK 11; any step
-  building `codegen/plugins` needs JDK 17 and invokes
+- Keep in mind the two-build layout: root builds need JDK 25; any step
+  building `codegen/plugins` needs JDK 25 and invokes
   `.agents/workflows/gradle-codegen.sh` from the repository root.
 
 ## Verification

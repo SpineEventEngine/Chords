@@ -119,7 +119,7 @@ its `given/AppWindowSpecEnv.kt` as the flat-suite reference.
   `SpecEnv`; see the advanced reference.
 - Do not add Gradle `java-test-fixtures`; share plain test-source classes.
 - Build Protobuf values with Java builder chains, never `.apply { }`. Use
-  `vBuild()` when Spine validation belongs to the case.
+  `build()` for validated messages and `buildPartial()` only for deliberately invalid fixtures.
 - Do not depend on real external services, production resources, credentials,
   signing material, or local absolute paths.
 
@@ -161,8 +161,9 @@ its `given/AppWindowSpecEnv.kt` as the flat-suite reference.
 
 ## `testlib` Bases and Helpers
 
-`spine-testlib` and Guava testlib are available in every module. All bases are
-in `io.spine.testing`; `EqualsTester` is from Guava.
+Current suites use JUnit Jupiter with Kotest assertions. Guava testlib is declared only
+in `client` for `EqualsTester`. Add a module-specific `spine-testlib` dependency only
+when a suite needs one of its bases; they are in `io.spine.testing`.
 
 | Target | Extend |
 |---|---|

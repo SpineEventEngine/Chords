@@ -60,7 +60,7 @@ public fun KClass<PersonName>.parse(nameString: String): PersonName {
     return PersonName.newBuilder()
         .setGivenName(givenName)
         .setFamilyName(familyName)
-        .vBuild()
+        .build()
 }
 
 /**

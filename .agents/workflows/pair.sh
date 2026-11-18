@@ -3439,7 +3439,7 @@ gradle_user_home() { printf '%s' "${GRADLE_USER_HOME:-${HOME}/.gradle}"; }
 #   * The wrapper takes a lock inside the Gradle user home
 #     (wrapper/dists/…/gradle-<version>-bin.zip.lck) before it starts anything,
 #     and the sandbox denies that write.
-#   * gradle.properties sets `org.gradle.jvmargs`, so Gradle 6.9.4 always runs
+#   * gradle.properties sets `org.gradle.jvmargs`, so Gradle 9.8.2 always runs
 #     the build in a forked daemon — `--no-daemon` only makes that daemon
 #     single-use — and the daemon binds a loopback TCP port the sandbox denies.
 #     Matching the JVM arguments from the client does not avoid the fork, so

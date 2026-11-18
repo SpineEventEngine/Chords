@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ package io.spine.internal.dependency
 )
 object Protobuf {
     private const val group = "com.google.protobuf"
-    const val version = "3.22.3"
+    const val version = "4.36.2"
 
     /**
      * The Java library with Protobuf data types.
@@ -54,6 +54,11 @@ object Protobuf {
         "${group}:protobuf-java-util:${version}",
         "${group}:protobuf-kotlin:${version}"
     )
+    /**
+     * Provides timestamp and duration conversion helpers used by value editors.
+     */
+    const val javaUtil = "${group}:protobuf-java-util:${version}"
+
     const val compiler = "${group}:protoc:${version}"
 
     // https://github.com/google/protobuf-gradle-plugin/releases
@@ -64,7 +69,7 @@ object Protobuf {
          *
          * When changing the version, also change the version used in the `build.gradle.kts`.
          */
-        const val version = "0.9.4"
+        const val version = "0.10.1"
         const val id = "com.google.protobuf"
         const val lib = "${group}:protobuf-gradle-plugin:${version}"
     }

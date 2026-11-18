@@ -31,6 +31,7 @@ import androidx.compose.runtime.RememberObserver
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import io.spine.base.EntityState
+import kotlinx.coroutines.CoroutineScope
 
 /**
  * Page navigation state for a Compose view, retained across recompositions.
@@ -42,7 +43,7 @@ import io.spine.base.EntityState
  * Given an entity query and the application's client:
  * ```kotlin
  * @Composable
- * fun <T : EntityState> PageItems(query: PagedDataQuery<T>, client: Client) {
+ * fun <T : EntityState<*>> PageItems(query: PagedDataQuery<T>, client: Client) {
  *     val navigator = rememberPagedDataNavigator(query, client)
  *     Text("${navigator.items.size} items")
  * }
@@ -54,12 +55,46 @@ import io.spine.base.EntityState
  * @param client The server connection; replacing it creates a new navigator.
  */
 @Composable
-public fun <T : EntityState> rememberPagedDataNavigator(
+public fun <T : EntityState<*>> rememberPagedDataNavigator(
     query: PagedDataQuery<T>,
     client: Client
+): PagedDataNavigator<T> = rememberPagedDataNavigator(
+    query = query, client = client, scope = rememberCoroutineScope()
+)
+
+/**
+ * Page navigation limited to both a Compose view and a caller's [scope].
+ *
+ * Requests begin after composition commits, so the view observes loading state before a response
+ * can arrive. Leaving the composition, replacing an input, or cancelling [scope] closes navigation.
+ * Closing navigation leaves [scope] and [client] open.
+ *
+ * Use a session scope when signing out must stop reads before the view leaves composition:
+ * ```kotlin
+ * @Composable
+ * fun <T : EntityState<*>> SessionPage(
+ *     query: PagedDataQuery<T>, client: Client, sessionScope: CoroutineScope
+ * ) {
+ *     val navigator = rememberPagedDataNavigator(
+ *         query = query, client = client, scope = sessionScope
+ *     )
+ *     Text("${navigator.items.size} items")
+ * }
+ * ```
+ * The example uses `androidx.compose.material.Text`.
+ *
+ * @param T The entity type displayed by the navigator.
+ * @param query The ordered selection; equivalent queries retain the displayed page.
+ * @param client The server connection; replacing it creates a new navigator.
+ * @param scope The lifetime and dispatcher for requests; replacing it creates a new navigator.
+ */
+@Composable
+public fun <T : EntityState<*>> rememberPagedDataNavigator(
+    query: PagedDataQuery<T>,
+    client: Client,
+    scope: CoroutineScope
 ): PagedDataNavigator<T> {
-    val scope = rememberCoroutineScope()
-    val retained = remember(query, client) {
+    val retained = remember(query, client, scope) {
         object : RememberObserver {
             /**
              * The view's navigation state, initially idle until the composition commits.

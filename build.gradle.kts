@@ -28,7 +28,6 @@ import io.spine.internal.dependency.Dokka
 import io.spine.internal.dependency.Guava
 import io.spine.internal.dependency.KotlinX
 import io.spine.internal.dependency.Spine
-import io.spine.internal.gradle.BuildCodegenPlugins
 import io.spine.internal.gradle.publish.ChordsPublishing
 import io.spine.internal.gradle.publish.PublishingRepos
 import io.spine.internal.gradle.publish.spinePublishing
@@ -40,9 +39,16 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 buildscript {
     standardSpineSdkRepositories()
 
-    plugins {
-        id("io.spine.chords") version "1.9.22"
+    doForceVersions(configurations)
+
+    dependencies {
+        classpath(io.spine.internal.dependency.Compiler.pluginLib)
+        classpath(io.spine.internal.dependency.CoreJvmCompiler.gradlePlugin)
+        classpath(io.spine.internal.dependency.Validation.gradlePluginLib)
+        classpath(io.spine.internal.dependency.Time.gradlePlugin)
+        classpath("com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.13")
     }
+
 }
 
 plugins {
@@ -57,10 +63,20 @@ allprojects {
     group = "io.spine.chords"
     version = extra["chordsVersion"]!!
 
-    repositories.standardToSpineSdk()
+    repositories {
+        mavenLocal {
+            content { includeGroup("io.spine.chords") }
+        }
+        standardToSpineSdk()
+    }
 
     configurations.all {
         resolutionStrategy {
+            dependencySubstitution {
+                substitute(module("io.spine.chords:spine-chords-runtime"))
+                    .using(module("io.spine.chords:runtime:${project.version}"))
+                    .because("Use the runtime project registered by the self-included build.")
+            }
             force(
                 KotlinX.Coroutines.core,
                 KotlinX.Coroutines.bom,
@@ -95,22 +111,26 @@ spinePublishing {
     artifactPrefix = ChordsPublishing.artifactPrefix
 }
 
-val publishCodegenPluginsToMavenLocal = tasks.register<BuildCodegenPlugins>(
+/**
+ * Publishes the generator and its runtime together for external consumers.
+ */
+val publishCodegenPluginsToMavenLocal = tasks.register(
     "publishCodegenPluginsToMavenLocal"
 ) {
-    directory = "${rootDir}/codegen/plugins"
-    task("publishToMavenLocal")
     dependsOn(
+        gradle.includedBuild("chords-codegen").task(":codegen-plugins:publishToMavenLocal"),
         project(":runtime").tasks.named("publishToMavenLocal")
     )
 }
 
-val publishCodegenPlugins = tasks.register<BuildCodegenPlugins>(
+/**
+ * Includes the generator in the CI publication graph.
+ */
+val publishCodegenPlugins = tasks.register(
     "publishCodegenPlugins"
 ) {
-    directory = "${rootDir}/codegen/plugins"
-    task("publish")
     dependsOn(
+        gradle.includedBuild("chords-codegen").task(":codegen-plugins:publish"),
         project(":runtime").tasks.named("publishToMavenLocal")
     )
 }
@@ -125,24 +145,23 @@ subprojects {
     apply<JavaPlugin>()
 
     if (modulesWithChordsCodegen.contains(name)) {
-        // Apply codegen Gradle plugin to modules that require code generation.
-        applyGradleCodegenPlugin()
+        configureChordsCodegen()
     }
 }
 
-// Applies and configures `io.spine.chords` Gradle plugin.
-//
-fun Project.applyGradleCodegenPlugin() {
-    apply {
-        plugin(Spine.Chords.GradlePlugin.id)
+/**
+ * Loads Chords definitions into the same Compiler invocation as Spine's generators.
+ */
+fun Project.configureChordsCodegen() {
+    pluginManager.withPlugin("io.spine.compiler") {
+        dependencies.add(
+            "spineCompiler",
+            Spine.Chords.CodegenPlugins.artifact(version.toString())
+        )
+        tasks.matching { it.name == "sourcesJar" }.configureEach {
+            dependsOn("classes")
+        }
     }
-    // Publish `codegen-plugins` to `mavenLocal` repo before it can be applied.
-    tasks.named("createCodegenWorkspace") {
-        dependsOn(publishCodegenPluginsToMavenLocal)
-    }
-    // Configure the plugin with the current version of `codegen-plugins`.
-    chordsGradlePlugin.codegenPluginsArtifact =
-        Spine.Chords.CodegenPlugins.artifact(version.toString())
 }
 
 tasks.named("publishToMavenLocal") {
@@ -155,8 +174,6 @@ tasks.named("publish") {
 
 PomGenerator.applyTo(project)
 tasks.named("generatePom") {
-    // The plugin declares its workspace dependency during this task, not during configuration.
-    // Include that build dependency regardless of which other tasks accompany report generation.
-    dependsOn(modulesWithChordsCodegen.map { ":$it:createCodegenWorkspace" })
+    dependsOn(publishCodegenPluginsToMavenLocal)
 }
 LicenseReporter.mergeAllReports(project)

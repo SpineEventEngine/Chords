@@ -33,20 +33,23 @@ import io.grpc.Status.Code.CANCELLED
 import io.grpc.Status.Code.UNAVAILABLE
 import io.grpc.StatusRuntimeException
 import io.spine.base.CommandMessage
-import io.spine.base.EntityColumn
 import io.spine.base.EntityState
 import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
+import io.spine.client.ActorRequestFactory
 import io.spine.client.ClientRequest
 import io.spine.client.CompositeEntityStateFilter
-import io.spine.client.CompositeQueryFilter
+import io.spine.client.CompositeFilter
 import io.spine.client.EventFilter.eq
 import io.spine.client.OrderBy.Direction
 import io.spine.client.OrderBy.Direction.ASCENDING
 import io.spine.client.OrderBy.Direction.DESCENDING
+import io.spine.client.QueryBuilder
 import io.spine.client.Subscription
+import io.spine.client.grpc.QueryServiceGrpc
 import io.spine.core.UserId
+import io.spine.query.EntityColumn
 import java.lang.Runtime.getRuntime
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.atomic.AtomicBoolean
@@ -195,15 +198,13 @@ public class DesktopClient internal constructor(
         }
     }
 
-    override fun <E : EntityState> readAndObserve(
+    override fun <E : EntityState<*>> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any
     ): DataObservation<List<E>> = createObservation(
         initialValue = emptyList(),
         read = {
-            clientRequest()
-                .select(entityClass)
-                .run()
+            runQuery(entityClass)
         },
         subscribe = { onUpdate, onRemoval, onError ->
             subscribeTo(
@@ -221,18 +222,15 @@ public class DesktopClient internal constructor(
         }
     )
 
-    override fun <E : EntityState> readAndObserve(
+    override fun <E : EntityState<*>> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
-        queryFilter: CompositeQueryFilter,
+        queryFilter: CompositeFilter,
         observeFilter: CompositeEntityStateFilter
     ): DataObservation<List<E>> = createObservation(
         initialValue = emptyList(),
         read = {
-            clientRequest()
-                .select(entityClass)
-                .where(queryFilter)
-                .run()
+            runQuery(entityClass) { where(queryFilter) }
         },
         subscribe = { onUpdate, onRemoval, onError ->
             subscribeTo(
@@ -256,30 +254,29 @@ public class DesktopClient internal constructor(
      * An empty [queryFilters] list selects all entities of the requested type.
      */
     @Suppress("SpreadOperator" /* Spine accepts composite query filters only through varargs. */)
-    override fun <E : EntityState> readPage(
+    override fun <E : EntityState<*>> readPage(
         entityClass: Class<E>,
-        queryFilters: List<CompositeQueryFilter>,
-        orderBy: EntityColumn,
+        queryFilters: List<CompositeFilter>,
+        orderBy: EntityColumn<*, *>,
         direction: Direction,
         limit: Int
     ): List<E> {
         validatePage(direction, limit)
-        val request = clientRequest()
-            .select(entityClass)
-        if (queryFilters.isNotEmpty()) request.where(*queryFilters.toTypedArray())
-        return request.orderBy(orderBy, direction)
-            .limit(limit)
-            .run()
+        return runQuery(entityClass) {
+            if (queryFilters.isNotEmpty()) where(*queryFilters.toTypedArray())
+            orderBy(orderBy.name().value, direction)
+            limit(limit)
+        }
     }
 
     /**
      * Rereads a bounded page after changes that may alter its membership or ordering.
      */
-    override fun <E : EntityState> readPageAndObserve(
+    override fun <E : EntityState<*>> readPageAndObserve(
         entityClass: Class<E>,
-        queryFilters: List<CompositeQueryFilter>,
+        queryFilters: List<CompositeFilter>,
         observeFilter: CompositeEntityStateFilter?,
-        orderBy: EntityColumn,
+        orderBy: EntityColumn<*, *>,
         direction: Direction,
         limit: Int
     ): DataObservation<List<E>> {
@@ -317,17 +314,14 @@ public class DesktopClient internal constructor(
         }
     }
 
-    override fun <E : EntityState> readOneAndObserve(
+    override fun <E : EntityState<*>> readOneAndObserve(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
+        queryFilter: CompositeFilter,
         observeFilter: CompositeEntityStateFilter
     ): DataObservation<E?> = createObservation(
         initialValue = null,
         read = {
-            clientRequest()
-                .select(entityClass)
-                .where(queryFilter)
-                .run()
+            runQuery(entityClass) { where(queryFilter) }
                 .firstOrNull()
         },
         subscribe = { onUpdate, onRemoval, onError ->
@@ -342,18 +336,15 @@ public class DesktopClient internal constructor(
         applyUpdate = { _, entity -> entity }
     )
 
-    override fun <E : EntityState> readOneAndObserve(
+    override fun <E : EntityState<*>> readOneAndObserve(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
+        queryFilter: CompositeFilter,
         observeFilter: CompositeEntityStateFilter,
         defaultValue: E
     ): DataObservation<E> = createObservation(
         initialValue = defaultValue,
         read = {
-            clientRequest()
-                .select(entityClass)
-                .where(queryFilter)
-                .run()
+            runQuery(entityClass) { where(queryFilter) }
                 .firstOrNull() ?: defaultValue
         },
         subscribe = { onUpdate, onRemoval, onError ->
@@ -368,16 +359,13 @@ public class DesktopClient internal constructor(
         applyUpdate = { _, entity -> entity }
     )
 
-    override fun <E : EntityState> readOneAndObserve(
+    override fun <E : EntityState<*>> readOneAndObserve(
         entityClass: Class<E>,
         id: Any
     ): DataObservation<E?> = createObservation(
         initialValue = null,
         read = {
-            clientRequest()
-                .select(entityClass)
-                .byId(listOf(id))
-                .run()
+            runQuery(entityClass) { byId(listOf(id)) }
                 .firstOrNull()
         },
         subscribe = { onUpdate, onRemoval, onError ->
@@ -392,14 +380,11 @@ public class DesktopClient internal constructor(
         applyUpdate = { _, entity -> entity }
     )
 
-    override fun <E : EntityState, M : Message> read(
+    override fun <E : EntityState<*>, M : Message> read(
         entityClass: Class<E>,
         id: M
     ): E? {
-        val entities = clientRequest()
-            .select(entityClass)
-            .byId(id)
-            .run()
+        val entities = runQuery(entityClass) { byId(id) }
         return entities.firstOrNull()
     }
 
@@ -416,17 +401,16 @@ public class DesktopClient internal constructor(
                 }
                 .postAndForget()
         } catch (e: StatusRuntimeException) {
-            if (e.status.code == UNAVAILABLE ||
+            val failure = if (e.status.code == UNAVAILABLE ||
                 (e.status.code == CANCELLED && e.status.cause is ConnectionRestartedException)
             ) {
-                throw ServerCommunicationException(e)
+                ServerCommunicationException(e)
             } else {
-                throw e
+                e
             }
+            throw failure
         }
-        if (error != null) {
-            throw error!!
-        }
+        error?.let { throw it }
     }
 
     override fun <C : CommandMessage> postCommand(
@@ -466,6 +450,26 @@ public class DesktopClient internal constructor(
             }
         }
         return eventSubscription
+    }
+
+    /**
+     * Builds a dynamic query with the current actor and decodes Spine's validated response.
+     * Uses the recoverable channel so reconnects have the same behavior as subscriptions.
+     */
+    private fun <E : EntityState<*>> runQuery(
+        entityClass: Class<E>,
+        configure: QueryBuilder.() -> Unit = {}
+    ): List<E> {
+        val query = ActorRequestFactory.newBuilder()
+            .setActor(userId ?: io.spine.client.Client.DEFAULT_GUEST_ID)
+            .build()
+            .query()
+            .select(entityClass)
+            .apply(configure)
+            .build()
+        return QueryServiceGrpc.newBlockingStub(recoverableChannel)
+            .read(query)
+            .states(entityClass)
     }
 
     /**
@@ -559,7 +563,7 @@ public class DesktopClient internal constructor(
     /**
      * Creates an entity subscription that forwards updates, removals, and failures.
      */
-    private fun <E : EntityState> subscribeTo(
+    private fun <E : EntityState<*>> subscribeTo(
         entityClass: Class<E>,
         onUpdate: (E) -> Unit,
         onRemoval: (Any) -> Unit,
@@ -613,7 +617,7 @@ public class DesktopClient internal constructor(
      * @param extractId A function that, given a list item, or a value of
      *   [entity], retrieves its ID.
      */
-    private fun <E : EntityState> updateList(
+    private fun <E : EntityState<*>> updateList(
         entities: List<E>,
         entity: E,
         extractId: (E) -> Any

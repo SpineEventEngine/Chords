@@ -34,7 +34,7 @@ object Ksp {
     /**
      * Aligns the artifacts used by this build.
      */
-    private const val version = "2.3.12"
+    private const val version = "2.3.13"
 
     /**
      * Provides the Gradle plugin required by the Core JVM compiler.

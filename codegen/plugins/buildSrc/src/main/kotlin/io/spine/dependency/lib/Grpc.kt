@@ -34,7 +34,7 @@ object Grpc {
     /**
      * Aligns the artifacts used by this build.
      */
-    private const val version = "1.76.0"
+    private const val version = "1.85.1"
 
     /**
      * Pins the shared gRPC interfaces.

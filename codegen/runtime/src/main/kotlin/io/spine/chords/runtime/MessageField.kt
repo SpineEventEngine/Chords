@@ -28,7 +28,7 @@ package io.spine.chords.runtime
 
 import com.google.protobuf.Descriptors
 import com.google.protobuf.Message
-import io.spine.protobuf.ValidatingBuilder
+import io.spine.validation.ValidatingBuilder
 
 /**
  * A type of values that Protobuf message fields can have.
@@ -41,7 +41,6 @@ import io.spine.protobuf.ValidatingBuilder
  * generic protobuf field values to be more self-explainable.
  */
 public typealias MessageFieldValue = Any
-
 
 /**
  * Allows accessing the value of the field in a Proto message at runtime.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.google.protobuf.gradle.generateProtoTasks
-import com.google.protobuf.gradle.id
 import com.google.protobuf.gradle.protobuf
-import com.google.protobuf.gradle.protoc
-import io.spine.internal.dependency.JavaX
-import io.spine.internal.dependency.Kotest
 import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
 
 plugins {
-    id("io.spine.tools.gradle.bootstrap")
+    id("io.spine.validation")
     id("com.google.protobuf")
     `maven-publish`
 }
@@ -42,29 +37,22 @@ plugins {
 apply<JavaPlugin>()
 
 spine {
-    // Spine Model Compiler is enabled only for generating validation code for
-    // error messages.
-    assembleModel()
-    enableJava()
+    compiler {
+        plugins("io.spine.chords.codegen.plugins.MessageFieldsPlugin")
+    }
 }
 
 protobuf {
     protoc {
         artifact = Protobuf.compiler
     }
-    generateProtoTasks {
-        for (task in all()) {
-            task.builtins {
-                id("kotlin")
-            }
-        }
-    }
+
 }
 
 dependencies {
-    implementation(Spine.base_1_9)
+    implementation(Protobuf.javaUtil)
+    implementation(Spine.base)
     implementation(project(":runtime"))
     api(Spine.money)
-    implementation(JavaX.annotations)
-    testImplementation(Kotest.runnerJUnit5)
+    api(Spine.baseTypes)
 }

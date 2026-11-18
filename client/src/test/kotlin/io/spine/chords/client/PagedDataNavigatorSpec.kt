@@ -43,9 +43,11 @@ import io.spine.chords.client.DataObservationStatus.Refreshing
 import io.spine.chords.client.DataObservationStatus.WaitingForConnection
 import io.spine.chords.client.DataPageCursor.End
 import io.spine.chords.client.DataPageCursor.Start
+import io.spine.chords.client.given.ObservedItem
 import io.spine.chords.client.given.ObservedItemPages.items
 import io.spine.chords.client.given.ObservedItemPages.query
 import io.spine.chords.client.given.PagedDataNavigatorSpecEnv.navigator
+import io.spine.chords.client.testing.CompositionScene
 import io.spine.chords.client.testing.ConfigurablePagedDataSource
 import io.spine.chords.client.testing.ObservationChannel
 import io.spine.chords.client.testing.PagedDataNavigatorScene
@@ -636,6 +638,59 @@ internal class PagedDataNavigatorSpec {
                     replacement.subscribeCount shouldBe 2
                 }
                 replacement.cancelCount shouldBe 2
+            }
+        }
+    }
+
+    /**
+     * A caller's lifetime must not start reads before the view observes its initial state.
+     * Cancellation on either side of the first commit must update the displayed status.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @ParameterizedTest(name = "cancel before the first commit={0}")
+    @ValueSource(booleans = [true, false])
+    fun `defer scoped composition requests and stop with the caller`(
+        beforeCommit: Boolean
+    ) = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val caller = CoroutineScope(dispatcher + Job())
+        ObservationChannel(dispatcher).use { source ->
+            source.items = items(4)
+            var firstComposition = true
+            var displayed: PagedDataNavigator<ObservedItem>? = null
+            var rendered: DataObservationStatus = Refreshing
+            try {
+                CompositionScene(testScheduler) {
+                    val pages = rememberPagedDataNavigator(
+                        query = query(), client = source.client, scope = caller
+                    )
+                    displayed = pages
+                    rendered = pages.status
+                    if (firstComposition) {
+                        firstComposition = false
+                        testScheduler.runCurrent()
+                        source.readCount shouldBe 0
+                        pages.status shouldBe Refreshing
+                        if (beforeCommit) caller.cancel()
+                    }
+                }.use { scene ->
+                    val pages = checkNotNull(displayed)
+                    if (beforeCommit) {
+                        source.readCount shouldBe 0
+                        source.subscribeCount shouldBe 0
+                    } else {
+                        rendered shouldBe Active
+                        pages.items shouldBe source.items.take(3)
+                        caller.cancel()
+                        scene.render()
+                    }
+
+                    rendered shouldBe Cancelled
+                    pages.status shouldBe Cancelled
+                    source.client.isOpen shouldBe true
+                }
+            } finally {
+                caller.cancel()
             }
         }
     }

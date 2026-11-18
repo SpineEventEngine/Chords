@@ -125,8 +125,11 @@ can proceed between reads. Read failures retain the last page and follow the obs
 failure policy described above.
 
 Implementations of `Client`, including test doubles and decorators, must implement the
-`queryFilters: List<CompositeQueryFilter>` overloads of both paging methods when upgrading to
-`2.0.0-SNAPSHOT.133`. The single-filter overloads delegate to them.
+`queryFilters: List<CompositeFilter>` overloads of both paging methods. The single-filter overloads delegate to them.
+
+Spine 2 uses `EntityState<I>` and `io.spine.query.EntityColumn<S, V>`. Query conditions use
+`CompositeFilter` and the `Filters` factories; generated column accessors such as
+`Item.Column.label()` supply the column definitions.
 
 ### Navigating paged data
 

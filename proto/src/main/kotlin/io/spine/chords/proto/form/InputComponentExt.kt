@@ -75,7 +75,7 @@ import io.spine.chords.runtime.MessageFieldValue
  * @throws IllegalArgumentException If multiple editors for this field are composed at once.
  * @see ComponentSetup.invoke
  */
-context(FormFieldsScope<M>)
+context(fields: FormFieldsScope<M>)
 @Composable
 public operator fun <
         C : InputComponent<V>,
@@ -93,7 +93,7 @@ public operator fun <
  * Both ordinary input components and nested forms use this declaration path.
  * The setup must consistently create editors of type [C] for this field.
  */
-context(FormFieldsScope<M>)
+context(fields: FormFieldsScope<M>)
 @Composable
 internal fun <
         C : InputComponent<V>,
@@ -104,7 +104,7 @@ internal fun <
     defaultValue: V? = null,
     props: Props<C>? = null
 ): C {
-    val fieldsScope = this@FormFieldsScope as FormFieldsScopeImpl<M>
+    val fieldsScope = fields as FormFieldsScopeImpl<M>
     return fieldsScope.WithField(field = field, defaultValue = defaultValue) {
         Editor(this@DeclareFieldEditor, props)
     }

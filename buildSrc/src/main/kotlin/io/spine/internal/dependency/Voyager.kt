@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ package io.spine.internal.dependency
  */
 @Suppress("unused", "ConstPropertyName")
 object Voyager {
-    private const val version = "1.0.1"
+    private const val version = "2.2.21-1.10.3"
     private const val group = "cafe.adriel.voyager"
     private const val name = "voyager"
 

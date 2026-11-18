@@ -68,9 +68,24 @@ allprojects {
     group = Chords.group
 
     // Define the repositories universally for all modules, including the root.
-    repositories.standardToSpineSdk()
+    repositories {
+        mavenLocal {
+            content { includeGroup("io.spine.chords") }
+        }
+        standardToSpineSdk()
+    }
 
     doForceVersions(configurations)
+
+    if (gradle.parent != null) {
+        configurations.configureEach {
+            resolutionStrategy.dependencySubstitution {
+                substitute(module("io.spine.chords:spine-chords-runtime"))
+                    .using(module("io.spine.chords:runtime:${project.version}"))
+                    .because("Use the root runtime project before publishing a new version.")
+            }
+        }
+    }
 }
 
 // It is assumed that every module in the project requires
@@ -87,7 +102,6 @@ subprojects {
 
     dependencies {
         implementation(Protobuf.java)
-        implementation(Protobuf.kotlin)
 
         ErrorProne.apply {
             errorprone(core)

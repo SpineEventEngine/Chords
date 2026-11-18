@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,30 +51,18 @@ fun KotlinJvmProjectExtension.applyJvmToolchain(version: String) =
 /**
  * Opts-in to experimental features that we use in our codebase.
  */
-@Suppress("unused", "MagicNumber" /* Kotlin Compiler version. */)
+@Suppress("unused")
 fun KotlinCompile.setFreeCompilerArgs() {
-    // Avoid the "unsupported flag warning" for Kotlin compilers pre 1.9.20.
-    // See: https://youtrack.jetbrains.com/issue/KT-61573
-    val expectActualClasses =
-        if (KotlinVersion.CURRENT.isAtLeast(1, 9, 20)) "-Xexpect-actual-classes" else ""
-    kotlinOptions {
-        freeCompilerArgs = listOf(
-            "-Xskip-prerelease-check",
-            "-Xjvm-default=all",
-            "-Xinline-classes",
-
-            // TODO:2024-08-29:dmitry.pikhulya: the line below is an addition relative to the
-            //   `config` module's content. Consider update the `config` module accordingly
-            //   (as an option?).
-            //   See https://github.com/SpineEventEngine/Chords/issues/3
-            "-Xcontext-receivers",
-            expectActualClasses,
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-jvm-default=no-compatibility",
             "-opt-in=" +
                     "kotlin.contracts.ExperimentalContracts," +
                     "kotlin.io.path.ExperimentalPathApi," +
                     "kotlin.ExperimentalUnsignedTypes," +
                     "kotlin.ExperimentalStdlibApi," +
-                    "kotlin.experimental.ExperimentalTypeInference"
-        ).filter { it.isNotBlank() }
+                    "kotlin.experimental.ExperimentalTypeInference," +
+                    "kotlin.RequiresOptIn"
+        )
     }
 }

@@ -42,8 +42,9 @@ import io.spine.chords.client.given.ObservedItem
 import io.spine.chords.client.given.ObservedItemPages.items
 import io.spine.chords.client.given.ObservedItemPages.query
 import io.spine.chords.client.testing.ObservationChannel
+import io.spine.client.CompositeFilter
 import io.spine.client.CompositeFilter.CompositeOperator.EITHER
-import io.spine.client.CompositeQueryFilter
+import io.spine.client.Filters
 import io.spine.client.Filters.ge
 import io.spine.client.Filters.gt
 import io.spine.client.Filters.le
@@ -51,7 +52,6 @@ import io.spine.client.Filters.lt
 import io.spine.client.OrderBy.Direction.ASCENDING
 import io.spine.client.OrderBy.Direction.DESCENDING
 import io.spine.client.Query
-import io.spine.client.QueryFilter
 import java.util.concurrent.TimeUnit.MINUTES
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
@@ -95,7 +95,8 @@ internal class PagedDataQuerySpec {
             page.hasNext shouldBe false
             val request = checkNotNull(source.lastQuery)
             request.format.limit shouldBe 3
-            request.format.orderBy.direction shouldBe if (ascending) DESCENDING else ASCENDING
+            request.format.orderByList.single().direction shouldBe
+                    if (ascending) DESCENDING else ASCENDING
             request.target.filters.filterList.flatMap { it.filterList } shouldBe
                 listOf(gt(ObservedItem.Column.label(), ""))
             source.readCount shouldBe 1
@@ -135,13 +136,13 @@ internal class PagedDataQuerySpec {
             val first = requests.first()
             val preceding = requests.last()
             first.format.limit shouldBe 3
-            first.format.orderBy.direction shouldBe direction
+            first.format.orderByList.single().direction shouldBe direction
             first.target.filters.filterList.last().filterList shouldBe listOf(
                 if (ascending) ge(ObservedItem.Column.label(), sample[3].label)
                 else le(ObservedItem.Column.label(), sample[3].label)
             )
             preceding.format.limit shouldBe 1
-            preceding.format.orderBy.direction shouldBe
+            preceding.format.orderByList.single().direction shouldBe
                 if (ascending) DESCENDING else ASCENDING
             preceding.target.filters.filterList.last().filterList shouldBe listOf(
                 if (ascending) lt(ObservedItem.Column.label(), sample[3].label)
@@ -173,8 +174,8 @@ internal class PagedDataQuerySpec {
                 first.hasPrevious shouldBe false
                 first.hasNext shouldBe true
                 initial.format.limit shouldBe 3
-                initial.format.orderBy.direction shouldBe direction
-                initial.format.orderBy.column shouldBe "label"
+                initial.format.orderByList.single().direction shouldBe direction
+                initial.format.orderByList.single().column shouldBe "label"
                 initial.target.filters.filterList.flatMap { it.filterList } shouldBe
                     listOf(gt(ObservedItem.Column.label(), ""))
 
@@ -193,8 +194,8 @@ internal class PagedDataQuerySpec {
                 nextPage.hasNext shouldBe true
                 next.format.limit shouldBe 3
                 backward.format.limit shouldBe 3
-                next.format.orderBy.direction shouldBe direction
-                backward.format.orderBy.direction shouldBe
+                next.format.orderByList.single().direction shouldBe direction
+                backward.format.orderByList.single().direction shouldBe
                     if (ascending) DESCENDING else ASCENDING
                 next.target.filters.filterList.flatMap { it.filterList } shouldBe listOf(
                     gt(ObservedItem.Column.label(), ""),
@@ -353,7 +354,7 @@ internal class PagedDataQuerySpec {
     fun `preserve disjunctions and support unfiltered selections`(): Unit = runBlocking {
         ObservationChannel().use { source ->
             val base = query()
-            val filters = mutableListOf<CompositeQueryFilter>()
+            val filters = mutableListOf<CompositeFilter>()
             val unfiltered = PagedDataQuery(
                 entityClass = base.entityClass,
                 queryFilters = filters,
@@ -362,9 +363,9 @@ internal class PagedDataQuerySpec {
                 pageSize = base.pageSize,
                 keyOf = base.keyOf
             )
-            filters.add(CompositeQueryFilter.either(
-                QueryFilter.eq(ObservedItem.Column.label(), "0001"),
-                QueryFilter.eq(ObservedItem.Column.label(), "0002")
+            filters.add(Filters.either(
+                Filters.eq(ObservedItem.Column.label(), "0001"),
+                Filters.eq(ObservedItem.Column.label(), "0002")
             ))
             unfiltered.read(source.client, Start)
             checkNotNull(source.lastQuery).target.filters.filterCount shouldBe 0

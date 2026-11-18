@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ package io.spine.internal.dependency
 // https://github.com/JetBrains/compose-jb
 object Material3 {
     object Desktop {
-        private const val version = "1.5.12"
+        private const val version = "1.9.0"
         const val lib = "org.jetbrains.compose.material3:material3-desktop:$version"
     }
 }

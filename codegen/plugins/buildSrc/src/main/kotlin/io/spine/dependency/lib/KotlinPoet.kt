@@ -33,7 +33,12 @@ package io.spine.dependency.lib
  */
 @Suppress("unused", "ConstPropertyName")
 object KotlinPoet {
-    private const val version = "2.3.0"
+    private const val version = "2.4.0"
 
     const val lib = "com.squareup:kotlinpoet:${version}"
+    /**
+     * Aligns the generator API and KSP adapters used by Spine plugins.
+     */
+    val libs = listOf("kotlinpoet", "kotlinpoet-jvm", "kotlinpoet-ksp")
+        .map { "com.squareup:$it:$version" }
 }

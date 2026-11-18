@@ -28,7 +28,6 @@ package io.spine.chords.client.testing
 
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
-import io.spine.base.EntityColumn
 import io.spine.base.EntityState
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
@@ -39,9 +38,10 @@ import io.spine.chords.client.DataObservation
 import io.spine.chords.client.EventSubscription
 import io.spine.chords.client.EventSubscriptions
 import io.spine.client.CompositeEntityStateFilter
-import io.spine.client.CompositeQueryFilter
+import io.spine.client.CompositeFilter
 import io.spine.client.OrderBy.Direction
 import io.spine.core.UserId
+import io.spine.query.EntityColumn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -73,7 +73,7 @@ internal object TestClient : Client {
     /**
      * Provides only the unfiltered observation path used by entity choosers.
      */
-    override fun <E : EntityState> readAndObserve(
+    override fun <E : EntityState<*>> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any
     ): DataObservation<List<E>> {
@@ -85,20 +85,20 @@ internal object TestClient : Client {
     /**
      * Provides only the unfiltered observation path used by entity choosers.
      */
-    override fun <E : EntityState> readAndObserve(
+    override fun <E : EntityState<*>> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
-        queryFilter: CompositeQueryFilter,
+        queryFilter: CompositeFilter,
         observeFilter: CompositeEntityStateFilter
     ): DataObservation<List<E>> = error("Unexpected filtered observation.")
 
     /**
      * Rejects page reads outside the exercised chooser API.
      */
-    override fun <E : EntityState> readPage(
+    override fun <E : EntityState<*>> readPage(
         entityClass: Class<E>,
-        queryFilters: List<CompositeQueryFilter>,
-        orderBy: EntityColumn,
+        queryFilters: List<CompositeFilter>,
+        orderBy: EntityColumn<*, *>,
         direction: Direction,
         limit: Int
     ): List<E> = error("Unexpected page read.")
@@ -106,11 +106,11 @@ internal object TestClient : Client {
     /**
      * Rejects page observations outside the exercised chooser API.
      */
-    override fun <E : EntityState> readPageAndObserve(
+    override fun <E : EntityState<*>> readPageAndObserve(
         entityClass: Class<E>,
-        queryFilters: List<CompositeQueryFilter>,
+        queryFilters: List<CompositeFilter>,
         observeFilter: CompositeEntityStateFilter?,
-        orderBy: EntityColumn,
+        orderBy: EntityColumn<*, *>,
         direction: Direction,
         limit: Int
     ): DataObservation<List<E>> = error("Unexpected page observation.")
@@ -118,18 +118,18 @@ internal object TestClient : Client {
     /**
      * Rejects observations outside the exercised chooser API.
      */
-    override fun <E : EntityState> readOneAndObserve(
+    override fun <E : EntityState<*>> readOneAndObserve(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
+        queryFilter: CompositeFilter,
         observeFilter: CompositeEntityStateFilter
     ): DataObservation<E?> = error("Unexpected single-entity observation.")
 
     /**
      * Rejects observations outside the exercised chooser API.
      */
-    override fun <E : EntityState> readOneAndObserve(
+    override fun <E : EntityState<*>> readOneAndObserve(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
+        queryFilter: CompositeFilter,
         observeFilter: CompositeEntityStateFilter,
         defaultValue: E
     ): DataObservation<E> = error("Unexpected single-entity observation.")
@@ -137,7 +137,7 @@ internal object TestClient : Client {
     /**
      * Rejects ID observations outside the exercised chooser API.
      */
-    override fun <E : EntityState> readOneAndObserve(
+    override fun <E : EntityState<*>> readOneAndObserve(
         entityClass: Class<E>,
         id: Any
     ): DataObservation<E?> = error("Unexpected single-entity observation.")
@@ -145,7 +145,7 @@ internal object TestClient : Client {
     /**
      * Rejects synchronous reads, which the chooser must not perform.
      */
-    override fun <E : EntityState, M : Message> read(entityClass: Class<E>, id: M): E? =
+    override fun <E : EntityState<*>, M : Message> read(entityClass: Class<E>, id: M): E? =
         error("Unexpected entity read.")
 
     /**

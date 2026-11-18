@@ -34,10 +34,18 @@ object Logging {
     /**
      * Aligns the artifacts used by this build.
      */
-    private const val version = "2.0.0-SNAPSHOT.428"
+    private const val version = "2.0.0-SNAPSHOT.429"
 
     /**
      * Keeps transitive logging requests on one release.
      */
     const val lib = "${Spine.group}:spine-logging:$version"
+    /**
+     * Aligns the logging API, JVM implementation, and gRPC context adapter.
+     */
+    val libs = listOf(
+        "spine-logging", "spine-logging-jvm", "spine-logging-grpc-context",
+        "spine-logging-jvm-default-platform", "spine-logging-jul-backend"
+    )
+        .map { "${Spine.group}:$it:$version" }
 }

@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import io.spine.chords.core.ComponentSetup
 import io.spine.chords.core.styling.ChordsDimensions
@@ -133,7 +134,9 @@ public class PaymentMethodEditor : CustomMessageForm<PaymentMethod>(
                 Text(
                     text = validationMessage.value ?: "",
                     style = typography.bodySmall,
-                    color = colorScheme.error
+                    color = colorScheme.error,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

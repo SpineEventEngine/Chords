@@ -32,7 +32,7 @@ and GitHub Packages.
 - `settings.gradle.kts`: root Gradle module registry (`core`, `runtime`,
   `proto-values`, `proto`, `client`, `codegen-tests`).
 - `build.gradle.kts`: root Gradle configuration for group/version, the Chords
-  codegen Gradle plugin wiring, publishing, license reports, and Jacoco.
+  Spine Compiler integration, publishing, license reports, and Jacoco.
 - `version.gradle.kts`: the single `chordsVersion` for all Chords libraries.
 - `buildSrc/`: dependency coordinates, repository helpers, and shared Gradle
   convention plugins for the root project.
@@ -54,10 +54,9 @@ and GitHub Packages.
 - `codegen/tests/` (Gradle path `:codegen-tests`): tests that check the
   correctness of code generation; uses Chords code generation.
 - `codegen/plugins/`: **separate Gradle project** with Spine Compiler plugins that
-  generate Kotlin extensions for Protobuf messages. It uses a different
-  toolchain from the root build; see [Build Engineering](skills/build-engineer/SKILL.md).
-  It is applied to consuming projects through the
-  [Chords Gradle plugin](https://github.com/SpineEventEngine/Chords-Gradle-plugin).
+  generate Kotlin extensions for Protobuf messages. It shares the root
+  toolchain but publishes the generator independently; see [Build Engineering](skills/build-engineer/SKILL.md).
+  Root consumers load it directly through Spine Compiler 2's `spineCompiler` configuration.
 - `pom.xml`, `dependencies.md`: generated dependency and license reports.
 - `.github/workflows/`: CI for Ubuntu/Windows builds, license-report and
   version-increment guards, Gradle wrapper validation, and publishing.
@@ -86,7 +85,7 @@ the application shell's `app.client` API (reading, observing, and posting
 commands). Components such as `EntityChooser` read and observe entity states.
 
 Code generation connects the separate plugin build to root modules through
-Maven-local publication and generated workspaces. See
+composite substitutions and the `spineCompiler` classpath. See
 [Generation Flow](skills/codegen-engineer/SKILL.md#generation-flow) for the
 Gradle dependency chain and its configuration.
 

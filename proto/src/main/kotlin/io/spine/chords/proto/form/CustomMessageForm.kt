@@ -28,8 +28,8 @@ package io.spine.chords.proto.form
 
 import androidx.compose.runtime.Composable
 import com.google.protobuf.Message
-import io.spine.protobuf.ValidatingBuilder
 import io.spine.chords.core.Component
+import io.spine.validation.ValidatingBuilder
 
 /**
  * A base class, which should be used for implementing custom form components

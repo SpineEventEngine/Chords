@@ -718,11 +718,11 @@ public abstract class Dialog : Component() {
     /**
      * Exposes the [windowContent] within an `internal` visibility scope.
      */
-    context(ColumnScope)
+    context(column: ColumnScope)
     @Composable
     internal fun windowContentInternal(heightMode: DialogContentHeightMode) {
         CompositionLocalProvider(LocalDialogContentHeightMode provides heightMode) {
-            windowContent()
+            with(column) { windowContent() }
         }
     }
 
@@ -830,7 +830,6 @@ public abstract class Dialog : Component() {
         }
     }
 }
-
 
 /**
  * A class that should be used for creating companion objects of

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.gitlab.arturbosch.detekt.Detekt
+import dev.detekt.gradle.Detekt
 
 /**
  * This script-plugin sets up Kotlin code analyzing with Detekt.
@@ -64,15 +64,11 @@ import io.gitlab.arturbosch.detekt.Detekt
 private val about = ""
 
 plugins {
-    id("io.gitlab.arturbosch.detekt")
+    id("dev.detekt")
 }
 
 detekt {
     buildUponDefaultConfig = true
-    // TODO:2024-08-29:dmitry.pikhulya: the line below is modified relative to the `config`
-    //   module's content. The custom config adds Compose-specific declarations.
-    //   See whether/how `config` can be updated accordingly.
-    //   See https://github.com/SpineEventEngine/Chords/issues/3
     config.from(files("${rootDir}/quality/detekt-config.yml"))
 }
 
@@ -80,10 +76,9 @@ tasks {
     withType<Detekt>().configureEach {
         reports {
             html.required.set(true) // Only HTML report is generated.
-            xml.required.set(false)
-            txt.required.set(false)
+            checkstyle.required.set(false)
             sarif.required.set(false)
-            md.required.set(false)
+            markdown.required.set(false)
         }
     }
 }
