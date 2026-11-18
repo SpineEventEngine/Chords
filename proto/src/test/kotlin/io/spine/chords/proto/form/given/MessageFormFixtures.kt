@@ -118,13 +118,13 @@ internal object MessageFormFixtures {
     /**
      * Binds caller-owned input through the public Field API without automatic editor retention.
      */
-    context(FormFieldsScope<M>)
+    context(fields: FormFieldsScope<M>)
     @Composable
     fun <M : Message, V : MessageFieldValue> InputComponent<V>.RenderWithinField(
         field: MessageField<M, V>
     ) {
         val input = this
-        Field(field) {
+        fields.Field(field) {
             input.value = fieldValue
             input.valid = fieldValueValid
             input.externalValidationMessage = externalValidationMessage
@@ -149,7 +149,7 @@ internal object MessageFormFixtures {
         /**
          * Declares an account editor inside a payment form.
          */
-        context(FormFieldsScope<PaymentMethod>)
+        context(_: FormFieldsScope<PaymentMethod>)
         @Composable
         operator fun invoke(
             content: @Composable FormPartScope<BankAccount>.() -> Unit

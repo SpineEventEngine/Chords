@@ -61,12 +61,12 @@ import io.spine.tools.compiler.type.TypeSystem
 import io.spine.tools.compiler.type.findHeader
 
 /**
- * Package and class name of the `io.spine.protobuf.ValidatingBuilder`.
+ * Package and class name of the `io.spine.validation.ValidatingBuilder`.
  *
  * It is not in the classpath of this Spine Compiler plugin and cannot be used directly.
  */
 private object ValidatingBuilder {
-    const val PACKAGE = "io.spine.protobuf"
+    const val PACKAGE = "io.spine.validation"
     const val CLASS = "ValidatingBuilder"
 }
 
@@ -236,7 +236,7 @@ internal class MessageFieldObjectGenerator(
 }
 
 /**
- * Returns a fully qualified [ClassName] of `io.spine.protobuf.ValidatingBuilder`.
+ * Returns a fully qualified [ClassName] of `io.spine.validation.ValidatingBuilder`.
  */
 private val validatingBuilderClassName = ClassName(
     ValidatingBuilder.PACKAGE,

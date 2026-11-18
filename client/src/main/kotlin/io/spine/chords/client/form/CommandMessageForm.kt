@@ -40,7 +40,7 @@ import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.MessageFormSetupBase
 import io.spine.chords.proto.form.MultipartFormScope
-import io.spine.protobuf.ValidatingBuilder
+import io.spine.validation.ValidatingBuilder
 
 /**
  * A form that allows entering a value of a command message and posting

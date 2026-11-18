@@ -34,7 +34,7 @@ object CoreJvm {
     /**
      * Aligns the artifacts used by this build.
      */
-    private const val version = "2.0.0-SNAPSHOT.611"
+    private const val version = "2.0.0-SNAPSHOT.612"
 
     /**
      * Provides the views and event routing used during generation.

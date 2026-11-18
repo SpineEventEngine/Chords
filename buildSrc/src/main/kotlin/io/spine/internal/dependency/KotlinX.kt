@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,8 @@ object KotlinX {
     object Coroutines {
 
         // https://github.com/Kotlin/kotlinx.coroutines
-        const val version = "1.7.3"
+        const val version = "1.11.0"
+        const val jvm = "$group:kotlinx-coroutines-core-jvm:$version"
         const val core = "$group:kotlinx-coroutines-core:$version"
         const val jdk8 = "$group:kotlinx-coroutines-jdk8:$version"
 
@@ -54,7 +55,20 @@ object KotlinX {
     //   See https://github.com/SpineEventEngine/Chords/issues/3
     // https://github.com/Kotlin/kotlinx-atomicfu
     object AtomicFu {
-        const val version = "0.7"
+        const val version = "0.33.0"
         const val lib = "$group:atomicfu:$version"
+    }
+
+    /**
+     * Aligns serialization libraries used by Gradle plugins and static analysis.
+     */
+    object Serialization {
+        private const val version = "1.12.0"
+        val libs = listOf(
+            "kotlinx-serialization-bom", "kotlinx-serialization-core",
+            "kotlinx-serialization-core-jvm", "kotlinx-serialization-json",
+            "kotlinx-serialization-json-jvm"
+        )
+            .map { "$group:$it:$version" }
     }
 }

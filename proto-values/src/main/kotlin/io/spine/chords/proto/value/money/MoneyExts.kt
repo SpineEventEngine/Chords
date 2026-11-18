@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,195 +26,106 @@
 
 package io.spine.chords.proto.value.money
 
-import com.google.protobuf.Descriptors
-import com.google.protobuf.Descriptors.EnumValueDescriptor
+import io.spine.money.Currencies
 import io.spine.money.Currency
-import io.spine.money.Currency.CURRENCY_UNDEFINED
-import io.spine.money.Currency.UNRECOGNIZED
-import io.spine.money.CurrencyOptions
+import io.spine.money.CurrencyInfo
 import io.spine.money.Money
-import io.spine.money.MoneyProto
-import io.spine.util.Exceptions.newIllegalArgumentException
 import java.text.DecimalFormatSymbols
-import java.util.*
 import kotlin.math.abs
 import kotlin.reflect.KClass
 
-
 /**
- * Gets a decimal separator character.
+ * The decimal separator of the current locale.
  */
-public val decimalSeparator: Char get() = DecimalFormatSymbols.getInstance().decimalSeparator
+public val decimalSeparator: Char
+    get() = DecimalFormatSymbols.getInstance().decimalSeparator
 
 /**
- * Represents the number of digits denoting nano (10^-9) units of the amount.
+ * The precision of Spine Money's fractional amount, in atto (10^-18) units.
  */
-private const val NanosDigits = 9
+private const val AttoDigits = 18
 
 /**
- * Parses the given human-readable string [Money] value.
+ * Parses a localized amount using the currency's fraction digits, up to 18 places.
+ * Currencies without minor units discard the fractional input, as in previous releases.
  *
- * @param str
- *         a string that should be parsed as [Money].
- * @param currency
- *         a money currency for given string.
- * @return the respective [Money] value.
- * @throws IllegalArgumentException
- *         if the given string cannot be parsed as a [Money] value.
+ * @param str The amount without a currency symbol or code.
+ * @param currency The currency of the resulting amount.
+ * @throws IllegalArgumentException If the amount or its precision is invalid.
  */
-// The receiver is needed to specify a "static" context for the function.
-@Suppress("UnusedReceiverParameter")
+@Suppress("UnusedReceiverParameter") // The receiver provides a static parsing context.
 public fun KClass<Money>.parseAmount(str: String, currency: Currency): Money {
-    val trimmedStr = str.trim()
-    val currencyOptions = currency.options
-    val parts = trimmedStr.split(decimalSeparator)
-
-    require(parts.size <= 2) { "Couldn't parse money value: $trimmedStr" }
-
-    val unitsStr = parts[0]
-    val nanosStr = if (parts.size > 1) parts[1] else 0.toString()
-
-    if (currencyOptions.exponentDigits > 0) {
-        require(nanosStr.length <= currencyOptions.exponentDigits) {
-            "The money string ($trimmedStr) has too many decimal digits for this currency " +
-                    "(a max of $currencyOptions.exponentDigits is allowed)."
+    val trimmed = str.trim()
+    val parts = trimmed.split(decimalSeparator)
+    require(parts.size <= 2) { "Couldn't parse money value: $trimmed" }
+    val fractionDigits = currency.fractionDigits().coerceAtLeast(0)
+    require(fractionDigits <= AttoDigits) { "Money supports at most $AttoDigits fraction digits." }
+    val fraction = parts.getOrElse(1) { "" }
+    if (fractionDigits > 0) {
+        require(fraction.length <= fractionDigits) {
+            "The money string ($trimmed) has too many decimal digits for this currency " +
+                    "(a max of $fractionDigits is allowed)."
         }
     }
-
-    val units = try {
-        unitsStr.toLong()
+    val units: Long
+    val attos: Long
+    try {
+        units = parts[0].toLong()
+        val absoluteAttos = if (fractionDigits > 0) {
+            fraction.padEnd(AttoDigits, '0').toLong()
+        } else {
+            0L
+        }
+        attos = if (trimmed.startsWith('-')) -absoluteAttos else absoluteAttos
     } catch (e: NumberFormatException) {
-        throw IllegalArgumentException("Couldn't parse money value: $trimmedStr", e)
+        throw IllegalArgumentException("Couldn't parse money value: $trimmed", e)
     }
-    val nanos = if (currencyOptions.exponentDigits > 0) {
-        try {
-            val absoluteNanos = nanosStr
-                .padEnd(NanosDigits, '0')
-                .toInt()
-            if (units >= 0) absoluteNanos else -absoluteNanos
-        } catch (e: NumberFormatException) {
-            throw IllegalArgumentException("Couldn't parse money value: $trimmedStr", e)
-        }
-    } else {
-        0
-    }
-
     return Money.newBuilder()
-        .setUnits(units)
-        .setNanos(nanos)
         .setCurrency(currency)
-        .vBuild()
+        .setUnits(units)
+        .setAttos(attos)
+        .build()
 }
 
 /**
- * Parses a human-readable money string with the purpose of identifying
- * the currency from this string, without paying attention to the actual
- * monetary amount.
+ * Finds a JDK currency whose symbol starts the given text, in currency-code order.
  *
- * @param str
- *         a human-readable money string, which is expected to contain
- *         the currency symbol at the beginning.
- * @return [Currency], which was identified or `null`, if it couldn't
- *         be identified.
+ * @throws IllegalArgumentException If the text is blank.
  */
 public fun identifyCurrency(str: String): Currency? {
-    val trimmedStr = str.trim()
-    require(trimmedStr.isNotEmpty()) { "Couldn't parse an empty string as Money." }
-
-    val currency = Currency.values().find {
-        if (it == UNRECOGNIZED || it == CURRENCY_UNDEFINED) {
-            false
-        } else {
-            val symbol = it.options.symbol
-            trimmedStr.startsWith(symbol)
-        }
-    }
-    return currency
+    val trimmed = str.trim()
+    require(trimmed.isNotEmpty()) { "Couldn't parse an empty string as Money." }
+    return java.util.Currency.getAvailableCurrencies()
+        .sortedBy { it.currencyCode }
+        .map { Currencies.of(it.currencyCode) }
+        .find { trimmed.startsWith(it.info().symbol) }
 }
 
 /**
- * Formats the [Money] value to a human-readable string that includes both the
- * amount and ISO 4217 currency code.
- *
- * @receiver money instance that should be formatted.
- * @see formatAmount
+ * Formats the localized amount prefixed by its currency code.
  */
-public fun Money.format(): String {
-    val amountText = formatAmount()
-    return "${currency.name} $amountText"
-}
+public fun Money.format(): String = "${currency.code} ${formatAmount()}"
 
 /**
- * Formats the [Money] value as a respective human-readable string without
- * mentioning a currency symbol or currency code.
- *
- * Use [format] if you need to format [Money] value as a string, which includes
- * both an amount and a currency code.
- *
- * @receiver money instance that should be formatted.
- * @return a human-readable string representation of this [Money] value.
- * @see format
+ * Formats the amount with its currency's fraction digits and the current decimal separator.
+ * Preserves the sign of negative amounts smaller than one unit.
  */
 public fun Money.formatAmount(): String {
-    val currencyOptions = currency.options
-    val exponentDigits = currencyOptions.exponentDigits
-    val nanoSuffix = when {
-        exponentDigits > 0 ->
-            decimalSeparator + String.format(Locale.ROOT, "%0${NanosDigits}d", abs(nanos))
-                .substring(0, exponentDigits)
-
-        else ->
-            ""
+    val fractionDigits = currency.fractionDigits().coerceAtLeast(0)
+    require(fractionDigits <= AttoDigits) { "Money supports at most $AttoDigits fraction digits." }
+    val fraction = if (fractionDigits > 0) {
+        decimalSeparator + abs(attos).toString().padStart(AttoDigits, '0').take(fractionDigits)
+    } else {
+        ""
     }
-    return "$units$nanoSuffix"
+    val sign = if (units == 0L && attos < 0L) "-" else ""
+    return "$sign$units$fraction"
 }
 
 /**
- * Obtains a [CurrencyOptions] value associated with this currency, which
- * describes the parameters characterizing the currency.
+ * Obtains currency information from Spine's registered providers, including the JDK provider.
  *
- * @receiver the [Currency] value whose [CurrencyOptions] should be retrieved.
- * @return the respective [CurrencyOptions] value.
- * @throws IllegalArgumentException if this [Currency] doesn't have
- *          an associated [CurrencyOptions] value.
+ * @throws IllegalArgumentException If the currency code is invalid or unknown.
  */
-// TODO:2023-11-03:dmitry.pikhulya:
-//      A case for code generation that can be considered:
-//      The reason that prevents the efficient implementation of this property
-//      is an inability to implement value caching due to an absence of backing
-//      fields for extension properties in Kotlin. Hence code generation could
-//      hopefully assist with that.
-//      See https://github.com/Projects-tm/1DAM/issues/41
-public val Currency.options: CurrencyOptions get() {
-    val rawOptions = enumDescriptor().options
-    val optionsValue = rawOptions.getExtension(MoneyProto.currency)
-    checkNotNull(optionsValue) { "No CurrencyOptions found for this currency" }
-    return optionsValue
-}
-
-/**
- * Enum descriptor for the [Currency] Proto type.
- *
- * @see [Descriptors.EnumDescriptor]
- */
-private object CurrencyDescriptor {
-    val value: Descriptors.EnumDescriptor = run {
-        val defaultMoneyInstance = Money.getDefaultInstance()
-        defaultMoneyInstance.currency.descriptorForType
-    }
-}
-
-/**
- * Finds the enum value descriptor for the `Currency` instance.
- *
- * @receiver the `Currency` instance whose respective enum descriptor should
- *           be obtained.
- * @throws IllegalArgumentException if there is no `Currency` value found.
- */
-private fun Currency.enumDescriptor(): EnumValueDescriptor {
-    return CurrencyDescriptor.value.findValueByName(this.name)
-        ?: throw newIllegalArgumentException(
-            "There is no `Currency` value found for passed instance '%s'",
-            this
-        )
-}
+public val Currency.options: CurrencyInfo
+    get() = info()

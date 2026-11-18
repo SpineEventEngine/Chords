@@ -36,13 +36,13 @@ object ToolBase {
     /**
      * Aligns the tools shared by the Compiler and its Gradle plugin.
      */
-    private const val version = "2.0.0-SNAPSHOT.440"
+    private const val version = "2.0.0-SNAPSHOT.460"
 
     /**
      * Split tool-base artifacts that share APIs across the compiler's classpath.
      */
     val libs = listOf(
-        "code", "kotlin-code", "java-code", "fs", "psi", "psi-java",
+        "archive", "proto-code", "code", "kotlin-code", "java-code", "fs", "psi", "psi-java",
         "plugin-base", "root-gradle-plugins", "gradle-plugin-api", "jvm-tools",
         "protobuf-setup-plugins", "intellij-platform", "intellij-platform-java"
     )

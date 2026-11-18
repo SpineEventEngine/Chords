@@ -68,7 +68,7 @@ internal class ObservationChannel(
     /**
      * Supplies the next complete query result.
      */
-    var items: List<EntityState> = emptyList()
+    var items: List<EntityState<*>> = emptyList()
 
     /**
      * Captures the query sent to the server so ordering and limits can be checked.
@@ -339,8 +339,10 @@ internal class ObservationChannel(
     /**
      * Reports a matching entity state, including reappearance after a removal.
      */
-    fun update(entity: EntityState) {
+    fun update(entity: EntityState<*>) {
+        val id = entity.getField(entity.descriptorForType.fields.first())
         emit(EntityStateUpdate.newBuilder()
+            .setId(Identifier.pack(id))
             .setState(AnyPacker.pack(entity))
             .build())
     }

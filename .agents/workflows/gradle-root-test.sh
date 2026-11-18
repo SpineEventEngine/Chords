@@ -15,7 +15,7 @@ cp "$SUITE_DIR/gradle-root.sh" "$SANDBOX/repo/.agents/workflows/"
 
 cat > "$SANDBOX/selected jdk/bin/java" <<'JAVA'
 #!/usr/bin/env bash
-printf '    java.specification.version = %s\n' "${TEST_JAVA_VERSION:-11}"
+printf '    java.specification.version = %s\n' "${TEST_JAVA_VERSION:-25}"
 printf '    os.arch = %s\n' "${TEST_JAVA_ARCH:-x86_64}"
 JAVA
 cp "$SANDBOX/selected jdk/bin/java" "$SANDBOX/fallback/bin/java"
@@ -29,7 +29,7 @@ case "$1" in
     prefix)
         case "${2:-}" in
             selected) printf '%s/selected jdk\n' "$TEST_ROOT" ;;
-            11) printf '%s/fallback\n' "$TEST_ROOT" ;;
+            25) printf '%s/fallback\n' "$TEST_ROOT" ;;
             *) exit 1 ;;
         esac ;;
     *) exit 1 ;;
@@ -48,7 +48,7 @@ chmod +x "$SANDBOX/bin/"* "$SANDBOX/"*/bin/java "$SANDBOX/repo/gradlew"
 export TEST_ROOT="$SANDBOX"
 export PATH="$SANDBOX/bin:$PATH"
 export CHORDS_NO_GRADLE_DAEMON=1
-unset CHORDS_JDK11_HOME JAVA_HOME TEST_JAVA_VERSION TEST_JAVA_ARCH
+unset CHORDS_JDK25_HOME JAVA_HOME TEST_JAVA_VERSION TEST_JAVA_ARCH
 readonly WRAPPER="$SANDBOX/repo/.agents/workflows/gradle-root.sh"
 failures=0
 
@@ -70,9 +70,9 @@ assert_run() {
 cd "$SANDBOX"
 printf 'selected\n' > "$SANDBOX/repo/.java-version"
 assert_run 'select the repository JDK from outside the repository' 0 \
-    "Gradle JDK: $SANDBOX/selected jdk" env JENV_VERSION=11 bash "$WRAPPER" test
+    "Gradle JDK: $SANDBOX/selected jdk" env JENV_VERSION=25 bash "$WRAPPER" test
 assert_run 'honor an explicit JDK path override' 0 "Gradle JDK: $SANDBOX/override" \
-    env CHORDS_JDK11_HOME="$SANDBOX/override" bash "$WRAPPER" test
+    env CHORDS_JDK25_HOME="$SANDBOX/override" bash "$WRAPPER" test
 
 printf 'unregistered\n' > "$SANDBOX/repo/.java-version"
 assert_run 'reject an unregistered project JDK instead of falling back' 1 \
@@ -82,16 +82,18 @@ assert_run 'reject an empty project version file' 1 'cannot read a Java version'
     bash "$WRAPPER" test
 
 printf 'selected\n' > "$SANDBOX/repo/.java-version"
-assert_run 'reject a project JDK with the wrong Java version' 1 'needs JDK 11' \
+assert_run 'reject a project JDK with the wrong Java version' 1 'needs JDK 25' \
     env TEST_JAVA_VERSION=17 bash "$WRAPPER" test
-assert_run 'reject an ARM project JDK on macOS' 1 'must use an x86_64 JDK 11' \
+assert_run 'accept an ARM project JDK on macOS' 0 'Gradle JDK:' \
     env TEST_JAVA_ARCH=aarch64 bash "$WRAPPER" test
 
 rm "$SANDBOX/repo/.java-version"
-assert_run 'retain alias 11 when there is no project version file' 0 \
+assert_run 'retain alias 25 when there is no project version file' 0 \
     "Gradle JDK: $SANDBOX/fallback" bash "$WRAPPER" test
 assert_run 'reject remote publishing' 1 'not permitted' bash "$WRAPPER" publish
 assert_run 'reject arbitrary init scripts' 1 'not permitted' \
     bash "$WRAPPER" --init-script untrusted.gradle test
+assert_run 'accept dependency reports for a module' 0 'Gradle JDK:' \
+    bash "$WRAPPER" :client:dependencies :client:buildEnvironment
 
 [[ "$failures" -eq 0 ]]

@@ -26,7 +26,6 @@
 
 package io.spine.chords.codegen.plugins
 
-import com.google.protobuf.BoolValue
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
@@ -42,6 +41,7 @@ import com.squareup.kotlinpoet.asClassName
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
 import io.spine.chords.runtime.MessageOneof
+import io.spine.option.ChoiceOption
 import io.spine.protobuf.AnyPacker.unpack
 import io.spine.tools.compiler.ast.Field
 import io.spine.tools.compiler.ast.TypeName
@@ -165,18 +165,15 @@ internal class MessageOneofObjectGenerator(
             .build()
 
     /**
-     * Returns a value of the `is_required` option if it is applied to the
-     * oneof group with the given [oneofName].
-     *
-     * Returns `false` if the option `is_required` is not set.
+     * Reads the canonical choice requirement from the oneof declaration.
      */
     private fun isOneofRequired(oneofName: String) =
         typeSystem.findMessage(messageTypeName)!!
             .first.oneofGroupList.find {
                 it.name.value == oneofName
             }!!.optionList.any { option ->
-                option.name == "is_required" &&
-                        unpack(option.value, BoolValue::class.java).value
+                option.name == "choice" &&
+                        unpack(option.value, ChoiceOption::class.java).required
             }
 
     /**

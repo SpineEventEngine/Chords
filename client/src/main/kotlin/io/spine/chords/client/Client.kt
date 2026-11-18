@@ -28,15 +28,15 @@ package io.spine.chords.client
 
 import com.google.protobuf.Message
 import io.spine.base.CommandMessage
-import io.spine.base.EntityColumn
 import io.spine.base.EntityState
 import io.spine.base.Error
 import io.spine.base.EventMessage
 import io.spine.base.EventMessageField
 import io.spine.client.CompositeEntityStateFilter
-import io.spine.client.CompositeQueryFilter
+import io.spine.client.CompositeFilter
 import io.spine.client.OrderBy.Direction
 import io.spine.core.UserId
+import io.spine.query.EntityColumn
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.StateFlow
 
@@ -92,7 +92,7 @@ public interface Client {
      * @return An observation that contains the current list and its
      *   observation status.
      */
-    public fun <E : EntityState> readAndObserve(
+    public fun <E : EntityState<*>> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any
     ): DataObservation<List<E>>
@@ -127,10 +127,10 @@ public interface Client {
      * @return An observation that contains the current list and its
      *   observation status.
      */
-    public fun <E : EntityState> readAndObserve(
+    public fun <E : EntityState<*>> readAndObserve(
         entityClass: Class<E>,
         extractId: (E) -> Any,
-        queryFilter: CompositeQueryFilter,
+        queryFilter: CompositeFilter,
         observeFilter: CompositeEntityStateFilter
     ): DataObservation<List<E>>
 
@@ -138,10 +138,10 @@ public interface Client {
      * Page data for a selection expressed by one composite filter.
      * Ordering, limits, and failures follow the overload accepting a list of composite filters.
      */
-    public fun <E : EntityState> readPage(
+    public fun <E : EntityState<*>> readPage(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
-        orderBy: EntityColumn,
+        queryFilter: CompositeFilter,
+        orderBy: EntityColumn<*, *>,
         direction: Direction,
         limit: Int
     ): List<E> =
@@ -172,10 +172,10 @@ public interface Client {
      * @return The server-selected page, which may contain fewer than [limit] entities.
      * @throws IllegalArgumentException If [limit] or [direction] is invalid, before any request.
      */
-    public fun <E : EntityState> readPage(
+    public fun <E : EntityState<*>> readPage(
         entityClass: Class<E>,
-        queryFilters: List<CompositeQueryFilter>,
-        orderBy: EntityColumn,
+        queryFilters: List<CompositeFilter>,
+        orderBy: EntityColumn<*, *>,
         direction: Direction,
         limit: Int
     ): List<E>
@@ -183,13 +183,13 @@ public interface Client {
     /**
      * Live page data for a selection expressed by one composite query filter.
      * Loading, observation filtering, and recovery follow the
-     * `queryFilters: List<CompositeQueryFilter>` overload.
+     * `queryFilters: List<CompositeFilter>` overload.
      */
-    public fun <E : EntityState> readPageAndObserve(
+    public fun <E : EntityState<*>> readPageAndObserve(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
+        queryFilter: CompositeFilter,
         observeFilter: CompositeEntityStateFilter,
-        orderBy: EntityColumn,
+        orderBy: EntityColumn<*, *>,
         direction: Direction,
         limit: Int
     ): DataObservation<List<E>> =
@@ -234,11 +234,11 @@ public interface Client {
      * @return An observation containing the current page and its lifecycle status.
      * @throws IllegalArgumentException If [limit] or [direction] is invalid, before any request.
      */
-    public fun <E : EntityState> readPageAndObserve(
+    public fun <E : EntityState<*>> readPageAndObserve(
         entityClass: Class<E>,
-        queryFilters: List<CompositeQueryFilter>,
+        queryFilters: List<CompositeFilter>,
         observeFilter: CompositeEntityStateFilter? = null,
-        orderBy: EntityColumn,
+        orderBy: EntityColumn<*, *>,
         direction: Direction,
         limit: Int
     ): DataObservation<List<E>>
@@ -278,9 +278,9 @@ public interface Client {
      * @return An observation that contains an up-to-date entity value according
      *   to the given criteria, or `null` if no matching entity exists.
      */
-    public fun <E : EntityState> readOneAndObserve(
+    public fun <E : EntityState<*>> readOneAndObserve(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
+        queryFilter: CompositeFilter,
         observeFilter: CompositeEntityStateFilter
     ): DataObservation<E?>
 
@@ -317,9 +317,9 @@ public interface Client {
      * @return An observation that always contains either a matching entity or
      *   [defaultValue].
      */
-    public fun <E : EntityState> readOneAndObserve(
+    public fun <E : EntityState<*>> readOneAndObserve(
         entityClass: Class<E>,
-        queryFilter: CompositeQueryFilter,
+        queryFilter: CompositeFilter,
         observeFilter: CompositeEntityStateFilter,
         defaultValue: E
     ): DataObservation<E>
@@ -342,7 +342,7 @@ public interface Client {
      * @return An observation of the entity, with a `null` value while it is absent,
      *   archived, or deleted.
      */
-    public fun <E : EntityState> readOneAndObserve(
+    public fun <E : EntityState<*>> readOneAndObserve(
         entityClass: Class<E>,
         id: Any
     ): DataObservation<E?>
@@ -353,7 +353,7 @@ public interface Client {
      * @param entityClass The class of the entity to retrieve.
      * @param id The ID of the entity to retrieve.
      */
-    public fun <E : EntityState, M : Message> read(
+    public fun <E : EntityState<*>, M : Message> read(
         entityClass: Class<E>,
         id: M
     ): E?

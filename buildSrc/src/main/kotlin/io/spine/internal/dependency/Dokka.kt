@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ object Dokka {
      * When changing the version, also change the version used in the
      * `buildSrc/build.gradle.kts`.
      */
-    const val version = "1.9.20"
+    const val version = "2.2.0"
 
     object GradlePlugin {
         const val id = "org.jetbrains.dokka"
@@ -78,7 +78,7 @@ object Dokka {
     object SpineExtensions {
         private const val group = "io.spine.tools"
 
-        const val version = "2.0.0-SNAPSHOT.4"
+        const val version = "2.0.0-SNAPSHOT.7"
         const val lib = "${group}:spine-dokka-extensions:${version}"
     }
 }

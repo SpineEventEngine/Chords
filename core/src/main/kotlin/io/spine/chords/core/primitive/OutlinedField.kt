@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
@@ -56,7 +57,7 @@ import io.spine.chords.core.styling.ChordsTheme
  *
  * Internal primitive; application code uses `InputField` or `DropdownSelector`. The caller owns
  * [value], including its selection and composition, and must apply [onValueChange] updates.
- * [isError] changes the appearance only; validation and error messages remain the caller's job.
+ * [isError] marks the field invalid visually and for accessibility. The caller owns validation.
  *
  * Example for an internal field renderer:
  * ```kotlin
@@ -170,10 +171,12 @@ internal fun OutlinedField(
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = fieldModifier.defaultMinSize(
-            OutlinedTextFieldDefaults.MinWidth,
-            OutlinedTextFieldDefaults.MinHeight
-        ),
+        modifier = fieldModifier
+            .semantics { if (isError) error(InvalidInputDescription) }
+            .defaultMinSize(
+                OutlinedTextFieldDefaults.MinWidth,
+                OutlinedTextFieldDefaults.MinHeight
+            ),
         enabled = enabled,
         textStyle = textStyle.merge(TextStyle(color = textColor)),
         cursorBrush = SolidColor(if (isError) scheme.error else scheme.primary),
@@ -223,3 +226,8 @@ private val FloatingLabelPadding = 8.dp
  * Brings feedback closer to its field while preserving space reserved for validation messages.
  */
 private val SupportingTextOffset = (-2).dp
+
+/**
+ * Announces an invalid editor when its caller supplies no textual feedback.
+ */
+private const val InvalidInputDescription = "Invalid input"

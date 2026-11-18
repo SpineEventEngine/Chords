@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,28 @@
 
 package io.spine.internal.dependency
 
-// https://firebase.google.com/docs/admin/setup#java
-@Suppress("unused", "ConstPropertyName")
-object Firebase {
-    private const val adminVersion = "8.1.0"
-    const val admin = "com.google.firebase:firebase-admin:${adminVersion}"
+/**
+ * Provides time types and their compiler integration.
+ */
+@Suppress("ConstPropertyName")
+object Time {
+    /**
+     * Aligns the artifacts used by this build.
+     */
+    private const val version = "2.0.0-SNAPSHOT.253"
+
+    /**
+     * Configures time validation for the internal model.
+     */
+    const val gradlePlugin = "${Spine.toolsGroup}:time-gradle-plugin:$version"
+
+    /**
+     * Aligns time types used by the Compiler and its plugins.
+     */
+    const val lib = "${Spine.group}:spine-time:$version"
+
+    /**
+     * Aligns the Java helpers used by generated validation code.
+     */
+    const val javaExtensions = "${Spine.group}:spine-time-java:$version"
 }

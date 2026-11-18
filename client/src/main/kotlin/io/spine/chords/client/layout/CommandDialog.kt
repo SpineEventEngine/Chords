@@ -48,7 +48,7 @@ import io.spine.chords.core.writeOnce
 import io.spine.chords.proto.form.FormFieldsScope
 import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
-import io.spine.protobuf.ValidatingBuilder
+import io.spine.validation.ValidatingBuilder
 
 /**
  * A [Dialog] designed to create or modify a command message,

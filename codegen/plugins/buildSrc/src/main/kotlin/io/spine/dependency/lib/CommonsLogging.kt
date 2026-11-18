@@ -33,7 +33,7 @@ package io.spine.dependency.lib
 @Suppress("unused", "ConstPropertyName")
 object CommonsLogging {
     // https://commons.apache.org/proper/commons-logging/
-    private const val version = "1.2"
+    private const val version = "1.4.0"
     const val lib =
         "commons-logging:commons-logging:${version}"
 }

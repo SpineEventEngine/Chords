@@ -34,7 +34,7 @@ object CoreJvmCompiler {
     /**
      * The Core JVM compiler release used for the plugin's internal model.
      */
-    private const val version = "2.0.0-SNAPSHOT.101"
+    private const val version = "2.0.0-SNAPSHOT.104"
 
     /**
      * Adds entity, routing, and validation generation to the internal model build.

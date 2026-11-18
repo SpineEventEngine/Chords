@@ -24,22 +24,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Kotest
+import io.spine.internal.dependency.Compose
 import io.spine.internal.dependency.Material3
+import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
 
 plugins {
-    id("org.jetbrains.compose") version "1.5.12"
+    id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 dependencies {
-    implementation(Spine.base_1_9)
+    implementation(Protobuf.javaUtil)
+    implementation(Spine.base)
     implementation(project(":runtime"))
     implementation(project(":core"))
     api(Spine.money)
-    implementation(compose.desktop.currentOs)
-    implementation(compose.materialIconsExtended)
+    implementation(Compose.ui)
+    implementation(Compose.foundation)
+    implementation(Compose.materialIcons)
     implementation(Material3.Desktop.lib)
     implementation(project(":proto-values"))
-    testImplementation(Kotest.runnerJUnit5)
 }

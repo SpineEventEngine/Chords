@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,28 +27,27 @@
 package io.spine.internal.dependency
 
 /**
- * Dependencies on Spine Validation SDK.
- *
- * See [`SpineEventEngine/validation`](https://github.com/SpineEventEngine/validation/).
+ * Provides validation generation and its runtime.
  */
-@Suppress("unused", "ConstPropertyName")
+@Suppress("ConstPropertyName")
 object Validation {
     /**
-     * The version of the Validation library artifacts.
+     * Aligns the artifacts used by this build.
      */
-    const val version = "2.0.0-SNAPSHOT.154"
+    private const val version = "2.0.0-SNAPSHOT.470"
 
-    const val group = "io.spine.validation"
-    private const val prefix = "spine-validation"
+    /**
+     * Configures validation generation for the internal model.
+     */
+    const val gradlePluginLib = "${Spine.toolsGroup}:validation-gradle-plugin:$version"
 
-    const val runtime = "$group:$prefix-java-runtime:$version"
-    const val java = "$group:$prefix-java:$version"
+    /**
+     * Runs validation in the internal model and Compiler APIs.
+     */
+    const val runtime = "${Spine.group}:spine-validation-jvm-runtime:$version"
 
-    /** Obtains the artifact for the `java-bundle` artifact of the given version. */
-    fun javaBundle(version: String) = "$group:$prefix-java-bundle:$version"
-
-    val javaBundle = javaBundle(version)
-
-    const val model = "$group:$prefix-model:$version"
-    const val config = "$group:$prefix-configuration:$version"
+    /**
+     * Provides the validation generator loaded by the Compiler.
+     */
+    const val javaBundle = "${Spine.toolsGroup}:validation-java-bundle:$version"
 }

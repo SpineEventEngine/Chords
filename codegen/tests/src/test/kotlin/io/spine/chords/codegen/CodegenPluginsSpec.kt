@@ -36,6 +36,10 @@ import io.spine.chords.codegen.Given.externalType
 import io.spine.chords.codegen.Given.primitives
 import io.spine.chords.codegen.Given.timestamp
 import io.spine.chords.codegen.Given.userId
+import io.spine.chords.codegen.command.OptionalChoice
+import io.spine.chords.codegen.command.OptionalChoiceDef
+import io.spine.chords.codegen.command.RequiredChoice
+import io.spine.chords.codegen.command.RequiredChoiceDef
 import io.spine.chords.codegen.command.TestCommand.EnumType
 import io.spine.chords.codegen.command.TestCommandDef
 import io.spine.chords.codegen.command.TestCommandOneOfTypeDef
@@ -47,7 +51,7 @@ import io.spine.chords.runtime.MessageOneof
 import io.spine.chords.runtime.get
 import io.spine.chords.runtime.messageDef
 import io.spine.chords.runtime.set
-import io.spine.protobuf.ValidatingBuilder
+import io.spine.validation.ValidatingBuilder
 import java.util.stream.Stream
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.TestInstance
@@ -90,11 +94,11 @@ internal class CodegenPluginsSpec {
             field.descriptor.name shouldBe protoFieldName
         }
         withClue("Wrong result of `hasValue()` if value is not set.") {
-            field.hasValue(builder.build()) shouldBe initialHasValue
+            field.hasValue(builder.buildPartial()) shouldBe initialHasValue
         }
         fieldValues.forEach { newValue ->
             builder[field] = newValue
-            val message = builder.build()
+            val message = builder.buildPartial()
             withClue("Wrong result of `hasValue()` when new value is set.") {
                 field.hasValue(message) shouldBe true
             }
@@ -182,13 +186,23 @@ internal class CodegenPluginsSpec {
         return Stream.of(
             of(
                 TestCommandDef.oneOfPlainField,
-                testCommandBuilder().setOneOfOption1(true).build(),
+                testCommandBuilder().setOneOfOption1(true).buildPartial(),
                 true, "one_of_plain_field", true, 3
             ),
             of(
                 TestCommandOneOfTypeDef.value,
                 oneOfTypeBuilder().setOption3(100).build(),
                 100, "value", false, 3
+            ),
+            of(
+                RequiredChoiceDef.value,
+                RequiredChoice.newBuilder().setText("chosen").build(),
+                "chosen", "value", true, 1
+            ),
+            of(
+                OptionalChoiceDef.value,
+                OptionalChoice.newBuilder().setText("chosen").build(),
+                "chosen", "value", false, 1
             )
         )
     }

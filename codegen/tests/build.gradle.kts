@@ -24,44 +24,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.google.protobuf.gradle.generateProtoTasks
-import com.google.protobuf.gradle.id
 import com.google.protobuf.gradle.protobuf
-import com.google.protobuf.gradle.protoc
-import io.spine.internal.dependency.Kotest
 import io.spine.internal.dependency.Protobuf
 import io.spine.internal.dependency.Spine
 
 plugins {
-    id("io.spine.tools.gradle.bootstrap")
+    id("io.spine.validation")
     id("com.google.protobuf")
 }
 
 apply<JavaPlugin>()
 
 spine {
-    // Spine Model Compiler is enabled only for generating validation code for
-    // error messages.
-    assembleModel()
-    enableJava()
+    compiler {
+        plugins("io.spine.chords.codegen.plugins.MessageFieldsPlugin")
+    }
 }
 
 protobuf {
     protoc {
         artifact = Protobuf.compiler
     }
-    generateProtoTasks {
-        for (task in all()) {
-            task.builtins {
-                id("kotlin")
-            }
-        }
-    }
+
 }
 
 dependencies {
-    implementation(Spine.base_1_9)
+    implementation(Spine.base)
     implementation(Spine.CoreJvm.core)
     implementation(project(":runtime"))
-    testImplementation(Kotest.runnerJUnit5)
 }

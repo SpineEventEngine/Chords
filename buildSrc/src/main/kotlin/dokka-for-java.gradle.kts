@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,20 +24,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.jetbrains.dokka.gradle.DokkaTask
-
 plugins {
-    id("org.jetbrains.dokka") // Cannot use `Dokka` dependency object here yet.
+    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 }
 
-dependencies {
-    useDokkaForKotlinAsJava()
-    useDokkaWithSpineExtensions()
-}
-
-tasks.withType<DokkaTask>().configureEach {
-    configureForJava()
-    onlyIf {
-        (it as DokkaTask).isInPublishingGraph()
+dokka {
+    dokkaPublications.named("javadoc") {
+        outputDirectory.set(layout.buildDirectory.dir("docs/dokkaJava"))
     }
 }

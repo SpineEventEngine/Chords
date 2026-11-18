@@ -26,7 +26,7 @@ Each of these owns its area; this skill stays out of them:
 
 - `.agents/skills/component-engineer/SKILL.md` — the component model,
   `mutableStateOf`-backed state, `PascalCase` composables, module layering,
-  KDoc style, and the Compose 1.5.12 ceiling.
+  KDoc style, and the Compose toolchain.
 - `.agents/skills/model-engineer/SKILL.md` — published model Protobuf
   declarations and Kotlin model extensions under `proto-values`.
 - `.agents/skills/codegen-engineer/SKILL.md` — Spine Compiler plugins and generated
@@ -43,62 +43,17 @@ Each of these owns its area; this skill stays out of them:
 - `.agents/skills/tester/SKILL.md` — coverage and verification commands.
 - `AGENTS.md` — global quality, authorization, and safety policy.
 
-## Toolchain Ceiling
+## Toolchain
 
-**Two ceilings, and which one applies depends on the file you are editing.**
-The root build compiles with the Kotlin Gradle plugin dependency declared as
-`kotlinVersion` in `buildSrc/build.gradle.kts` — currently **1.8.22** — on JVM
-target 11. The `kotlin("jvm")` declaration earlier in that file is the plugin
-used to compile `buildSrc` itself, not the version applied to root modules. The
-root toolchain covers every module in
-`settings.gradle.kts`: `core`, `proto`, `proto-values`, `client`, `runtime`
-(at `codegen/runtime`), and `codegen-tests` (at `codegen/tests`) — note that
-both `codegen/` subprojects belong to the *root* build. Only
-`codegen/plugins` is separate, using **Kotlin 2.4.10** on JDK 17 (its own
-`kotlinVersion` in `codegen/plugins/buildSrc/build.gradle.kts`).
+All modules and the separate `codegen/plugins` build use Kotlin 2.4.21 with JVM
+target 25. The compiler and standard library versions match. Use named context parameters rather than the removed context-receiver syntax.
 
-Everything below about the Kotlin 1.8 language ceiling applies to the root
-build; in `codegen/plugins` the 2.x language is available. Never carry a
-construct from one across to the other because it compiled where you first
-wrote it. Both builds enable explicit API mode.
+Coroutines are 1.11.0. `KotlinX.Coroutines` owns the coordinates in each build.
+`failOnVersionConflict()` requires explicit alignment of direct and transitive
+versions in the owning `DependencyResolution.kt`.
 
-Within the root modules:
-
-- **The stdlib on the classpath is newer than the compiler.**
-  `forceProductionDependencies()` in
-  `buildSrc/src/main/kotlin/DependencyResolution.kt` pins `kotlin-stdlib` to
-  the `Kotlin.version` coordinate — currently 1.9.23 — while the compiler
-  stays at 1.8.22. A 1.9 stdlib *function* can therefore resolve and compile,
-  even though a 1.9 *language feature* cannot. **"It compiles" is not
-  evidence that a construct is within the baseline** — check when the API
-  was introduced, and prefer one that predates Kotlin 1.8.20.
-- Not available under the root's 1.8 language ceiling: `data object`,
-  `enumEntries`, the stable `..<`
-  operator (use `until`), and stable context receivers.
-- Available and preferred where they fit: sealed interfaces, `@JvmInline
-  value class`, `buildList` / `buildMap`, and `kotlin.time.Duration`.
-- **Context receivers, not context parameters.** The root build passes
-  `-Xcontext-receivers` from `KotlinConfig.setFreeCompilerArgs()`. That enables
-  the experimental context-receiver syntax under Kotlin 1.8; it does not
-  enable the later context-parameter syntax. `codegen/plugins` enables
-  neither feature.
-- Coroutines are **1.7.3** (`KotlinX.Coroutines.version`), forced across
-  every configuration by the `resolutionStrategy` block in the root
-  `build.gradle.kts`. 1.7 APIs are available. Ignore the unused
-  `Coroutines` object in the same dependency package — nothing imports it,
-  and its version is not what resolves.
-- **`failOnVersionConflict()` is enabled.** Adding a dependency that brings a
-  different version of an already-forced library fails resolution rather than
-  silently choosing one. Adjust the coordinate in
-  `buildSrc/src/main/kotlin/io/spine/internal/dependency/` and the force list
-  when the conflict is real; do not work around it in a module build file.
-- **Explicit API mode is on in both builds** — each calls `explicitApi()`
-  in its Kotlin block. The compiler enforces exactly two
-  things: an explicit visibility modifier and an explicit return type on
-  every public declaration. It does **not** check documentation — KDoc on
-  every declaration is a separate repository rule from `AGENTS.md`,
-  "Development Conventions". Satisfy both, but do not expect the compiler to
-  catch the second.
+Both builds enable explicit API mode: public declarations need explicit visibility
+and return types. Documentation is a separate requirement from `AGENTS.md`.
 
 ## Must Do
 
@@ -173,7 +128,7 @@ Within the root modules:
   with `.` or `?.`, even when the chain fits on one line. Keep a property
   receiver together and put its following call on the next line. Apply this
   inside arguments and after scope-function lambdas too, including terminal
-  builder calls such as `vBuild()`.
+  builder calls such as `build()`.
 - **Kotlin property syntax for Java getters** — `isDeleted`, not `isDeleted()`;
   `message.value`, not `message.getValue()`. Keep calls for operations or
   methods that expose no Kotlin property.
@@ -209,8 +164,7 @@ Within the root modules:
 - **No platform-type leak in public API.** A value crossing from Java
   arrives as `String!`; give the public declaration an explicit nullable or
   non-null type rather than letting the platform type propagate.
-- **No language feature newer than Kotlin 1.8**, and no stdlib API added after
-  1.8.20 without a deliberate decision — see "Toolchain Ceiling".
+- **Keep language and standard library APIs within Kotlin 2.4.21.**
 - **No new deprecated-API call** without that explicit instruction; use the
   replacement named in the `@Deprecated` or `ReplaceWith` message.
 - **No blanket Detekt suppression.** Suppress the narrowest rule at the

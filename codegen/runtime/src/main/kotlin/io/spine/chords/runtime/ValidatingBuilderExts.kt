@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ package io.spine.chords.runtime
 
 import com.google.protobuf.Message
 import io.spine.chords.runtime.MessageDef.Companion.MESSAGE_DEF_CLASS_SUFFIX
-import io.spine.protobuf.ValidatingBuilder
+import io.spine.validation.ValidatingBuilder
 
 /**
  * Returns the generated implementation of [MessageDef] for the [M] Proto message.

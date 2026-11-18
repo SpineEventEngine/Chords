@@ -6,12 +6,13 @@ naming:
   MatchingDeclarationName:
     excludes: *testFiles # Allows ticks-named top-level test and spec suites.
   FunctionNaming:
-    ignoreAnnotated: 'Composable'
+    ignoreAnnotated:
+      - 'Composable'
   TopLevelPropertyNaming:
     constantPattern: '[A-Z][A-Za-z0-9]*'
 
 style:
-  UnusedPrivateMember:
+  UnusedPrivateProperty:
     allowedNames: '(_|ignored|expected|serialVersionUID|about|ABOUT)'
   MagicNumber:
     ignoreNumbers:
@@ -40,5 +41,5 @@ complexity:
   LongMethod:
     excludes: *testFiles # Allows long names for test and spec methods.
   LongParameterList:
-    functionThreshold: "10"
+    allowedFunctionParameters: 10
     ignoreDefaultParameters: true

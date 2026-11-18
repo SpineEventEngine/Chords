@@ -147,7 +147,7 @@ documentation when their contract changes.
 
 - Prefer executable steps, expected outcomes, and concrete examples.
 - Include easy-to-miss prerequisites: the owning Gradle wrapper and JDK
-  (root/11 vs codegen/17), `config` submodule initialization, and Maven-local
+  (root/codegen, both Java 25), `config` submodule initialization, and Maven-local
   publication of codegen plugins.
 - When documenting failure behavior, include the concrete reason and where the
   user should look.

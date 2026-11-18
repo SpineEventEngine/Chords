@@ -47,7 +47,7 @@ public interface MessageOneof<T : Message> {
     public val name: String
 
     /**
-     * Returns a value of the `is_required` option if it is applied to this oneof,
+     * Returns the `(choice).required` option for this oneof,
      * otherwise returns `false`.
      */
     public val required: Boolean

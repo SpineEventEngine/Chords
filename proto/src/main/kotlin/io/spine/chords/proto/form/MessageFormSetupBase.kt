@@ -32,7 +32,7 @@ import com.google.protobuf.Message
 import io.spine.chords.core.AbstractComponentSetup
 import io.spine.chords.core.appshell.Props
 import io.spine.chords.runtime.MessageField
-import io.spine.protobuf.ValidatingBuilder
+import io.spine.validation.ValidatingBuilder
 
 /**
  * A base class for creating companion objects for [MessageForm] and its
@@ -110,7 +110,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      *   layout along with field editor declarations.
      * @return The form instance registered for the parent field.
      */
-    context(FormFieldsScope<PM>)
+    context(_: FormFieldsScope<PM>)
     @Composable
     protected open fun <
             PM : Message,
@@ -203,7 +203,7 @@ public open class MessageFormSetupBase<M: Message, F: MessageForm<M>>(
      *   layout along with field editor declarations.
      * @return The form instance registered for the parent field.
      */
-    context(FormFieldsScope<PM>)
+    context(_: FormFieldsScope<PM>)
     @Composable
     protected fun <
             PM : Message,

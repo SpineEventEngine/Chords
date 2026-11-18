@@ -29,8 +29,8 @@ package io.spine.dependency.lib
 // https://github.com/FasterXML/jackson/wiki/Jackson-Releases
 @Suppress("unused", "ConstPropertyName")
 object Jackson {
-    const val version = "2.22.3"
-    private const val databindVersion = "2.22.3"
+    const val version = "2.22.4"
+    private const val databindVersion = "2.22.4"
 
     private const val coreGroup = "com.fasterxml.jackson.core"
     private const val dataformatGroup = "com.fasterxml.jackson.dataformat"

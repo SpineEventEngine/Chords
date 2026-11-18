@@ -37,8 +37,8 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.IntrinsicMeasurable
 import androidx.compose.ui.layout.IntrinsicMeasureScope
@@ -426,20 +426,26 @@ internal class DialogSizingSpec {
         content: @Composable () -> Unit
     ): Int = onUiThread {
         val scheduler = TestCoroutineScheduler()
-        val scene = ComposeScene(
+        val scene = ImageComposeScene(
+            width = with(density) { availableWidth.roundToPx() },
+            height = with(density) { AvailableHeight.roundToPx() },
             coroutineContext = StandardTestDispatcher(scheduler),
             density = density
         )
         try {
+            var contentSize = IntSize.Zero
             scene.constraints = with(density) {
                 Constraints(
                     maxWidth = availableWidth.roundToPx(),
                     maxHeight = AvailableHeight.roundToPx()
                 )
             }
-            scene.setContent(content)
+            scene.setContent {
+                Box(Modifier.onSizeChanged { contentSize = it }) { content() }
+            }
             scheduler.runCurrent()
-            scene.contentSize.width
+            scene.render(0L).close()
+            contentSize.width
         } finally {
             scene.close()
             scheduler.runCurrent()

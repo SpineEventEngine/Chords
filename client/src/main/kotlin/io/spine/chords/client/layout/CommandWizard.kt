@@ -43,7 +43,7 @@ import io.spine.chords.proto.form.FormPartScope
 import io.spine.chords.proto.form.MessageForm
 import io.spine.chords.proto.form.ValidationDisplayMode.MANUAL
 import io.spine.chords.runtime.MessageField
-import io.spine.protobuf.ValidatingBuilder
+import io.spine.validation.ValidatingBuilder
 
 /**
  * A kind of [Wizard], which allows creating a command message and posting

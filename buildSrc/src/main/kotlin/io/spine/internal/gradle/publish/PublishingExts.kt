@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -183,13 +183,12 @@ fun TaskContainer.excludeGoogleProtoFromArtifacts() {
  *  - Proto
  *
  * Java and Kotlin sources are default to `main` source set since it is created by `java` plugin.
- * For Proto sources to be included – [special treatment][protoSources] is needed.
+ * The Protobuf Gradle plugin registers model sources in this source set as well.
  */
 internal fun Project.sourcesJar(): TaskProvider<Jar> = tasks.getOrCreate("sourcesJar") {
     dependOnGenerateProto()
     archiveClassifier.set("sources")
     from(sourceSets["main"].allSource) // Puts Java and Kotlin sources.
-    from(protoSources()) // Puts Proto sources.
     exclude("desc.ref", "*.desc") // Exclude descriptor files and the descriptor reference.
 }
 

@@ -281,15 +281,16 @@ public class PagedDataNavigator<T> internal constructor(
     /**
      * The transition to a requested page, protected from late results of cancelled requests.
      * A loaded first page remains active while its new observation starts.
+     * A stopped caller or closed client publishes cancellation without starting requests.
      */
     @Suppress("TooGenericExceptionCaught" /* Request failures must become observable statuses. */)
     private fun MutableList<() -> Unit>.load(target: DataPageCursor) {
-        if (!lifetime.isActive || state.status == Cancelled) return
-        if (connectionStatus.value == CLOSED) {
+        if (!lifetime.isActive || connectionStatus.value == CLOSED) {
             publish(Cancelled)
             add { scope.cancel() }
             return
         }
+        if (state.status == Cancelled) return
         if (connectionMonitor == null) {
             val monitor = scope.launch(start = LAZY) {
                 connectionStatus.collect { if (it == CLOSED) close() }
@@ -458,7 +459,7 @@ public class PagedDataNavigator<T> internal constructor(
  * @param scope The caller's lifetime and dispatcher; cancellation closes the navigator.
  */
 @Suppress("FunctionNaming" /* The factory uses the constructor name of its return type. */)
-public fun <T : EntityState> PagedDataNavigator(
+public fun <T : EntityState<*>> PagedDataNavigator(
     query: PagedDataQuery<T>,
     client: Client,
     scope: CoroutineScope
@@ -470,7 +471,7 @@ public fun <T : EntityState> PagedDataNavigator(
  * The public factory begins loading immediately; [rememberPagedDataNavigator] waits for a committed
  * composition.
  */
-internal fun <T : EntityState> createPagedDataNavigator(
+internal fun <T : EntityState<*>> createPagedDataNavigator(
     query: PagedDataQuery<T>,
     client: Client,
     scope: CoroutineScope

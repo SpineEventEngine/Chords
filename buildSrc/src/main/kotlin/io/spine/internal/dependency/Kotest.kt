@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,37 +24,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-@file:Suppress("unused")
-
 package io.spine.internal.dependency
 
 /**
- * Testing framework for Kotlin.
- *
- * @see <a href="https://kotest.io/">Kotest site</a>
+ * Assertions used by the JUnit test suites.
  */
-@Suppress("unused", "ConstPropertyName")
+@Suppress("ConstPropertyName")
 object Kotest {
-    const val version = "5.9.1"
-    const val group = "io.kotest"
-    const val assertions = "$group:kotest-assertions-core:$version"
-    const val runnerJUnit5 = "$group:kotest-runner-junit5:$version"
-    const val runnerJUnit5Jvm = "$group:kotest-runner-junit5-jvm:$version"
-    const val frameworkApi = "$group:kotest-framework-api:$version"
-    const val datatest = "$group:kotest-framework-datatest:$version"
-    const val frameworkEngine = "$group:kotest-framework-engine:$version"
+    /**
+     * Aligns the JVM assertion modules.
+     */
+    const val version = "6.2.6"
 
-    // https://plugins.gradle.org/plugin/io.kotest.multiplatform
-    object MultiplatformGradlePlugin {
-        const val version = Kotest.version
-        const val id = "io.kotest.multiplatform"
-        const val classpath = "$group:kotest-framework-multiplatform-plugin-gradle:$version"
-    }
-
-    // https://github.com/kotest/kotest-gradle-plugin
-    object JvmGradlePlugin {
-        const val version = "0.3.8"
-        const val id = "io.kotest"
-        const val classpath = "$group:kotest-gradle-plugin:$version"
-    }
+    /**
+     * Provides assertions without a second test runner.
+     */
+    const val assertions = "io.kotest:kotest-assertions-core:$version"
 }

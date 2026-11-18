@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,15 +26,11 @@
 
 package io.spine.chords.proto.value.validate
 
-import io.spine.validate.ConstraintViolation
+import io.spine.string.format
+import io.spine.validation.ConstraintViolation
 
 /**
- * A Message provided by this [ConstraintViolation], formatted using its
- * [msgFormat][io.spine.validate.ConstraintViolation.getMsgFormat] and
- * [paramList][io.spine.validate.ConstraintViolation.getParamList] properties.
+ * Formats the validation message by substituting its named placeholders.
  */
 public val ConstraintViolation.formattedMessage: String
-    get() = String.format(
-        this.msgFormat,
-        listOf(this.paramList)
-    )
+    get() = message.format()

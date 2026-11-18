@@ -29,13 +29,12 @@ package io.spine.chords.client.testing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.ImageComposeScene
 import java.awt.EventQueue.invokeAndWait
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
-import org.jetbrains.skia.Surface
 
 /**
  * Limits settling to two seconds of simulated frame time so endless recomposition fails.
@@ -57,13 +56,12 @@ internal class CompositionScene(
      * Keeps composition work on the test scheduler instead of a background pool.
      */
     private val scene = onUiThread {
-        ComposeScene(coroutineContext = StandardTestDispatcher(scheduler))
+        ImageComposeScene(
+            width = SceneSize,
+            height = SceneSize,
+            coroutineContext = StandardTestDispatcher(scheduler)
+        )
     }
-
-    /**
-     * Supplies a canvas for advancing frames without showing a window.
-     */
-    private val surface = Surface.makeRasterN32Premul(1, 1)
 
     /**
      * Keeps frame timestamps increasing as the test applies edits.
@@ -89,7 +87,7 @@ internal class CompositionScene(
             repeat(IdleFrameLimit) {
                 scheduler.runCurrent()
                 Snapshot.sendApplyNotifications()
-                scene.render(surface.canvas, ++frame * 16_000_000L)
+                scene.render(++frame * 16_000_000L).close()
                 scheduler.runCurrent()
                 if (!scene.hasInvalidations()) {
                     return@onUiThread
@@ -105,7 +103,6 @@ internal class CompositionScene(
     override fun close(): Unit = onUiThread {
         scene.close()
         scheduler.runCurrent()
-        surface.close()
     }
 }
 
@@ -118,3 +115,8 @@ internal fun <T> onUiThread(action: () -> T): T {
     return checkNotNull(result)
         .getOrThrow()
 }
+
+/**
+ * Bounds component layout without opening a native window.
+ */
+private const val SceneSize = 800

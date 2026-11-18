@@ -26,10 +26,10 @@
 
 package io.spine.chords.core.time
 
-import io.kotest.core.spec.DisplayName
 import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
 import java.time.Instant
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 @DisplayName("`WallClock` should")

@@ -29,6 +29,6 @@ package io.spine.dependency.build
 // https://checkerframework.org/
 @Suppress("unused", "ConstPropertyName")
 object CheckerFramework {
-    private const val version = "3.37.0"
+    private const val version = "4.4.0"
     const val annotations = "org.checkerframework:checker-qual:${version}"
 }

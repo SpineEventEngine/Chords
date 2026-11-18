@@ -34,7 +34,7 @@ object Slf4J {
     /**
      * Aligns the artifacts used by this build.
      */
-    private const val version = "2.0.7"
+    private const val version = "2.0.20"
 
     /**
      * Pins the shared logging interfaces.

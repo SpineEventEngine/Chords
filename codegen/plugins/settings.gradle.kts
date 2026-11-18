@@ -33,3 +33,10 @@ rootProject.name = "ChordsCodegenPlugins"
 include(
     "codegen-plugins"
 )
+
+// Standalone generator builds consume the runtime from the same checkout.
+includeBuild("../..") {
+    dependencySubstitution {
+        substitute(module("io.spine.chords:spine-chords-runtime")).using(project(":runtime"))
+    }
+}

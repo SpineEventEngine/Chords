@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,20 +24,24 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import io.spine.internal.dependency.Kotest
+import io.spine.internal.dependency.Compose
 import io.spine.internal.dependency.Kotlin
 import io.spine.internal.dependency.Material3
 import io.spine.internal.dependency.Voyager
 
 plugins {
-    id("org.jetbrains.compose") version "1.5.12"
+    id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 dependencies {
+    testImplementation(Compose.navigationEvent)
+    testImplementation(Compose.navigationEventCompose)
     api(Voyager.navigator)
     implementation(Kotlin.reflect)
-    implementation(compose.desktop.currentOs)
-    implementation(compose.materialIconsExtended)
+    runtimeOnly(Compose.skikoRuntime)
+    implementation(Compose.ui)
+    implementation(Compose.foundation)
+    implementation(Compose.materialIcons)
     implementation(Material3.Desktop.lib)
-    testImplementation(Kotest.runnerJUnit5)
 }

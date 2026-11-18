@@ -52,7 +52,7 @@ message TestCommand {
     EnumType enum_field = 4;
 
     oneof one_of_plain_field {
-        option (is_required) = true;
+        option (choice).required = true;
 
         bool one_of_option_1 = 5;
         string one_of_option_2 = 6;
@@ -111,5 +111,25 @@ message TestCommand {
             string option_2 = 2;
             int32 option_3 = 3;
         }
+    }
+}
+
+// Exercises the canonical required choice option.
+message RequiredChoice {
+    oneof value {
+        option (choice).required = true;
+
+        // A selected text value.
+        string text = 1;
+    }
+}
+
+// Exercises an explicitly optional choice.
+message OptionalChoice {
+    oneof value {
+        option (choice).required = false;
+
+        // A selected text value.
+        string text = 1;
     }
 }

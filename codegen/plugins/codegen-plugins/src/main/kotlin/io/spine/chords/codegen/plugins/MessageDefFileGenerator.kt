@@ -39,7 +39,7 @@ import io.spine.string.camelCase
 import io.spine.tools.compiler.ast.Field
 import io.spine.tools.compiler.ast.TypeName
 import io.spine.tools.compiler.type.TypeSystem
-import javax.annotation.Generated
+import javax.annotation.processing.Generated
 
 /**
  * Implementation of [FileFragmentGenerator] that combines several other

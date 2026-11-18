@@ -44,7 +44,7 @@ For published model Protobuf declarations and Kotlin model extensions under
 - Avoid breaking public API: signatures, property names, and visibility of
   published declarations are external contracts. Prefer additive changes;
   `protected` members are API for component subclasses.
-- Target Compose Multiplatform 1.5.12; do not use newer Compose APIs. Some
+- Target Compose Multiplatform 1.12.2; do not use newer Compose APIs. Some
   Compose APIs in use are experimental
   (`@OptIn(ExperimentalComposeUiApi::class)`); keep such opt-ins localized
   and documented.

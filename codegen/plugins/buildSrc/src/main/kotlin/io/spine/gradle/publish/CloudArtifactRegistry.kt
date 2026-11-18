@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,12 @@
 package io.spine.gradle.publish
 
 import com.google.auth.oauth2.GoogleCredentials
+import com.google.cloud.artifactregistry.auth.CommandExecutorResult
 import com.google.cloud.artifactregistry.auth.DefaultCredentialProvider
 import io.spine.gradle.Credentials
 import io.spine.gradle.Repository
 import java.io.IOException
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 
 /**
@@ -61,12 +63,32 @@ internal object CloudArtifactRegistry {
         credentialValues = this::fetchGoogleCredentials
     )
 
+    /**
+     * Keeps local builds usable when Google credentials or the credential CLI are unavailable.
+     */
     private fun fetchGoogleCredentials(p: Project): Credentials? {
         return try {
-            val googleCreds = DefaultCredentialProvider()
-            val creds = googleCreds.credential as GoogleCredentials
+            val googleCreds = DefaultCredentialProvider.getInstance()
+            val creds = googleCreds.getCredential { command, arguments ->
+                val output = p.providers.exec {
+                    commandLine(listOf(command) + arguments)
+                    isIgnoreExitValue = true
+                }
+                val result = try {
+                    output.result.get()
+                } catch (e: GradleException) {
+                    throw IOException("Unable to run the Google Cloud credential command.", e)
+                }
+                CommandExecutorResult(
+                    result.exitValue,
+                    output.standardOutput.asText.get(),
+                    output.standardError.asText.get()
+                )
+            } as GoogleCredentials
             creds.refreshIfExpired()
-            Credentials("oauth2accesstoken", creds.accessToken.tokenValue)
+            val accessToken = creds.accessToken
+                ?: throw IOException("Credentials returned no access token.")
+            Credentials("oauth2accesstoken", accessToken.tokenValue)
         } catch (e: IOException) {
             p.logger.info("Unable to fetch credentials for Google Cloud Artifact Registry." +
                     " Reason: '${e.message}'." +

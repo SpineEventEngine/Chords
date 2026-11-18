@@ -37,3 +37,14 @@ include(
 
 project(":runtime").projectDir = file("codegen/runtime")
 project(":codegen-tests").projectDir = file("codegen/tests")
+
+// The generator consumes the runtime from this checkout, including before either is published.
+includeBuild(".")
+
+includeBuild("codegen/plugins") {
+    name = "chords-codegen"
+    dependencySubstitution {
+        substitute(module("io.spine.chords:spine-chords-codegen-plugins"))
+            .using(project(":codegen-plugins"))
+    }
+}

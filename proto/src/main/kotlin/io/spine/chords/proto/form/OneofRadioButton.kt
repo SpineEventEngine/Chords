@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import io.spine.chords.core.FocusableComponent
 import io.spine.chords.core.primitive.RadioButtonWithText
 import io.spine.chords.runtime.MessageField
 import io.spine.chords.runtime.MessageFieldValue
-import io.spine.protobuf.ValidatingBuilder
+import io.spine.validation.ValidatingBuilder
 
 /**
  * A radio button, which can be placed into a
@@ -94,7 +94,7 @@ public open class OneofRadioButtonSetup : AbstractComponentSetup(
      * to have a respective field editor in the same way that you would do
      * for any other field.
      *
-     * @receiver A scope of type [OneOfFieldsScope], which is introduced
+     * @param fields A scope of type [OneOfFieldsScope], which is introduced
      *   by the parent [OneOfFields][FormPartScope.OneOfFields] declaration
      *   that corresponds to the oneof being edited.
      * @param M A type of message to which the respective oneof
@@ -108,16 +108,16 @@ public open class OneofRadioButtonSetup : AbstractComponentSetup(
      * @return A [OneofRadioButton] instance that corresponds to
      *   this declaration.
      */
-    context(OneOfFieldsScope<M>)
+    context(fields: OneOfFieldsScope<M>)
     @Composable
     public operator fun <M : Message, F: MessageFieldValue> invoke(
         field: MessageField<M, F>,
         text: String
     ): OneofRadioButton<M, F> = createAndRender({
-        this.oneOfFieldsScope = this@OneOfFieldsScope
+        this.oneOfFieldsScope = fields
         this.field = field
         this.text = text
-        registerFieldSelector(field, this)
+        fields.registerFieldSelector(field, this)
     }) {
         Content()
     }
@@ -132,7 +132,7 @@ public open class OneofRadioButtonSetup : AbstractComponentSetup(
      * to create an in-place form for editing the contents of that
      * field's message.
      *
-     * @receiver A scope of type [OneOfFieldsScope], which is introduced
+     * @param fields A scope of type [OneOfFieldsScope], which is introduced
      *    by the parent [OneOfFields][FormPartScope.OneOfFields] declaration
      *    that corresponds to the oneof being edited.
      * @param M A type of message to which the respective oneof
@@ -154,7 +154,7 @@ public open class OneofRadioButtonSetup : AbstractComponentSetup(
      * @return A [OneofRadioButton] instance that corresponds to
      *   this declaration.
      */
-    context(OneOfFieldsScope<M>)
+    context(fields: OneOfFieldsScope<M>)
     @Composable
     public operator fun <M : Message, F : Message> invoke(
         field: MessageField<M, F>,

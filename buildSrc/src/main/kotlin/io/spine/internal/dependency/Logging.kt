@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,26 @@
 
 package io.spine.internal.dependency
 
-@Suppress("unused", "ConstPropertyName")
-object OsDetector {
-    // https://github.com/google/osdetector-gradle-plugin
-    const val version = "1.7.3"
-    const val id = "com.google.osdetector"
-    const val lib = "com.google.gradle:osdetector-gradle-plugin:${version}"
-    const val classpath = lib
+/**
+ * Aligns logging used by the Compiler and its plugins.
+ */
+@Suppress("ConstPropertyName")
+object Logging {
+    /**
+     * Aligns the artifacts used by this build.
+     */
+    private const val version = "2.0.0-SNAPSHOT.429"
+
+    /**
+     * Keeps transitive logging requests on one release.
+     */
+    const val lib = "${Spine.group}:spine-logging:$version"
+    /**
+     * Aligns the logging API, JVM implementation, and gRPC context adapter.
+     */
+    val libs = listOf(
+        "spine-logging", "spine-logging-jvm", "spine-logging-grpc-context",
+        "spine-logging-jvm-default-platform", "spine-logging-jul-backend"
+    )
+        .map { "${Spine.group}:$it:$version" }
 }

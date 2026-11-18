@@ -25,15 +25,11 @@
  */
 
 import BuildSettings.javaVersion
-import io.spine.internal.dependency.CheckerFramework
 import io.spine.internal.dependency.Dokka
 import io.spine.internal.dependency.ErrorProne
-import io.spine.internal.dependency.Guava
 import io.spine.internal.dependency.JUnit
-import io.spine.internal.dependency.JavaX
 import io.spine.internal.dependency.Kotest
-import io.spine.internal.dependency.Protobuf
-import io.spine.internal.dependency.Spine
+import io.spine.internal.dependency.KotlinX
 import io.spine.internal.gradle.checkstyle.CheckStyleConfig
 import io.spine.internal.gradle.github.pages.updateGitHubPages
 import io.spine.internal.gradle.javac.configureErrorProne
@@ -45,7 +41,6 @@ import io.spine.internal.gradle.publish.IncrementGuard
 import io.spine.internal.gradle.report.license.LicenseReporter
 import io.spine.internal.gradle.testing.configureLogging
 import io.spine.internal.gradle.testing.registerTestTasks
-import kotlinx.kover.KoverPlugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.compile.JavaCompile
@@ -55,11 +50,12 @@ import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.getValue
 import org.gradle.kotlin.dsl.idea
 import org.gradle.kotlin.dsl.invoke
-import org.gradle.kotlin.dsl.`java-library`
 import org.gradle.kotlin.dsl.kotlin
 import org.gradle.kotlin.dsl.provideDelegate
 import org.gradle.kotlin.dsl.registering
+import org.gradle.kotlin.dsl.`java-library`
 import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -70,12 +66,11 @@ plugins {
     id("project-report")
     id("dokka-for-java")
     kotlin("jvm")
-    id("io.kotest")
+    id("org.jetbrains.kotlinx.kover")
     id("detekt-code-analysis")
     id("dokka-for-kotlin")
 }
 
-apply<KoverPlugin>()
 apply<IncrementGuard>()
 
 LicenseReporter.generateReportIn(project)
@@ -118,54 +113,26 @@ fun Module.configureKotlin(javaVersion: JavaLanguageVersion) {
 
     tasks {
         withType<KotlinCompile>().configureEach {
-            kotlinOptions.jvmTarget = javaVersion.toString()
+            compilerOptions.jvmTarget.set(JvmTarget.fromTarget(javaVersion.toString()))
             setFreeCompilerArgs()
         }
     }
 
-    // TODO:2024-09-13:dmitry.pikhulya: Update the Kover 7.x configuration commented below
-    //                                  to Kover 6.1
-    //                                  See https://github.com/SpineEventEngine/Chords/issues/29
-//    kover {
-//        useJacoco(version = Jacoco.version)
-//    }
-//
-//    koverReport {
-//        defaults {
-//            xml {
-//                onCheck = true
-//            }
-//        }
-//    }
 }
 
 /**
  * These dependencies are applied to all subprojects and do not have to
  * be included explicitly.
- *
- * We expose production code dependencies as API because they are used
- * by the framework parts that depend on `base`.
+
  */
 fun Module.addDependencies() = dependencies {
     errorprone(ErrorProne.core)
 
-    Protobuf.libs.forEach { api(it) }
-    api(Guava.lib)
-
-    compileOnlyApi(CheckerFramework.annotations)
-    compileOnlyApi(JavaX.annotations)
-    ErrorProne.annotations.forEach { compileOnlyApi(it) }
-
-    testImplementation(Guava.testLib)
-    testImplementation(JUnit.runner)
-    testImplementation(JUnit.pioneer)
     JUnit.api.forEach { testImplementation(it) }
-
-    testImplementation(Spine.testlib)
-    testImplementation(Kotest.frameworkEngine)
-    testImplementation(Kotest.datatest)
-    testImplementation(Kotest.runnerJUnit5Jvm)
-    testImplementation(JUnit.runner)
+    testImplementation(KotlinX.Coroutines.test)
+    testImplementation(Kotest.assertions)
+    testRuntimeOnly(JUnit.runner)
+    testRuntimeOnly(JUnit.Platform.launcher)
 }
 
 fun Module.forceConfigurations() {
@@ -178,8 +145,6 @@ fun Module.forceConfigurations() {
                     JUnit.bom,
                     JUnit.runner,
                     Dokka.BasePlugin.lib,
-                    Spine.reflect,
-                    Spine.base_1_9
                 )
             }
         }
@@ -219,7 +184,6 @@ fun Module.setTaskDependencies(generatedDir: String) {
             publish?.dependsOn("${project.path}:updateGitHubPages")
         }
     }
-    configureTaskDependencies()
 }
 
 fun Module.configureGitHubPages() {

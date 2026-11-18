@@ -50,7 +50,7 @@ internal object EntityChooserSpecEnv {
      */
     class AccountEntity(
         val account: BankAccount
-    ) : EntityState, Message by account
+    ) : EntityState<String>, Message by account
 
     /**
      * Renders the production dropdown while selecting a string-valued account number.

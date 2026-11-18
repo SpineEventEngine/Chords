@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ public class PaymentCardNumberField : InputField<PaymentCardNumber>() {
             //     (min/max length options).
             //     NOTE: Once this is implemented, no explicit condition
             //           checking and exception throwing branch like this
-            //           should be needed, since vBuild() would include
+            //           should be needed, since build() would include
             //           the respective check.
             //     See: https://github.com/Projects-tm/1DAM/issues/44
             throw ParseException()

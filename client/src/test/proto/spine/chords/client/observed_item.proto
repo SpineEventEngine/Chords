@@ -53,11 +53,3 @@ message NamedItem {
     // Identifies an item without a Protobuf message wrapper.
     string name = 1;
 }
-
-// A state whose message-based entity ID is kept outside the state.
-message IdlessItem {
-    option (entity).kind = PROJECTION;
-
-    // A display value that must not be mistaken for an entity ID.
-    string label = 1 [(column) = true];
-}

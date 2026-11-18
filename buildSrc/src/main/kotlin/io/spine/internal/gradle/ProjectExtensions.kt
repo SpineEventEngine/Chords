@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,12 +50,7 @@ val Project.javaPluginExtension: JavaPluginExtension
  * Obtains source set container of the Java project.
  */
 val Project.sourceSets: SourceSetContainer
-    get() {
-        val javaPluginConvention = convention.getPlugin(
-            org.gradle.api.plugins.JavaPluginConvention::class.java
-        )
-        return javaPluginConvention.sourceSets
-    }
+    get() = extensions.getByType()
 
 /**
  * Applies the specified Gradle plugin to this project by the plugin [class][cls].

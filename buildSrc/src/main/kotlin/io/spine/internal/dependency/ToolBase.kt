@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,17 +26,25 @@
 
 package io.spine.internal.dependency
 
-// https://github.com/google/flogger
-@Deprecated("Please use Spine Logging library instead.")
-@Suppress("unused", "ConstPropertyName")
-object Flogger {
-    internal const val version = "0.7.4"
-    const val lib = "com.google.flogger:flogger:${version}"
+/**
+ * Artifacts of the `tool-base` module.
+ *
+ * @see <a href="https://github.com/SpineEventEngine/tool-base">tool-base</a>
+ */
+@Suppress("ConstPropertyName")
+object ToolBase {
+    /**
+     * Aligns the tools shared by the Compiler and its Gradle plugin.
+     */
+    private const val version = "2.0.0-SNAPSHOT.460"
 
-    object Runtime {
-        const val systemBackend = "com.google.flogger:flogger-system-backend:${version}"
-        const val log4j2Backend = "com.google.flogger:flogger-log4j2-backend:${version}"
-        const val slf4JBackend  = "com.google.flogger:flogger-slf4j-backend:${version}"
-        const val grpcContext   = "com.google.flogger:flogger-grpc-context:${version}"
-    }
+    /**
+     * Split tool-base artifacts that share APIs across the compiler's classpath.
+     */
+    val libs = listOf(
+        "archive", "proto-code", "code", "kotlin-code", "java-code", "fs", "psi", "psi-java",
+        "plugin-base", "root-gradle-plugins", "gradle-plugin-api", "jvm-tools",
+        "protobuf-setup-plugins", "intellij-platform", "intellij-platform-java"
+    )
+        .map { "${Spine.toolsGroup}:$it:$version" }
 }

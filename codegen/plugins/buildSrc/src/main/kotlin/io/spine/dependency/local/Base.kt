@@ -34,7 +34,7 @@ object Base {
     /**
      * Aligns the artifacts used by this build.
      */
-    private const val version = "2.0.0-SNAPSHOT.462"
+    private const val version = "2.0.0-SNAPSHOT.463"
 
     /**
      * Provides message types and Protobuf utilities.
@@ -45,4 +45,9 @@ object Base {
      * Keeps annotations compatible with the base APIs.
      */
     const val annotations = "${Spine.group}:spine-annotations:$version"
+    /**
+     * Keeps the base model, formatting, and environment APIs on one release.
+     */
+    val libs = listOf("spine-base", "spine-annotations", "spine-format", "spine-environment")
+        .map { "${Spine.group}:$it:$version" }
 }

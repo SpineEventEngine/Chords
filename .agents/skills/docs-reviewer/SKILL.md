@@ -66,7 +66,7 @@ because the task asks for a review.
   examples. Avoid indented command blocks.
 - **Examples are current.** Verify documented Gradle tasks, module names,
   versions, and toolchain requirements against build files or owning docs.
-  Watch for the JDK 11 vs JDK 17 and root vs `codegen/plugins` distinctions.
+  Check that both builds use JDK 25 and the wrapper for the owning project.
 - **Links resolve.** Check local relative links and referenced paths. External
   inline links are acceptable when the surrounding file already uses them.
 - **Terminology is consistent.** Use one term for the same concept within a

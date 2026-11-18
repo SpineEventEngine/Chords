@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,6 @@
 
 package io.spine.internal.gradle.publish
 
-import io.spine.internal.gradle.publish.MavenMetadata.Companion.FILE_NAME
-import java.net.URL
-
 @Suppress("unused", "ConstPropertyName")
 object ChordsPublishing {
     /**
@@ -37,16 +34,4 @@ object ChordsPublishing {
      */
     const val artifactPrefix = "spine-chords-"
 
-    /**
-     * The Gradle plugin publishing info.
-     *
-     * See `codegen/gradle-plugin` for detail.
-     */
-    object GradlePlugin {
-        const val id = "io.spine.chords.gradle"
-
-        val metadataUrl = URL(
-            "https://plugins.gradle.org/m2/$id/$id.gradle.plugin/$FILE_NAME"
-        )
-    }
 }

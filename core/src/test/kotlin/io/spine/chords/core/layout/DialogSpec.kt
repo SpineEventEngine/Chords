@@ -210,6 +210,7 @@ internal class DialogSpec {
             dialog.submitting = true
             scene.render()
             scene.pressKey(VK_A)
+            scene.pressKey(VK_ENTER, CTRL_DOWN_MASK)
             scene.releaseKey(VK_ENTER, CTRL_DOWN_MASK)
             scene.pressKey(VK_ESCAPE)
 

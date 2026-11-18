@@ -39,47 +39,12 @@ dependencies {
     implementation(Chords.Runtime.lib(version.toString()))
 }
 
-/**
- * Path to `codegen-workspace` folder in the module resources.
- *
- * This folder will be packaged into the resulting jar file and then used by
- * the Chords Gradle plugin to create a placeholder module in which to perform
- * code generation.
- */
-val workspaceDir = "src/main/resources/codegen-workspace"
-
-/**
- * Copies `buildSrc` and Gradle wrapper files to `workspaceDir`.
- */
-val copyWorkspaceResources = tasks.register("copyWorkspaceResources") {
-    doLast {
-        copy {
-            from("$rootDir") {
-                include(
-                    "buildSrc/**",
-                    "gradle/**",
-                    "gradlew",
-                    "gradlew.bat",
-                    "gradle.properties"
-                )
-                exclude(
-                    "buildSrc/.gradle",
-                    "buildSrc/.kotlin",
-                    "buildSrc/build",
-                    "buildSrc/aus.weis"
-                )
-            }
-            into(workspaceDir)
-        }
-    }
-}
-
-tasks.matching { it.name == "processResources" || it.name == "sourcesJar" }.configureEach {
-    dependsOn(copyWorkspaceResources)
-}
-
 tasks.named("compileKotlin") {
     dependsOn("kspKotlin")
+}
+
+tasks.matching { it.name == "sourcesJar" }.configureEach {
+    dependsOn("classes")
 }
 
 tasks.named("compileTestKotlin") {
@@ -92,25 +57,4 @@ tasks.matching { it.name == "kspKotlin" }.configureEach {
 
 tasks.matching { it.name == "kspTestKotlin" }.configureEach {
     dependsOn("launchTestSpineCompiler")
-}
-
-/**
- * Removes copied `buildSrc` and Gradle wrapper files.
- */
-val cleanWorkspaceResources = tasks.register("cleanWorkspaceResources") {
-    doLast {
-        delete("$workspaceDir/buildSrc")
-        delete("$workspaceDir/gradle")
-        delete("$workspaceDir/gradlew")
-        delete("$workspaceDir/gradlew.bat")
-        delete("$workspaceDir/gradle.properties")
-    }
-}
-
-copyWorkspaceResources.configure {
-    dependsOn(cleanWorkspaceResources)
-}
-
-tasks.named("clean") {
-    dependsOn(cleanWorkspaceResources)
 }

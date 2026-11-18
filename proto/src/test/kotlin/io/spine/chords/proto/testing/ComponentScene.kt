@@ -26,13 +26,22 @@
 
 package io.spine.chords.proto.testing
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.ui.ComposeScene
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.InternalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.InfiniteAnimationPolicy
+import androidx.compose.ui.semantics.SemanticsActions.OnClick
+import androidx.compose.ui.semantics.SemanticsActions.SetSelection
 import androidx.compose.ui.semantics.SemanticsActions.SetText
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -49,7 +58,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
-import org.jetbrains.skia.Surface
 
 /**
  * Runs a component scenario without a visible window.
@@ -73,7 +81,11 @@ internal fun <T> onUiThread(action: () -> T): T {
  * Applies state changes to an off-screen composition of a component.
  * Infinite animations are disabled so focused editors can settle between test actions.
  */
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalCoroutinesApi::class)
+@OptIn(
+    ExperimentalComposeUiApi::class,
+    ExperimentalCoroutinesApi::class,
+    InternalComposeUiApi::class
+)
 internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
 
     /**
@@ -82,16 +94,20 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
     private val scheduler = TestCoroutineScheduler()
 
     /**
+     * Captures the rendered content's size within the simulated window.
+     */
+    private var measuredContentSize = IntSize.Zero
+
+    /**
      * Keeps effects and recomposition on the scene's UI thread under test control.
      */
     private val scene = onUiThread {
-        ComposeScene(coroutineContext = StandardTestDispatcher(scheduler) + FiniteAnimationsOnly)
+        ImageComposeScene(
+            width = SceneSize,
+            height = SceneSize,
+            coroutineContext = StandardTestDispatcher(scheduler) + FiniteAnimationsOnly
+        )
     }
-
-    /**
-     * Supplies a canvas for advancing frames without showing a window.
-     */
-    private val surface = Surface.makeRasterN32Premul(1, 1)
 
     /**
      * Keeps frame timestamps increasing as the test applies edits.
@@ -102,7 +118,13 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
         try {
             onUiThread {
                 scene.setContent {
-                    MaterialTheme { content() }
+                    MaterialTheme {
+                        Box(Modifier.fillMaxSize()) {
+                            Box(Modifier.onSizeChanged { measuredContentSize = it }) {
+                                content()
+                            }
+                        }
+                    }
                 }
             }
             render()
@@ -120,7 +142,7 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
             scheduler.advanceTimeBy(16)
             scheduler.runCurrent()
             Snapshot.sendApplyNotifications()
-            scene.render(surface.canvas, ++frame * 16_000_000L)
+            scene.render(++frame * 16_000_000L).close()
             scheduler.runCurrent()
             Snapshot.sendApplyNotifications()
             if (!scene.hasInvalidations()) {
@@ -134,14 +156,14 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
      * The measured content size, including any supporting content below an editor.
      */
     val contentSize: IntSize
-        get() = onUiThread { scene.contentSize }
+        get() = onUiThread { measuredContentSize }
 
     /**
      * Returns accessibility nodes for observing focus, actions, and layout.
      */
     fun semanticsNodes(): List<SemanticsNode> = onUiThread {
-        scene.roots
-            .flatMap { it.semanticsOwner.getAllSemanticsNodes(false) }
+        scene.semanticsOwners
+            .flatMap { it.getAllSemanticsNodes(false) }
     }
 
     /**
@@ -150,9 +172,23 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
     fun pressKey(keyCode: Int, modifiers: Int = 0) {
         onUiThread {
             listOf(KEY_PRESSED, KEY_RELEASED).forEach { eventType ->
-                scene.sendKeyEvent(KeyEvent(java.awt.event.KeyEvent(
+                val native = java.awt.event.KeyEvent(
                     Panel(), eventType, 0L, modifiers, keyCode, CHAR_UNDEFINED
-                )))
+                )
+                scene.sendKeyEvent(KeyEvent(
+                    key = Key(nativeKeyCode = keyCode),
+                    type = if (eventType == KEY_PRESSED) {
+                        KeyEventType.KeyDown
+                    } else {
+                        KeyEventType.KeyUp
+                    },
+                    codePoint = CHAR_UNDEFINED.code,
+                    isCtrlPressed = native.isControlDown,
+                    isMetaPressed = native.isMetaDown,
+                    isAltPressed = native.isAltDown,
+                    isShiftPressed = native.isShiftDown,
+                    nativeEvent = native
+                ))
             }
         }
         render()
@@ -163,8 +199,8 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
      */
     fun displayedText(): Set<String> = onUiThread {
         val pending = ArrayDeque(
-            scene.roots
-                .map { it.semanticsOwner.rootSemanticsNode }
+            scene.semanticsOwners
+                .map { it.rootSemanticsNode }
         )
         val text = mutableSetOf<String>()
         while (pending.isNotEmpty()) {
@@ -184,11 +220,26 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
      * Returns the single text field's displayed value after formatting and validation.
      */
     fun inputText(): String = onUiThread {
-        scene.roots
-            .flatMap { it.semanticsOwner.getAllSemanticsNodes(false) }
+        scene.semanticsOwners
+            .flatMap { it.getAllSemanticsNodes(false) }
             .mapNotNull { it.config.getOrNull(SemanticsProperties.EditableText) }
             .single()
             .text
+    }
+
+    /**
+     * Selects the entire editor value so the next input replaces it rather than revising a digit.
+     */
+    fun selectAllText() {
+        onUiThread {
+            val editor = scene.semanticsOwners
+                .flatMap { it.getAllSemanticsNodes(false) }
+                .single { it.config.getOrNull(SemanticsProperties.EditableText) != null }
+            val select = checkNotNull(editor.config[SetSelection].action)
+            val length = editor.config[SemanticsProperties.EditableText].length
+            check(select(0, length, false)) { "The text field rejected the selection." }
+        }
+        render()
     }
 
     /**
@@ -196,11 +247,30 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
      */
     fun enterText(text: String) {
         onUiThread {
-            val edit = scene.roots
-                .flatMap { it.semanticsOwner.getAllSemanticsNodes(false) }
+            val edit = scene.semanticsOwners
+                .flatMap { it.getAllSemanticsNodes(false) }
                 .mapNotNull { it.config.getOrNull(SetText)?.action }
                 .single()
             check(edit(AnnotatedString(text))) { "The text field rejected the edit." }
+        }
+        render()
+    }
+
+    /**
+     * Selects an open dropdown's option by its visible label and accessible click action.
+     */
+    fun selectOption(text: String) {
+        onUiThread {
+            val label = scene.semanticsOwners
+                .flatMap { it.getAllSemanticsNodes(false) }
+                .single {
+                    it.config.getOrNull(SemanticsProperties.Text)
+                        .orEmpty()
+                        .any { value -> value.text == text }
+                }
+            val click = generateSequence(label) { it.parent }
+                .firstNotNullOf { it.config.getOrNull(OnClick)?.action }
+            check(click()) { "The dropdown rejected the selection." }
         }
         render()
     }
@@ -211,7 +281,6 @@ internal class ComponentScene(content: @Composable () -> Unit) : AutoCloseable {
     override fun close(): Unit = onUiThread {
         scene.close()
         scheduler.runCurrent()
-        surface.close()
     }
 }
 
@@ -227,3 +296,8 @@ private object FiniteAnimationsOnly : InfiniteAnimationPolicy {
         throw CancellationException("Infinite animations are disabled in the test scene.")
     }
 }
+
+/**
+ * Bounds component layout without opening a native window.
+ */
+private const val SceneSize = 800

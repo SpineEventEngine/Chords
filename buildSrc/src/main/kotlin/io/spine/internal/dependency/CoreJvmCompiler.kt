@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,18 @@
 
 package io.spine.internal.dependency
 
-// https://www.bouncycastle.org/java.html
-@Suppress("unused", "ConstPropertyName")
-object BouncyCastle {
-    const val libPkcsJdk15 = "org.bouncycastle:bcpkix-jdk15on:1.68"
+/**
+ * Generates Spine entity and validation APIs for the plugin model.
+ */
+@Suppress("ConstPropertyName")
+object CoreJvmCompiler {
+    /**
+     * The Core JVM compiler release used for the plugin's internal model.
+     */
+    private const val version = "2.0.0-SNAPSHOT.104"
+
+    /**
+     * Adds entity, routing, and validation generation to the internal model build.
+     */
+    const val gradlePlugin = "${Spine.toolsGroup}:core-jvm-gradle-plugin:$version"
 }

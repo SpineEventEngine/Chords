@@ -42,6 +42,6 @@ object AutoService {
 
 // https://github.com/google/auto
 object AutoValue {
-    private const val version = "1.10.2"
+    private const val version = "1.11.1"
     const val annotations = "com.google.auto.value:auto-value-annotations:${version}"
 }

@@ -68,7 +68,7 @@ import kotlin.reflect.javaType
  */
 @Stable
 public abstract class EntityChooser<
-        E : EntityState, // Keep in sync with the `TypeParameters` enum!
+        E : EntityState<*>, // Keep in sync with the `TypeParameters` enum!
         I : MessageFieldValue
         > : DropdownSelector<I>() {
 

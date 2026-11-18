@@ -26,26 +26,29 @@
 
 package io.spine.chords.proto.money
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.InternalComposeUiApi
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.text.TextRange
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.spine.chords.core.RawTextContent
+import io.spine.chords.proto.TestApplication
+import io.spine.chords.proto.testing.inScene
 import io.spine.chords.proto.value.money.options
+import io.spine.money.Currencies
+import io.spine.money.Currencies.USD
 import io.spine.money.Currency
-import io.spine.money.Currency.BIF
-import io.spine.money.Currency.IQD
-import io.spine.money.Currency.IRR
-import io.spine.money.Currency.PYG
-import io.spine.money.Currency.TZS
-import io.spine.money.Currency.UAH
-import io.spine.money.Currency.USD
-import io.spine.money.Currency.VND
-import io.spine.money.Currency.ZWL
+import io.spine.money.Money
 import java.awt.Panel
 import java.awt.event.KeyEvent.KEY_TYPED
+import java.awt.event.KeyEvent.VK_DOWN
+import java.awt.event.KeyEvent.VK_TAB
 import java.awt.event.KeyEvent.VK_UNDEFINED
 import java.text.DecimalFormatSymbols
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
@@ -59,6 +62,79 @@ private val decimalSeparator get() = DecimalFormatSymbols.getInstance().decimalS
  */
 @DisplayName("`MoneyField` should")
 internal class MoneyFieldSpec {
+
+    /**
+     * Supplies application defaults without depending on another suite's setup.
+     */
+    @BeforeEach
+    fun installApplication() {
+        TestApplication.install()
+    }
+
+    /**
+     * Stores a real editor's fractional input in Spine Money 2's atto representation.
+     */
+    @Test
+    fun `parse an edited amount into attos`() {
+        val amount = mutableStateOf<Money?>(null)
+
+        inScene(content = { MoneyField { value = amount } }) { scene ->
+            scene.enterText("12${decimalSeparator}34")
+
+            amount.value shouldBe Money.newBuilder()
+                .setCurrency(USD)
+                .setUnits(12)
+                .setAttos(340_000_000_000_000_000L)
+                .build()
+        }
+    }
+
+    /**
+     * Currency changes retain whole units and truncate attos to the new precision.
+     */
+    @Test
+    fun `preserve and truncate fractional amounts when switching currencies`() {
+        val amount = mutableStateOf<Money?>(null)
+
+        inScene(content = { MoneyField { value = amount } }) { scene ->
+            scene.enterText("12${decimalSeparator}34")
+            scene.pressKey(VK_TAB)
+            scene.pressKey(VK_DOWN)
+            scene.selectOption(IQD.code)
+
+            amount.value shouldBe Money.newBuilder()
+                .setCurrency(IQD)
+                .setUnits(12)
+                .setAttos(340_000_000_000_000_000L)
+                .build()
+
+            scene.selectAllText()
+            scene.enterText("12${decimalSeparator}034")
+
+            amount.value shouldBe Money.newBuilder()
+                .setCurrency(IQD)
+                .setUnits(12)
+                .setAttos(34_000_000_000_000_000L)
+                .build()
+
+            scene.pressKey(VK_DOWN)
+            scene.selectOption(USD.code)
+
+            amount.value shouldBe Money.newBuilder()
+                .setCurrency(USD)
+                .setUnits(12)
+                .setAttos(30_000_000_000_000_000L)
+                .build()
+
+            scene.pressKey(VK_DOWN)
+            scene.selectOption(VND.code)
+
+            amount.value shouldBe Money.newBuilder()
+                .setCurrency(VND)
+                .setUnits(12)
+                .build()
+        }
+    }
 
     /**
      * Money text is normalized to the precision and character set of its currency.
@@ -90,7 +166,7 @@ internal class MoneyFieldSpec {
      */
     @Test
     fun `admit period for currency with fractional digits`() {
-        USD.options.exponentDigits shouldBe 2
+        USD.options.fractionDigits shouldBe 2
         val reviser = MoneyFieldReviser(USD)
 
         val consumed = reviser.filterKeyEvent(typedKeyEvent('.'))
@@ -103,7 +179,7 @@ internal class MoneyFieldSpec {
      */
     @Test
     fun `preserve zero-decimal amount and caret when separator is typed`() {
-        VND.options.exponentDigits shouldBe 0
+        VND.options.fractionDigits shouldBe 0
         val reviser = MoneyFieldReviser(VND)
         val amount = "1234567"
         val separators = setOf('.', decimalSeparator)
@@ -218,8 +294,12 @@ private data class CurrencyAmount(val amount: String, val currency: Currency)
  * @param character The character emitted by the event.
  * @return A Compose wrapper around a valid AWT `KEY_TYPED` event.
  */
+@OptIn(InternalComposeUiApi::class) // The factory retains the AWT event used by key ranges.
 private fun typedKeyEvent(character: Char): KeyEvent = KeyEvent(
-    java.awt.event.KeyEvent(
+    key = Key.Unknown,
+    type = KeyEventType.Unknown,
+    codePoint = character.code,
+    nativeEvent = java.awt.event.KeyEvent(
         Panel(), KEY_TYPED, 0L, 0, VK_UNDEFINED, character
     )
 )
@@ -250,3 +330,43 @@ private fun applyTypedCharacter(
     val candidate = RawTextContent(candidateText, TextRange(caretPosition + 1))
     return reviser.reviseRawTextContent(current, candidate)
 }
+
+/**
+ * The BIF currency used by the input revision cases.
+ */
+private val BIF: Currency = Currencies.of("BIF")
+
+/**
+ * The IQD currency used by the input revision cases.
+ */
+private val IQD: Currency = Currencies.of("IQD")
+
+/**
+ * The IRR currency used by the input revision cases.
+ */
+private val IRR: Currency = Currencies.of("IRR")
+
+/**
+ * The PYG currency used by the input revision cases.
+ */
+private val PYG: Currency = Currencies.of("PYG")
+
+/**
+ * The TZS currency used by the input revision cases.
+ */
+private val TZS: Currency = Currencies.of("TZS")
+
+/**
+ * The UAH currency used by the input revision cases.
+ */
+private val UAH: Currency = Currencies.of("UAH")
+
+/**
+ * The VND currency used by the input revision cases.
+ */
+private val VND: Currency = Currencies.of("VND")
+
+/**
+ * The ZWL currency used by the input revision cases.
+ */
+private val ZWL: Currency = Currencies.of("ZWL")

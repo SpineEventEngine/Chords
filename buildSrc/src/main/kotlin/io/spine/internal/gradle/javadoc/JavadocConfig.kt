@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,11 +41,11 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions
 object JavadocConfig {
 
     /**
-     * Link to the documentation for Java 11 Standard Library API.
+     * Link to the documentation for Java 25 Standard Library API.
      *
-     * Oracle JDK SE 11 is used for the reference.
+     * Oracle JDK SE 25 is used for the reference.
      */
-    private const val standardLibraryAPI = "https://docs.oracle.com/en/java/javase/11/docs/api/"
+    private const val standardLibraryAPI = "https://docs.oracle.com/en/java/javase/25/docs/api/"
 
     @Suppress("MemberVisibilityCanBePrivate") // opened to be visible from docs.
     val tags = listOf(
@@ -126,12 +126,12 @@ object JavadocConfig {
     }
 
     /**
-     * Links the documentation for Java 11 Standard Library API.
+     * Links the documentation for Java 25 Standard Library API.
      *
      * This documentation is used to be referenced to when navigating to the types from the
      * standard library (`String`, `List`, etc.).
      *
-     * OpenJDK SE 11 is used for the reference.
+     * OpenJDK SE 25 is used for the reference.
      */
     private fun linkStandardLibraryAPI(docletOptions: StandardJavadocDocletOptions) {
         docletOptions.addStringOption("link", standardLibraryAPI)

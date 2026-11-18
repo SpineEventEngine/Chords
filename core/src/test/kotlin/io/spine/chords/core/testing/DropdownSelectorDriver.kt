@@ -130,7 +130,7 @@ internal class DropdownSelectorDriver(
      * Selects a visible menu item through pointer input.
      */
     fun selectChoice(index: Int) {
-        scene.click(choices[index].boundsInRoot.center)
+        scene.click(choices[index].boundsInWindow.center)
         scene.renderUntilIdle()
     }
 

@@ -34,7 +34,7 @@ object ErrorProne {
     /**
      * Keeps the compiler and its annotation APIs compatible.
      */
-    private const val version = "2.36.0"
+    private const val version = "2.52.0"
 
     /**
      * Aligns annotations carried by transitive dependencies.

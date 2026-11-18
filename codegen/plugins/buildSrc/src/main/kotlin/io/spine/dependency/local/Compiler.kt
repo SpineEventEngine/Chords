@@ -34,7 +34,7 @@ object Compiler {
     /**
      * The Compiler release used by the generator and its workspace.
      */
-    private const val version = "2.0.0-SNAPSHOT.082"
+    private const val version = "2.0.0-SNAPSHOT.083"
 
     /**
      * Provides the Gradle plugin on the buildscript classpath.
