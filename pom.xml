@@ -10,7 +10,7 @@ all modules and does not describe the project structure per-subproject.
  -->
 <groupId>io.spine.chords</groupId>
 <artifactId>Chords</artifactId>
-<version>2.0.0-SNAPSHOT.151</version>
+<version>2.0.0-SNAPSHOT.152</version>
 
 <inceptionYear>2015</inceptionYear>
 
@@ -26,145 +26,133 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>cafe.adriel.voyager</groupId>
     <artifactId>voyager-navigator</artifactId>
-    <version>1.0.1</version>
-    <scope>compile</scope>
-  </dependency>
-  <dependency>
-    <groupId>com.google.guava</groupId>
-    <artifactId>guava</artifactId>
-    <version>31.1-jre</version>
+    <version>2.2.21-1.10.3</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java</artifactId>
-    <version>3.22.3</version>
+    <version>4.36.2</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java-util</artifactId>
-    <version>3.22.3</version>
-    <scope>compile</scope>
-  </dependency>
-  <dependency>
-    <groupId>com.google.protobuf</groupId>
-    <artifactId>protobuf-kotlin</artifactId>
-    <version>3.22.3</version>
+    <version>4.36.2</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-base</artifactId>
-    <version>1.9.0</version>
+    <version>2.0.0-SNAPSHOT.463</version>
+    <scope>compile</scope>
+  </dependency>
+  <dependency>
+    <groupId>io.spine</groupId>
+    <artifactId>spine-base-types</artifactId>
+    <version>2.0.0-SNAPSHOT.227</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-client</artifactId>
-    <version>1.9.1</version>
+    <version>2.0.0-SNAPSHOT.612</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-core</artifactId>
-    <version>1.9.1</version>
+    <version>2.0.0-SNAPSHOT.612</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-money</artifactId>
-    <version>1.5.0</version>
+    <version>2.0.0-SNAPSHOT.20</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-time</artifactId>
-    <version>1.9.0</version>
+    <version>2.0.0-SNAPSHOT.253</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
-    <groupId>org.jetbrains.compose.desktop</groupId>
-    <artifactId>desktop-jvm-macos-x64</artifactId>
-    <version>1.5.12</version>
+    <groupId>io.spine</groupId>
+    <artifactId>spine-validation-jvm-runtime</artifactId>
+    <version>2.0.0-SNAPSHOT.470</version>
+    <scope>compile</scope>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.compose.foundation</groupId>
+    <artifactId>foundation</artifactId>
+    <version>1.12.2</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.compose.material</groupId>
     <artifactId>material-icons-extended</artifactId>
-    <version>1.5.12</version>
+    <version>1.7.3</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.compose.material3</groupId>
     <artifactId>material3-desktop</artifactId>
-    <version>1.5.12</version>
+    <version>1.9.0</version>
+    <scope>compile</scope>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.compose.ui</groupId>
+    <artifactId>ui</artifactId>
+    <version>1.12.2</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.kotlin</groupId>
     <artifactId>kotlin-reflect</artifactId>
-    <version>1.9.23</version>
+    <version>2.4.21</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.kotlin</groupId>
-    <artifactId>kotlin-stdlib-jdk8</artifactId>
-    <version>1.9.23</version>
+    <artifactId>kotlin-stdlib</artifactId>
+    <version>2.4.21</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.kotlinx</groupId>
     <artifactId>kotlinx-coroutines-swing</artifactId>
-    <version>1.7.3</version>
+    <version>1.11.0</version>
     <scope>compile</scope>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.skiko</groupId>
+    <artifactId>skiko-awt-runtime-macos-arm64</artifactId>
+    <version>0.150.2</version>
+    <scope>runtime</scope>
+  </dependency>
+  <dependency>
+    <groupId>androidx.navigationevent</groupId>
+    <artifactId>navigationevent</artifactId>
+    <version>1.2.0</version>
+    <scope>test</scope>
+  </dependency>
+  <dependency>
+    <groupId>androidx.navigationevent</groupId>
+    <artifactId>navigationevent-compose</artifactId>
+    <version>1.2.0</version>
+    <scope>test</scope>
   </dependency>
   <dependency>
     <groupId>com.google.guava</groupId>
     <artifactId>guava-testlib</artifactId>
-    <version>31.1-jre</version>
+    <version>33.8.0-jre</version>
     <scope>test</scope>
   </dependency>
   <dependency>
     <groupId>io.kotest</groupId>
-    <artifactId>kotest-framework-datatest</artifactId>
-    <version>5.9.1</version>
-    <scope>test</scope>
-  </dependency>
-  <dependency>
-    <groupId>io.kotest</groupId>
-    <artifactId>kotest-framework-engine</artifactId>
-    <version>5.9.1</version>
-    <scope>test</scope>
-  </dependency>
-  <dependency>
-    <groupId>io.kotest</groupId>
-    <artifactId>kotest-runner-junit5</artifactId>
-    <version>5.9.1</version>
-    <scope>test</scope>
-  </dependency>
-  <dependency>
-    <groupId>io.kotest</groupId>
-    <artifactId>kotest-runner-junit5-jvm</artifactId>
-    <version>5.9.1</version>
-    <scope>test</scope>
-  </dependency>
-  <dependency>
-    <groupId>io.spine</groupId>
-    <artifactId>spine-testlib</artifactId>
-    <version>1.9.0</version>
-    <scope>test</scope>
-  </dependency>
-  <dependency>
-    <groupId>io.spine</groupId>
-    <artifactId>spine-testutil-time</artifactId>
-    <version>1.9.0</version>
-    <scope>test</scope>
-  </dependency>
-  <dependency>
-    <groupId>io.spine.tools</groupId>
-    <artifactId>spine-testlib</artifactId>
-    <version>2.0.0-SNAPSHOT.184</version>
+    <artifactId>kotest-assertions-core</artifactId>
+    <version>6.2.6</version>
     <scope>test</scope>
   </dependency>
   <dependency>
@@ -174,55 +162,55 @@ all modules and does not describe the project structure per-subproject.
     <scope>test</scope>
   </dependency>
   <dependency>
-    <groupId>org.junit-pioneer</groupId>
-    <artifactId>junit-pioneer</artifactId>
-    <version>2.0.1</version>
+    <groupId>org.jetbrains.kotlinx</groupId>
+    <artifactId>kotlinx-coroutines-test</artifactId>
+    <version>1.11.0</version>
     <scope>test</scope>
   </dependency>
   <dependency>
     <groupId>org.junit.jupiter</groupId>
     <artifactId>junit-jupiter-api</artifactId>
-    <version>5.10.0</version>
+    <version>6.1.3</version>
     <scope>test</scope>
   </dependency>
   <dependency>
     <groupId>org.junit.jupiter</groupId>
     <artifactId>junit-jupiter-engine</artifactId>
-    <version>5.10.0</version>
+    <version>6.1.3</version>
     <scope>test</scope>
   </dependency>
   <dependency>
     <groupId>org.junit.jupiter</groupId>
     <artifactId>junit-jupiter-params</artifactId>
-    <version>5.10.0</version>
+    <version>6.1.3</version>
     <scope>test</scope>
   </dependency>
   <dependency>
-    <groupId>com.google.errorprone</groupId>
-    <artifactId>error_prone_annotations</artifactId>
-    <version>2.23.0</version>
+    <groupId>org.junit.platform</groupId>
+    <artifactId>junit-platform-launcher</artifactId>
+    <version>6.1.3</version>
+    <scope>test</scope>
+  </dependency>
+  <dependency>
+    <groupId>com.google.auto.service</groupId>
+    <artifactId>auto-service-annotations</artifactId>
+    <version>1.1.1</version>
     <scope>provided</scope>
+  </dependency>
+  <dependency>
+    <groupId>com.google.devtools.ksp</groupId>
+    <artifactId>symbol-processing-api</artifactId>
+    <version>2.3.13</version>
   </dependency>
   <dependency>
     <groupId>com.google.errorprone</groupId>
     <artifactId>error_prone_core</artifactId>
-    <version>2.23.0</version>
-  </dependency>
-  <dependency>
-    <groupId>com.google.errorprone</groupId>
-    <artifactId>error_prone_type_annotations</artifactId>
-    <version>2.23.0</version>
-    <scope>provided</scope>
-  </dependency>
-  <dependency>
-    <groupId>com.google.errorprone</groupId>
-    <artifactId>javac</artifactId>
-    <version>9+181-r4173-1</version>
+    <version>2.52.0</version>
   </dependency>
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protoc</artifactId>
-    <version>3.22.3</version>
+    <version>4.36.2</version>
   </dependency>
   <dependency>
     <groupId>com.puppycrawl.tools</groupId>
@@ -230,142 +218,154 @@ all modules and does not describe the project structure per-subproject.
     <version>10.12.1</version>
   </dependency>
   <dependency>
-    <groupId>io.gitlab.arturbosch.detekt</groupId>
+    <groupId>dev.detekt</groupId>
     <artifactId>detekt-cli</artifactId>
-    <version>1.23.0</version>
+    <version>2.0.0-alpha.6</version>
   </dependency>
   <dependency>
-    <groupId>io.grpc</groupId>
-    <artifactId>protoc-gen-grpc-java</artifactId>
-    <version>1.28.1</version>
+    <groupId>dev.zacsweers.autoservice</groupId>
+    <artifactId>auto-service-ksp</artifactId>
+    <version>1.2.0</version>
   </dependency>
   <dependency>
     <groupId>io.spine.chords</groupId>
     <artifactId>spine-chords-codegen-plugins</artifactId>
-    <version>2.0.0-SNAPSHOT.151</version>
+    <version>2.0.0-SNAPSHOT.152</version>
+  </dependency>
+  <dependency>
+    <groupId>io.spine.tools</groupId>
+    <artifactId>compiler-cli-all</artifactId>
+    <version>2.0.0-SNAPSHOT.083</version>
+  </dependency>
+  <dependency>
+    <groupId>io.spine.tools</groupId>
+    <artifactId>compiler-protoc-plugin</artifactId>
+    <version>2.0.0-SNAPSHOT.083</version>
+  </dependency>
+  <dependency>
+    <groupId>io.spine.tools</groupId>
+    <artifactId>core-jvm-gradle-plugin</artifactId>
+    <version>2.0.0-SNAPSHOT.104</version>
+  </dependency>
+  <dependency>
+    <groupId>io.spine.tools</groupId>
+    <artifactId>core-jvm-plugins</artifactId>
+    <version>2.0.0-SNAPSHOT.104</version>
   </dependency>
   <dependency>
     <groupId>io.spine.tools</groupId>
     <artifactId>spine-dokka-extensions</artifactId>
-    <version>2.0.0-SNAPSHOT.4</version>
+    <version>2.0.0-SNAPSHOT.7</version>
   </dependency>
   <dependency>
     <groupId>io.spine.tools</groupId>
-    <artifactId>spine-errorprone-checks</artifactId>
-    <version>1.9.0</version>
-    <scope>provided</scope>
+    <artifactId>time-validation</artifactId>
+    <version>2.0.0-SNAPSHOT.253</version>
   </dependency>
   <dependency>
     <groupId>io.spine.tools</groupId>
-    <artifactId>spine-protoc-plugin</artifactId>
-    <version>1.9.0</version>
+    <artifactId>validation-java-bundle</artifactId>
+    <version>2.0.0-SNAPSHOT.470</version>
   </dependency>
   <dependency>
-    <groupId>javax.annotation</groupId>
-    <artifactId>javax.annotation-api</artifactId>
-    <version>1.3.2</version>
-    <scope>provided</scope>
+    <groupId>net.sourceforge.pmd</groupId>
+    <artifactId>pmd-ant</artifactId>
+    <version>7.29.0</version>
   </dependency>
   <dependency>
     <groupId>net.sourceforge.pmd</groupId>
     <artifactId>pmd-java</artifactId>
-    <version>6.55.0</version>
-  </dependency>
-  <dependency>
-    <groupId>org.checkerframework</groupId>
-    <artifactId>checker-qual</artifactId>
-    <version>3.40.0</version>
-    <scope>provided</scope>
+    <version>7.29.0</version>
   </dependency>
   <dependency>
     <groupId>org.jacoco</groupId>
     <artifactId>org.jacoco.agent</artifactId>
-    <version>0.8.6</version>
+    <version>0.8.15</version>
   </dependency>
   <dependency>
     <groupId>org.jacoco</groupId>
     <artifactId>org.jacoco.ant</artifactId>
-    <version>0.8.6</version>
+    <version>0.8.15</version>
   </dependency>
   <dependency>
-    <groupId>org.jetbrains.compose.compiler</groupId>
-    <artifactId>compiler</artifactId>
-    <version>1.4.8</version>
+    <groupId>org.jetbrains.compose.desktop</groupId>
+    <artifactId>desktop-jvm-macos-arm64</artifactId>
+    <version>1.12.2</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.compose.hot-reload</groupId>
+    <artifactId>hot-reload-mcp</artifactId>
+    <version>1.2.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.compose.hot-reload</groupId>
+    <artifactId>hot-reload-runtime-api</artifactId>
+    <version>1.2.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.compose.hot-reload</groupId>
+    <artifactId>hot-reload-runtime-jvm</artifactId>
+    <version>1.2.0</version>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.dokka</groupId>
     <artifactId>all-modules-page-plugin</artifactId>
-    <version>1.9.20</version>
+    <version>2.2.0</version>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.dokka</groupId>
-    <artifactId>analysis-kotlin-descriptors</artifactId>
-    <version>1.9.20</version>
+    <artifactId>analysis-kotlin-symbols</artifactId>
+    <version>2.2.0</version>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.dokka</groupId>
     <artifactId>dokka-base</artifactId>
-    <version>1.9.20</version>
+    <version>2.2.0</version>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.dokka</groupId>
     <artifactId>dokka-core</artifactId>
-    <version>1.9.20</version>
-  </dependency>
-  <dependency>
-    <groupId>org.jetbrains.dokka</groupId>
-    <artifactId>gfm-plugin</artifactId>
-    <version>1.9.20</version>
-  </dependency>
-  <dependency>
-    <groupId>org.jetbrains.dokka</groupId>
-    <artifactId>gfm-template-processing-plugin</artifactId>
-    <version>1.9.20</version>
+    <version>2.2.0</version>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.dokka</groupId>
     <artifactId>javadoc-plugin</artifactId>
-    <version>1.9.20</version>
+    <version>2.2.0</version>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.dokka</groupId>
-    <artifactId>jekyll-plugin</artifactId>
-    <version>1.9.20</version>
-  </dependency>
-  <dependency>
-    <groupId>org.jetbrains.dokka</groupId>
-    <artifactId>jekyll-template-processing-plugin</artifactId>
-    <version>1.9.20</version>
-  </dependency>
-  <dependency>
-    <groupId>org.jetbrains.dokka</groupId>
-    <artifactId>kotlin-as-java-plugin</artifactId>
-    <version>1.9.20</version>
-  </dependency>
-  <dependency>
-    <groupId>org.jetbrains.intellij.deps</groupId>
-    <artifactId>intellij-coverage-agent</artifactId>
-    <version>1.0.683</version>
-  </dependency>
-  <dependency>
-    <groupId>org.jetbrains.intellij.deps</groupId>
-    <artifactId>intellij-coverage-reporter</artifactId>
-    <version>1.0.683</version>
+    <artifactId>templating-plugin</artifactId>
+    <version>2.2.0</version>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.kotlin</groupId>
-    <artifactId>kotlin-compiler-embeddable</artifactId>
-    <version>1.8.22</version>
+    <artifactId>kotlin-build-tools-compat</artifactId>
+    <version>2.4.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-build-tools-impl</artifactId>
+    <version>2.4.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-compose-compiler-plugin-embeddable</artifactId>
+    <version>2.4.21</version>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.kotlin</groupId>
     <artifactId>kotlin-klib-commonizer-embeddable</artifactId>
-    <version>1.8.22</version>
+    <version>2.4.21</version>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.kotlin</groupId>
     <artifactId>kotlin-scripting-compiler-embeddable</artifactId>
-    <version>1.8.22</version>
+    <version>2.4.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlinx</groupId>
+    <artifactId>kover-jvm-agent</artifactId>
+    <version>0.9.11</version>
   </dependency>
 </dependencies>
 
