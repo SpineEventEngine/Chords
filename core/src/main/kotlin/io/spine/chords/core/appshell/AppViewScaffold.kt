@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -54,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import io.spine.chords.core.styling.ChordsTheme
 
 /**
@@ -65,8 +67,9 @@ import io.spine.chords.core.styling.ChordsTheme
  * - [actions] appear beside the title and are omitted when [showHeader] is `false`.
  * - [toolbar] spans both the work area and details pane. It can sit inside the bordered surface
  *   or directly on the page background through [toolbarInWorkArea].
- * - [supportingPane] reserves a fixed width on the right. Pass `null` to give that space back to
- *   [content]. The pane does not collapse automatically in narrow windows.
+ * - [supportingPane] sits on the right at [supportingPaneWidth]. In a narrow window, the pane
+ *   takes at most two-fifths of the work area's width, so [content] keeps the larger share.
+ *   Pass `null` to give that space back to [content].
  * - [content] and [supportingPane] own their scrolling. Use a lazy list for a table-like list or
  *   `ScrollableColumn` for details; keep fixed headings and actions outside the scroll container.
  *
@@ -141,8 +144,8 @@ import io.spine.chords.core.styling.ChordsTheme
  *   Material medium shape.
  * @param toolbarHeight The minimum toolbar height, or `null` to use the current Chords
  *   control height.
- * @param supportingPaneWidth The details pane width including its padding, or `null` to use the
- *   current Chords theme value.
+ * @param supportingPaneWidth The preferred details pane width including its padding, or `null` to
+ *   use the current Chords theme value. A narrow work area reduces it.
  * @param supportingPanePadding The details pane inset, or `null` to use the
  *   current Chords theme value.
  * @param showHeader Whether to display the view title, description, and header actions.
@@ -231,39 +234,42 @@ public fun AppViewScaffold(
                         )
                         Divider(color = borderColor)
                     }
-                    Row(
+                    BoxWithConstraints(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1F)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1F)
-                                .fillMaxHeight()
-                                .padding(contentPadding),
-                            content = content
+                        val paneWidth = min(
+                            supportingPaneWidth ?: ChordsTheme.dimensions.supportingPaneWidth,
+                            maxWidth * MaxSupportingPaneShare
                         )
-                        if (supportingPane != null) {
+                        Row(modifier = Modifier.fillMaxSize()) {
                             Box(
                                 modifier = Modifier
+                                    .weight(1F)
                                     .fillMaxHeight()
-                                    .width(1.dp)
-                                    .background(borderColor)
+                                    .padding(contentPadding),
+                                content = content
                             )
-                            Column(
-                                modifier = Modifier
-                                    .width(
-                                        supportingPaneWidth
-                                            ?: ChordsTheme.dimensions.supportingPaneWidth
-                                    )
-                                    .fillMaxHeight()
-                                    .padding(
-                                        supportingPanePadding ?: PaddingValues(
-                                            ChordsTheme.dimensions.spacingLarge
-                                        )
-                                    ),
-                                content = supportingPane
-                            )
+                            if (supportingPane != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .width(1.dp)
+                                        .background(borderColor)
+                                )
+                                Column(
+                                    modifier = Modifier
+                                        .width(paneWidth)
+                                        .fillMaxHeight()
+                                        .padding(
+                                            supportingPanePadding ?: PaddingValues(
+                                                ChordsTheme.dimensions.spacingLarge
+                                            )
+                                        ),
+                                    content = supportingPane
+                                )
+                            }
                         }
                     }
                 }
@@ -271,6 +277,14 @@ public fun AppViewScaffold(
         }
     }
 }
+
+/**
+ * The largest share of the work area's width that the supporting pane takes.
+ *
+ * Keeps the primary content the wider part of a narrow window, where a fixed-width pane would
+ * squeeze it.
+ */
+private const val MaxSupportingPaneShare = 0.4F
 
 /**
  * Aligns toolbar controls consistently inside the work area or directly on the page.
