@@ -30,6 +30,9 @@ Applications can place menu buttons at the bottom through `Application.Navigatio
 not select a view.
 Override `Application.showTopBar` with `false` to omit the application header and give its space
 to the sidebar and current view. The native window title bar is unaffected.
+Override `Application.windowState` to reopen the main window where the user left it in a previous
+run. The window updates that state as the user changes the window; its KDoc explains which values
+to save, when to save them, and which saved bounds to restore.
 
 ### Theme customization
 
