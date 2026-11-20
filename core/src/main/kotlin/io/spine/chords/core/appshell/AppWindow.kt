@@ -85,7 +85,9 @@ public class AppWindow(
     /**
      * The window's placement, position, and size, configured before composition.
      *
-     * The window starts with these values and updates them when the user changes it.
+     * The window starts with these values and updates them when the user changes it. The state
+     * outlives the native window: if the window leaves composition and returns, it reopens with
+     * the last values, minimized included.
      */
     internal var windowState: WindowState = WindowState()
 

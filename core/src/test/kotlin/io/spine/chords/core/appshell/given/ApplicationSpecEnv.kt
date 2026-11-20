@@ -27,14 +27,22 @@
 package io.spine.chords.core.appshell.given
 
 import androidx.compose.ui.window.WindowState
-import io.spine.chords.core.appshell.AppWindow
 import io.spine.chords.core.appshell.Application
 import java.awt.Dimension
 
 /**
- * Initializes application windows for `ApplicationSpec` without creating native windows.
+ * Supplies applications for `ApplicationSpec`, with and without their own main window state.
  */
 internal object ApplicationSpecEnv {
+
+    /**
+     * Creates an application that keeps the default main window state.
+     */
+    fun defaultApplication(): Application = Application(
+        name = "Default window",
+        views = emptyList(),
+        minWindowSize = Dimension(1, 1)
+    )
 
     /**
      * Creates an application that opens its main window with the given state.
@@ -50,19 +58,4 @@ internal object ApplicationSpecEnv {
              */
             override val windowState: WindowState = state
         }
-
-    /**
-     * Creates a main window and lets the given application configure it.
-     */
-    fun initializedWindow(application: Application): AppWindow {
-        val window = AppWindow(
-            signInScreenContent = {},
-            views = emptyList(),
-            initialView = null,
-            onCloseRequest = {},
-            minWindowSize = Dimension(1, 1)
-        )
-        application.initializeUi(window)
-        return window
-    }
 }

@@ -224,7 +224,8 @@ public open class Application(
     }
 
     /**
-     * Configures the main screen and initializes this application's UI API for the given window.
+     * Applies this application's window state and main screen settings to the given window,
+     * and initializes this application's UI API for it.
      *
      * @param appWindow The window managed through the initialized API.
      */
@@ -294,16 +295,40 @@ public open class Application(
     /**
      * The placement, position, and size of the main window.
      *
-     * The default lets the platform choose where the window appears. Override to open the
-     * window where the user left it in a previous run. The window updates this state when
-     * the user moves, resizes, maximizes, or minimizes it, so the application can observe it
-     * to save those changes. The window reads this property once, when the application runs.
+     * The default opens an 800x600 dp floating window at the position Compose picks for new
+     * windows. Override this property to reopen the window where the user left it.
+     *
+     * The window reads this property once, when the application runs, and then updates the
+     * same object as the user moves, resizes, maximizes, or minimizes the window. Initialize
+     * the override once, as in the example, and read the values to save from that object:
+     * a getter that returns a new state on each read never sees the window's changes.
+     *
+     * While the window is maximized or in full screen, `size` and `position` hold those bounds,
+     * and the floating bounds are not kept. Until the window first appears, the default
+     * `position`, `PlatformDefault`, has no coordinates. Save `size` and `position` only while
+     * `placement` is `Floating`, `isMinimized` is `false`, and `position.isSpecified` is `true`,
+     * and save `placement` separately.
+     *
+     * Save changes as they happen rather than on exit, for example, by collecting `snapshotFlow`
+     * in an [appWindowContent] override. By default, [run] exits the process after the window
+     * closes, and on macOS, quitting the application exits without closing the window.
+     *
+     * The window applies a restored position as is, even if it lies outside every connected
+     * screen. Restore saved bounds only when they intersect a current screen, and do not restore
+     * `isMinimized`, or the application starts minimized.
      *
      * ```kotlin
-     * override val windowState: WindowState = WindowState(
-     *     position = WindowPosition(savedX, savedY),
-     *     size = DpSize(savedWidth, savedHeight)
-     * )
+     * // `saved` holds the bounds stored by a previous run, or `null` on the first run.
+     * override val windowState: WindowState =
+     *     if (saved != null && saved.isOnScreen()) {
+     *         WindowState(
+     *             placement = saved.placement,
+     *             position = saved.position,
+     *             size = saved.size
+     *         )
+     *     } else {
+     *         WindowState()
+     *     }
      * ```
      */
     protected open val windowState: WindowState = WindowState()

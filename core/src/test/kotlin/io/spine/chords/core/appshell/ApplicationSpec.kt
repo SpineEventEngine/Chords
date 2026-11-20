@@ -28,11 +28,15 @@ package io.spine.chords.core.appshell
 
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.WindowPlacement.Floating
 import androidx.compose.ui.window.WindowPosition
+import androidx.compose.ui.window.WindowPosition.PlatformDefault
 import androidx.compose.ui.window.WindowState
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.spine.chords.core.appshell.given.AppWindowFixtures.createWindow
 import io.spine.chords.core.appshell.given.ApplicationSpecEnv.applicationOpening
-import io.spine.chords.core.appshell.given.ApplicationSpecEnv.initializedWindow
+import io.spine.chords.core.appshell.given.ApplicationSpecEnv.defaultApplication
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
@@ -43,19 +47,38 @@ import org.junit.jupiter.api.Test
 internal class ApplicationSpec {
 
     /**
-     * The window must use the application's own state object, so the application observes
-     * the bounds the user gives the window afterward.
+     * The window must receive the application's own state object, so the application observes
+     * the bounds the user gives the window afterward. Native windows cannot open in headless
+     * tests, so this checks the state that `AppWindow.content()` passes to the window.
      */
     @Test
-    fun `open the main window with the state it supplies`() {
+    fun `hand its main window the state it supplies`() {
         val savedState = WindowState(
             position = WindowPosition(120.dp, 80.dp),
             size = DpSize(1600.dp, 900.dp)
         )
         val application = applicationOpening(savedState)
+        val window = createWindow()
 
-        val window = initializedWindow(application)
+        application.initializeUi(window)
 
         window.windowState shouldBeSameInstanceAs savedState
+    }
+
+    /**
+     * Applications that restore no bounds keep the window defaults that the shell used before
+     * the state became configurable.
+     */
+    @Test
+    fun `give its main window the default state when it supplies none`() {
+        val window = createWindow()
+
+        defaultApplication().initializeUi(window)
+
+        val state = window.windowState
+        state.placement shouldBe Floating
+        state.isMinimized shouldBe false
+        state.position shouldBe PlatformDefault
+        state.size shouldBe DpSize(800.dp, 600.dp)
     }
 }

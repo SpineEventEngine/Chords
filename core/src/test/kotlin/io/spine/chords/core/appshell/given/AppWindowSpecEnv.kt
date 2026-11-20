@@ -27,25 +27,12 @@
 package io.spine.chords.core.appshell.given
 
 import androidx.compose.runtime.Composable
-import io.spine.chords.core.appshell.AppWindow
 import io.spine.chords.core.layout.Dialog
-import java.awt.Dimension
 
 /**
- * Supplies the unrendered window and dialog types used by `AppWindowSpec`.
+ * Supplies the dialog types whose stack `AppWindowSpec` exercises in an unrendered window.
  */
 internal object AppWindowSpecEnv {
-
-    /**
-     * Creates a window whose dialog stack can be exercised without opening an AWT window.
-     */
-    fun createWindow(): AppWindow = AppWindow(
-        signInScreenContent = {},
-        views = emptyList(),
-        initialView = null,
-        onCloseRequest = {},
-        minWindowSize = Dimension(1, 1)
-    )
 
     /**
      * A minimal dialog that needs no rendering for stack tests.
