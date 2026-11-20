@@ -24,15 +24,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 package io.spine.chords.core.appshell
 
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.kotest.matchers.floats.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
-import io.spine.chords.core.appshell.given.AppViewScaffoldSpecEnv.contentWidth
-import io.spine.chords.core.appshell.given.AppViewScaffoldSpecEnv.paneWidth
-import io.spine.chords.core.appshell.given.AppViewScaffoldSpecEnv.scene
+import io.spine.chords.core.appshell.testing.AppViewScaffoldScene
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
@@ -47,20 +45,73 @@ internal class AppViewScaffoldSpec {
      */
     @Test
     fun `keep the preferred pane width in a wide window`() {
-        scene(width = 1600.dp, supportingPaneWidth = 480.dp).use { scene ->
-            paneWidth(scene) shouldBe 480F
-        }
+        AppViewScaffoldScene(width = 1600.dp, supportingPaneWidth = 480.dp)
+            .use { scene ->
+                scene.paneWidth shouldBe 480F
+            }
     }
 
     /**
      * An 800 dp scene leaves a 768 dp work area, so a 480 dp pane would take most of it.
-     * Two-fifths of the work area is 307.2 dp, which renders as 307 pixels.
+     * The pane may take two-fifths of the 767 dp beside the divider, 306.8 dp, which renders
+     * as 307 pixels.
      */
     @Test
     fun `narrow the pane so the content keeps the larger share of a narrow window`() {
-        scene(width = 800.dp, supportingPaneWidth = 480.dp).use { scene ->
-            paneWidth(scene) shouldBe 307F
-            contentWidth(scene) shouldBeGreaterThan paneWidth(scene)
-        }
+        AppViewScaffoldScene(width = 800.dp, supportingPaneWidth = 480.dp)
+            .use { scene ->
+                scene.paneWidth shouldBe 307F
+                scene.contentWidth shouldBeGreaterThan scene.paneWidth
+            }
+    }
+
+    /**
+     * With the theme's 420 dp pane and 16 dp inset, an 800 dp scene narrows the pane to the same
+     * 307 pixels, which leaves 275 pixels inside the inset.
+     */
+    @Test
+    fun `narrow the theme pane width in a narrow window`() {
+        AppViewScaffoldScene(width = 800.dp, supportingPanePadding = null)
+            .use { scene ->
+                scene.paneWidth shouldBe 275F
+            }
+    }
+
+    /**
+     * An unspecified preferred width sets no limit of its own, so the pane takes its whole
+     * two-fifths share rather than the entire row.
+     */
+    @Test
+    fun `keep an unspecified pane width within its share of a narrow window`() {
+        AppViewScaffoldScene(width = 800.dp, supportingPaneWidth = Dp.Unspecified)
+            .use { scene ->
+                scene.paneWidth shouldBe 307F
+            }
+    }
+
+    /**
+     * A subcomposed layout rejects intrinsic measurement. Here the scaffold's maximum
+     * intrinsic width is the page inset plus a 481 dp work area: the content asks for nothing,
+     * the divider for 1 dp, and the pane for its preferred 480 dp. At that width, the pane
+     * narrows to two-fifths of the 480 dp beside the divider.
+     */
+    @Test
+    fun `lay out when a parent measures it intrinsically`() {
+        AppViewScaffoldScene(width = 800.dp, supportingPaneWidth = 480.dp, intrinsicWidth = true)
+            .use { scene ->
+                scene.paneWidth shouldBe 192F
+            }
+    }
+
+    /**
+     * A caller's effect runs once the scaffold's first composition is applied, before layout.
+     * The pane must be composed by then for its focus requester to work.
+     */
+    @Test
+    fun `let the caller focus the pane from its first composition`() {
+        AppViewScaffoldScene(width = 800.dp, focusPaneOnStart = true)
+            .use { scene ->
+                scene.paneFocused shouldBe true
+            }
     }
 }

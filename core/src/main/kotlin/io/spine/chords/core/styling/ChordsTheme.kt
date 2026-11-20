@@ -83,7 +83,8 @@ import androidx.compose.ui.unit.sp
  * @property tableHeaderHeight The height of a table header.
  * @property tableRowHeight The height of an ordinary table row.
  * @property tableRowMaxHeight The maximum height of a table row.
- * @property supportingPaneWidth The default width of a supporting details pane.
+ * @property supportingPaneWidth The preferred width of a supporting details pane. A narrow
+ *   work area reduces it.
  */
 @Immutable
 @Suppress("LongParameterList") // A theme token group is clearer as one immutable value.

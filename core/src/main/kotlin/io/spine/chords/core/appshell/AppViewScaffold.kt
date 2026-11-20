@@ -32,7 +32,6 @@ import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -53,10 +52,13 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.min
+import androidx.compose.ui.unit.isSpecified
 import io.spine.chords.core.styling.ChordsTheme
+import kotlin.math.roundToInt
 
 /**
  * Lays out a desktop view with page actions, a toolbar, a work area, and an optional details pane.
@@ -65,7 +67,7 @@ import io.spine.chords.core.styling.ChordsTheme
  * space below the header and toolbar. Callers manage navigation, selection, and scrolling.
  *
  * - [actions] appear beside the title and are omitted when [showHeader] is `false`.
- * - [toolbar] spans both the work area and details pane. It can sit inside the bordered surface
+ * - [toolbar] spans both [content] and the details pane. It can sit inside the bordered surface
  *   or directly on the page background through [toolbarInWorkArea].
  * - [supportingPane] sits on the right at [supportingPaneWidth]. In a narrow window, the pane
  *   takes at most two-fifths of the work area's width, so [content] keeps the larger share.
@@ -234,42 +236,39 @@ public fun AppViewScaffold(
                         )
                         Divider(color = borderColor)
                     }
-                    BoxWithConstraints(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1F)
                     ) {
-                        val paneWidth = min(
-                            supportingPaneWidth ?: ChordsTheme.dimensions.supportingPaneWidth,
-                            maxWidth * MaxSupportingPaneShare
+                        Box(
+                            modifier = Modifier
+                                .weight(1F)
+                                .fillMaxHeight()
+                                .padding(contentPadding),
+                            content = content
                         )
-                        Row(modifier = Modifier.fillMaxSize()) {
+                        if (supportingPane != null) {
                             Box(
                                 modifier = Modifier
-                                    .weight(1F)
                                     .fillMaxHeight()
-                                    .padding(contentPadding),
-                                content = content
+                                    .width(1.dp)
+                                    .background(borderColor)
                             )
-                            if (supportingPane != null) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .width(1.dp)
-                                        .background(borderColor)
-                                )
-                                Column(
-                                    modifier = Modifier
-                                        .width(paneWidth)
-                                        .fillMaxHeight()
-                                        .padding(
-                                            supportingPanePadding ?: PaddingValues(
-                                                ChordsTheme.dimensions.spacingLarge
-                                            )
-                                        ),
-                                    content = supportingPane
-                                )
-                            }
+                            Column(
+                                modifier = Modifier
+                                    .paneWidth(
+                                        supportingPaneWidth
+                                            ?: ChordsTheme.dimensions.supportingPaneWidth
+                                    )
+                                    .fillMaxHeight()
+                                    .padding(
+                                        supportingPanePadding ?: PaddingValues(
+                                            ChordsTheme.dimensions.spacingLarge
+                                        )
+                                    ),
+                                content = supportingPane
+                            )
                         }
                     }
                 }
@@ -285,6 +284,45 @@ public fun AppViewScaffold(
  * squeeze it.
  */
 private const val MaxSupportingPaneShare = 0.4F
+
+/**
+ * Sizes the supporting pane to its [preferred] width, but to at most [MaxSupportingPaneShare]
+ * of the width left beside the divider.
+ *
+ * The pane is sized while it is measured, without a subcomposition such as
+ * `BoxWithConstraints`. This keeps the scaffold's slots in the caller's composition, so the
+ * caller's effects can focus them, and lets parents measure the scaffold intrinsically.
+ * Without a width bound, as in intrinsic measurement, the pane asks for its preferred width.
+ * An unspecified [preferred] width sets no limit of its own.
+ *
+ * @param preferred The pane width including its padding, before the share applies.
+ */
+private fun Modifier.paneWidth(preferred: Dp): Modifier =
+    layout { measurable, constraints ->
+        val shareLimit = if (constraints.hasBoundedWidth) {
+            (constraints.maxWidth * MaxSupportingPaneShare).roundToInt()
+        } else {
+            Constraints.Infinity
+        }
+        val width = if (preferred.isSpecified) {
+            minOf(preferred.roundToPx().coerceAtLeast(0), shareLimit)
+        } else {
+            shareLimit
+        }
+        if (width == Constraints.Infinity) {
+            val placeable = measurable.measure(constraints)
+            layout(placeable.width, placeable.height) {
+                placeable.placeRelative(0, 0)
+            }
+        } else {
+            val placeable = measurable.measure(
+                constraints.copy(minWidth = width, maxWidth = width)
+            )
+            layout(width, placeable.height) {
+                placeable.placeRelative(0, 0)
+            }
+        }
+    }
 
 /**
  * Aligns toolbar controls consistently inside the work area or directly on the page.
