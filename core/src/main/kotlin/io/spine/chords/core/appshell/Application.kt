@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import io.spine.chords.core.layout.ConfirmationDialog
 import io.spine.chords.core.layout.Dialog
@@ -229,6 +230,7 @@ public open class Application(
      */
     internal fun initializeUi(appWindow: AppWindow) {
         check(_ui == null) { "The application UI has already been initialized." }
+        appWindow.windowState = windowState
         appWindow.mainScreen.showTopBar = showTopBar
         appWindow.mainScreen.navigationInitiallyExpanded = navigationInitiallyExpanded
         appWindow.mainScreen.navigationSizesToContent = navigationSizesToContent
@@ -288,6 +290,23 @@ public open class Application(
      * ```
      */
     protected open val navigationSizesToContent: Boolean = false
+
+    /**
+     * The placement, position, and size of the main window.
+     *
+     * The default lets the platform choose where the window appears. Override to open the
+     * window where the user left it in a previous run. The window updates this state when
+     * the user moves, resizes, maximizes, or minimizes it, so the application can observe it
+     * to save those changes. The window reads this property once, when the application runs.
+     *
+     * ```kotlin
+     * override val windowState: WindowState = WindowState(
+     *     position = WindowPosition(savedX, savedY),
+     *     size = DpSize(savedWidth, savedHeight)
+     * )
+     * ```
+     */
+    protected open val windowState: WindowState = WindowState()
 
     /**
      * Renders the [TopBar.actions] of the top app bar when [showTopBar] is `true`.

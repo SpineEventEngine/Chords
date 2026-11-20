@@ -37,6 +37,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowState
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.CurrentScreen
 import cafe.adriel.voyager.navigator.Navigator
@@ -80,6 +81,13 @@ public class AppWindow(
     private val minWindowSize: Dimension,
     private val windowOverlay: @Composable BoxScope.() -> Unit = {}
 ) {
+
+    /**
+     * The window's placement, position, and size, configured before composition.
+     *
+     * The window starts with these values and updates them when the user changes it.
+     */
+    internal var windowState: WindowState = WindowState()
 
     /**
      * The main screen of the application.
@@ -127,6 +135,7 @@ public class AppWindow(
     public fun content() {
         Window(
             onCloseRequest = onCloseRequest,
+            state = windowState,
             title = app.name,
             icon = app.icon
         ) {
