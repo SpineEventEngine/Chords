@@ -59,7 +59,8 @@ import io.spine.chords.core.styling.ChordsTheme
  * @param supportingPaneWidth The preferred pane width, or `null` to use the theme value.
  * @param supportingPanePadding The pane inset, or `null` to use the theme value. The default
  *   leaves the pane unpadded, so [paneWidth] measures the whole pane.
- * @param intrinsicWidth Whether a parent sizes the scaffold to its maximum intrinsic width.
+ * @param intrinsicWidth The intrinsic width a parent sizes the scaffold to, or `null` to let
+ *   the scaffold fill the scene.
  * @param focusPaneOnStart Whether an effect beside the scaffold focuses the pane as soon as
  *   the scaffold's first composition is applied.
  */
@@ -67,7 +68,7 @@ internal class AppViewScaffoldScene(
     width: Dp,
     supportingPaneWidth: Dp? = null,
     supportingPanePadding: PaddingValues? = PaddingValues(),
-    intrinsicWidth: Boolean = false,
+    intrinsicWidth: IntrinsicSize? = null,
     focusPaneOnStart: Boolean = false
 ) : AutoCloseable {
 
@@ -78,7 +79,7 @@ internal class AppViewScaffoldScene(
         ChordsTheme {
             val paneFocus = remember { FocusRequester() }
             Box(
-                modifier = if (intrinsicWidth) Modifier.width(IntrinsicSize.Max) else Modifier
+                modifier = intrinsicWidth?.let { Modifier.width(it) } ?: Modifier
             ) {
                 AppViewScaffold(
                     title = "Items",

@@ -52,12 +52,20 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.IntrinsicMeasurable
+import androidx.compose.ui.layout.IntrinsicMeasureScope
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.node.LayoutModifierNode
+import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import io.spine.chords.core.styling.ChordsTheme
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 /**
@@ -292,37 +300,126 @@ private const val MaxSupportingPaneShare = 0.4F
  * The pane is sized while it is measured, without a subcomposition such as
  * `BoxWithConstraints`. This keeps the scaffold's slots in the caller's composition, so the
  * caller's effects can focus them, and lets parents measure the scaffold intrinsically.
- * Without a width bound, as in intrinsic measurement, the pane asks for its preferred width.
- * An unspecified [preferred] width sets no limit of its own.
+ * The pane's intrinsic width is the width beside the divider at which its share reaches its
+ * preferred width, so a parent that sizes the scaffold intrinsically lays the pane out at
+ * that width. An unspecified [preferred] width sets no limit of its own.
  *
  * @param preferred The pane width including its padding, before the share applies.
  */
-private fun Modifier.paneWidth(preferred: Dp): Modifier =
-    layout { measurable, constraints ->
+private fun Modifier.paneWidth(preferred: Dp): Modifier = this then PaneWidthElement(preferred)
+
+/**
+ * Creates and updates the node that sizes the supporting pane.
+ *
+ * @param preferred The pane width including its padding, before the share applies.
+ */
+private class PaneWidthElement(
+    private val preferred: Dp
+) : ModifierNodeElement<PaneWidthNode>() {
+
+    /**
+     * Creates the node for the current preferred width.
+     */
+    override fun create(): PaneWidthNode = PaneWidthNode(preferred)
+
+    /**
+     * Applies a changed preferred width to the existing node.
+     */
+    override fun update(node: PaneWidthNode) {
+        node.preferred = preferred
+    }
+
+    /**
+     * Lets Compose keep the node while the preferred width stays the same.
+     */
+    override fun equals(other: Any?): Boolean =
+        other is PaneWidthElement && other.preferred == preferred
+
+    /**
+     * Keeps hashing consistent with [equals].
+     */
+    override fun hashCode(): Int = preferred.hashCode()
+}
+
+/**
+ * Measures the supporting pane within its share of the width beside the divider.
+ *
+ * @param preferred The pane width including its padding, before the share applies.
+ */
+private class PaneWidthNode(var preferred: Dp) : Modifier.Node(), LayoutModifierNode {
+
+    /**
+     * Gives the pane its preferred width, limited to its share of the width beside the divider.
+     *
+     * Without a width bound, the pane takes its preferred width, or its content's width when
+     * the preferred width is unspecified.
+     */
+    override fun MeasureScope.measure(
+        measurable: Measurable,
+        constraints: Constraints
+    ): MeasureResult {
         val shareLimit = if (constraints.hasBoundedWidth) {
             (constraints.maxWidth * MaxSupportingPaneShare).roundToInt()
         } else {
             Constraints.Infinity
         }
         val width = if (preferred.isSpecified) {
-            minOf(preferred.roundToPx().coerceAtLeast(0), shareLimit)
+            minOf(
+                preferred.roundToPx()
+                    .coerceAtLeast(0),
+                shareLimit
+            )
         } else {
             shareLimit
         }
-        if (width == Constraints.Infinity) {
-            val placeable = measurable.measure(constraints)
-            layout(placeable.width, placeable.height) {
-                placeable.placeRelative(0, 0)
-            }
-        } else {
-            val placeable = measurable.measure(
+        val placeable = measurable.measure(
+            if (width == Constraints.Infinity) {
+                constraints
+            } else {
                 constraints.copy(minWidth = width, maxWidth = width)
-            )
-            layout(width, placeable.height) {
-                placeable.placeRelative(0, 0)
             }
+        )
+        return layout(placeable.width, placeable.height) {
+            placeable.placeRelative(0, 0)
         }
     }
+
+    /**
+     * Reports the width beside the divider at which the pane gets its preferred width, or the
+     * minimum width of its content when the preferred width is unspecified.
+     */
+    override fun IntrinsicMeasureScope.minIntrinsicWidth(
+        measurable: IntrinsicMeasurable,
+        height: Int
+    ): Int = widthForShare(
+        if (preferred.isSpecified) preferredPx() else measurable.minIntrinsicWidth(height)
+    )
+
+    /**
+     * Reports the width beside the divider at which the pane gets its preferred width, or the
+     * maximum width of its content when the preferred width is unspecified.
+     */
+    override fun IntrinsicMeasureScope.maxIntrinsicWidth(
+        measurable: IntrinsicMeasurable,
+        height: Int
+    ): Int = widthForShare(
+        if (preferred.isSpecified) preferredPx() else measurable.maxIntrinsicWidth(height)
+    )
+
+    /**
+     * Returns the preferred width in pixels, treating a negative width as zero.
+     */
+    private fun Density.preferredPx(): Int = preferred.roundToPx()
+        .coerceAtLeast(0)
+
+    /**
+     * Returns the width beside the divider whose share gives the pane [paneWidth].
+     *
+     * Rounding up keeps the share at least [paneWidth] when [measure] rounds it back.
+     */
+    private fun widthForShare(paneWidth: Int): Int =
+        ceil(paneWidth / MaxSupportingPaneShare).toInt()
+}
 
 /**
  * Aligns toolbar controls consistently inside the work area or directly on the page.

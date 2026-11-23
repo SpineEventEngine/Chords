@@ -26,6 +26,7 @@
 
 package io.spine.chords.core.appshell
 
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.kotest.matchers.floats.shouldBeGreaterThan
@@ -33,6 +34,8 @@ import io.kotest.matchers.shouldBe
 import io.spine.chords.core.appshell.testing.AppViewScaffoldScene
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 
 /**
  * Tests how [AppViewScaffold] shares the work area between its content and supporting pane.
@@ -90,16 +93,24 @@ internal class AppViewScaffoldSpec {
     }
 
     /**
-     * A subcomposed layout rejects intrinsic measurement. Here the scaffold's maximum
-     * intrinsic width is the page inset plus a 481 dp work area: the content asks for nothing,
-     * the divider for 1 dp, and the pane for its preferred 480 dp. At that width, the pane
-     * narrows to two-fifths of the 480 dp beside the divider.
+     * A subcomposed layout rejects intrinsic measurement. Here the pane reports the 1200 dp
+     * beside the divider whose two-fifths are its preferred 480 dp. The content asks for
+     * nothing and the divider for 1 dp, so the parent gives the scaffold its 16 dp insets and
+     * a 1201 dp work area, and the content gets the remaining 720 dp.
      */
-    @Test
-    fun `lay out when a parent measures it intrinsically`() {
-        AppViewScaffoldScene(width = 800.dp, supportingPaneWidth = 480.dp, intrinsicWidth = true)
+    @ParameterizedTest
+    @EnumSource(IntrinsicSize::class)
+    fun `keep the preferred pane width when a parent measures it intrinsically`(
+        intrinsicWidth: IntrinsicSize
+    ) {
+        AppViewScaffoldScene(
+            width = 1600.dp,
+            supportingPaneWidth = 480.dp,
+            intrinsicWidth = intrinsicWidth
+        )
             .use { scene ->
-                scene.paneWidth shouldBe 192F
+                scene.paneWidth shouldBe 480F
+                scene.contentWidth shouldBe 720F
             }
     }
 
