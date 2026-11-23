@@ -48,8 +48,11 @@ internal class ApplicationSpec {
 
     /**
      * The window must receive the application's own state object, so the application observes
-     * the bounds the user gives the window afterward. Native windows cannot open in headless
-     * tests, so this checks the state that `AppWindow.content()` passes to the window.
+     * the bounds the user gives the window afterward.
+     *
+     * This covers only the `AppWindow.windowState` field that `AppWindow.content()` reads.
+     * Native windows cannot open in headless tests, so passing that state to the native window
+     * is checked by hand.
      */
     @Test
     fun `hand its main window the state it supplies`() {
