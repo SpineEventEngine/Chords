@@ -29,11 +29,11 @@ package io.spine.chords.core.appshell
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.spine.chords.core.appshell.given.AppWindowFixtures.createWindow
 import io.spine.chords.core.appshell.given.AppWindowSpecEnv.EqualDialog
 import io.spine.chords.core.appshell.given.AppWindowSpecEnv.FirstDialog
 import io.spine.chords.core.appshell.given.AppWindowSpecEnv.SecondDialog
 import io.spine.chords.core.appshell.given.AppWindowSpecEnv.ThirdDialog
-import io.spine.chords.core.appshell.given.AppWindowSpecEnv.createWindow
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
