@@ -48,7 +48,8 @@ appearance. It does not observe later system appearance changes; override
 Use [AppViewScaffold](AppViewScaffold.kt) for a conventional business
 application screen with a heading, page actions, an optional toolbar, a main
 work area, and an optional supporting details pane. Its dimensions and colors
-follow the active theme and remain overridable at each usage site.
+follow the active theme and remain overridable at each usage site. The details
+pane narrows in small windows; the scaffold's KDoc states the limit.
 
 ```kotlin
 AppViewScaffold(
