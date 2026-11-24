@@ -300,9 +300,11 @@ private const val MaxSupportingPaneShare = 0.4F
  * The pane is sized while it is measured, without a subcomposition such as
  * `BoxWithConstraints`. This keeps the scaffold's slots in the caller's composition, so the
  * caller's effects can focus them, and lets parents measure the scaffold intrinsically.
- * The pane's intrinsic width is the width beside the divider at which its share reaches its
- * preferred width, so a parent that sizes the scaffold intrinsically lays the pane out at
- * that width. An unspecified [preferred] width sets no limit of its own.
+ * The pane's maximum intrinsic width is the width beside the divider at which its share
+ * reaches its preferred width, so a parent that sizes the scaffold to its maximum intrinsic
+ * width lays the pane out at that width. Its minimum intrinsic width is the preferred width
+ * itself, so a parent that asks for the minimum gets a narrow scaffold in which the pane
+ * shrinks to its share. An unspecified [preferred] width sets no limit of its own.
  *
  * @param preferred The pane width including its padding, before the share applies.
  */
@@ -364,11 +366,7 @@ private class PaneWidthNode(var preferred: Dp) : Modifier.Node(), LayoutModifier
             Constraints.Infinity
         }
         val width = if (preferred.isSpecified) {
-            minOf(
-                preferred.roundToPx()
-                    .coerceAtLeast(0),
-                shareLimit
-            )
+            minOf(preferredPx(), shareLimit)
         } else {
             shareLimit
         }
@@ -385,15 +383,16 @@ private class PaneWidthNode(var preferred: Dp) : Modifier.Node(), LayoutModifier
     }
 
     /**
-     * Reports the width beside the divider at which the pane gets its preferred width, or the
-     * minimum width of its content when the preferred width is unspecified.
+     * Reports the preferred width, or the minimum width of the pane's content when the
+     * preferred width is unspecified.
+     *
+     * The pane is meant to shrink, so its minimum does not include the extra width its share
+     * would need to reach the preferred width.
      */
     override fun IntrinsicMeasureScope.minIntrinsicWidth(
         measurable: IntrinsicMeasurable,
         height: Int
-    ): Int = widthForShare(
-        if (preferred.isSpecified) preferredPx() else measurable.minIntrinsicWidth(height)
-    )
+    ): Int = if (preferred.isSpecified) preferredPx() else measurable.minIntrinsicWidth(height)
 
     /**
      * Reports the width beside the divider at which the pane gets its preferred width, or the
@@ -418,7 +417,8 @@ private class PaneWidthNode(var preferred: Dp) : Modifier.Node(), LayoutModifier
      * Rounding up keeps the share at least [paneWidth] when [measure] rounds it back.
      */
     private fun widthForShare(paneWidth: Int): Int =
-        ceil(paneWidth / MaxSupportingPaneShare).toInt()
+        ceil(paneWidth / MaxSupportingPaneShare)
+            .toInt()
 }
 
 /**

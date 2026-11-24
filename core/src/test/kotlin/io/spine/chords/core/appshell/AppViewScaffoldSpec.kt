@@ -34,8 +34,6 @@ import io.kotest.matchers.shouldBe
 import io.spine.chords.core.appshell.testing.AppViewScaffoldScene
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
 
 /**
  * Tests how [AppViewScaffold] shares the work area between its content and supporting pane.
@@ -98,19 +96,34 @@ internal class AppViewScaffoldSpec {
      * nothing and the divider for 1 dp, so the parent gives the scaffold its 16 dp insets and
      * a 1201 dp work area, and the content gets the remaining 720 dp.
      */
-    @ParameterizedTest
-    @EnumSource(IntrinsicSize::class)
-    fun `keep the preferred pane width when a parent measures it intrinsically`(
-        intrinsicWidth: IntrinsicSize
-    ) {
+    @Test
+    fun `keep the preferred pane width at its maximum intrinsic width`() {
         AppViewScaffoldScene(
             width = 1600.dp,
             supportingPaneWidth = 480.dp,
-            intrinsicWidth = intrinsicWidth
+            intrinsicWidth = IntrinsicSize.Max
         )
             .use { scene ->
                 scene.paneWidth shouldBe 480F
                 scene.contentWidth shouldBe 720F
+            }
+    }
+
+    /**
+     * The pane is meant to shrink, so its minimum is only its preferred 480 dp. With the 1 dp
+     * divider, the parent gives the scaffold a 481 dp work area. The pane takes two-fifths of
+     * the 480 dp beside the divider, and the content gets the remaining 288 dp.
+     */
+    @Test
+    fun `narrow the pane at its minimum intrinsic width`() {
+        AppViewScaffoldScene(
+            width = 1600.dp,
+            supportingPaneWidth = 480.dp,
+            intrinsicWidth = IntrinsicSize.Min
+        )
+            .use { scene ->
+                scene.paneWidth shouldBe 192F
+                scene.contentWidth shouldBe 288F
             }
     }
 
